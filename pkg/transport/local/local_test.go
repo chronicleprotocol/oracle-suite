@@ -28,11 +28,11 @@ type testMsg struct {
 	Val string
 }
 
-func (t *testMsg) Marshall() ([]byte, error) {
+func (t *testMsg) MarshallBinary() ([]byte, error) {
 	return []byte(t.Val), nil
 }
 
-func (t *testMsg) Unmarshall(bytes []byte) error {
+func (t *testMsg) UnmarshallBinary(bytes []byte) error {
 	t.Val = string(bytes)
 	return nil
 }

@@ -122,11 +122,11 @@ func (m *message) Equal(msg *message) bool {
 	return bytes.Equal(*m, *msg)
 }
 
-func (m *message) Marshall() ([]byte, error) {
+func (m *message) MarshallBinary() ([]byte, error) {
 	return *m, nil
 }
 
-func (m *message) Unmarshall(bytes []byte) error {
+func (m *message) UnmarshallBinary(bytes []byte) error {
 	*m = bytes
 	return nil
 }
@@ -141,7 +141,7 @@ type nodeInfo struct {
 // getNodeInfo returns n nodeInfo structs which can be used to generate
 // random test nodes.
 func getNodeInfo(n int) ([]nodeInfo, error) {
-	ps, err := getFreePorts(n)
+	ps, err := findFreePorts(n)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +166,8 @@ func getNodeInfo(n int) ([]nodeInfo, error) {
 	return pi, nil
 }
 
-// getFreePorts returns n random ports available to use.
-func getFreePorts(n int) ([]int, error) {
+// findFreePorts returns n random ports available to use.
+func findFreePorts(n int) ([]int, error) {
 	var ports []int
 	for i := 0; i < n; i++ {
 		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:0")
@@ -202,11 +202,11 @@ func waitForMessage(t *testing.T, stat chan transport.ReceivedMessage, expected 
 	select {
 	case received := <-stat:
 		require.NoError(t, received.Error, "subscription returned an error")
-		receivedBts, err := received.Message.Marshall()
+		receivedBts, err := received.Message.MarshallBinary()
 		if err != nil {
 			assert.NoError(t, err, "unable to unmarshall received message")
 		}
-		expectedBts, err := expected.Marshall()
+		expectedBts, err := expected.MarshallBinary()
 		if err != nil {
 			assert.NoError(t, err, "unable to unmarshall expected message")
 		}

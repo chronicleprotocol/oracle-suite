@@ -16,6 +16,8 @@
 package p2p
 
 import (
+	"encoding/hex"
+
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/makerdao/oracle-suite/pkg/log"
@@ -36,19 +38,25 @@ type messageLoggerHandler struct {
 }
 
 func (m *messageLoggerHandler) Published(topic string, raw []byte, _ transport.Message) {
+	if m.n.tsLog.get().Level() < log.Debug {
+		return
+	}
 	m.n.tsLog.get().
 		WithFields(log.Fields{
 			"topic":   topic,
-			"message": string(raw),
+			"message": dumpMessage(raw),
 		}).
 		Debug("Published a new message")
 }
 
 func (m *messageLoggerHandler) Received(topic string, msg *pubsub.Message, _ pubsub.ValidationResult) {
+	if m.n.tsLog.get().Level() < log.Debug {
+		return
+	}
 	m.n.tsLog.get().
 		WithFields(log.Fields{
 			"topic":              topic,
-			"message":            string(msg.Data),
+			"message":            dumpMessage(msg.Data),
 			"peerID":             msg.GetFrom().String(),
 			"receivedFromPeerID": msg.ReceivedFrom.String(),
 		}).
@@ -56,6 +64,9 @@ func (m *messageLoggerHandler) Received(topic string, msg *pubsub.Message, _ pub
 }
 
 func (m *messageLoggerHandler) Broken(topic string, msg *pubsub.Message, err error) {
+	if m.n.tsLog.get().Level() < log.Debug {
+		return
+	}
 	m.n.tsLog.get().
 		WithError(err).
 		WithFields(log.Fields{
@@ -64,4 +75,21 @@ func (m *messageLoggerHandler) Broken(topic string, msg *pubsub.Message, err err
 			"receivedFromPeerID": msg.ReceivedFrom.String(),
 		}).
 		Debug("Unable to unmarshall received message")
+}
+
+func dumpMessage(s []byte) string {
+	// TODO: Remove the text format after updating all messages to protobuf format.
+	if isPrintable(s) {
+		return "TEXT: " + string(s)
+	}
+	return "BINARY: " + hex.EncodeToString(s)
+}
+
+func isPrintable(s []byte) bool {
+	for _, b := range s {
+		if b < 32 || b > 126 {
+			return false
+		}
+	}
+	return true
 }

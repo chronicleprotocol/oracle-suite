@@ -16,40 +16,39 @@
 package messages
 
 import (
-	"encoding/json"
-	"errors"
+	"time"
 
-	"github.com/makerdao/oracle-suite/pkg/oracle"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/makerdao/oracle-suite/pkg/transport/messages/pb"
 )
 
-var PriceMessageName = "price/v0"
+var EventMessageName = "event/v0"
 
-var ErrPriceMalformedMessage = errors.New("malformed price message")
-
-type Price struct {
-	Price *oracle.Price   `json:"price"`
-	Trace json.RawMessage `json:"trace"`
+type Event struct {
+	Date       time.Time
+	Type       string
+	Data       []byte
+	Signatures map[string][]byte
 }
 
-func (p *Price) Marshall() ([]byte, error) {
-	return json.Marshal(p)
+func (e *Event) MarshallBinary() ([]byte, error) {
+	return proto.Marshal(&pb.Event{
+		Timestamp:  e.Date.Unix(),
+		Type:       e.Type,
+		Data:       e.Data,
+		Signatures: e.Signatures,
+	})
 }
 
-func (p *Price) Unmarshall(b []byte) error {
-	err := json.Unmarshal(b, p)
-	if err != nil {
+func (e *Event) UnmarshallBinary(data []byte) error {
+	msg := &pb.Event{}
+	if err := proto.Unmarshal(data, msg); err != nil {
 		return err
 	}
-	if p.Price == nil {
-		return ErrPriceMalformedMessage
-	}
+	e.Date = time.Unix(msg.Timestamp, 0)
+	e.Type = msg.Type
+	e.Data = msg.Data
+	e.Signatures = msg.Signatures
 	return nil
-}
-
-func (p *Price) MarshallBinary() ([]byte, error) {
-	return p.Marshall()
-}
-
-func (p *Price) UnmarshallBinary(data []byte) error {
-	return p.Unmarshall(data)
 }

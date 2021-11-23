@@ -35,10 +35,6 @@ import (
 
 const LoggerTag = "P2P"
 
-// Values for a connection limiter:
-const minConnections = 100
-const maxConnections = 150
-
 // Mode describes operating mode of a node.
 type Mode int
 
@@ -51,11 +47,18 @@ const (
 	BootstrapMode
 )
 
-// Values for a peer scoring and rate limiter:
+// Values for a connection limiter:
+const minConnections = 100
+const maxConnections = 150
+
+// Parameters used to calculate peer scoring and rate limiter values:
 const maxBytesPerSecond float64 = 10 * 1024 * 1024 // 10MB/s
-const maxInvalidMsgsPerHour float64 = 60
-const maxMsgSizeInBytes float64 = 64 * 1024
 const priceUpdateInterval = time.Minute
+const minAssetPairs = 10
+const maxAssetPairs = 100
+const minEventsPerSecond = 0
+const maxEventsPerSecond = 1
+const maxInvalidMsgsPerHour float64 = 60 // per topic
 
 // defaultListenAddrs is a list of default multiaddresses on which node will
 // be listening on.
@@ -64,17 +67,14 @@ var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
 // P2P is a little wrapper for the Node that implements the transport.Transport
 // interface.
 type P2P struct {
-	node   *p2p.Node
-	topics map[string]transport.Message
+	node *p2p.Node
+	mode Mode
 }
 
 // Config is a configuration for the P2P transport.
 type Config struct {
 	// Mode describes in what mode the node should operate.
 	Mode Mode
-	// Topics is a list of subscribed topics. A value of the map a type of
-	// a message given as a nil pointer, e.g.: (*Message)(nil).
-	Topics map[string]transport.Message
 	// PeerPrivKey is a key used for peer identity. If empty, then random key
 	// is used. Ignored in bootstrap mode.
 	PeerPrivKey crypto.PrivKey
@@ -163,16 +163,29 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 	}
 	switch cfg.Mode {
 	case ClientMode:
+		priceTopicScoreParams, err := calculatePriceTopicScoreParams(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("P2P transport error: invalid price topic scoring parameters: %w", err)
+		}
+		eventTopicScoreParams, err := calculateEventTopicScoreParams(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("P2P transport error: invalid event topic scoring parameters: %w", err)
+		}
 		opts = append(opts,
 			p2p.MessageLogger(),
 			p2p.RateLimiter(rateLimiterConfig(cfg)),
 			p2p.PeerScoring(peerScoreParams, thresholds, func(topic string) *pubsub.TopicScoreParams {
 				if topic == messages.PriceMessageName {
-					return priceTopicScoreParams(cfg)
+					return priceTopicScoreParams
+				}
+				if topic == messages.EventMessageName {
+					return eventTopicScoreParams
 				}
 				return nil
 			}),
-			oracle(cfg.FeedersAddrs, cfg.Signer, logger),
+			feederValidator(cfg.FeedersAddrs, logger),
+			eventValidator(logger),
+			priceValidator(cfg.Signer, logger),
 		)
 		if cfg.MessagePrivKey != nil {
 			opts = append(opts, p2p.MessagePrivKey(cfg.MessagePrivKey))
@@ -181,7 +194,6 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 			opts = append(opts, p2p.Discovery(bootstrapAddrs))
 		}
 	case BootstrapMode:
-		cfg.Topics = nil
 		opts = append(opts,
 			p2p.DisablePubSub(),
 			p2p.Discovery(bootstrapAddrs),
@@ -193,7 +205,7 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 		return nil, fmt.Errorf("P2P transport error, unable to initialize node: %w", err)
 	}
 
-	return &P2P{node: n, topics: cfg.Topics}, nil
+	return &P2P{node: n, mode: cfg.Mode}, nil
 }
 
 // Start implements the transport.Transport interface.
@@ -202,10 +214,16 @@ func (p *P2P) Start() error {
 	if err != nil {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
 	}
-	for topic, typ := range p.topics {
-		err := p.subscribe(topic, typ)
-		if err != nil {
-			return err
+	if p.mode == ClientMode {
+		topics := map[string]transport.Message{
+			messages.PriceMessageName: (*messages.Price)(nil),
+			messages.EventMessageName: (*messages.Event)(nil),
+		}
+		for topic, typ := range topics {
+			err := p.subscribe(topic, typ)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

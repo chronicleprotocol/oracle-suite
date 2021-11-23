@@ -27,7 +27,6 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/log/null"
 	"github.com/makerdao/oracle-suite/pkg/transport"
 	"github.com/makerdao/oracle-suite/pkg/transport/local"
-	"github.com/makerdao/oracle-suite/pkg/transport/messages"
 	"github.com/makerdao/oracle-suite/pkg/transport/p2p"
 )
 
@@ -57,7 +56,6 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 		assert.Len(t, cfg.BootstrapAddrs, 0)
 		assert.Len(t, cfg.DirectPeersAddrs, 0)
 		assert.Len(t, cfg.BlockedAddrs, 0)
-		assert.Equal(t, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)}, cfg.Topics)
 		assert.Equal(t, true, cfg.Discovery)
 		assert.Equal(t, "spire", cfg.AppName)
 		assert.Equal(t, feeds, cfg.FeedersAddrs)
@@ -108,7 +106,6 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 		assert.Equal(t, bootstrapAddrs, cfg.BootstrapAddrs)
 		assert.Equal(t, directPeersAddrs, cfg.DirectPeersAddrs)
 		assert.Equal(t, blockedAddrs, cfg.BlockedAddrs)
-		assert.Equal(t, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)}, cfg.Topics)
 		assert.Equal(t, false, cfg.Discovery)
 		assert.Equal(t, "spire", cfg.AppName)
 		assert.Equal(t, feeds, cfg.FeedersAddrs)

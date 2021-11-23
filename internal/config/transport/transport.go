@@ -29,7 +29,6 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/ethereum"
 	"github.com/makerdao/oracle-suite/pkg/log"
 	"github.com/makerdao/oracle-suite/pkg/transport"
-	"github.com/makerdao/oracle-suite/pkg/transport/messages"
 	"github.com/makerdao/oracle-suite/pkg/transport/p2p"
 	"github.com/makerdao/oracle-suite/pkg/transport/p2p/crypto/ethkey"
 )
@@ -71,7 +70,6 @@ func (c *Transport) Configure(d Dependencies) (transport.Transport, error) {
 	cfg := p2p.Config{
 		Mode:             p2p.ClientMode,
 		PeerPrivKey:      peerPrivKey,
-		Topics:           map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
 		MessagePrivKey:   ethkey.NewPrivKey(d.Signer),
 		ListenAddrs:      c.P2P.ListenAddrs,
 		BootstrapAddrs:   c.P2P.BootstrapAddrs,

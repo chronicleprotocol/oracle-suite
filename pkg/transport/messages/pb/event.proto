@@ -13,43 +13,13 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package messages
+syntax = "proto3";
 
-import (
-	"encoding/json"
-	"errors"
+option go_package = "github.com/makerdao/oracle-suite/pkg/transport/p2p/messages/pb";
 
-	"github.com/makerdao/oracle-suite/pkg/oracle"
-)
-
-var PriceMessageName = "price/v0"
-
-var ErrPriceMalformedMessage = errors.New("malformed price message")
-
-type Price struct {
-	Price *oracle.Price   `json:"price"`
-	Trace json.RawMessage `json:"trace"`
-}
-
-func (p *Price) Marshall() ([]byte, error) {
-	return json.Marshal(p)
-}
-
-func (p *Price) Unmarshall(b []byte) error {
-	err := json.Unmarshal(b, p)
-	if err != nil {
-		return err
-	}
-	if p.Price == nil {
-		return ErrPriceMalformedMessage
-	}
-	return nil
-}
-
-func (p *Price) MarshallBinary() ([]byte, error) {
-	return p.Marshall()
-}
-
-func (p *Price) UnmarshallBinary(data []byte) error {
-	return p.Unmarshall(data)
+message Event {
+  int64 timestamp = 1;
+  string type = 2;
+  bytes data = 3;
+  map<string, bytes> signatures = 4;
 }

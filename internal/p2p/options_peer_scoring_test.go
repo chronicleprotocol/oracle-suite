@@ -144,7 +144,7 @@ func TestNode_PeerScoring(t *testing.T) {
 		}
 	}
 
-	// Now send a 4 invalid messages, that should be enough to lower the score below 0:
+	// Now send 4 invalid messages, that should be enough to lower the score below 0:
 	for i := 0; i < 4; i++ {
 		err := s1.Publish(newMessage("invalid"))
 		if err != nil {

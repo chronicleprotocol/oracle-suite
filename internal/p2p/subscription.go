@@ -78,7 +78,7 @@ func newSubscription(node *Node, topic string, typ transport.Message) (*Subscrip
 }
 
 func (s *Subscription) Publish(message transport.Message) error {
-	b, err := message.Marshall()
+	b, err := message.MarshallBinary()
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (s *Subscription) validator(topic string, typ transport.Message) pubsub.Val
 	r := reflect.TypeOf(typ).Elem()
 	return func(ctx context.Context, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
 		msg := reflect.New(r).Interface().(transport.Message)
-		err := msg.Unmarshall(psMsg.Data)
+		err := msg.UnmarshallBinary(psMsg.Data)
 		if err != nil {
 			s.messageHandler.Broken(topic, psMsg, err)
 			return pubsub.ValidationReject

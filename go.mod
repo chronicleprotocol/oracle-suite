@@ -26,4 +26,5 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
+	google.golang.org/protobuf v1.26.0
 )
