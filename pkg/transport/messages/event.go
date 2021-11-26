@@ -26,21 +26,34 @@ import (
 var EventMessageName = "event/v0"
 
 type Event struct {
-	Date       time.Time
-	Type       string
-	Data       []byte
+	// The date when the event message was created. It is *not* the date of
+	// the event itself.
+	Date time.Time
+	// Type of the event.
+	Type string
+	// Unique ID of the event.
+	ID []byte
+	// Specifies a group to which the event belongs to, like transaction hash.
+	Group []byte
+	// List of event data.
+	Data map[string][]byte
+	// List of event signatures.
 	Signatures map[string][]byte
 }
 
+// MarshallBinary implements the transport.Message interface.
 func (e *Event) MarshallBinary() ([]byte, error) {
 	return proto.Marshal(&pb.Event{
 		Timestamp:  e.Date.Unix(),
 		Type:       e.Type,
+		Id:         e.ID,
+		Group:      e.Group,
 		Data:       e.Data,
 		Signatures: e.Signatures,
 	})
 }
 
+// UnmarshallBinary implements the transport.Message interface.
 func (e *Event) UnmarshallBinary(data []byte) error {
 	msg := &pb.Event{}
 	if err := proto.Unmarshal(data, msg); err != nil {
@@ -48,6 +61,8 @@ func (e *Event) UnmarshallBinary(data []byte) error {
 	}
 	e.Date = time.Unix(msg.Timestamp, 0)
 	e.Type = msg.Type
+	e.ID = msg.Id
+	e.Group = msg.Group
 	e.Data = msg.Data
 	e.Signatures = msg.Signatures
 	return nil

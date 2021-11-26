@@ -20,6 +20,8 @@ option go_package = "github.com/makerdao/oracle-suite/pkg/transport/p2p/messages
 message Event {
   int64 timestamp = 1;
   string type = 2;
-  bytes data = 3;
-  map<string, bytes> signatures = 4;
+  bytes id = 3;
+  bytes group = 4;
+  map<string, bytes> data = 5;
+  map<string, bytes> signatures = 6;
 }
