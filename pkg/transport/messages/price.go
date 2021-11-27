@@ -22,7 +22,7 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/oracle"
 )
 
-var PriceMessageName = "price/v0"
+const PriceMessageName = "price/v0"
 
 var ErrPriceMalformedMessage = errors.New("malformed price message")
 

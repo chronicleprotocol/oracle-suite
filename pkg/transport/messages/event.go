@@ -16,6 +16,7 @@
 package messages
 
 import (
+	"errors"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -23,7 +24,12 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/transport/messages/pb"
 )
 
-var EventMessageName = "event/v0"
+const EventMessageName = "event/v0"
+
+const eventMessageMaxDataFields = 10
+const eventMessageMaxSignatureFields = 10
+const eventMessageMaxKeyLen = 32
+const eventMessageMaxFieldSize = 1024
 
 type Event struct {
 	// The date when the event message was created. It is *not* the date of
@@ -43,6 +49,9 @@ type Event struct {
 
 // MarshallBinary implements the transport.Message interface.
 func (e *Event) MarshallBinary() ([]byte, error) {
+	if err := e.validate(); err != nil {
+		return nil, err
+	}
 	return proto.Marshal(&pb.Event{
 		Timestamp:  e.Date.Unix(),
 		Type:       e.Type,
@@ -65,5 +74,40 @@ func (e *Event) UnmarshallBinary(data []byte) error {
 	e.Group = msg.Group
 	e.Data = msg.Data
 	e.Signatures = msg.Signatures
+	return e.validate()
+}
+
+func (e *Event) validate() error {
+	if len(e.Type) > eventMessageMaxFieldSize {
+		return errors.New("invalid event message, type length too large")
+	}
+	if len(e.ID) > eventMessageMaxFieldSize {
+		return errors.New("invalid event message, ID size too large")
+	}
+	if len(e.Group) > eventMessageMaxFieldSize {
+		return errors.New("invalid event message, group size too large")
+	}
+	if len(e.Data) > eventMessageMaxDataFields {
+		return errors.New("invalid event message, too many data fields")
+	}
+	if len(e.Signatures) > eventMessageMaxSignatureFields {
+		return errors.New("invalid event message, too many signatures")
+	}
+	for k, v := range e.Data {
+		if len(k) > eventMessageMaxKeyLen {
+			return errors.New("invalid event message, data key too long")
+		}
+		if len(v) > eventMessageMaxFieldSize {
+			return errors.New("invalid event message, data size too large")
+		}
+	}
+	for k, v := range e.Signatures {
+		if len(k) > eventMessageMaxKeyLen {
+			return errors.New("invalid event message, signature key too long")
+		}
+		if len(v) > eventMessageMaxFieldSize {
+			return errors.New("invalid event message, signature size too large")
+		}
+	}
 	return nil
 }
