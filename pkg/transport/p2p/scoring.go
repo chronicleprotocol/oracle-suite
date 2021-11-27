@@ -65,6 +65,7 @@ func calculatePriceTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error
 	var minMsgsPerSecond = (minFeederCount * minAssetPairs) / maxPeers / priceUpdateInterval.Seconds()
 	var maxMsgsPerSecond = (maxFeederCount * maxAssetPairs) / priceUpdateInterval.Seconds()
 
+	//nolint:gomnd
 	return (&scoreParams{
 		p1Score:              500,
 		p2Score:              500,
@@ -94,6 +95,7 @@ func calculateEventTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error
 	var minMsgsPerSecond = minFeederCount * minEventsPerSecond / maxPeers
 	var maxMsgsPerSecond = maxFeederCount * maxEventsPerSecond
 
+	//nolint:gomnd
 	return (&scoreParams{
 		p1Score:              500,
 		p2Score:              500,
@@ -127,7 +129,6 @@ type scoreParams struct {
 	maxMessagesPerSecond float64
 	maxInvalidMessages   float64
 }
-
 
 func (p *scoreParams) calculate() (*pubsub.TopicScoreParams, error) {
 	if p.p1Score < 0 {

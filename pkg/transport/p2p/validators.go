@@ -118,4 +118,3 @@ func priceValidator(signer ethereum.Signer, logger log.Logger) p2p.Options {
 		return nil
 	}
 }
-

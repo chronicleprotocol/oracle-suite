@@ -67,19 +67,19 @@ func TestEvent_Marshalling(t *testing.T) {
 		},
 		{
 			event: Event{
-				Type:  strings.Repeat("a", eventMessageMaxFieldSize+1),
+				Type: strings.Repeat("a", eventMessageMaxFieldSize+1),
 			},
 			wantErr: true,
 		},
 		{
 			event: Event{
-				ID:    bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
+				ID: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
 			},
 			wantErr: true,
 		},
 		{
 			event: Event{
-				Group:    bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
+				Group: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
 			},
 			wantErr: true,
 		},
