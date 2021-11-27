@@ -35,7 +35,7 @@ import (
 
 const LoggerTag = "P2P"
 
-// Mode describes operating mode of a node.
+// Mode describes operating mode of the node.
 type Mode int
 
 const (
@@ -47,31 +47,31 @@ const (
 	BootstrapMode
 )
 
-// Values for a connection limiter:
+// Values for the connection limiter:
 const minConnections = 100
 const maxConnections = 150
 
 // Parameters used to calculate peer scoring and rate limiter values:
 const maxBytesPerSecond float64 = 10 * 1024 * 1024 // 10MB/s
 const priceUpdateInterval = time.Minute
-const minAssetPairs = 10
-const maxAssetPairs = 100
-const minEventsPerSecond = 0
-const maxEventsPerSecond = 1
+const minAssetPairs = 10                 // below that, score becomes negative
+const maxAssetPairs = 100                // it limits the maximum possible score only, not the number of supported pairs
+const minEventsPerSecond = 0             // below that, score becomes negative
+const maxEventsPerSecond = 1             // it limits the maximum possible score only, not the number of events
 const maxInvalidMsgsPerHour float64 = 60 // per topic
 
-// defaultListenAddrs is a list of default multiaddresses on which node will
+// defaultListenAddrs is the list of default multiaddresses on which node will
 // be listening on.
 var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
 
-// P2P is a little wrapper for the Node that implements the transport.Transport
+// P2P is the wrapper for the Node that implements the transport.Transport
 // interface.
 type P2P struct {
 	node *p2p.Node
 	mode Mode
 }
 
-// Config is a configuration for the P2P transport.
+// Config is the configuration for the P2P transport.
 type Config struct {
 	// Mode describes in what mode the node should operate.
 	Mode Mode
