@@ -54,11 +54,11 @@ const maxConnections = 150
 // Parameters used to calculate peer scoring and rate limiter values:
 const maxBytesPerSecond float64 = 10 * 1024 * 1024 // 10MB/s
 const priceUpdateInterval = time.Minute
-const minAssetPairs = 10                 // below that, score becomes negative
-const maxAssetPairs = 100                // it limits the maximum possible score only, not the number of supported pairs
-const minEventsPerSecond = 0             // below that, score becomes negative
-const maxEventsPerSecond = 1             // it limits the maximum possible score only, not the number of events
-const maxInvalidMsgsPerHour float64 = 60 // per topic
+const minAssetPairs = 10                   // below that, score becomes negative
+const maxAssetPairs = 100                  // it limits the maximum possible score only, not the number of supported pairs
+const minEventsPerSecond = 1 / (3600 * 24) // below that, score becomes negative
+const maxEventsPerSecond = 1               // it limits the maximum possible score only, not the number of events
+const maxInvalidMsgsPerHour float64 = 60   // per topic
 
 // defaultListenAddrs is the list of default multiaddresses on which node will
 // be listening on.
@@ -216,7 +216,7 @@ func (p *P2P) Start() error {
 	}
 	if p.mode == ClientMode {
 		topics := map[string]transport.Message{
-			messages.PriceMessageName: (*messages.Price)(nil),
+			//messages.PriceMessageName: (*messages.Price)(nil),
 			messages.EventMessageName: (*messages.Event)(nil),
 		}
 		for topic, typ := range topics {
