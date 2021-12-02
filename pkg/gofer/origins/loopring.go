@@ -26,7 +26,8 @@ import (
 )
 
 // Loopring URL
-const loopringURL = "https://api3.loopring.io/api/v3/ticker?market=%s"
+const loopringBaseURL = "https://api3.loopring.io"
+const loopringURL = "%s/api/v3/ticker?market=%s"
 
 type loopringResponse struct {
 	Tickers [][]string `json:"tickers"`
@@ -35,6 +36,7 @@ type loopringResponse struct {
 // Loopring origin handler
 type Loopring struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (l *Loopring) localPairName(pairs ...Pair) string {
@@ -52,7 +54,7 @@ func (l Loopring) Pool() query.WorkerPool {
 func (l Loopring) PullPrices(pairs []Pair) []FetchResult {
 	var err error
 	req := &query.HTTPRequest{
-		URL: fmt.Sprintf(loopringURL, l.localPairName(pairs...)),
+		URL: buildOriginURL(loopringURL, l.BaseURL, loopringBaseURL, l.localPairName(pairs...)),
 	}
 	// make query
 	res := l.Pool().Query(req)

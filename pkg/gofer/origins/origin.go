@@ -317,3 +317,15 @@ func validateResponse(pairs []Pair, res *query.HTTPResponse) []FetchResult {
 	}
 	return nil
 }
+
+func buildOriginURL(template, configURL, defaultURL string, a ...interface{}) string {
+	url := configURL
+	if url == "" {
+		url = defaultURL
+	}
+
+	replacement := []interface{}{url}
+	replacement = append(replacement, a...)
+
+	return fmt.Sprintf(template, replacement)
+}

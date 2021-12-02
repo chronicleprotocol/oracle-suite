@@ -23,7 +23,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const poloniexURL = "https://poloniex.com/public?command=returnTicker"
+const poloniexBaseURL = "https://poloniex.com"
+const poloniexURL = "%s/public?command=returnTicker"
 
 type poloniexResponse struct {
 	Last       stringAsFloat64 `json:"Last"`
@@ -36,6 +37,7 @@ type poloniexResponse struct {
 // Poloniex origin handler
 type Poloniex struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (p *Poloniex) localPairName(pair Pair) string {
@@ -62,7 +64,7 @@ func (p Poloniex) Pool() query.WorkerPool {
 func (p Poloniex) PullPrices(pairs []Pair) []FetchResult {
 	var err error
 	req := &query.HTTPRequest{
-		URL: poloniexURL,
+		URL: buildOriginURL(poloniexURL, p.BaseURL, poloniexBaseURL),
 	}
 
 	// make query

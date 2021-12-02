@@ -23,7 +23,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const okexURL = "https://www.okex.com/api/spot/v3/instruments/ticker"
+const okexBaseURL = "https://www.okex.com"
+const okexURL = "%s/api/spot/v3/instruments/ticker"
 
 type okexResponse struct {
 	InstrumentID  string          `json:"instrument_id"`
@@ -37,6 +38,7 @@ type okexResponse struct {
 // Okex origin handler
 type Okex struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (o *Okex) localPairName(pair Pair) string {
@@ -49,7 +51,7 @@ func (o Okex) Pool() query.WorkerPool {
 func (o Okex) PullPrices(pairs []Pair) []FetchResult {
 	var err error
 	req := &query.HTTPRequest{
-		URL: okexURL,
+		URL: buildOriginURL(okexURL, o.BaseURL, okexBaseURL),
 	}
 
 	// make query

@@ -22,7 +22,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const binanceURL = "https://www.binance.com/api/v3/ticker/24hr"
+const binanceBaseURL = "https://api.binance.com"
+const binanceURL = "%s/api/v3/ticker/24hr"
 
 type binanceResponse struct {
 	Symbol    string               `json:"symbol"`
@@ -36,6 +37,7 @@ type binanceResponse struct {
 // Binance origin handler
 type Binance struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (b *Binance) localPairName(pair Pair) string {
@@ -49,7 +51,7 @@ func (b Binance) Pool() query.WorkerPool {
 func (b Binance) PullPrices(pairs []Pair) []FetchResult {
 	var err error
 	req := &query.HTTPRequest{
-		URL: binanceURL,
+		URL: buildOriginURL(binanceURL, b.BaseURL, binanceBaseURL),
 	}
 
 	// make query

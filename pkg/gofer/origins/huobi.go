@@ -25,7 +25,8 @@ import (
 )
 
 // Huobi URL
-const huobiURL = "https://api.huobi.pro/market/tickers"
+const huobiBaseURL = "https://api.huobi.pro"
+const huobiURL = "%s/market/tickers"
 
 type huobiResponse struct {
 	Symbol string  `json:"symbol"`
@@ -37,6 +38,7 @@ type huobiResponse struct {
 // Huobi origin handler
 type Huobi struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (h *Huobi) localPairName(pair Pair) string {
@@ -58,7 +60,7 @@ func (h Huobi) PullPrices(pairs []Pair) []FetchResult {
 func (h *Huobi) fetch(pairs []Pair) ([]FetchResult, error) {
 	var err error
 	req := &query.HTTPRequest{
-		URL: huobiURL,
+		URL: buildOriginURL(huobiURL, h.BaseURL, huobiBaseURL),
 	}
 
 	res := h.Pool().Query(req)

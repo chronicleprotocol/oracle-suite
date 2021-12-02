@@ -26,8 +26,9 @@ import (
 )
 
 // Gateio URL
-const gateioSinglePairURL = "https://fx-api.gateio.ws/api/v4/spot/tickers?currency_pair=%s"
-const gateioURL = "https://fx-api.gateio.ws/api/v4/spot/tickers"
+const gateioBaseURL = "https://fx-api.gateio.ws"
+const gateioSinglePairURL = "%s/api/v4/spot/tickers?currency_pair=%s"
+const gateioURL = "%s/api/v4/spot/tickers"
 
 type gateioResponse struct {
 	Pair   string `json:"currency_pair"`
@@ -40,6 +41,7 @@ type gateioResponse struct {
 // Gateio exchange handler
 type Gateio struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (g *Gateio) renameSymbol(symbol string) string {
@@ -65,9 +67,9 @@ func (g Gateio) PullPrices(pairs []Pair) []FetchResult {
 func (g *Gateio) fetch(pairs []Pair) ([]FetchResult, error) {
 	var url string
 	if len(pairs) == 1 {
-		url = fmt.Sprintf(gateioSinglePairURL, g.localPairName(pairs[0]))
+		url = buildOriginURL(gateioSinglePairURL, g.BaseURL, gateioBaseURL, g.localPairName(pairs[0]))
 	} else {
-		url = gateioURL
+		url = buildOriginURL(gateioURL, g.BaseURL, gateioBaseURL)
 	}
 
 	req := &query.HTTPRequest{URL: url}

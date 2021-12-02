@@ -23,7 +23,8 @@ import (
 )
 
 // Coinbase URL
-const openExchangeRatesURL = "https://openexchangerates.org/api/latest.json?app_id=%s&base=%s&symbols=%s"
+const openExchangeRatesBaseURL = "https://openexchangerates.org"
+const openExchangeRatesURL = "%s/api/latest.json?app_id=%s&base=%s&symbols=%s"
 
 type openExchangeRatesResponse struct {
 	Timestamp intAsUnixTimestamp `json:"timestamp"`
@@ -34,11 +35,12 @@ type openExchangeRatesResponse struct {
 // OpenExchangeRates origin handler
 type OpenExchangeRates struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 	APIKey     string
 }
 
 func (o *OpenExchangeRates) getURL(pair Pair) string {
-	return fmt.Sprintf(openExchangeRatesURL, o.APIKey, pair.Base, pair.Quote)
+	return buildOriginURL(openExchangeRatesURL, o.BaseURL, openExchangeRatesBaseURL, o.APIKey, pair.Base, pair.Quote)
 }
 
 func (o OpenExchangeRates) Pool() query.WorkerPool {

@@ -27,7 +27,8 @@ import (
 )
 
 // Coinbase URL
-const coinbaseProURL = "https://api.pro.coinbase.com/products/%s/ticker"
+const coinbaseProBaseURL = "https://api.pro.coinbase.com"
+const coinbaseProURL = "%s/products/%s/ticker"
 
 type coinbaseProResponse struct {
 	Price  string `json:"price"`
@@ -39,6 +40,7 @@ type coinbaseProResponse struct {
 // Coinbase origin handler
 type CoinbasePro struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (c *CoinbasePro) localPairName(pair Pair) string {
@@ -46,7 +48,7 @@ func (c *CoinbasePro) localPairName(pair Pair) string {
 }
 
 func (c *CoinbasePro) getURL(pair Pair) string {
-	return fmt.Sprintf(coinbaseProURL, c.localPairName(pair))
+	return buildOriginURL(coinbaseProURL, c.BaseURL, coinbaseProBaseURL, c.localPairName(pair))
 }
 
 func (c CoinbasePro) Pool() query.WorkerPool {

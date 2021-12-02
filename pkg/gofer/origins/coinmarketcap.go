@@ -25,7 +25,8 @@ import (
 )
 
 // Exchange URL
-const coinMarketCapURL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=%s"
+const coinMarketCapBaseURL = "https://pro-api.coinmarketcap.com"
+const coinMarketCapURL = "%s/v1/cryptocurrency/quotes/latest?id=%s"
 
 type quoteResponse struct {
 	Price  float64 `json:"price"`
@@ -47,12 +48,13 @@ type coinMarketCapResponse struct {
 // Exchange handler
 type CoinMarketCap struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 	APIKey     string
 }
 
 // GetURL implementation
 func (c *CoinMarketCap) getURL(uriPairs []string) string {
-	return fmt.Sprintf(coinMarketCapURL, strings.Join(uriPairs, ","))
+	return buildOriginURL(coinMarketCapURL, c.BaseURL, coinMarketCapBaseURL, strings.Join(uriPairs, ","))
 }
 
 // LocalPairName implementation

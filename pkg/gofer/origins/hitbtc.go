@@ -26,7 +26,8 @@ import (
 )
 
 // Hitbtc URL
-const hitbtcURL = "https://api.hitbtc.com/api/2/public/ticker?symbols=%s"
+const hitbtcBaseURL = "https://api.hitbtc.com"
+const hitbtcURL = "%s/api/2/public/ticker?symbols=%s"
 
 type hitbtcResponse struct {
 	Symbol    string    `json:"symbol"`
@@ -40,6 +41,7 @@ type hitbtcResponse struct {
 // Hitbtc exchange handler
 type Hitbtc struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (h *Hitbtc) localPairName(pair Pair) string {
@@ -51,7 +53,7 @@ func (h *Hitbtc) getURL(pairs []Pair) string {
 	for i, pair := range pairs {
 		pairsStr[i] = h.localPairName(pair)
 	}
-	return fmt.Sprintf(hitbtcURL, strings.Join(pairsStr, ","))
+	return buildOriginURL(hitbtcURL, h.BaseURL, hitbtcBaseURL, strings.Join(pairsStr, ","))
 }
 
 func (h Hitbtc) Pool() query.WorkerPool {

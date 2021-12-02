@@ -25,7 +25,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const sushiswapURL = "https://api.thegraph.com/subgraphs/name/zippoxer/sushiswap-subgraph-fork"
+const sushiswapBaseURL = "https://api.thegraph.com"
+const sushiswapURL = "%s/subgraphs/name/zippoxer/sushiswap-subgraph-fork"
 
 type sushiswapResponse struct {
 	Data struct {
@@ -49,6 +50,7 @@ type sushiswapPairResponse struct {
 
 type Sushiswap struct {
 	WorkerPool        query.WorkerPool
+	BaseURL           string
 	ContractAddresses ContractAddresses
 }
 
@@ -96,7 +98,7 @@ func (s *Sushiswap) callOne(pair Pair) (*Price, error) {
 	)
 
 	req := &query.HTTPRequest{
-		URL:    sushiswapURL,
+		URL:    buildOriginURL(sushiswapURL, s.BaseURL, sushiswapBaseURL),
 		Method: "POST",
 		Body:   bytes.NewBuffer([]byte(body)),
 	}

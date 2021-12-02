@@ -75,6 +75,7 @@ type RPC struct {
 type Origin struct {
 	Type   string          `json:"type"`
 	Name   string          `json:"name"`
+	URL    string          `json:"url"`
 	Params json.RawMessage `json:"params"`
 }
 
@@ -161,7 +162,7 @@ func (c *Gofer) buildOrigins(cli pkgEthereum.Client) (*origins.Set, error) {
 	wp := query.NewHTTPWorkerPool(defaultWorkerCount)
 	originSet := origins.DefaultOriginSet(wp, defaultWorkerCount)
 	for name, origin := range c.Origins {
-		handler, err := NewHandler(origin.Type, wp, cli, origin.Params)
+		handler, err := NewHandler(origin.Type, wp, cli, origin.URL, origin.Params)
 		if err != nil || handler == nil {
 			return nil, fmt.Errorf("failed to initiate %s origin with name %s due to error: %w",
 				origin.Type, origin.Name, err)

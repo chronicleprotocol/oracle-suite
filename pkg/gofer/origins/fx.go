@@ -25,7 +25,8 @@ import (
 )
 
 // Fx URL
-const fxURL = "https://api.exchangeratesapi.io/latest?symbols=%s&base=%s&access_key=%s"
+const fxBaseURL = "https://api.exchangeratesapi.io"
+const fxURL = "%s/latest?symbols=%s&base=%s&access_key=%s"
 
 type fxResponse struct {
 	Rates map[string]float64 `json:"rates"`
@@ -34,6 +35,7 @@ type fxResponse struct {
 // Fx exchange handler
 type Fx struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 	APIKey     string
 }
 
@@ -73,7 +75,14 @@ func (f *Fx) getURL(base string, quotes []Pair) string {
 	for _, pair := range quotes {
 		symbols = append(symbols, f.renameSymbol(pair.Quote))
 	}
-	return fmt.Sprintf(fxURL, strings.Join(symbols, ","), f.renameSymbol(base), f.APIKey)
+	return buildOriginURL(
+		fxURL,
+		f.BaseURL,
+		fxBaseURL,
+		strings.Join(symbols, ","),
+		f.renameSymbol(base),
+		f.APIKey,
+	)
 }
 
 func (f *Fx) callByBase(base string, pairs []Pair) ([]FetchResult, error) {

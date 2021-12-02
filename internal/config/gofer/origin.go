@@ -74,6 +74,7 @@ func NewHandler(
 	origin string,
 	wp query.WorkerPool,
 	cli pkgEthereum.Client,
+	baseURL string,
 	params json.RawMessage) (origins.Handler, error) {
 
 	aliases, err := parseParamsSymbolAliases(params)
@@ -88,75 +89,76 @@ func NewHandler(
 		}
 		return origins.NewBaseExchangeHandler(origins.Balancer{
 			WorkerPool:        wp,
+			BaseURL:           baseURL,
 			ContractAddresses: contracts,
 		}, aliases), nil
 	case "binance":
-		return origins.NewBaseExchangeHandler(origins.Binance{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Binance{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "bitfinex":
-		return origins.NewBaseExchangeHandler(origins.Bitfinex{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Bitfinex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "bitstamp":
-		return origins.NewBaseExchangeHandler(origins.Bitstamp{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Bitstamp{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "bitthumb", "bithumb":
-		return origins.NewBaseExchangeHandler(origins.BitThump{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.BitThump{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "bittrex":
-		return origins.NewBaseExchangeHandler(origins.Bittrex{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Bittrex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "coinbase", "coinbasepro":
-		return origins.NewBaseExchangeHandler(origins.CoinbasePro{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.CoinbasePro{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "cryptocompare":
-		return origins.NewBaseExchangeHandler(origins.CryptoCompare{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.CryptoCompare{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "coinmarketcap":
 		apiKey, err := parseParamsAPIKey(params)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(
-			origins.CoinMarketCap{WorkerPool: wp, APIKey: apiKey},
+			origins.CoinMarketCap{WorkerPool: wp, BaseURL: baseURL, APIKey: apiKey},
 			aliases,
 		), nil
 	case "ddex":
-		return origins.NewBaseExchangeHandler(origins.Ddex{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Ddex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "folgory":
-		return origins.NewBaseExchangeHandler(origins.Folgory{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Folgory{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "ftx":
-		return origins.NewBaseExchangeHandler(origins.Ftx{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Ftx{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "fx":
 		apiKey, err := parseParamsAPIKey(params)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(
-			origins.Fx{WorkerPool: wp, APIKey: apiKey},
+			origins.Fx{WorkerPool: wp, BaseURL: baseURL, APIKey: apiKey},
 			aliases,
 		), nil
 	case "gateio":
-		return origins.NewBaseExchangeHandler(origins.Gateio{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Gateio{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "gemini":
-		return origins.NewBaseExchangeHandler(origins.Gemini{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Gemini{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "hitbtc":
-		return origins.NewBaseExchangeHandler(origins.Hitbtc{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Hitbtc{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "huobi":
-		return origins.NewBaseExchangeHandler(origins.Huobi{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Huobi{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "kraken":
-		return origins.NewBaseExchangeHandler(origins.Kraken{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Kraken{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "kucoin":
-		return origins.NewBaseExchangeHandler(origins.Kucoin{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Kucoin{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "kyber":
-		return origins.NewBaseExchangeHandler(origins.Kyber{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Kyber{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "loopring":
-		return origins.NewBaseExchangeHandler(origins.Loopring{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Loopring{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "okex":
-		return origins.NewBaseExchangeHandler(origins.Okex{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Okex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "openexchangerates":
 		apiKey, err := parseParamsAPIKey(params)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(
-			origins.OpenExchangeRates{WorkerPool: wp, APIKey: apiKey},
+			origins.OpenExchangeRates{WorkerPool: wp, BaseURL: baseURL, APIKey: apiKey},
 			aliases,
 		), nil
 	case "poloniex":
-		return origins.NewBaseExchangeHandler(origins.Poloniex{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Poloniex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "sushiswap":
 		contracts, err := parseParamsContracts(params)
 		if err != nil {
@@ -164,6 +166,7 @@ func NewHandler(
 		}
 		return origins.NewBaseExchangeHandler(origins.Sushiswap{
 			WorkerPool:        wp,
+			BaseURL:           baseURL,
 			ContractAddresses: contracts,
 		}, aliases), nil
 	case "curve", "curvefinance":
@@ -203,6 +206,7 @@ func NewHandler(
 		}
 		return origins.NewBaseExchangeHandler(origins.Uniswap{
 			WorkerPool:        wp,
+			BaseURL:           baseURL,
 			ContractAddresses: contracts,
 		}, aliases), nil
 	case "uniswapV3":
@@ -212,10 +216,11 @@ func NewHandler(
 		}
 		return origins.NewBaseExchangeHandler(origins.UniswapV3{
 			WorkerPool:        wp,
+			BaseURL:           baseURL,
 			ContractAddresses: contracts,
 		}, aliases), nil
 	case "upbit":
-		return origins.NewBaseExchangeHandler(origins.Upbit{WorkerPool: wp}, aliases), nil
+		return origins.NewBaseExchangeHandler(origins.Upbit{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	}
 
 	return nil, origins.ErrUnknownOrigin

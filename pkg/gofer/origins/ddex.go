@@ -24,9 +24,11 @@ import (
 
 type Ddex struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
-const ddexTickersURL = "https://api.ddex.io/v4/markets/tickers"
+const ddexTickersBaseURL = "https://api.ddex.io"
+const ddexTickersURL = "%s/v4/markets/tickers"
 
 func (d Ddex) Pool() query.WorkerPool {
 	return d.WorkerPool
@@ -34,7 +36,7 @@ func (d Ddex) Pool() query.WorkerPool {
 
 func (d Ddex) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: ddexTickersURL,
+		URL: buildOriginURL(ddexTickersURL, d.BaseURL, ddexTickersBaseURL),
 	}
 	res := d.Pool().Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {

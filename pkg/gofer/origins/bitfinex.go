@@ -27,9 +27,11 @@ import (
 
 type Bitfinex struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
-const bitfinexURL = "https://api-pub.bitfinex.com/v2/tickers?symbols=%s"
+const bitfinexBaseURL = "https://api-pub.bitfinex.com"
+const bitfinexURL = "%s/v2/tickers?symbols=%s"
 
 func (b Bitfinex) Pool() query.WorkerPool {
 	return b.WorkerPool
@@ -37,7 +39,7 @@ func (b Bitfinex) Pool() query.WorkerPool {
 
 func (b Bitfinex) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: fmt.Sprintf(bitfinexURL, b.localPairName(pairs...)),
+		URL: buildOriginURL(bitfinexURL, b.BaseURL, bitfinexBaseURL, b.localPairName(pairs...)),
 	}
 	res := b.WorkerPool.Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {

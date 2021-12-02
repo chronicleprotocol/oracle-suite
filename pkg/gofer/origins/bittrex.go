@@ -23,7 +23,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const bittrexURL = "https://api.bittrex.com/api/v1.1/public/getticker?market=%s"
+const bittrexBaseURL = "https://api.bittrex.com"
+const bittrexURL = "%s/api/v1.1/public/getticker?market=%s"
 
 type bittrexResponse struct {
 	Success bool                  `json:"success"`
@@ -39,6 +40,7 @@ type bittrexSymbolResponse struct {
 // Bittrex origin handler
 type Bittrex struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (b *Bittrex) localPairName(pair Pair) string {
@@ -56,7 +58,7 @@ func (b Bittrex) PullPrices(pairs []Pair) []FetchResult {
 func (b *Bittrex) callOne(pair Pair) (*Price, error) {
 	var err error
 	req := &query.HTTPRequest{
-		URL: fmt.Sprintf(bittrexURL, b.localPairName(pair)),
+		URL: buildOriginURL(bittrexURL, b.BaseURL, bitstampBaseURL, b.localPairName(pair)),
 	}
 
 	// make query

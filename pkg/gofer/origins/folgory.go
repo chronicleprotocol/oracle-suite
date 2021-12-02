@@ -23,8 +23,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
+const folgoryBaseURL = "https://folgory.com"
+const folgoryURL = "%s/api/v1"
+
 type Folgory struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (o Folgory) Pool() query.WorkerPool {
@@ -33,7 +37,7 @@ func (o Folgory) Pool() query.WorkerPool {
 
 func (o Folgory) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: folgoryURL,
+		URL: buildOriginURL(folgoryURL, o.BaseURL, folgoryBaseURL),
 	}
 	res := o.Pool().Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {
@@ -41,8 +45,6 @@ func (o Folgory) PullPrices(pairs []Pair) []FetchResult {
 	}
 	return o.parseResponse(pairs, res)
 }
-
-const folgoryURL = "https://folgory.com/api/v1"
 
 type folgoryTicker struct {
 	Symbol string          `json:"symbol"`

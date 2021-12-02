@@ -26,7 +26,8 @@ import (
 )
 
 // Gemini URL
-const geminiURL = "https://api.gemini.com/v1/pubticker/%s"
+const geminiBaseURL = "https://api.gemini.com"
+const geminiURL = "%s/v1/pubticker/%s"
 
 type geminiResponse struct {
 	Price string `json:"last"`
@@ -37,6 +38,7 @@ type geminiResponse struct {
 // Gemini origin handler
 type Gemini struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (g *Gemini) localPairName(pair Pair) string {
@@ -44,7 +46,7 @@ func (g *Gemini) localPairName(pair Pair) string {
 }
 
 func (g *Gemini) getURL(pair Pair) string {
-	return fmt.Sprintf(geminiURL, g.localPairName(pair))
+	return buildOriginURL(geminiURL, g.BaseURL, geminiBaseURL, g.localPairName(pair))
 }
 
 func (g Gemini) Pool() query.WorkerPool {

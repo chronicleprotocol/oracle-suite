@@ -25,7 +25,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const uniswapV3URL = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
+const uniswapV3BaseURL = "https://api.thegraph.com"
+const uniswapV3URL = "%s/subgraphs/name/uniswap/uniswap-v3"
 
 type uniswapV3Response struct {
 	Data struct {
@@ -49,6 +50,7 @@ type uniswapV3PairResponse struct {
 
 type UniswapV3 struct {
 	WorkerPool        query.WorkerPool
+	BaseURL           string
 	ContractAddresses ContractAddresses
 }
 
@@ -89,7 +91,7 @@ func (u *UniswapV3) callOne(pair Pair) (*Price, error) {
 	)
 
 	req := &query.HTTPRequest{
-		URL:    uniswapV3URL,
+		URL:    buildOriginURL(uniswapV3URL, u.BaseURL, uniswapV3BaseURL),
 		Method: "POST",
 		Body:   bytes.NewBuffer([]byte(body)),
 	}

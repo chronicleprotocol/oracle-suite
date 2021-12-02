@@ -26,7 +26,8 @@ import (
 )
 
 // Bitstamp URL
-const bitstampURL = "https://www.bitstamp.net/api/v2/ticker/%s"
+const bitstampBaseURL = "https://www.bitstamp.net"
+const bitstampURL = "%s/api/v2/ticker/%s"
 
 type bitstampResponse struct {
 	Ask       string `json:"ask"`
@@ -39,6 +40,7 @@ type bitstampResponse struct {
 // Bitstamp origin handler
 type Bitstamp struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (b *Bitstamp) renameSymbol(symbol string) string {
@@ -50,7 +52,7 @@ func (b *Bitstamp) localPairName(pair Pair) string {
 }
 
 func (b *Bitstamp) getURL(pair Pair) string {
-	return fmt.Sprintf(bitstampURL, b.localPairName(pair))
+	return buildOriginURL(bitstampURL, b.BaseURL, bitstampBaseURL, b.localPairName(pair))
 }
 
 func (b Bitstamp) Pool() query.WorkerPool {
