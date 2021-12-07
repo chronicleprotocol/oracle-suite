@@ -23,6 +23,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	go.cryptoscope.co/ssb v0.2.1
+	go.mindeco.de v1.12.0
 	go.mindeco.de/ssb-refs v0.4.1
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set v0.0.0-20180603214616-504e848d77ea // indirect
 	github.com/flynn/noise v1.0.0 // indirect
+	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -132,21 +134,24 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef // indirect
+	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7 // indirect
 	github.com/whyrusleeping/timecache v0.0.0-20160911033111-cfcb2f1abfee // indirect
+	github.com/zeebo/bencode v1.0.0 // indirect
 	go.cryptoscope.co/luigi v0.3.6-0.20200131144242-3256b54e72c8 // indirect
 	go.cryptoscope.co/margaret v0.4.0 // indirect
 	go.cryptoscope.co/muxrpc/v2 v2.0.10 // indirect
 	go.cryptoscope.co/netwrap v0.1.1 // indirect
 	go.cryptoscope.co/nocomment v0.0.0-20210520094614-fb744e81f810 // indirect
 	go.cryptoscope.co/secretstream v1.2.9 // indirect
-	go.mindeco.de v1.12.0 // indirect
+	go.mindeco.de/ssb-gabbygrove v0.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210816183151-1e6c022a8912 // indirect
+	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
