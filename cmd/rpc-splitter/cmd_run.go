@@ -41,10 +41,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 			ctx, ctxCancel := context.WithCancel(context.Background())
 			defer ctxCancel()
 
-			log, err := logger(opts)
-			if err != nil {
-				return err
-			}
+			log := opts.Logger()
 
 			handler, err := rpcsplitter.NewHandler(opts.EthRPCURLs, log)
 			if err != nil {

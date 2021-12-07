@@ -18,15 +18,16 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	logrusFlag "github.com/makerdao/oracle-suite/pkg/log/logrus/flag"
+	"github.com/makerdao/oracle-suite/internal/config/spire"
+	"github.com/makerdao/oracle-suite/pkg/pflag"
 )
 
 type options struct {
-	LogVerbosity   string
-	LogFormat      logrusFlag.FormatTypeValue
-	ConfigFilePath string
-	Config         Config
-	Version        string
+	pflag.LoggerFlag
+	ConfigFilePath    string
+	Config            Config
+	Version           string
+	TransportOverride string
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -34,28 +35,24 @@ func NewRootCommand(opts *options) *cobra.Command {
 		Use:           "spire",
 		Version:       opts.Version,
 		Short:         "",
-		Long:          ``,
+		Long:          "",
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(
-		&opts.LogVerbosity,
-		"log.verbosity", "v",
-		"info",
-		"verbosity level",
-	)
-	rootCmd.PersistentFlags().Var(
-		&opts.LogFormat,
-		"log.format",
-		"log format",
-	)
+	rootCmd.PersistentFlags().AddFlagSet(pflag.NewLoggerFlagSet(&opts.LoggerFlag))
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.ConfigFilePath,
 		"config",
 		"c",
 		"./config.json",
 		"spire config file",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&opts.TransportOverride,
+		"transport",
+		"",
+		"`"+spire.TransportLibP2P+"|"+spire.TransportLibSSB+"` transport spire connects to",
 	)
 
 	rootCmd.AddCommand(

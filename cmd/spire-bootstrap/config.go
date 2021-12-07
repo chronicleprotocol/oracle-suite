@@ -18,11 +18,8 @@ package main
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/makerdao/oracle-suite/internal/config"
 	transportConfig "github.com/makerdao/oracle-suite/internal/config/transport"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/transport"
 
 	"github.com/makerdao/oracle-suite/pkg/log"
@@ -68,20 +65,10 @@ func PrepareService(ctx context.Context, opts *options) (*Service, error) {
 		return nil, err
 	}
 
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
-	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
-
 	// Services:
 	tra, err := opts.Config.Configure(Dependencies{
 		Context: ctx,
-		Logger:  logger,
+		Logger:  opts.Logger(),
 	})
 	if err != nil {
 		return nil, err

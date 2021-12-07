@@ -18,17 +18,16 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	logrusFlag "github.com/makerdao/oracle-suite/pkg/log/logrus/flag"
+	"github.com/makerdao/oracle-suite/pkg/pflag"
 
 	suite "github.com/makerdao/oracle-suite"
 )
 
 type options struct {
-	Listen       string
-	EnableCORS   bool
-	EthRPCURLs   []string
-	LogVerbosity string
-	LogFormat    logrusFlag.FormatTypeValue
+	Listen     string
+	EnableCORS bool
+	EthRPCURLs []string
+	pflag.LoggerFlag
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -41,17 +40,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(
-		&opts.LogVerbosity,
-		"log.verbosity", "v",
-		"info",
-		"verbosity level",
-	)
-	rootCmd.PersistentFlags().Var(
-		&opts.LogFormat,
-		"log.format",
-		"log format",
-	)
+	rootCmd.PersistentFlags().AddFlagSet(pflag.NewLoggerFlagSet(&opts.LoggerFlag))
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.Listen,
 		"listen",

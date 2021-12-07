@@ -19,8 +19,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/makerdao/oracle-suite/internal/config"
 	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
 	feedsConfig "github.com/makerdao/oracle-suite/internal/config/feeds"
@@ -28,7 +26,6 @@ import (
 	transportConfig "github.com/makerdao/oracle-suite/internal/config/transport"
 	"github.com/makerdao/oracle-suite/pkg/datastore"
 	"github.com/makerdao/oracle-suite/pkg/log"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/spire"
 	"github.com/makerdao/oracle-suite/pkg/transport"
 )
@@ -69,19 +66,30 @@ func (c *Config) ConfigureAgent(d AgentDependencies) (transport.Transport, datas
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	fed, err := c.Feeds.Addresses()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	tra, err := c.Transport.Configure(transportConfig.Dependencies{
-		Context: d.Context,
-		Signer:  sig,
-		Feeds:   fed,
-		Logger:  d.Logger,
-	})
+
+	var tra transport.Transport
+	switch c.Spire.TransportToUse {
+	case spireConfig.TransportLibP2P:
+		tra, err = c.Transport.Configure(transportConfig.Dependencies{
+			Context: d.Context,
+			Signer:  sig,
+			Feeds:   fed,
+			Logger:  d.Logger,
+		})
+	case spireConfig.TransportLibSSB:
+		tra, err = c.Transport.ConfigureSSB()
+	default:
+		return nil, nil, nil, fmt.Errorf("unknown transport: %s", c.Spire.TransportToUse)
+	}
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	dat, err := c.Spire.ConfigureDatastore(spireConfig.DatastoreDependencies{
 		Context:   d.Context,
 		Signer:    sig,
@@ -92,6 +100,7 @@ func (c *Config) ConfigureAgent(d AgentDependencies) (transport.Transport, datas
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	age, err := c.Spire.ConfigureAgent(spireConfig.AgentDependencies{
 		Context:   d.Context,
 		Signer:    sig,
@@ -103,6 +112,7 @@ func (c *Config) ConfigureAgent(d AgentDependencies) (transport.Transport, datas
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	return tra, dat, age, nil
 }
 
@@ -174,21 +184,17 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*AgentServices, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
-
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
+	if opts.TransportOverride != "" {
+		opts.Config.Spire.TransportToUse = opts.TransportOverride
 	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
+	if opts.Config.Spire.TransportToUse == "" {
+		opts.Config.Spire.TransportToUse = spireConfig.DefaultTransport
+	}
 
 	// Services:
 	tra, dat, age, err := opts.Config.ConfigureAgent(AgentDependencies{
 		Context: ctx,
-		Logger:  logger,
+		Logger:  opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Spire configuration: %w", err)

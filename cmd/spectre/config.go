@@ -19,8 +19,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/makerdao/oracle-suite/internal/config"
 	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
 	feedsConfig "github.com/makerdao/oracle-suite/internal/config/feeds"
@@ -28,7 +26,6 @@ import (
 	transportConfig "github.com/makerdao/oracle-suite/internal/config/transport"
 	"github.com/makerdao/oracle-suite/pkg/datastore"
 	"github.com/makerdao/oracle-suite/pkg/log"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/spectre"
 	"github.com/makerdao/oracle-suite/pkg/transport"
 )
@@ -112,20 +109,10 @@ func PrepareServices(ctx context.Context, opts *options) (*Services, error) {
 		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
 
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
-	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
-
 	// Services:
 	tra, dat, spe, err := opts.Config.Configure(Dependencies{
 		Context: ctx,
-		Logger:  logger,
+		Logger:  opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Spectre configuration: %w", err)
