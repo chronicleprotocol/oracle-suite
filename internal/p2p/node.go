@@ -82,10 +82,14 @@ type Node struct {
 }
 
 func NewNode(ctx context.Context, opts ...Options) (*Node, error) {
+	ps, err := pstoremem.NewPeerstore()
+	if err != nil {
+		return nil, fmt.Errorf("libp2p node error, unable to initialize peerstore: %w", err)
+	}
 	n := &Node{
 		ctx:                   ctx,
 		doneCh:                make(chan struct{}),
-		peerstore:             pstoremem.NewPeerstore(),
+		peerstore:             ps,
 		nodeEventHandler:      sets.NewNodeEventHandlerSet(),
 		pubSubEventHandlerSet: sets.NewPubSubEventHandlerSet(),
 		notifeeSet:            sets.NewNotifeeSet(),
@@ -122,7 +126,7 @@ func (n *Node) Start() error {
 
 	go n.contextCancelHandler()
 
-	n.host, err = libp2p.New(n.ctx, append([]libp2p.Option{
+	n.host, err = libp2p.New(append([]libp2p.Option{
 		libp2p.EnableNATService(),
 		libp2p.DisableRelay(),
 		libp2p.Peerstore(n.peerstore),
