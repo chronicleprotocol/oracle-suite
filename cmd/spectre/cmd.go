@@ -19,11 +19,11 @@ import (
 	"github.com/spf13/cobra"
 
 	suite "github.com/makerdao/oracle-suite"
-	"github.com/makerdao/oracle-suite/pkg/pflag"
+	"github.com/makerdao/oracle-suite/pkg/log/logrus/flag"
 )
 
 type options struct {
-	pflag.LoggerFlag
+	flag.LoggerFlag
 	ConfigFilePath string
 	Config         Config
 }
@@ -38,7 +38,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(pflag.NewLoggerFlagSet(&opts.LoggerFlag))
+	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.ConfigFilePath,
 		"config",

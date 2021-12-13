@@ -18,7 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/makerdao/oracle-suite/pkg/pflag"
+	"github.com/makerdao/oracle-suite/pkg/log/logrus/flag"
 )
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -35,7 +35,7 @@ with aggregates that increase reliability in the DeFi environment.`,
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(pflag.NewLoggerFlagSet(&opts.LoggerFlag))
+	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.ConfigFilePath,
 		"config",

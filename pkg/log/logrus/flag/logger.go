@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package pflag
+package flag
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/makerdao/oracle-suite/pkg/log"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
-	logrusFormatter "github.com/makerdao/oracle-suite/pkg/log/logrus/formatter"
+	logrus2 "github.com/makerdao/oracle-suite/pkg/log/logrus"
+	formatter2 "github.com/makerdao/oracle-suite/pkg/log/logrus/formatter"
 )
 
 type LoggerFlag struct {
@@ -52,7 +52,7 @@ func (logger *LoggerFlag) Logger() log.Logger {
 	l := logrus.New()
 	l.SetLevel(logger.Verbosity())
 	l.SetFormatter(logger.Formatter())
-	return logLogrus.New(l)
+	return logrus2.New(l)
 }
 
 const defaultVerbosity = logrus.WarnLevel
@@ -103,10 +103,10 @@ func (f *verbosity) Verbosity() logrus.Level {
 // custom formatters to this map.
 var formattersMap = map[string]func() logrus.Formatter{
 	"text": func() logrus.Formatter {
-		return &logrusFormatter.XFilterFormatter{Formatter: &logrus.TextFormatter{}}
+		return &formatter2.XFilterFormatter{Formatter: &logrus.TextFormatter{}}
 	},
 	"json": func() logrus.Formatter {
-		return &logrusFormatter.JSONFormatter{}
+		return &formatter2.JSONFormatter{}
 	},
 }
 
