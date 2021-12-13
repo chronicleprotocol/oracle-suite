@@ -31,6 +31,7 @@ import (
 	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/spectre"
 	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/makerdao/oracle-suite/pkg/transport/messages"
 )
 
 type Config struct {
@@ -63,7 +64,9 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, datastore.Datas
 		Signer:  sig,
 		Feeds:   fed,
 		Logger:  d.Logger,
-	})
+	},
+		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+	)
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -33,6 +33,7 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/gofer"
 	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/makerdao/oracle-suite/pkg/transport/messages"
 
 	"github.com/makerdao/oracle-suite/pkg/log"
 )
@@ -76,7 +77,9 @@ func (c *Config) Configure(d Dependencies, noGoferRPC bool) (transport.Transport
 		Signer:  sig,
 		Feeds:   fed,
 		Logger:  d.Logger,
-	})
+	},
+		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+	)
 	if err != nil {
 		return nil, nil, nil, err
 	}
