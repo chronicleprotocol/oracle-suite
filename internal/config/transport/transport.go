@@ -21,6 +21,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -75,7 +76,7 @@ type BootstrapDependencies struct {
 }
 
 func (c *Transport) ConfigureSSB() (transport.Transport, error) {
-	return nil, nil
+	return nil, errors.New("ssb not yet implemented")
 }
 
 func (c *Transport) Configure(d Dependencies) (transport.Transport, error) {
