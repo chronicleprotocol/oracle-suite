@@ -21,6 +21,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.3.3
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	go.cryptoscope.co/ssb v0.2.1
 	go.mindeco.de/ssb-refs v0.4.1
@@ -126,7 +127,6 @@ require (
 	github.com/rjeczalik/notify v0.9.1 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ssb-ngi-pointer/go-metafeed v0.0.0-20210727102809-98707678965d // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
