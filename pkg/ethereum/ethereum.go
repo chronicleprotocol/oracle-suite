@@ -43,6 +43,9 @@ var EmptyAddress Address
 // HexToBytes returns bytes from hex string.
 var HexToBytes = common.FromHex
 
+// HexToHash returns Hash from hex string.
+var HexToHash = common.HexToHash
+
 // SHA3Hash calculates SHA3 hash.
 func SHA3Hash(b []byte) []byte {
 	return crypto.Keccak256Hash(b).Bytes()

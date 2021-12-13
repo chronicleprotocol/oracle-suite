@@ -54,11 +54,11 @@ const maxConnections = 150
 // Parameters used to calculate peer scoring and rate limiter values:
 const maxBytesPerSecond float64 = 10 * 1024 * 1024 // 10MB/s
 const priceUpdateInterval = time.Minute
-const minAssetPairs = 10                   // below that, score becomes negative
-const maxAssetPairs = 100                  // it limits the maximum possible score only, not the number of supported pairs
-const minEventsPerSecond = 1 / (3600 * 24) // below that, score becomes negative
-const maxEventsPerSecond = 1               // it limits the maximum possible score only, not the number of events
-const maxInvalidMsgsPerHour float64 = 60   // per topic
+const minAssetPairs = 10                 // below that, score becomes negative
+const maxAssetPairs = 100                // it limits the maximum possible score only, not the number of supported pairs
+const minEventsPerSecond = 0.1           // below that, score becomes negative
+const maxEventsPerSecond = 1             // it limits the maximum possible score only, not the number of events
+const maxInvalidMsgsPerHour float64 = 60 // per topic
 
 // defaultListenAddrs is the list of default multiaddresses on which node will
 // be listening on.
@@ -67,14 +67,18 @@ var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
 // P2P is the wrapper for the Node that implements the transport.Transport
 // interface.
 type P2P struct {
-	node *p2p.Node
-	mode Mode
+	node   *p2p.Node
+	mode   Mode
+	topics map[string]transport.Message
 }
 
 // Config is the configuration for the P2P transport.
 type Config struct {
 	// Mode describes in what mode the node should operate.
 	Mode Mode
+	// Topics is a list of subscribed topics. A value of the map a type of
+	// message given as a nil pointer, e.g.: (*Message)(nil).
+	Topics map[string]transport.Message
 	// PeerPrivKey is a key used for peer identity. If empty, then random key
 	// is used. Ignored in bootstrap mode.
 	PeerPrivKey crypto.PrivKey
@@ -205,7 +209,7 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 		return nil, fmt.Errorf("P2P transport error, unable to initialize node: %w", err)
 	}
 
-	return &P2P{node: n, mode: cfg.Mode}, nil
+	return &P2P{node: n, mode: cfg.Mode, topics: cfg.Topics}, nil
 }
 
 // Start implements the transport.Transport interface.
@@ -215,11 +219,7 @@ func (p *P2P) Start() error {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
 	}
 	if p.mode == ClientMode {
-		topics := map[string]transport.Message{
-			//messages.PriceMessageName: (*messages.Price)(nil),
-			messages.EventMessageName: (*messages.Event)(nil),
-		}
-		for topic, typ := range topics {
+		for topic, typ := range p.topics {
 			err := p.subscribe(topic, typ)
 			if err != nil {
 				return err

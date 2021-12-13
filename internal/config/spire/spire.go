@@ -76,7 +76,6 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 		Datastore: d.Datastore,
 		Transport: d.Transport,
 		Signer:    d.Signer,
-		Network:   "tcp",
 		Address:   c.RPC.Address,
 		Logger:    d.Logger,
 	})
@@ -89,7 +88,6 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 func (c *Spire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
 	return spireClientFactory(d.Context, spire.ClientConfig{
 		Signer:  d.Signer,
-		Network: "tcp",
 		Address: c.RPC.Address,
 	})
 }

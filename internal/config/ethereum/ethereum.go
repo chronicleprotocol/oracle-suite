@@ -26,10 +26,9 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/makerdao/oracle-suite/internal/rpcsplitter"
-	"github.com/makerdao/oracle-suite/pkg/log/null"
-
 	"github.com/makerdao/oracle-suite/pkg/ethereum"
 	"github.com/makerdao/oracle-suite/pkg/ethereum/geth"
+	"github.com/makerdao/oracle-suite/pkg/log/null"
 )
 
 const splitterVirtualHost = "makerdao-splitter"
@@ -72,7 +71,7 @@ func (c *Ethereum) ConfigureSigner() (ethereum.Signer, error) {
 	return geth.NewSigner(account), nil
 }
 
-func (c *Ethereum) ConfigureEthereumClient(signer ethereum.Signer) (*geth.Client, error) {
+func (c *Ethereum) ConfigureRPCClient() (geth.EthClient, error) {
 	var endpoints []string
 	switch v := c.RPC.(type) {
 	case string:
@@ -87,7 +86,11 @@ func (c *Ethereum) ConfigureEthereumClient(signer ethereum.Signer) (*geth.Client
 	if len(endpoints) == 0 {
 		return nil, errors.New("value of the RPC key must be string or array of strings")
 	}
-	client, err := ethClientFactory(endpoints)
+	return ethClientFactory(endpoints)
+}
+
+func (c *Ethereum) ConfigureEthereumClient(signer ethereum.Signer) (*geth.Client, error) {
+	client, err := c.ConfigureRPCClient()
 	if err != nil {
 		return nil, err
 	}

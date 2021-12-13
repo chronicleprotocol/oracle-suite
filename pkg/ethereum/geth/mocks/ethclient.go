@@ -68,3 +68,13 @@ func (e *EthClient) NetworkID(ctx context.Context) (*big.Int, error) {
 	args := e.Called(ctx)
 	return args.Get(0).(*big.Int), args.Error(1)
 }
+
+func (e *EthClient) BlockNumber(ctx context.Context) (uint64, error) {
+	args := e.Called(ctx)
+	return args.Get(0).(uint64), args.Error(1)
+}
+
+func (e *EthClient) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	args := e.Called(ctx)
+	return args.Get(0).([]types.Log), args.Error(1)
+}

@@ -52,7 +52,6 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 		assert.Equal(t, ds, cfg.Datastore)
 		assert.Equal(t, transport, cfg.Transport)
 		assert.Equal(t, signer, cfg.Signer)
-		assert.Equal(t, "tcp", cfg.Network)
 		assert.Equal(t, "1.2.3.4:1234", cfg.Address)
 		assert.Equal(t, logger, cfg.Logger)
 		return &spire.Agent{}, nil
@@ -84,7 +83,6 @@ func TestSpire_ConfigureClient(t *testing.T) {
 	spireClientFactory = func(ctx context.Context, cfg spire.ClientConfig) (*spire.Client, error) {
 		assert.NotNil(t, ctx)
 		assert.Equal(t, signer, cfg.Signer)
-		assert.Equal(t, "tcp", cfg.Network)
 		assert.Equal(t, "1.2.3.4:1234", cfg.Address)
 		return &spire.Client{}, nil
 	}

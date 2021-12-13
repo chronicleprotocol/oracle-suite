@@ -62,7 +62,7 @@ type BootstrapDependencies struct {
 	Logger  log.Logger
 }
 
-func (c *Transport) Configure(d Dependencies) (transport.Transport, error) {
+func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (transport.Transport, error) {
 	peerPrivKey, err := c.generatePrivKey()
 	if err != nil {
 		return nil, err
@@ -70,6 +70,7 @@ func (c *Transport) Configure(d Dependencies) (transport.Transport, error) {
 	cfg := p2p.Config{
 		Mode:             p2p.ClientMode,
 		PeerPrivKey:      peerPrivKey,
+		Topics:           t,
 		MessagePrivKey:   ethkey.NewPrivKey(d.Signer),
 		ListenAddrs:      c.P2P.ListenAddrs,
 		BootstrapAddrs:   c.P2P.BootstrapAddrs,

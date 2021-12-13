@@ -81,6 +81,8 @@ type EthClient interface {
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
 	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 	NetworkID(ctx context.Context) (*big.Int, error)
+	BlockNumber(ctx context.Context) (uint64, error)
+	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error)
 }
 
 // Client implements the ethereum.Client interface.
