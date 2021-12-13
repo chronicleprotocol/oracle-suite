@@ -30,7 +30,7 @@ func TestPubKey_Equals(t *testing.T) {
 	pub1 := NewPubKey(testAddress1)
 	pub2 := NewPubKey(testAddress2)
 
-	assert.True(t, pub1.Equals(pub1))
+	assert.True(t, pub1.Equals(pub1)) //nolint:gocritic
 	assert.False(t, pub1.Equals(pub2))
 }
 
