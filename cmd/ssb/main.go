@@ -130,11 +130,11 @@ func main() {
 		println(string(b))
 	}
 
-	// invFeed, err := invite.ParseLegacyToken("localhost:8008:@KM4CFRlL8LcUMc0OgNNZov7Nz9oKac3HuRY4IeMIkCc=.ed25519~dQ64FuGjIvAIOu798nD/HY/R1t/tivQD9QR++VVBnpM=")
-	// if err != nil {
-	// 	handle(err)
-	// }
-	// println(invFeed.String())
+	invFeed, err := invite.ParseLegacyToken("localhost:8008:@KM4CFRlL8LcUMc0OgNNZov7Nz9oKac3HuRY4IeMIkCc=.ed25519~dQ64FuGjIvAIOu798nD/HY/R1t/tivQD9QR++VVBnpM=")
+	if err != nil {
+		handle(err)
+	}
+	println(invFeed.String())
 }
 
 type FeedAssetPrice struct {

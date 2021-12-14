@@ -21,46 +21,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/txt"
 )
 
 type Options struct {
 	InputFile  string
 	OutputFile string
-	Index      int
-}
-
-func Execute() error {
-	var opts Options
-	cmd := &cobra.Command{Use: "keeman"}
-	cmd.PersistentFlags().StringVarP(
-		&opts.InputFile,
-		"input",
-		"i",
-		"",
-		"input file path",
-	)
-	cmd.PersistentFlags().StringVarP(
-		&opts.OutputFile,
-		"output",
-		"o",
-		"",
-		"output file path",
-	)
-	cmd.PersistentFlags().IntVarP(
-		&opts.Index,
-		"index",
-		"n",
-		0,
-		"data index",
-	)
-	cmd.AddCommand(
-		NewHd(&opts),
-		NewList(&opts),
-	)
-	return cmd.Execute()
+	Verbose    bool
 }
 
 func lineFromFile(filename string, idx int) (string, error) {

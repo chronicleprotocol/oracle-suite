@@ -16,15 +16,44 @@
 package main
 
 import (
-	"log"
 	"os"
+
+	cobra2 "github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/cobra"
 )
 
 func main() {
-	if err := cobra.Execute(); err != nil {
-		log.Println(err)
+	var opts = cobra.Options{}
+	cmd := &cobra2.Command{Use: "keeman"}
+	cmd.PersistentFlags().StringVarP(
+		&opts.InputFile,
+		"input",
+		"i",
+		"",
+		"input file path",
+	)
+	cmd.PersistentFlags().StringVarP(
+		&opts.OutputFile,
+		"output",
+		"o",
+		"",
+		"output file path",
+	)
+	cmd.PersistentFlags().BoolVarP(
+		&opts.Verbose,
+		"verbose",
+		"v",
+		false,
+		"verbose logging",
+	)
+	cmd.AddCommand(
+		cobra.DeriveFromHD(&opts),
+		cobra.GenerateSeed(&opts),
+		cobra.NewList(&opts),
+	)
+	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+	os.Exit(0)
 }

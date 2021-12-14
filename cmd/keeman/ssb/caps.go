@@ -17,11 +17,9 @@ package ssb
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"go.cryptoscope.co/ssb"
 	refs "go.mindeco.de/ssb-refs"
 
@@ -44,8 +42,8 @@ func (c Caps) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func NewCaps(privateKey *ecdsa.PrivateKey) (*Caps, error) {
-	randBytes, err := rand.SeededRandBytesGen(crypto.FromECDSA(privateKey), 32)
+func NewCaps(seed []byte) (*Caps, error) {
+	randBytes, err := rand.SeededRandBytesGen(seed, 32)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +53,9 @@ func NewCaps(privateKey *ecdsa.PrivateKey) (*Caps, error) {
 	}, nil
 }
 
-func NewKeyPair(privateKey *ecdsa.PrivateKey) (ssb.KeyPair, error) {
+func NewKeyPair(b []byte) (ssb.KeyPair, error) {
 	return ssb.NewKeyPair(
-		bytes.NewReader(crypto.FromECDSA(privateKey)),
+		bytes.NewReader(b),
 		refs.RefAlgoFeedSSB1,
 	)
 }
