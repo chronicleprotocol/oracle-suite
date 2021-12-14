@@ -19,13 +19,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/makerdao/oracle-suite/internal/config"
-	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
-	goferConfig "github.com/makerdao/oracle-suite/internal/config/gofer"
-	"github.com/makerdao/oracle-suite/internal/gofer/marshal"
-	pkgGofer "github.com/makerdao/oracle-suite/pkg/gofer"
-	"github.com/makerdao/oracle-suite/pkg/gofer/rpc"
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/internal/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
+	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
+	"github.com/chronicleprotocol/oracle-suite/internal/gofer/marshal"
+	pkgGofer "github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/rpc"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 type Config struct {

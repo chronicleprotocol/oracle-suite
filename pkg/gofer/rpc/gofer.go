@@ -20,7 +20,7 @@ import (
 	"errors"
 	"net/rpc"
 
-	"github.com/makerdao/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 )
 
 var ErrNotStarted = errors.New("gofer RPC client is not started")

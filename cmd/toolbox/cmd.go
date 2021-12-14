@@ -18,7 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	suite "github.com/makerdao/oracle-suite"
+	suite "github.com/chronicleprotocol/oracle-suite"
 )
 
 type options struct {

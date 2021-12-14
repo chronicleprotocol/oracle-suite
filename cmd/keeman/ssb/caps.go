@@ -13,51 +13,51 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package ssb
 
 import (
-	"crypto/ed25519"
+	"bytes"
+	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
-	"log"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
-	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
+	"go.cryptoscope.co/ssb"
+	refs "go.mindeco.de/ssb-refs"
+
+	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/rand"
 )
 
-type ssb struct {
-	Type    string
-	Public  []byte
-	Private []byte
+type Caps struct {
+	Shs  []byte
+	Sign []byte
 }
 
-func (s ssb) MarshalJSON() ([]byte, error) {
-	pub := base64.URLEncoding.EncodeToString(s.Public)
+func (c Caps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Curve   string `json:"curve"`
-		Public  string `json:"public"`
-		Private string `json:"private"`
-		ID      string `json:"id"`
+		Shs    string `json:"shs"`
+		Sign   string `json:"sign,omitempty"`
+		Invite string `json:"invite,omitempty"`
 	}{
-		Curve:   s.Type,
-		Public:  pub + "." + s.Type,
-		Private: base64.URLEncoding.EncodeToString(s.Private) + "." + s.Type,
-		ID:      "@" + pub + "." + s.Type,
+		Shs:  base64.URLEncoding.EncodeToString(c.Shs),
+		Sign: base64.URLEncoding.EncodeToString(c.Sign),
 	})
 }
 
-func genSsb(wallet *hdwallet.Wallet, path accounts.DerivationPath) (*ssb, error) {
-	path = setPurpose(path, PathPurposeSsb)
-	log.Printf("ssb path: %s", path)
-	k, err := deriveKey(wallet, path)
+func NewCaps(privateKey *ecdsa.PrivateKey) (*Caps, error) {
+	randBytes, err := rand.SeededRandBytesGen(crypto.FromECDSA(privateKey), 32)
 	if err != nil {
 		return nil, err
 	}
-	a := ed25519.NewKeyFromSeed(crypto.FromECDSA(k))
-	return &ssb{
-		Type:    "ed25519",
-		Private: a,
-		Public:  a.Public().(ed25519.PublicKey),
+	return &Caps{
+		Shs:  randBytes(),
+		Sign: randBytes(),
 	}, nil
+}
+
+func NewKeyPair(privateKey *ecdsa.PrivateKey) (ssb.KeyPair, error) {
+	return ssb.NewKeyPair(
+		bytes.NewReader(crypto.FromECDSA(privateKey)),
+		refs.RefAlgoFeedSSB1,
+	)
 }

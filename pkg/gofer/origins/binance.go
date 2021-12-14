@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/makerdao/oracle-suite/internal/query"
+	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
 const binanceURL = "https://www.binance.com/api/v3/ticker/24hr"

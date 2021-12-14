@@ -27,7 +27,7 @@ import (
 
 	gethRPC "github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 const LoggerTag = "RPCSPLITTER"

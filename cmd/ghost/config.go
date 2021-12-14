@@ -20,19 +20,19 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/makerdao/oracle-suite/internal/config"
-	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
-	feedsConfig "github.com/makerdao/oracle-suite/internal/config/feeds"
-	ghostConfig "github.com/makerdao/oracle-suite/internal/config/ghost"
-	goferConfig "github.com/makerdao/oracle-suite/internal/config/gofer"
-	transportConfig "github.com/makerdao/oracle-suite/internal/config/transport"
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/ghost"
-	"github.com/makerdao/oracle-suite/pkg/gofer"
-	"github.com/makerdao/oracle-suite/pkg/transport"
-	"github.com/makerdao/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/internal/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
+	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
+	ghostConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ghost"
+	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
+	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ghost"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 type Config struct {

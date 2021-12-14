@@ -22,10 +22,10 @@ import (
 	"net/http"
 	"net/rpc"
 
-	"github.com/makerdao/oracle-suite/pkg/datastore"
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/log"
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 const AgentLoggerTag = "SPIRE_AGENT"

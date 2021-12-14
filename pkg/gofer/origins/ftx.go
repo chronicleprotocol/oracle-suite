@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/makerdao/oracle-suite/internal/query"
+	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
 type Ftx struct {

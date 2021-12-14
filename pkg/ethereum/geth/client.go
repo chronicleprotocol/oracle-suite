@@ -29,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	pkgEthereum "github.com/makerdao/oracle-suite/pkg/ethereum"
+	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 const (

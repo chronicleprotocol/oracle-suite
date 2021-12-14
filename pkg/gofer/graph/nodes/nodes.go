@@ -15,7 +15,7 @@
 
 package nodes
 
-import "github.com/makerdao/oracle-suite/pkg/gofer"
+import "github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 
 // Node represents generics node in a graph.
 type Node interface {

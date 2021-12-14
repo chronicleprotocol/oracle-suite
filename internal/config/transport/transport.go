@@ -26,12 +26,12 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 
-	suite "github.com/makerdao/oracle-suite"
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/log"
-	"github.com/makerdao/oracle-suite/pkg/transport"
-	"github.com/makerdao/oracle-suite/pkg/transport/p2p"
-	"github.com/makerdao/oracle-suite/pkg/transport/p2p/crypto/ethkey"
+	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p/crypto/ethkey"
 )
 
 var p2pTransportFactory = func(ctx context.Context, cfg p2p.Config) (transport.Transport, error) {

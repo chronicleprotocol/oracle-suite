@@ -24,10 +24,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/oracle"
-	oracleGeth "github.com/makerdao/oracle-suite/pkg/oracle/geth"
-	"github.com/makerdao/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/oracle"
+	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/oracle/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 func NewMedianCmd(opts *options) *cobra.Command {

@@ -18,11 +18,11 @@ package main
 import (
 	"context"
 
-	"github.com/makerdao/oracle-suite/internal/config"
-	transportConfig "github.com/makerdao/oracle-suite/internal/config/transport"
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/internal/config"
+	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 type Config struct {

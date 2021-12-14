@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	suite "github.com/makerdao/oracle-suite"
-	"github.com/makerdao/oracle-suite/internal/gofer/marshal"
+	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/internal/gofer/marshal"
 )
 
 // exitCode to be returned by the application.

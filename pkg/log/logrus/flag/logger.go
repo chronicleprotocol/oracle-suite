@@ -22,26 +22,26 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 
-	"github.com/makerdao/oracle-suite/pkg/log"
-	logrus2 "github.com/makerdao/oracle-suite/pkg/log/logrus"
-	formatter2 "github.com/makerdao/oracle-suite/pkg/log/logrus/formatter"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	logrus2 "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/formatter"
 )
 
 type LoggerFlag struct {
-	verbosity
-	formatter
+	verbosityFlag
+	formatterFlag
 }
 
 func NewLoggerFlagSet(logger *LoggerFlag) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("log", pflag.PanicOnError)
 	fs.VarP(
-		&logger.verbosity,
+		&logger.verbosityFlag,
 		"log.verbosity",
 		"v",
 		"verbosity level",
 	)
 	fs.Var(
-		&logger.formatter,
+		&logger.formatterFlag,
 		"log.format",
 		"log format",
 	)
@@ -57,13 +57,13 @@ func (logger *LoggerFlag) Logger() log.Logger {
 
 const defaultVerbosity = logrus.WarnLevel
 
-type verbosity struct {
+type verbosityFlag struct {
 	wasSet    bool
 	verbosity logrus.Level
 }
 
 // String implements the pflag.Value interface.
-func (f *verbosity) String() string {
+func (f *verbosityFlag) String() string {
 	if !f.wasSet {
 		return defaultVerbosity.String()
 	}
@@ -71,7 +71,7 @@ func (f *verbosity) String() string {
 }
 
 // Set implements the pflag.Value interface.
-func (f *verbosity) Set(v string) (err error) {
+func (f *verbosityFlag) Set(v string) (err error) {
 	f.verbosity, err = logrus.ParseLevel(v)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (f *verbosity) Set(v string) (err error) {
 }
 
 // Type implements the pflag.Value interface.
-func (f *verbosity) Type() string {
+func (f *verbosityFlag) Type() string {
 	var s string
 	for _, l := range logrus.AllLevels {
 		if len(s) > 0 {
@@ -92,7 +92,7 @@ func (f *verbosity) Type() string {
 	return s
 }
 
-func (f *verbosity) Verbosity() logrus.Level {
+func (f *verbosityFlag) Verbosity() logrus.Level {
 	if f.verbosity == 0 {
 		return defaultVerbosity
 	}
@@ -103,23 +103,23 @@ func (f *verbosity) Verbosity() logrus.Level {
 // custom formatters to this map.
 var formattersMap = map[string]func() logrus.Formatter{
 	"text": func() logrus.Formatter {
-		return &formatter2.XFilterFormatter{Formatter: &logrus.TextFormatter{}}
+		return &formatter.XFilterFormatter{Formatter: &logrus.TextFormatter{}}
 	},
 	"json": func() logrus.Formatter {
-		return &formatter2.JSONFormatter{}
+		return &formatter.JSONFormatter{}
 	},
 }
 
 const defaultFormatter = "text"
 
 // formatter implements pflag.Value. It represents a flag that allow
-// to choose a different logrus formatter.
-type formatter struct {
+// to choose a different logrus formatterFlag.
+type formatterFlag struct {
 	format string
 }
 
 // String implements the pflag.Value interface.
-func (f *formatter) String() string {
+func (f *formatterFlag) String() string {
 	if f.format == "" {
 		return defaultFormatter
 	}
@@ -127,7 +127,7 @@ func (f *formatter) String() string {
 }
 
 // Set implements the pflag.Value interface.
-func (f *formatter) Set(v string) error {
+func (f *formatterFlag) Set(v string) error {
 	v = strings.ToLower(v)
 	if _, ok := formattersMap[v]; !ok {
 		return fmt.Errorf("unsupported format")
@@ -137,12 +137,12 @@ func (f *formatter) Set(v string) error {
 }
 
 // Type implements the pflag.Value interface.
-func (f *formatter) Type() string {
+func (f *formatterFlag) Type() string {
 	return "text|json"
 }
 
 // Formatter returns the logrus.Formatter for selected type.
-func (f *formatter) Formatter() logrus.Formatter {
+func (f *formatterFlag) Formatter() logrus.Formatter {
 	if f.format == "" {
 		return formattersMap[defaultFormatter]()
 	}

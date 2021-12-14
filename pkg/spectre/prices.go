@@ -22,8 +22,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/makerdao/oracle-suite/pkg/oracle"
-	"github.com/makerdao/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 // prices contains a list of messages.Price's for a single asset pair.

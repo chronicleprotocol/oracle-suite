@@ -23,11 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	datastoreMemory "github.com/makerdao/oracle-suite/pkg/datastore/memory"
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	ethereumMocks "github.com/makerdao/oracle-suite/pkg/ethereum/mocks"
-	"github.com/makerdao/oracle-suite/pkg/log/null"
-	"github.com/makerdao/oracle-suite/pkg/spectre"
+	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/datastore/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
 )
 
 func TestSpectre_Configure(t *testing.T) {

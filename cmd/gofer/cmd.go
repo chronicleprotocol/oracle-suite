@@ -18,7 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/makerdao/oracle-suite/pkg/log/logrus/flag"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
 func NewRootCommand(opts *options) *cobra.Command {

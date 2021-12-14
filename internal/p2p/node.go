@@ -35,10 +35,10 @@ import (
 	swarm "github.com/libp2p/go-libp2p-swarm"
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/makerdao/oracle-suite/internal/p2p/sets"
+	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
 
-	"github.com/makerdao/oracle-suite/pkg/log/null"
-	pkgTransport "github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 var ErrConnectionClosed = errors.New("connection is closed")

@@ -16,8 +16,8 @@
 package datastore
 
 import (
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 type FeederPrice struct {

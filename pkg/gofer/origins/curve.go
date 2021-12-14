@@ -27,7 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
-	pkgEthereum "github.com/makerdao/oracle-suite/pkg/ethereum"
+	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 //go:embed curve_abi.json

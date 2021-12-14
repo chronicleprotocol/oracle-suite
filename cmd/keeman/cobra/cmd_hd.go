@@ -13,21 +13,6 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
-//
-//  This program is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU Affero General Public License as
-//  published by the Free Software Foundation, either version 3 of the
-//  License, or (at your option) any later version.
-//
-//  This program is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU Affero General Public License for more details.
-//
-//  You should have received a copy of the GNU Affero General Public License
-//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 package cobra
 
 import (
@@ -39,13 +24,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/spf13/cobra"
 
-	"github.com/makerdao/oracle-suite/keeman/eth"
-	"github.com/makerdao/oracle-suite/keeman/rand"
-	"github.com/makerdao/oracle-suite/keeman/ssb"
+	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/eth"
+	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/rand"
+	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/ssb"
 )
 
 const (
@@ -80,7 +66,9 @@ const (
 func NewHd(opts *Options) *cobra.Command {
 	var prefix, password, format string
 	cmd := &cobra.Command{
-		Use: "hd [--prefix path] [--format eth|ssb|b32] path...",
+		Use:     "hd [--prefix path] [--format eth|ssb|b32] [--password] path...",
+		Aliases: []string{"derive", "der", "d"},
+		Short:   "Generate a key pair from the provided mnemonic phrase",
 		RunE: func(_ *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				args = []string{"0"}
@@ -153,6 +141,8 @@ func NewHd(opts *Options) *cobra.Command {
 						return err
 					}
 					fmt.Println(string(j))
+				case FormatPrivHex:
+					fmt.Println(hexutil.Encode(crypto.FromECDSA(privateKey)))
 				}
 			}
 			return nil
@@ -185,4 +175,5 @@ const (
 	FormatSSBSHS  = "shs"
 	FormatSSBCaps = "caps"
 	FormatBytes32 = "b32"
+	FormatPrivHex = "privhex"
 )

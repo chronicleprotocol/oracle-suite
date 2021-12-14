@@ -10,7 +10,7 @@ To install it, you'll first need Go installed on your machine. Then you can use
 standard Go command:
 
 ```bash
-go get -u github.com/makerdao/oracle-suite/cmd/spire
+go get -u github.com/chronicleprotocol/oracle-suite/cmd/spire
 ```
 
 Alternatively, you can build Spire using `Makefile` directly from the repository:

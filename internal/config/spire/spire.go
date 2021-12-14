@@ -18,12 +18,12 @@ package spire
 import (
 	"context"
 
-	"github.com/makerdao/oracle-suite/pkg/datastore"
-	datastoreMemory "github.com/makerdao/oracle-suite/pkg/datastore/memory"
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/log"
-	"github.com/makerdao/oracle-suite/pkg/spire"
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
+	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/datastore/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 //nolint

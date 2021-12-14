@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	oracleGeth "github.com/makerdao/oracle-suite/pkg/oracle/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/oracle/geth"
 )
 
 func NewSpectreCmd(opts *options) *cobra.Command {

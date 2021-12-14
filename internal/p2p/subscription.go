@@ -23,8 +23,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
-	"github.com/makerdao/oracle-suite/internal/p2p/sets"
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 var ErrNilMessage = errors.New("message is nil")

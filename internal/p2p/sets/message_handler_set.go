@@ -18,7 +18,7 @@ package sets
 import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 // MessageHandler can ba implemented by type that supports handling the PubSub

@@ -25,7 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
-	pkgEthereum "github.com/makerdao/oracle-suite/pkg/ethereum"
+	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 // The three values that can be queried:

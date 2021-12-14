@@ -23,7 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/makerdao/oracle-suite/keeman/txt"
+	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/txt"
 )
 
 type Options struct {
@@ -34,7 +34,7 @@ type Options struct {
 
 func Execute() error {
 	var opts Options
-	cmd := NewRoot(&opts)
+	cmd := &cobra.Command{Use: "keeman"}
 	cmd.PersistentFlags().StringVarP(
 		&opts.InputFile,
 		"input",
@@ -58,40 +58,9 @@ func Execute() error {
 	)
 	cmd.AddCommand(
 		NewHd(&opts),
+		NewList(&opts),
 	)
 	return cmd.Execute()
-}
-
-func NewRoot(opts *Options) *cobra.Command {
-	var all bool
-	cmd := &cobra.Command{
-		RunE: func(_ *cobra.Command, args []string) error {
-			if all {
-				lines, err := linesFromFile(opts.InputFile)
-				if err != nil {
-					return err
-				}
-				for _, l := range lines {
-					printLine(l)
-				}
-				return nil
-			}
-			l, err := lineFromFile(opts.InputFile, opts.Index)
-			if err != nil {
-				return err
-			}
-			printLine(l)
-			return nil
-		},
-	}
-	cmd.Flags().BoolVarP(
-		&all,
-		"all",
-		"a",
-		false,
-		"all data",
-	)
-	return cmd
 }
 
 func lineFromFile(filename string, idx int) (string, error) {
@@ -114,7 +83,7 @@ func linesFromFile(filename string) ([]string, error) {
 
 func selectLine(lines []string, lineIdx int) (string, error) {
 	if len(lines) <= lineIdx {
-		return "", fmt.Errorf("data needs %d lines", lineIdx+1)
+		return "", fmt.Errorf("data needs %d line(s)", lineIdx+1)
 	}
 	return lines[lineIdx], nil
 }
@@ -129,7 +98,7 @@ func inputFileOrStdin(inputFilePath string) (*os.File, func() error, error) {
 	} else if fi, err := os.Stdin.Stat(); err != nil {
 		return nil, nil, err
 	} else if fi.Size() <= 0 && fi.Mode()&os.ModeNamedPipe == 0 {
-		return nil, nil, errors.New("stdin is empty and is not a named pipe")
+		return nil, nil, errors.New("no input file provided and stdin is empty")
 	}
 	return os.Stdin, func() error { return nil }, nil
 }

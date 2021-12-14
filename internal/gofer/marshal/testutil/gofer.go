@@ -19,9 +19,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/makerdao/oracle-suite/pkg/gofer"
-	"github.com/makerdao/oracle-suite/pkg/gofer/graph"
-	"github.com/makerdao/oracle-suite/pkg/gofer/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/graph"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/graph/nodes"
 )
 
 func Gofer(ps ...gofer.Pair) gofer.Gofer {

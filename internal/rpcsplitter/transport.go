@@ -21,7 +21,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 // Transport implements the http.RoundTripper interface. It creates a virtual

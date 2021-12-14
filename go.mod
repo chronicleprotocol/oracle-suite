@@ -1,4 +1,4 @@
-module github.com/makerdao/oracle-suite
+module github.com/chronicleprotocol/oracle-suite
 
 go 1.17
 

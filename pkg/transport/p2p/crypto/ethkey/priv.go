@@ -22,7 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/crypto"
 	cryptoPB "github.com/libp2p/go-libp2p-core/crypto/pb"
 
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 type PrivKey struct {

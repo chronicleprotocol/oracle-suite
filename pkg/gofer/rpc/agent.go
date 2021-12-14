@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"net/rpc"
 
-	"github.com/makerdao/oracle-suite/pkg/gofer"
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 const AgentLoggerTag = "GOFER_AGENT"

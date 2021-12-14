@@ -20,7 +20,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 var ErrNotSubscribed = errors.New("topic is not subscribed")

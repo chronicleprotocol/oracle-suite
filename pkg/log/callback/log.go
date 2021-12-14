@@ -18,7 +18,7 @@ package callback
 import (
 	"fmt"
 
-	"github.com/makerdao/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 type LogFunc func(level log.Level, fields log.Fields, log string)

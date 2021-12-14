@@ -67,7 +67,7 @@ linters-settings:
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    local-prefixes: github.com/makerdao/oracle-suite
+    local-prefixes: github.com/chronicleprotocol/oracle-suite
   # TODO: replace `make test-license` with goheader
   #goheader:
   #  template-path: ./LICENSE_HEADER

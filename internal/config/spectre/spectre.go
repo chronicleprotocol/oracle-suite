@@ -19,13 +19,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/makerdao/oracle-suite/pkg/datastore"
-	datastoreMemory "github.com/makerdao/oracle-suite/pkg/datastore/memory"
-	"github.com/makerdao/oracle-suite/pkg/ethereum"
-	"github.com/makerdao/oracle-suite/pkg/log"
-	oracleGeth "github.com/makerdao/oracle-suite/pkg/oracle/geth"
-	"github.com/makerdao/oracle-suite/pkg/spectre"
-	"github.com/makerdao/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
+	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/datastore/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/oracle/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 //nolint

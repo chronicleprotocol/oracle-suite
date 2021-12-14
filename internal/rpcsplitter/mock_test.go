@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/makerdao/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 type rpcReq struct {

@@ -13,30 +13,42 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package internal
+package cobra
 
 import (
-	"crypto/ecdsa"
-	"fmt"
-
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 )
 
-func NewKeyWithID(privateKeyECDSA *ecdsa.PrivateKey, id uuid.UUID) *keystore.Key {
-	key := &keystore.Key{
-		Id:         id,
-		Address:    crypto.PubkeyToAddress(privateKeyECDSA.PublicKey),
-		PrivateKey: privateKeyECDSA,
+func NewList(opts *Options) *cobra.Command {
+	var all bool
+	cmd := &cobra.Command{
+		Use:   "list [--all]",
+		Short: "List word count and first word from the input, omitting the comments",
+		RunE: func(_ *cobra.Command, args []string) error {
+			if all {
+				lines, err := linesFromFile(opts.InputFile)
+				if err != nil {
+					return err
+				}
+				for _, l := range lines {
+					printLine(l)
+				}
+				return nil
+			}
+			l, err := lineFromFile(opts.InputFile, opts.Index)
+			if err != nil {
+				return err
+			}
+			printLine(l)
+			return nil
+		},
 	}
-	return key
-}
-
-func NewKey(privateKeyECDSA *ecdsa.PrivateKey) *keystore.Key {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		panic(fmt.Sprintf("Could not create random uuid: %v", err))
-	}
-	return NewKeyWithID(privateKeyECDSA, id)
+	cmd.Flags().BoolVarP(
+		&all,
+		"all",
+		"a",
+		false,
+		"all data",
+	)
+	return cmd
 }
