@@ -19,8 +19,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/makerdao/oracle-suite/internal/config"
 	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
 	feedsConfig "github.com/makerdao/oracle-suite/internal/config/feeds"
@@ -28,7 +26,6 @@ import (
 	transportConfig "github.com/makerdao/oracle-suite/internal/config/transport"
 	"github.com/makerdao/oracle-suite/pkg/datastore"
 	"github.com/makerdao/oracle-suite/pkg/log"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/spire"
 	"github.com/makerdao/oracle-suite/pkg/transport"
 	"github.com/makerdao/oracle-suite/pkg/transport/messages"
@@ -177,21 +174,17 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*AgentServices, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
-
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
+	if opts.TransportOverride != "" {
+		opts.Config.Spire.TransportToUse = opts.TransportOverride
 	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
+	if opts.Config.Spire.TransportToUse == "" {
+		opts.Config.Spire.TransportToUse = spireConfig.DefaultTransport
+	}
 
 	// Services:
 	tra, dat, age, err := opts.Config.ConfigureAgent(AgentDependencies{
 		Context: ctx,
-		Logger:  logger,
+		Logger:  opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Spire configuration: %w", err)

@@ -41,8 +41,9 @@ var datastoreFactory = func(ctx context.Context, cfg datastoreMemory.Config) (da
 }
 
 type Spire struct {
-	RPC   RPC      `json:"rpc"`
-	Pairs []string `json:"pairs"`
+	RPC            RPC      `json:"rpc"`
+	Pairs          []string `json:"pairs"`
+	TransportToUse string   `json:"transport"`
 }
 
 type RPC struct {
@@ -104,3 +105,7 @@ func (c *Spire) ConfigureDatastore(d DatastoreDependencies) (datastore.Datastore
 	}
 	return datastoreFactory(d.Context, cfg)
 }
+
+const TransportLibP2P = "libp2p"
+const TransportLibSSB = "ssb"
+const DefaultTransport = TransportLibP2P

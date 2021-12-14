@@ -20,8 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/makerdao/oracle-suite/internal/config"
 	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
 	feedsConfig "github.com/makerdao/oracle-suite/internal/config/feeds"
@@ -31,7 +29,6 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/ethereum"
 	"github.com/makerdao/oracle-suite/pkg/ghost"
 	"github.com/makerdao/oracle-suite/pkg/gofer"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 	"github.com/makerdao/oracle-suite/pkg/transport"
 	"github.com/makerdao/oracle-suite/pkg/transport/messages"
 
@@ -118,20 +115,10 @@ func PrepareServices(ctx context.Context, opts *options) (*Services, error) {
 		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
 
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
-	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
-
 	// Services:
 	tra, gof, gho, err := opts.Config.Configure(Dependencies{
 		Context: ctx,
-		Logger:  logger,
+		Logger:  opts.Logger(),
 	}, opts.GoferNoRPC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Ghost configuration: %w", err)

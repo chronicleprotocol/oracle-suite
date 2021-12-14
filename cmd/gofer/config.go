@@ -19,8 +19,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/makerdao/oracle-suite/internal/config"
 	ethereumConfig "github.com/makerdao/oracle-suite/internal/config/ethereum"
 	goferConfig "github.com/makerdao/oracle-suite/internal/config/gofer"
@@ -28,7 +26,6 @@ import (
 	pkgGofer "github.com/makerdao/oracle-suite/pkg/gofer"
 	"github.com/makerdao/oracle-suite/pkg/gofer/rpc"
 	"github.com/makerdao/oracle-suite/pkg/log"
-	logLogrus "github.com/makerdao/oracle-suite/pkg/log/logrus"
 )
 
 type Config struct {
@@ -73,18 +70,8 @@ func PrepareGoferClientServices(ctx context.Context, opts *options) (*GoferClien
 		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
 
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
-	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
-
 	// Services:
-	gof, err := opts.Config.Configure(ctx, logger, opts.NoRPC)
+	gof, err := opts.Config.Configure(ctx, opts.Logger(), opts.NoRPC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Gofer configuration: %w", err)
 	}
@@ -134,18 +121,8 @@ func PrepareGoferAgentService(ctx context.Context, opts *options) (*GoferAgentSe
 		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
 	}
 
-	// Logger:
-	ll, err := logrus.ParseLevel(opts.LogVerbosity)
-	if err != nil {
-		return nil, err
-	}
-	lr := logrus.New()
-	lr.SetLevel(ll)
-	lr.SetFormatter(opts.LogFormat.Formatter())
-	logger := logLogrus.New(lr)
-
 	// Services:
-	age, err := opts.Config.ConfigureRPCAgent(ctx, logger)
+	age, err := opts.Config.ConfigureRPCAgent(ctx, opts.Logger())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Gofer configuration: %w", err)
 	}

@@ -10,6 +10,10 @@
       "directPeersAddrs": [],
       "blockedAddrs": [],
       "disableDiscovery": false
+    },
+    "ssb": {
+      "caps": "./local.caps.json",
+      "key": "./local.ssb.json"
     }
   },
   "ethereum": {
@@ -180,6 +184,7 @@
     }
   },
   "spire": {
+    "transport": "libp2p",
     "rpc": {
       "address": "127.0.0.1:9100"
     },
