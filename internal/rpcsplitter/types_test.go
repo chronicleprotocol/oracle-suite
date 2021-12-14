@@ -63,26 +63,26 @@ func Test_jsonType(t *testing.T) {
 func Test_blockNumberType_Unmarshal(t *testing.T) {
 	tests := []struct {
 		arg        string
-		want       *blockNumberType
+		want       *blockIDType
 		wantErr    bool
 		isTag      bool
 		isEarliest bool
 		isLatest   bool
 		isPending  bool
 	}{
-		{arg: `"0x0"`, want: (*blockNumberType)(big.NewInt(0))},
-		{arg: `"0xF"`, want: (*blockNumberType)(big.NewInt(15))},
-		{arg: `"0"`, want: (*blockNumberType)(big.NewInt(0))},
-		{arg: `"F"`, want: (*blockNumberType)(big.NewInt(15))},
-		{arg: `"earliest"`, want: (*blockNumberType)(big.NewInt(earliestBlockNumber)), isTag: true, isEarliest: true},
-		{arg: `"latest"`, want: (*blockNumberType)(big.NewInt(latestBlockNumber)), isTag: true, isLatest: true},
-		{arg: `"pending"`, want: (*blockNumberType)(big.NewInt(pendingBlockNumber)), isTag: true, isPending: true},
+		{arg: `"0x0"`, want: (*blockIDType)(big.NewInt(0))},
+		{arg: `"0xF"`, want: (*blockIDType)(big.NewInt(15))},
+		{arg: `"0"`, want: (*blockIDType)(big.NewInt(0))},
+		{arg: `"F"`, want: (*blockIDType)(big.NewInt(15))},
+		{arg: `"earliest"`, want: (*blockIDType)(big.NewInt(earliestBlockNumber)), isTag: true, isEarliest: true},
+		{arg: `"latest"`, want: (*blockIDType)(big.NewInt(latestBlockNumber)), isTag: true, isLatest: true},
+		{arg: `"pending"`, want: (*blockIDType)(big.NewInt(pendingBlockNumber)), isTag: true, isPending: true},
 		{arg: `"foo"`, wantErr: true},
 		{arg: `"0xZ"`, wantErr: true},
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			v := &blockNumberType{}
+			v := &blockIDType{}
 			err := v.UnmarshalJSON([]byte(tt.arg))
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -100,14 +100,14 @@ func Test_blockNumberType_Unmarshal(t *testing.T) {
 
 func Test_blockNumberType_Marshal(t *testing.T) {
 	tests := []struct {
-		arg  *blockNumberType
+		arg  *blockIDType
 		want string
 	}{
-		{arg: (*blockNumberType)(big.NewInt(0)), want: `"0x0"`},
-		{arg: (*blockNumberType)(big.NewInt(15)), want: `"0xf"`},
-		{arg: (*blockNumberType)(big.NewInt(earliestBlockNumber)), want: `"earliest"`},
-		{arg: (*blockNumberType)(big.NewInt(latestBlockNumber)), want: `"latest"`},
-		{arg: (*blockNumberType)(big.NewInt(pendingBlockNumber)), want: `"pending"`},
+		{arg: (*blockIDType)(big.NewInt(0)), want: `"0x0"`},
+		{arg: (*blockIDType)(big.NewInt(15)), want: `"0xf"`},
+		{arg: (*blockIDType)(big.NewInt(earliestBlockNumber)), want: `"earliest"`},
+		{arg: (*blockIDType)(big.NewInt(latestBlockNumber)), want: `"latest"`},
+		{arg: (*blockIDType)(big.NewInt(pendingBlockNumber)), want: `"pending"`},
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {

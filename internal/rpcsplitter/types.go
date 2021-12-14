@@ -59,14 +59,14 @@ func (t *jsonType) Compare(v interface{}) bool {
 	return false
 }
 
-type blockNumberType big.Int
+type blockIDType big.Int
 
 const earliestBlockNumber = -1
 const latestBlockNumber = -2
 const pendingBlockNumber = -3
 
-func newBlockNumber(n string) *blockNumberType {
-	b := &blockNumberType{}
+func newBlockID(n string) *blockIDType {
+	b := &blockIDType{}
 	if err := b.UnmarshalJSON([]byte(n)); err != nil {
 		return nil
 	}
@@ -74,7 +74,7 @@ func newBlockNumber(n string) *blockNumberType {
 }
 
 // MarshalJSON implements json.Marshaler.
-func (n blockNumberType) MarshalJSON() ([]byte, error) {
+func (n blockIDType) MarshalJSON() ([]byte, error) {
 	switch {
 	case n.IsEarliest():
 		return []byte(`"earliest"`), nil
@@ -88,17 +88,17 @@ func (n blockNumberType) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (n *blockNumberType) UnmarshalJSON(input []byte) error {
+func (n *blockIDType) UnmarshalJSON(input []byte) error {
 	input = naiveUnquote(input)
 	switch strings.TrimSpace(string(input)) {
 	case "earliest":
-		*n = *((*blockNumberType)(big.NewInt(earliestBlockNumber)))
+		*n = *((*blockIDType)(big.NewInt(earliestBlockNumber)))
 		return nil
 	case "latest":
-		*n = *((*blockNumberType)(big.NewInt(latestBlockNumber)))
+		*n = *((*blockIDType)(big.NewInt(latestBlockNumber)))
 		return nil
 	case "pending":
-		*n = *((*blockNumberType)(big.NewInt(pendingBlockNumber)))
+		*n = *((*blockIDType)(big.NewInt(pendingBlockNumber)))
 		return nil
 	default:
 		u, err := hexToBigInt(input)
@@ -108,35 +108,35 @@ func (n *blockNumberType) UnmarshalJSON(input []byte) error {
 		if u.Cmp(big.NewInt(math.MaxInt64)) > 0 {
 			return fmt.Errorf("block number larger than int64")
 		}
-		*n = blockNumberType(*u)
+		*n = blockIDType(*u)
 		return nil
 	}
 }
 
-func (n *blockNumberType) Compare(v interface{}) bool {
-	if v, ok := v.(*blockNumberType); ok {
+func (n *blockIDType) Compare(v interface{}) bool {
+	if v, ok := v.(*blockIDType); ok {
 		return n.Big().Cmp(v.Big()) == 0
 	}
 	return false
 }
 
-func (n *blockNumberType) IsEarliest() bool {
+func (n *blockIDType) IsEarliest() bool {
 	return n.Big().Int64() == earliestBlockNumber
 }
 
-func (n *blockNumberType) IsLatest() bool {
+func (n *blockIDType) IsLatest() bool {
 	return n.Big().Int64() == latestBlockNumber
 }
 
-func (n *blockNumberType) IsPending() bool {
+func (n *blockIDType) IsPending() bool {
 	return n.Big().Int64() == pendingBlockNumber
 }
 
-func (n *blockNumberType) IsTag() bool {
+func (n *blockIDType) IsTag() bool {
 	return n.Big().Sign() < 0
 }
 
-func (n *blockNumberType) Big() *big.Int {
+func (n *blockIDType) Big() *big.Int {
 	return (*big.Int)(n)
 }
 
@@ -368,6 +368,14 @@ type feeHistoryType struct {
 	Reward        [][]numberType `json:"reward"`
 	BaseFeePerGas []numberType   `json:"baseFeePerGas"`
 	GasUsedRatio  []float64      `json:"gasUsedRatio"`
+}
+
+type logFilterType struct {
+	Address   *addressType `json:"address"`
+	FromBlock *blockIDType `json:"fromBlock"`
+	ToBlock   *blockIDType `json:"toBlock"`
+	Topics    []hashType   `json:"topics"`
+	BlockHash *hashType    `json:"blockhash"`
 }
 
 func bigIntToHex(u *big.Int) []byte {

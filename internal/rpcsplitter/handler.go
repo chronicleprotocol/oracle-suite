@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	gethRPC "github.com/ethereum/go-ethereum/rpc"
 
@@ -33,7 +34,12 @@ const LoggerTag = "RPCSPLITTER"
 
 // maxBlocksBehind is the number of blocks behind the median of the block
 // numbers reported by the endpoints that determines the lowest block number
-// that can returned by the eth_blockNumber method.
+// that can be used.
+//
+// For example, if 5 endpoints report the following block numbers: 9, 9, 9, 6, 4
+// then the median block number is 9 but the lowest block number we can use is 6
+// because 9-3 is 6, so only the response from the endpoint that reported 4 as
+// the block number will be discarded.
 const maxBlocksBehind = 3
 
 type rpcCaller interface {
@@ -155,7 +161,11 @@ func (r *rpcETHAPI) GetTransactionByHash(txHash hashType) (interface{}, error) {
 // If the block number is set to "latest" or "pending", it will be replaced by
 // the block number returned by the BlockNumber method. The "earliest" tag is
 // not supported.
-func (r *rpcETHAPI) GetTransactionCount(addr addressType, blockNumber blockNumberType) (interface{}, error) {
+func (r *rpcETHAPI) GetTransactionCount(addr addressType, blockID blockIDType) (interface{}, error) {
+	blockNumber, err := r.handler.taggedBlockToNumber(blockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMostCommon(
 		r.handler.call((*numberType)(nil), "eth_getTransactionCount", addr, blockNumber),
 		r.handler.minReq(),
@@ -184,7 +194,7 @@ func (r *rpcETHAPI) GetTransactionReceipt(txHash hashType) (interface{}, error) 
 func (r *rpcETHAPI) SendRawTransaction(data bytesType) (interface{}, error) {
 	return useMostCommon(
 		r.handler.call((*hashType)(nil), "eth_sendRawTransaction", data),
-		1,
+		r.handler.minReq(),
 	)
 }
 
@@ -196,7 +206,11 @@ func (r *rpcETHAPI) SendRawTransaction(data bytesType) (interface{}, error) {
 // If the block number is set to "latest" or "pending", it will be replaced by
 // the block number returned by the BlockNumber method. The "earliest" tag is
 // not supported.
-func (r *rpcETHAPI) GetBalance(addr addressType, blockNumber blockNumberType) (interface{}, error) {
+func (r *rpcETHAPI) GetBalance(addr addressType, blockID blockIDType) (interface{}, error) {
+	blockNumber, err := r.handler.taggedBlockToNumber(blockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMostCommon(
 		r.handler.call((*numberType)(nil), "eth_getBalance", addr, blockNumber),
 		r.handler.minReq(),
@@ -211,7 +225,11 @@ func (r *rpcETHAPI) GetBalance(addr addressType, blockNumber blockNumberType) (i
 // If the block number is set to "latest" or "pending", it will be replaced by
 // the block number returned by the BlockNumber method. The "earliest" tag is
 // not supported.
-func (r *rpcETHAPI) GetCode(addr addressType, blockNumber blockNumberType) (interface{}, error) {
+func (r *rpcETHAPI) GetCode(addr addressType, blockID blockIDType) (interface{}, error) {
+	blockNumber, err := r.handler.taggedBlockToNumber(blockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMostCommon(
 		r.handler.call((*bytesType)(nil), "eth_getCode", addr, blockNumber),
 		r.handler.minReq(),
@@ -226,7 +244,11 @@ func (r *rpcETHAPI) GetCode(addr addressType, blockNumber blockNumberType) (inte
 // If the block number is set to "latest" or "pending", it will be replaced by
 // the block number returned by the BlockNumber method. The "earliest" tag is
 // not supported.
-func (r *rpcETHAPI) GetStorageAt(data addressType, pos numberType, blockNumber blockNumberType) (interface{}, error) {
+func (r *rpcETHAPI) GetStorageAt(data addressType, pos numberType, blockID blockIDType) (interface{}, error) {
+	blockNumber, err := r.handler.taggedBlockToNumber(blockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMostCommon(
 		r.handler.call((*hashType)(nil), "eth_getStorageAt", data, pos, blockNumber),
 		r.handler.minReq(),
@@ -244,14 +266,46 @@ func (r *rpcETHAPI) GetStorageAt(data addressType, pos numberType, blockNumber b
 // If the block number is set to "latest" or "pending", it will be replaced by
 // the block number returned by the BlockNumber method. The "earliest" tag is
 // not supported.
-func (r *rpcETHAPI) Call(args jsonType, blockNumber blockNumberType, overrides *jsonType) (interface{}, error) {
+func (r *rpcETHAPI) Call(args jsonType, blockID blockIDType, overrides *jsonType) (interface{}, error) {
+	blockNumber, err := r.handler.taggedBlockToNumber(blockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMostCommon(
 		r.handler.call((*bytesType)(nil), "eth_call", args, blockNumber, overrides),
 		r.handler.minReq(),
 	)
 }
 
-// TODO: eth_getLogs
+// GetLogs implements the "eth_getLogs" call.
+//
+// It returns the most common response that occurred at least as many times as
+// specified in the minReq method.
+//
+// If the block number is set to "latest" or "pending", it will be replaced by
+// the block number returned by the BlockNumber method. The "earliest" tag is
+// not supported.
+func (r *rpcETHAPI) GetLogs(logFilter logFilterType) (interface{}, error) {
+	if logFilter.FromBlock != nil {
+		blockNumber, err := r.handler.taggedBlockToNumber(*logFilter.FromBlock)
+		if err != nil {
+			return nil, err
+		}
+		*logFilter.FromBlock = blockIDType(blockNumber)
+	}
+	if logFilter.ToBlock != nil {
+		blockNumber, err := r.handler.taggedBlockToNumber(*logFilter.ToBlock)
+		if err != nil {
+			return nil, err
+		}
+		*logFilter.ToBlock = blockIDType(blockNumber)
+	}
+	return useMostCommon(
+		r.handler.call((*[]logType)(nil), "eth_getLogs", logFilter),
+		r.handler.minReq(),
+	)
+}
+
 // TODO: eth_protocolVersion
 
 // GasPrice implements the "eth_gasPrice" call.
@@ -273,7 +327,11 @@ func (r *rpcETHAPI) GasPrice() (interface{}, error) {
 // If the block number is set to "latest" or "pending", it will be replaced by
 // the block number returned by the BlockNumber method. The "earliest" tag is
 // not supported.
-func (r *rpcETHAPI) EstimateGas(args jsonType, blockNumber blockNumberType) (interface{}, error) {
+func (r *rpcETHAPI) EstimateGas(args jsonType, blockID blockIDType) (interface{}, error) {
+	blockNumber, err := r.handler.taggedBlockToNumber(blockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMedian(
 		r.handler.call((*numberType)(nil), "eth_estimateGas", args, blockNumber),
 		r.handler.minReq(),
@@ -284,9 +342,13 @@ func (r *rpcETHAPI) EstimateGas(args jsonType, blockNumber blockNumberType) (int
 //
 // It returns the most common response that occurred at least as many times as
 // specified in the minReq method.
-func (r *rpcETHAPI) FeeHistory(count numberType, newest blockNumberType, percentiles jsonType) (interface{}, error) {
+func (r *rpcETHAPI) FeeHistory(count numberType, newestBlockID blockIDType, percentiles jsonType) (interface{}, error) {
+	blockToNumber, err := r.handler.taggedBlockToNumber(newestBlockID)
+	if err != nil {
+		return nil, err
+	}
 	return useMostCommon(
-		r.handler.call((*feeHistoryType)(nil), "eth_feeHistory", count, newest, percentiles),
+		r.handler.call((*feeHistoryType)(nil), "eth_feeHistory", count, blockToNumber, percentiles),
 		r.handler.minReq(),
 	)
 }
@@ -340,26 +402,25 @@ func (r *rpcNETAPI) Version() (interface{}, error) {
 //
 // The typ argument must be an empty pointer with a type to which the results
 // will be converted.
-func (h *handler) call(typ interface{}, method string, args ...interface{}) (res []interface{}) {
-	// Process arguments.
-	err := h.processArgs(&args)
-	if err != nil {
-		return []interface{}{err}
-	}
-	// Send requests to all endpoints.
-	ch := make(chan interface{})
+func (h *handler) call(typ interface{}, method string, params ...interface{}) (res []interface{}) {
+	h.removeTrailingNilParams(&params)
+
+	// Send request to all endpoints.
+	ch := make(chan interface{}, len(h.cli))
+	wg := &sync.WaitGroup{}
+	wg.Add(len(h.cli))
 	for _, cli := range h.cli {
 		cli := cli
 		go func() {
-			ch <- h.callOne(cli, typ, method, args...)
+			defer wg.Done()
+			ch <- h.callOne(cli, typ, method, params...)
 		}()
 	}
-	// Wait for the responses.
-	for {
+
+	// Wait for responses.
+	wg.Wait()
+	for len(ch) > 0 {
 		res = append(res, <-ch)
-		if len(res) == len(h.cli) {
-			break
-		}
 	}
 	return res
 }
@@ -368,7 +429,7 @@ func (h *handler) call(typ interface{}, method string, args ...interface{}) (res
 //
 // The typ argument must be an empty pointer with a type to which the results
 // will be converted.
-func (h *handler) callOne(cli rpcClient, typ interface{}, method string, args ...interface{}) (out interface{}) {
+func (h *handler) callOne(cli rpcClient, typ interface{}, method string, params ...interface{}) (out interface{}) {
 	var err error
 	var val interface{}
 	defer func() {
@@ -376,14 +437,14 @@ func (h *handler) callOne(cli rpcClient, typ interface{}, method string, args ..
 			err = fmt.Errorf("panic: %s", r)
 		}
 		if err != nil {
-			// Errors are returned in the same way as other values. The out
-			// variable is a named return parameter.
-			out = err
 			h.log.
 				WithField("endpoint", cli.endpoint).
 				WithField("method", method).
 				WithError(err).
 				Error("Call error")
+			// Errors are returned the same way as other values. The out
+			// variable is a named return parameter.
+			out = err
 		}
 	}()
 	h.log.
@@ -393,47 +454,40 @@ func (h *handler) callOne(cli rpcClient, typ interface{}, method string, args ..
 	// typ is a nil pointer, and it is shared by multiple goroutines, so it
 	// cannot be used directly with cli.Call.
 	val = reflect.New(reflect.TypeOf(typ).Elem()).Interface()
-	err = cli.Call(val, method, args...)
+	err = cli.Call(val, method, params...)
 	out = val
 	return
 }
 
-// processArgs removes trailing nil arguments from the args slice and
-// replaces tagged blocks to block numbers.
-func (h *handler) processArgs(args *[]interface{}) error {
-	for i := len(*args) - 1; i >= 0; i-- {
-		// Remove null arguments from the end of the args list. Some RPC
-		// servers do not like null parameters and will return a "bad request"
-		// error if they occur.
-		if len(*args)-1 == i && isNil((*args)[i]) {
-			*args = (*args)[0:i]
-			continue
-		}
-		// Replace tagged blocks with block numbers. This is necessary because
-		// different RPC endpoints may convert these tags to different block
-		// numbers.
-		if arg, ok := (*args)[i].(blockNumberType); ok && arg.IsTag() {
-			if arg.IsEarliest() {
-				// The earliest block will be completely different on different
-				// endpoints. It is impossible to reliably support it.
-				return errors.New("earliest tag is not supported")
-			}
-			// The latest and pending blocks are handled in the same way.
-			bn, err := h.eth.BlockNumber()
-			if err != nil {
-				return err
-			}
-			(*args)[i] = bn
-			continue
-		}
-		// Replace blockNumberType with numberType. At this moment any block
-		// number should be just a number. Reducing a number of types
-		// simplifies the useMedian and useMedianDist functions.
-		if arg, ok := (*args)[i].(blockNumberType); ok {
-			(*args)[i] = numberType(arg)
+// removeTrailingNilParams removes trailing nil parameters from the params
+// slice. Some RPC servers do not like null parameters and will return a
+// "bad request" error if they occur.
+func (h *handler) removeTrailingNilParams(params *[]interface{}) {
+	for i := len(*params) - 1; i >= 0; i-- {
+		if len(*params)-1 == i && isNil((*params)[i]) {
+			*params = (*params)[0:i]
 		}
 	}
-	return nil
+}
+
+// taggedBlockToNumber returns a block number for tagged blocks. This is
+// necessary because different RPC endpoints may convert tags to different
+// block numbers.
+func (h *handler) taggedBlockToNumber(blockID blockIDType) (numberType, error) {
+	if !blockID.IsTag() {
+		return numberType(blockID), nil
+	}
+	if blockID.IsEarliest() {
+		// The earliest block will be completely different on different
+		// endpoints. It is impossible to reliably support it.
+		return numberType{}, errors.New("earliest tag is not supported")
+	}
+	// The latest and pending blocks are handled in the same way.
+	bn, err := h.eth.BlockNumber()
+	if err != nil {
+		return numberType{}, err
+	}
+	return *(bn.(*numberType)), nil
 }
 
 // minReq returns a number indicating how many times the same response
@@ -504,13 +558,10 @@ func useMostCommon(s []interface{}, minReq int) (interface{}, error) {
 	occurs := map[interface{}]int{}
 	maxOccurs := 0
 	for _, a := range s {
-		// Errors are handled separately.
 		if e, ok := a.(error); ok {
 			err = addError(err, e, false)
 			continue
 		}
-		// Check if there is an item same as the `a` var already added to
-		// the `occurs` map. If so, skip it.
 		f := false
 		for b := range occurs {
 			if compare(a, b) {
@@ -535,7 +586,7 @@ func useMostCommon(s []interface{}, minReq int) (interface{}, error) {
 	if maxOccurs < minReq {
 		return nil, addError(
 			err,
-			errors.New("not enough occurrences of the same response from RPC servers"),
+			errors.New("RPC servers returned different responses"),
 			true,
 		)
 	}

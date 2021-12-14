@@ -24,27 +24,35 @@ import (
 	"github.com/makerdao/oracle-suite/pkg/log"
 )
 
+// Transport implements the http.RoundTripper interface. It creates a virtual
+// host with RPC Splitter.
 type Transport struct {
-	transport   http.RoundTripper
-	handler     http.Handler
-	virtualHost string
+	transport http.RoundTripper
+	handler   http.Handler
+	vhost     string
 }
 
-func NewTransport(endpoints []string, host string, transport http.RoundTripper, log log.Logger) (*Transport, error) {
+// NewTransport returns a new instance of Transport.
+func NewTransport(endpoints []string, vhost string, transport http.RoundTripper, log log.Logger) (*Transport, error) {
 	rpc, err := NewHandler(endpoints, log)
 	if err != nil {
 		return nil, err
 	}
+	return newTransport(rpc, vhost, transport)
+}
+
+func newTransport(handler http.Handler, vhost string, transport http.RoundTripper) (*Transport, error) {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
 	return &Transport{
-		transport:   transport,
-		virtualHost: host,
-		handler:     rpc,
+		transport: transport,
+		vhost:     vhost,
+		handler:   handler,
 	}, nil
 }
 
+// RoundTrip implements the http.RoundTripper interface.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if !t.isVirtualHost(req) {
 		return t.transport.RoundTrip(req)
@@ -55,7 +63,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func (t *Transport) isVirtualHost(req *http.Request) bool {
-	return req.Host == t.virtualHost
+	return req.Host == t.vhost
 }
 
 func (t *Transport) buildResponse(res *recorder) *http.Response {

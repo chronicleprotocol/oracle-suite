@@ -47,106 +47,116 @@ type rpcRes struct {
 	} `json:"error"`
 }
 
-type clientMock struct {
+type mockClient struct {
 	t *testing.T
 
-	currCall  int
-	callMocks []callMock
+	currCall int            // current call idx, increases every time Call is called
+	calls    []expectedCall // list of expected calls
 }
 
-type callMock struct {
+type expectedCall struct {
 	result interface{}
 	method string
 	params []interface{}
 }
 
-func (c *clientMock) mockCall(result interface{}, method string, params ...interface{}) {
-	c.callMocks = append(c.callMocks, callMock{
+// expectedCall adds expected call. If a result implements an error interface,
+// then it will be returned as an error.
+func (c *mockClient) mockCall(result interface{}, method string, params ...interface{}) {
+	c.calls = append(c.calls, expectedCall{
 		result: result,
 		method: method,
 		params: params,
 	})
 }
 
-func (c *clientMock) Call(result interface{}, method string, params ...interface{}) error {
-	if c.currCall >= len(c.callMocks) {
+func (c *mockClient) Call(result interface{}, method string, params ...interface{}) error {
+	if c.currCall >= len(c.calls) {
 		require.Fail(c.t, "unexpected call")
 	}
 	defer func() { c.currCall++ }()
-	call := c.callMocks[c.currCall]
 
+	// Check if current call meets expectations.
+	call := c.calls[c.currCall]
 	assert.Equal(c.t, call.method, method)
 	assert.True(c.t, compare(call.params, params))
 
+	// Error results are treated differently, as described in mockCall.
 	if err, ok := call.result.(error); ok {
 		return err
 	}
 
+	// Message is marshalled and unmarshalled to verify, if marshalling is
+	// implemented correctly.
 	return json.Unmarshal(jsonMarshal(c.t, call.result), &result)
 }
 
-type testRPC struct {
+type handlerTester struct {
 	t *testing.T
 
-	clients []rpcClient
-	result  interface{}
-	method  string
-	params  []interface{}
-	errors  []string
+	clients   []rpcClient
+	expResult interface{}
+	expMethod string
+	expParams []interface{}
+	expErrors []string
 }
 
-func prepareRPCTest(t *testing.T, clients int, method string, params ...interface{}) *testRPC {
+func prepareHandlerTest(t *testing.T, clients int, method string, params ...interface{}) *handlerTester {
 	var cli []rpcClient
 	for i := 0; i < clients; i++ {
-		cli = append(cli, rpcClient{rpcCaller: &clientMock{t: t}, endpoint: fmt.Sprintf("#%d", i)})
+		cli = append(cli, rpcClient{rpcCaller: &mockClient{t: t}, endpoint: fmt.Sprintf("#%d", i)})
 	}
-	return &testRPC{t: t, clients: cli, method: method, params: params}
+	return &handlerTester{t: t, clients: cli, expMethod: method, expParams: params}
 }
 
-func (t *testRPC) mockClientCall(client int, response interface{}, method string, params ...interface{}) *testRPC {
-	t.clients[client].rpcCaller.(*clientMock).mockCall(response, method, params...)
+// mockClientCall mocks call on n client.
+func (t *handlerTester) mockClientCall(n int, response interface{}, method string, params ...interface{}) *handlerTester {
+	t.clients[n].rpcCaller.(*mockClient).mockCall(response, method, params...)
 	return t
 }
 
-func (t *testRPC) expectedResult(res interface{}) *testRPC {
-	t.result = res
+// expectedResult sets expected result.
+func (t *handlerTester) expectedResult(res interface{}) *handlerTester {
+	t.expResult = res
 	return t
 }
 
-func (t *testRPC) expectedError(msg string) *testRPC {
-	t.errors = append(t.errors, msg)
+// expectedError adds an error as an expectation. If msg is a non-empty string,
+// a returned error must contain msg. If msg is empty, any error will match.
+func (t *handlerTester) expectedError(msg string) *handlerTester {
+	t.expErrors = append(t.expErrors, msg)
 	return t
 }
 
-func (t *testRPC) run() {
-	// Prepare handler:
+func (t *handlerTester) test() {
+	// Prepare handler.
 	h, err := newHandlerWithClients(t.clients, null.New())
 	require.NoError(t.t, err)
 
-	// Prepare request:
+	// Prepare request.
 	id := rand.Int()
 	msg := jsonMarshal(t.t, rpcReq{
 		ID:      id,
 		JSONRPC: "2.0",
-		Method:  t.method,
-		Params:  t.params,
+		Method:  t.expMethod,
+		Params:  t.expParams,
 	})
 	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(msg))
 	r.Header.Set("Content-Type", "application/json")
 
-	// Do request:
+	// Do request.
 	rw := httptest.NewRecorder()
 	h.ServeHTTP(rw, r)
 
-	// Parse response:
+	// Unmarshall response.
 	res := &rpcRes{}
 	jsonUnmarshal(t.t, rw.Body.Bytes(), res)
 
-	// Verify response:
+	// Verify response.
 	assert.Equal(t.t, id, res.ID)
 	assert.Equal(t.t, "2.0", res.JSONRPC)
-	if len(t.errors) > 0 {
-		for _, e := range t.errors {
+	if len(t.expErrors) > 0 {
+		for _, e := range t.expErrors {
 			if e == "" {
 				assert.NotEmpty(t.t, res.Error.Message)
 			} else {
@@ -156,7 +166,7 @@ func (t *testRPC) run() {
 	} else {
 		assert.Equal(t.t, 0, res.Error.Code)
 		assert.Empty(t.t, res.Error.Message)
-		assert.JSONEq(t.t, string(jsonMarshal(t.t, t.result)), string(jsonMarshal(t.t, res.Result)))
+		assert.JSONEq(t.t, string(jsonMarshal(t.t, t.expResult)), string(jsonMarshal(t.t, res.Result)))
 	}
 }
 
