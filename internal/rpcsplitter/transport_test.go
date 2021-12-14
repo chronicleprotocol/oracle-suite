@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/makerdao/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 func TestTransport(t *testing.T) {
