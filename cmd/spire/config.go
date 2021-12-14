@@ -71,14 +71,23 @@ func (c *Config) ConfigureAgent(d AgentDependencies) (transport.Transport, datas
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	tra, err := c.Transport.Configure(transportConfig.Dependencies{
-		Context: d.Context,
-		Signer:  sig,
-		Feeds:   fed,
-		Logger:  d.Logger,
-	},
-		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
-	)
+
+	var tra transport.Transport
+	switch c.Spire.TransportToUse {
+	case spireConfig.TransportLibP2P:
+		tra, err = c.Transport.Configure(transportConfig.Dependencies{
+			Context: d.Context,
+			Signer:  sig,
+			Feeds:   fed,
+			Logger:  d.Logger,
+		},
+			map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+		)
+	case spireConfig.TransportLibSSB:
+		tra, err = c.Transport.ConfigureSSB()
+	default:
+		return nil, nil, nil, fmt.Errorf("unknown transport: %s", c.Spire.TransportToUse)
+	}
 	if err != nil {
 		return nil, nil, nil, err
 	}
