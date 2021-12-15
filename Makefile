@@ -96,4 +96,4 @@ ifneq ($(shell git status --porcelain),)
 	VERSION := $(VERSION)-dirty
 endif
 
-LDFLAGS := -ldflags "-X github.com/makerdao/oracle-suite.Version=$(VERSION)"
+LDFLAGS := -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=$(VERSION)"
