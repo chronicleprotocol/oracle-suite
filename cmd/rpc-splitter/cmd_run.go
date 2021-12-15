@@ -69,10 +69,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 				})
 			}
 
-			err = srv.ListenAndServe()
-			if err != nil {
-				return err
-			}
+			srv.Start()
 			defer func() {
 				err := srv.Wait()
 				if err != nil {

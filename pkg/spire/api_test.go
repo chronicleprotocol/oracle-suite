@@ -81,7 +81,6 @@ func newTestInstances() (*Agent, *Client) {
 		Datastore: dat,
 		Transport: tra,
 		Signer:    sig,
-		Network:   "tcp",
 		Address:   "127.0.0.1:0",
 		Logger:    log,
 	})
@@ -99,8 +98,7 @@ func newTestInstances() (*Agent, *Client) {
 
 	cli, err := NewClient(ctx, ClientConfig{
 		Signer:  sig,
-		Network: "tcp",
-		Address: agt.listener.Addr().String(),
+		Address: agt.srv.Addr().String(),
 	})
 	if err != nil {
 		panic(err)

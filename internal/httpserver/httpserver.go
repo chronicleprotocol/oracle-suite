@@ -17,9 +17,12 @@ package httpserver
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 )
+
+const shutdownTimeout = 1 * time.Second
 
 type Middleware interface {
 	Handle(http.Handler) http.Handler
@@ -35,9 +38,11 @@ func (m MiddlewareFunc) Handle(h http.Handler) http.Handler {
 // server lifecycle using context.
 type HTTPServer struct {
 	ctx    context.Context
-	doneCh chan error
+	waitCh chan error
 
-	server         *http.Server
+	ln  net.Listener
+	srv *http.Server
+
 	handler        http.Handler
 	wrappedHandler http.Handler
 	middlewares    []Middleware
@@ -47,7 +52,8 @@ type HTTPServer struct {
 func New(ctx context.Context, srv *http.Server) *HTTPServer {
 	s := &HTTPServer{
 		ctx:    ctx,
-		server: srv,
+		waitCh: make(chan error, 0),
+		srv:    srv,
 	}
 	s.handler = srv.Handler
 	srv.Handler = http.HandlerFunc(s.ServeHTTP)
@@ -55,10 +61,10 @@ func New(ctx context.Context, srv *http.Server) *HTTPServer {
 }
 
 // Use adds a middleware. Middlewares will be called in the order in which they
-// were added. This function will panic after calling ServerHTTP/ListenAndServe.
+// were added. This function will panic after calling ServerHTTP/Start.
 func (s *HTTPServer) Use(m ...Middleware) {
 	if s.wrappedHandler != nil {
-		panic("cannot add a middleware after calling ServeHTTP/ListenAndServe")
+		panic("cannot add a middleware after calling ServeHTTP/Start")
 	}
 	s.middlewares = append(s.middlewares, m...)
 }
@@ -80,25 +86,43 @@ func (s *HTTPServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	s.wrappedHandler.ServeHTTP(rw, r)
 }
 
-// ListenAndServe calls function with the same name on the wrapped server.
-func (s *HTTPServer) ListenAndServe() error {
-	err := s.server.ListenAndServe()
-	if err != nil {
-		return err
+// Start starts HTTP server.
+func (s *HTTPServer) Start() {
+	addr := s.srv.Addr
+	if addr == "" {
+		addr = ":http"
 	}
+	ln, err := (&net.ListenConfig{}).Listen(s.ctx, "tcp", addr)
+	if err != nil {
+		s.waitCh <- err
+	}
+	s.ln = ln
 	go s.contextCancelHandler()
-	return nil
+	go func() {
+		if err := s.srv.Serve(ln); err != nil {
+			s.waitCh <- err
+		}
+	}()
 }
 
 // Wait waits until server is closed.
 func (s *HTTPServer) Wait() error {
-	return <-s.doneCh
+	return <-s.waitCh
+}
+
+// Addr returns the server's network address.
+func (s *HTTPServer) Addr() net.Addr {
+	return s.ln.Addr()
 }
 
 // contextCancelHandler handles context cancellation.
 func (s *HTTPServer) contextCancelHandler() {
-	<-s.ctx.Done()
-	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second)
-	defer ctxCancel()
-	s.doneCh <- s.server.Shutdown(ctx)
+	select {
+	case <-s.waitCh:
+	case <-s.ctx.Done():
+		ctx, ctxCancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer ctxCancel()
+		s.waitCh <- s.srv.Shutdown(ctx)
+	}
+	close(s.waitCh)
 }

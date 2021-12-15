@@ -26,17 +26,15 @@ import (
 
 type Client struct {
 	ctx    context.Context
-	doneCh chan struct{}
+	waitCh chan error
 
-	rpc     *rpc.Client
-	network string
-	address string
-	signer  ethereum.Signer
+	rpc    *rpc.Client
+	addr   string
+	signer ethereum.Signer
 }
 
 type ClientConfig struct {
 	Signer  ethereum.Signer
-	Network string
 	Address string
 }
 
@@ -45,16 +43,15 @@ func NewClient(ctx context.Context, cfg ClientConfig) (*Client, error) {
 		return nil, errors.New("context must not be nil")
 	}
 	return &Client{
-		ctx:     ctx,
-		doneCh:  make(chan struct{}),
-		network: cfg.Network,
-		address: cfg.Address,
-		signer:  cfg.Signer,
+		ctx:    ctx,
+		waitCh: make(chan error),
+		addr:   cfg.Address,
+		signer: cfg.Signer,
 	}, nil
 }
 
 func (c *Client) Start() error {
-	client, err := rpc.DialHTTP(c.network, c.address)
+	client, err := rpc.DialHTTP("tcp", c.addr)
 	if err != nil {
 		return err
 	}
@@ -63,8 +60,8 @@ func (c *Client) Start() error {
 	return nil
 }
 
-func (c *Client) Wait() {
-	<-c.doneCh
+func (c *Client) Wait() error {
+	return <-c.waitCh
 }
 
 func (c *Client) PublishPrice(price *messages.Price) error {
@@ -94,8 +91,6 @@ func (c *Client) PullPrice(assetPair string, feeder string) (*messages.Price, er
 }
 
 func (c *Client) contextCancelHandler() {
-	defer func() { close(c.doneCh) }()
 	<-c.ctx.Done()
-
-	c.rpc.Close()
+	c.waitCh <- c.rpc.Close()
 }
