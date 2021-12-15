@@ -29,7 +29,7 @@ Alternatively, you can build Gofer using `Makefile` directly from the repository
 wish to work on Gofer source.
 
 ```bash
-git clone https://github.com/chronicleprotocol/oracle-suite.git
+git clone https://github.com/ma/oracle-suite.git
 cd oracle-suite
 make
 ```
@@ -159,7 +159,7 @@ Example:
 ## Commands
 
 Gofer is designed from the beginning to work with other programs,
-like [oracle-v2](https://github.com/chronicleprotocol/oracles-v2). For this reason, by default, a response is returned as
+like [oracle-v2](https://github.com/makerdao/oracles-v2). For this reason, by default, a response is returned as
 the [NDJSON](https://en.wikipedia.org/wiki/JSON_streaming) format. You can change the output format to `plain`, `json`
 , `ndjson`, or `trace` using the `--format` flag:
 
