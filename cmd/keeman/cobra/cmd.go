@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/txt"
 )
 
@@ -28,6 +30,10 @@ type Options struct {
 	InputFile  string
 	OutputFile string
 	Verbose    bool
+}
+
+func Command() (*Options, *cobra.Command) {
+	return &Options{}, &cobra.Command{Use: "keeman"}
 }
 
 func lineFromFile(filename string, idx int) (string, error) {

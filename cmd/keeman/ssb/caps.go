@@ -19,6 +19,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
 
 	"go.cryptoscope.co/ssb"
 	refs "go.mindeco.de/ssb-refs"
@@ -26,12 +29,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/rand"
 )
 
-type Caps struct {
+type Caps000 struct {
 	Shs  []byte
 	Sign []byte
 }
 
-func (c Caps) MarshalJSON() ([]byte, error) {
+func (c Caps000) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Shs    string `json:"shs"`
 		Sign   string `json:"sign,omitempty"`
@@ -42,12 +45,12 @@ func (c Caps) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func NewCaps(seed []byte) (*Caps, error) {
+func NewCaps(seed []byte) (*Caps000, error) {
 	randBytes, err := rand.SeededRandBytesGen(seed, 32)
 	if err != nil {
 		return nil, err
 	}
-	return &Caps{
+	return &Caps000{
 		Shs:  randBytes(),
 		Sign: randBytes(),
 	}, nil
@@ -58,4 +61,45 @@ func NewKeyPair(b []byte) (ssb.KeyPair, error) {
 		bytes.NewReader(b),
 		refs.RefAlgoFeedSSB1,
 	)
+}
+
+type Caps struct {
+	Shs    string `json:"shs"`
+	Sign   string `json:"sign,omitempty"`
+	Invite string `json:"invite,omitempty"`
+}
+
+func LoadCapsFromConfigFile(fileName string) (Caps, error) {
+	b, err := LoadFile(fileName)
+	if err != nil {
+		return Caps{}, err
+	}
+	var c struct {
+		Caps Caps `json:"caps"`
+	}
+	return c.Caps, json.Unmarshal(b, &c)
+}
+
+func LoadCapsFile(fileName string) (Caps, error) {
+	b, err := LoadFile(fileName)
+	if err != nil {
+		return Caps{}, err
+	}
+	var c Caps
+	return c, json.Unmarshal(b, &c)
+}
+
+func LoadFile(fileName string) (b []byte, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("could not open file %s: %w", fileName, err)
+	}
+	defer func() {
+		err = f.Close()
+	}()
+	b, err = ioutil.ReadAll(f)
+	return b, err
 }

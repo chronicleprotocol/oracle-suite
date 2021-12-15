@@ -18,14 +18,11 @@ package main
 import (
 	"os"
 
-	cobra2 "github.com/spf13/cobra"
-
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/cobra"
 )
 
 func main() {
-	var opts = cobra.Options{}
-	cmd := &cobra2.Command{Use: "keeman"}
+	opts, cmd := cobra.Command()
 	cmd.PersistentFlags().StringVarP(
 		&opts.InputFile,
 		"input",
@@ -48,9 +45,9 @@ func main() {
 		"verbose logging",
 	)
 	cmd.AddCommand(
-		cobra.DeriveFromHD(&opts),
-		cobra.GenerateSeed(&opts),
-		cobra.NewList(&opts),
+		cobra.DeriveFromHD(opts),
+		cobra.GenerateSeed(opts),
+		cobra.NewList(opts),
 	)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
