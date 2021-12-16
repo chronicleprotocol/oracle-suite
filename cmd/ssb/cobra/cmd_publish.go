@@ -41,6 +41,7 @@ func Publish(opts *Options) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				//TODO Add Rate Limiter
 				err = c.Publish(fap)
 				if err != nil {
 					return err
@@ -50,5 +51,3 @@ func Publish(opts *Options) *cobra.Command {
 		},
 	}
 }
-
-const ContentJSON = `{"type":"YFIUSD","version":"1.4.2","price":29554.098632102,"priceHex":"0000000000000000000000000000000000000000000006422182799241b0fc00","time":1607032876,"timeHex":"000000000000000000000000000000000000000000000000000000005fc9602c","hash":"9082f4d92f41e539615d293c48e29bf4a9c6d45de289b53b8033928b4ce3a453","signature":"652516621550c5396068c55cd1f4f15d0a2a290dca5a5e54dea8f6bdf3b731f9304f02deb989bcde82ae77832fd83a718323ec602d3a26e34a5160a3740e276e1b","sources":{"binance":"29545.9351062372","coinbase":"29531.4600000000","ftx":"29560.0000000000","gemini":"29615.0500000000","huobi":"29548.1972642045","uniswap":"29640.2199634951"}}`
