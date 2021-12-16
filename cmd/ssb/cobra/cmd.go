@@ -16,14 +16,12 @@
 package cobra
 
 import (
-	"encoding/json"
-
 	"github.com/spf13/cobra"
-	"go.cryptoscope.co/ssb"
+	ssbServer "go.cryptoscope.co/ssb"
 	"go.cryptoscope.co/ssb/invite"
 
-	ssb2 "github.com/chronicleprotocol/oracle-suite/cmd/keeman/ssb"
-	ssb3 "github.com/chronicleprotocol/oracle-suite/pkg/ssb"
+	ssbConf "github.com/chronicleprotocol/oracle-suite/internal/config/ssb"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ssb"
 )
 
 type Options struct {
@@ -32,56 +30,28 @@ type Options struct {
 	Verbose  bool
 }
 
+func (opts *Options) SSBConfig() (*ssb.Config, error) {
+	keys, err := ssbServer.LoadKeyPair(opts.KeysPath)
+	if err != nil {
+		return nil, err
+	}
+	caps, err := ssbConf.LoadCapsFile(opts.CapsPath)
+	if err != nil {
+		return nil, err
+	}
+	inv, err := invite.ParseLegacyToken(caps.Invite)
+	if err != nil {
+		return nil, err
+	}
+	return &ssb.Config{
+		Keys: keys,
+		Shs:  caps.Shs,
+		Addr: inv.Address,
+	}, nil
+}
+
 func Root() (*Options, *cobra.Command) {
 	return &Options{}, &cobra.Command{
 		Use: "ssb",
-	}
-}
-func Push(opts *Options) *cobra.Command {
-	return &cobra.Command{
-		Use: "push",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			caps, err := ssb2.LoadCapsFile(opts.CapsPath)
-			if err != nil {
-				return err
-			}
-			if len(caps.Shs) == 0 {
-				caps, err = ssb2.LoadCapsFromConfigFile(opts.CapsPath)
-				if err != nil {
-					return err
-				}
-			}
-			keys, err := ssb.LoadKeyPair(opts.KeysPath)
-			if err != nil {
-				return err
-			}
-			inv, err := invite.ParseLegacyToken(caps.Invite)
-			if err != nil {
-				return err
-			}
-			conf := ssb3.ClientConfig{
-				Keys:   keys,
-				Shs:    caps.Shs,
-				Invite: inv,
-			}
-			c, err := ssb3.NewClient(cmd.Context(), conf)
-			if err != nil {
-				return err
-			}
-			var fap ssb2.FeedAssetPrice
-			err = json.Unmarshal([]byte(ssb2.ContentJSON), &fap)
-			if err != nil {
-				return err
-			}
-			return c.PublishPrice(fap)
-		},
-	}
-}
-func Pull(opts *Options) *cobra.Command {
-	return &cobra.Command{
-		Use: "pull",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 	}
 }

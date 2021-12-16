@@ -17,14 +17,13 @@ package ssb
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"go.cryptoscope.co/muxrpc/v2"
 	"go.cryptoscope.co/ssb"
 	"go.cryptoscope.co/ssb/client"
 	"go.cryptoscope.co/ssb/invite"
-
-	ssb2 "github.com/chronicleprotocol/oracle-suite/cmd/keeman/ssb"
+	"go.cryptoscope.co/ssb/message"
 )
 
 type Client struct {
@@ -36,34 +35,32 @@ type Client struct {
 	shs    string
 	invite invite.Token
 }
-type ClientConfig struct {
-	Keys   ssb.KeyPair
-	Shs    string
-	Invite invite.Token
-}
 
-func NewClient(ctx context.Context, cfg ClientConfig) (*Client, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
-	rpc, err := client.NewTCP(
-		cfg.Keys,
-		cfg.Invite.Address,
-		client.WithSHSAppKey(cfg.Shs),
-		client.WithContext(ctx),
-		// client.WithLogger(logger),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{
-		ctx:    ctx,
-		doneCh: make(chan struct{}),
-		rpc:    rpc,
-	}, nil
-}
-
-func (c *Client) PublishPrice(price ssb2.FeedAssetPrice) error {
+func (c *Client) Publish(v interface{}) error {
 	var resp string
-	return c.rpc.Async(c.ctx, &resp, muxrpc.TypeString, muxrpc.Method{"publish"}, price)
+	defer func() { fmt.Println(resp) }()
+	return c.rpc.Async(c.ctx, &resp, muxrpc.TypeString, muxrpc.Method{"publish"}, v)
+}
+
+func (c *Client) Log() error {
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createLogStream"}, message.CreateLogArgs{
+		CommonArgs: message.CommonArgs{
+			Live: true,
+		},
+		StreamArgs: message.StreamArgs{
+			Limit:   -1,
+			Reverse: false,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
+		b, err := src.Bytes()
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(b))
+	}
+	return nil
 }

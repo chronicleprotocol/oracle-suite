@@ -13,44 +13,17 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cobra
 
 import (
-	"os"
-
-	"github.com/chronicleprotocol/oracle-suite/cmd/ssb/cobra"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	opts, cmd := cobra.Root()
-	cmd.PersistentFlags().BoolVarP(
-		&opts.Verbose,
-		"verbose",
-		"v",
-		false,
-		"verbose logging",
-	)
-	cmd.PersistentFlags().StringVarP(
-		&opts.CapsPath,
-		"caps",
-		"c",
-		"./local.caps.json",
-		"caps file path",
-	)
-	cmd.PersistentFlags().StringVarP(
-		&opts.KeysPath,
-		"keys",
-		"k",
-		"./local.ssb.json",
-		"caps file path",
-	)
-	cmd.AddCommand(
-		cobra.Publish(opts),
-		cobra.Pull(opts),
-		cobra.Log(opts),
-	)
-	if err := cmd.Execute(); err != nil {
-		os.Exit(1)
+func Pull(opts *Options) *cobra.Command {
+	return &cobra.Command{
+		Use: "pull",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 	}
-	os.Exit(0)
 }
