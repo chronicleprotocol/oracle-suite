@@ -203,19 +203,23 @@ func (g *wormholeGUID) hash() (common.Hash, error) {
 }
 
 func unpackWormholeGUID(data []byte) (*wormholeGUID, error) {
-	u, err := abiWormholeGUID.Unpack(data[4:])
+	u, err := abiWormholeGUID.Unpack(data)
 	if err != nil {
 		return nil, err
 	}
 	return &wormholeGUID{
-		sourceDomain: u[0].(common.Hash),
-		targetDomain: u[1].(common.Hash),
+		sourceDomain: bytes32ToHash(u[0].([32]uint8)),
+		targetDomain: bytes32ToHash(u[1].([32]uint8)),
 		receiver:     u[2].(common.Address),
 		operator:     u[3].(common.Address),
 		amount:       u[4].(*big.Int),
 		nonce:        u[5].(*big.Int),
-		timestamp:    u[6].(int64),
+		timestamp:    u[6].(*big.Int).Int64(),
 	}, nil
+}
+
+func bytes32ToHash(b [32]uint8) common.Hash {
+	return common.BytesToHash(b[:])
 }
 
 var abiWormholeGUID abi.Arguments
