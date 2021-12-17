@@ -17,6 +17,7 @@ package ssb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.cryptoscope.co/muxrpc/v2"
@@ -63,4 +64,59 @@ func (c *Client) Log() error {
 		fmt.Println(string(b))
 	}
 	return nil
+}
+
+func (c *Client) Hist() error {
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createHistoryStream"}, message.CreateHistArgs{
+		CommonArgs: message.CommonArgs{
+			Live: true,
+		},
+		StreamArgs: message.StreamArgs{
+			Limit:   -1,
+			Reverse: false,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
+		b, err := src.Bytes()
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(b))
+	}
+	return nil
+}
+
+func (c *Client) Last(assetName string) ([]byte, error) {
+	feedRef, err := c.rpc.Whoami()
+	if err != nil {
+		return nil, err
+	}
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createHistoryStream"}, message.CreateHistArgs{
+		CommonArgs: message.CommonArgs{
+			Keys: true,
+		},
+		StreamArgs: message.StreamArgs{
+			Limit:   1,
+			Reverse: true,
+		},
+		ID: feedRef,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var d [][]byte
+	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
+		b, err := src.Bytes()
+		if err != nil {
+			return nil, err
+		}
+		d = append(d, b)
+	}
+	if len(d) == 0 {
+		return nil, errors.New("no data in the stream")
+	}
+	return d[len(d)-1], nil
 }

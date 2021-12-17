@@ -16,13 +16,29 @@
 package cobra
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
 func Pull(opts *Options) *cobra.Command {
 	return &cobra.Command{
-		Use: "pull",
+		Use: "pull feedId assetName",
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			conf, err := opts.SSBConfig()
+			if err != nil {
+				return err
+			}
+			c, err := conf.Client(cmd.Context())
+			if err != nil {
+				return err
+			}
+			last, err := c.Last("")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(last))
 			return nil
 		},
 	}
