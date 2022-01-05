@@ -58,7 +58,7 @@ func (b Bittrex) PullPrices(pairs []Pair) []FetchResult {
 func (b *Bittrex) callOne(pair Pair) (*Price, error) {
 	var err error
 	req := &query.HTTPRequest{
-		URL: buildOriginURL(bittrexURL, b.BaseURL, bitstampBaseURL, b.localPairName(pair)),
+		URL: buildOriginURL(bittrexURL, b.BaseURL, bittrexBaseURL, b.localPairName(pair)),
 	}
 
 	// make query

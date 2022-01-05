@@ -16,16 +16,16 @@
 package gofer
 
 import (
-	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/origins"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
+	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/origins"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfig_buildGraphs_ValidConfig(t *testing.T) {
@@ -288,7 +288,7 @@ func TestConfig_buildGraphs_MedianTTL(t *testing.T) {
 
 func TestConfig_buildGraphs_UpdatedOriginURL(t *testing.T) {
 	url := "http://localhost:8080"
-	
+
 	config := Gofer{
 		Origins: map[string]Origin{
 			"ab": {

@@ -41,6 +41,8 @@ func TestTransport(t *testing.T) {
 	rpcMock.mockCall(1, "net_version")
 
 	res, err := httpClient.Post("http://rpcsplitter-vhost", "application/json", bytes.NewReader(msg))
+	defer func() { _ = res.Body.Close() }()
+
 	body, _ := io.ReadAll(res.Body)
 
 	require.NoError(t, err)

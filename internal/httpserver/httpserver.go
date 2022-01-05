@@ -52,7 +52,7 @@ type HTTPServer struct {
 func New(ctx context.Context, srv *http.Server) *HTTPServer {
 	s := &HTTPServer{
 		ctx:    ctx,
-		waitCh: make(chan error, 0),
+		waitCh: make(chan error),
 		srv:    srv,
 	}
 	s.handler = srv.Handler

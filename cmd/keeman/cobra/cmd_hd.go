@@ -63,6 +63,7 @@ const (
 	ThunderCore               = "m/44'/1001'/0'/0"
 )
 
+// nolint:funlen,gocyclo
 func NewHd(opts *Options) *cobra.Command {
 	var prefix, password, format string
 	cmd := &cobra.Command{

@@ -30,7 +30,7 @@ func SeededRandBytes(seedBytes []byte, len int) ([]byte, error) {
 	}
 	rand.Seed(seed)
 	rb := make([]byte, len)
-	rand.Read(rb)
+	rand.Read(rb) //nolint:gosec
 	return rb, nil
 }
 
@@ -44,7 +44,7 @@ func SeededRandBytesGen(seedBytes []byte, len int) (func() []byte, error) {
 	rand.Seed(seed)
 	return func() []byte {
 		rb := make([]byte, len)
-		rand.Read(rb)
+		rand.Read(rb) //nolint:gosec
 		return rb
 	}, nil
 }
