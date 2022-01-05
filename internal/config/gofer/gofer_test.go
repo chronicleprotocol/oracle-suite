@@ -16,6 +16,9 @@
 package gofer
 
 import (
+	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/origins"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -281,4 +284,45 @@ func TestConfig_buildGraphs_MedianTTL(t *testing.T) {
 
 	assert.Equal(t, 180*time.Second, g[p].Children()[0].(*nodes.OriginNode).MaxTTL())
 	assert.Equal(t, 120*time.Second, g[p].Children()[0].(*nodes.OriginNode).MinTTL())
+}
+
+func TestConfig_buildGraphs_UpdatedOriginURL(t *testing.T) {
+	url := "http://localhost:8080"
+	
+	config := Gofer{
+		Origins: map[string]Origin{
+			"ab": {
+				Type:   "binance",
+				Name:   "ab",
+				URL:    url,
+				Params: []byte(`{}`),
+			},
+		},
+		PriceModels: map[string]PriceModel{
+			"A/B": {
+				Method: "median",
+				TTL:    120,
+				Sources: [][]Source{
+					{
+						{Origin: "ab", Pair: "A/B"},
+					},
+				},
+			},
+		},
+	}
+
+	o, err := config.buildOrigins(&ethereumMocks.Client{})
+	require.NoError(t, err)
+	require.NotNil(t, o)
+
+	h := o.Handlers()
+	require.NotNil(t, h)
+	require.NotNil(t, h["ab"])
+
+	handler := h["ab"].(*origins.BaseExchangeHandler)
+	require.NotNil(t, handler.ExchangeHandler)
+
+	bin := handler.ExchangeHandler.(origins.Binance)
+	require.NotNil(t, bin)
+	require.Equal(t, url, bin.BaseURL)
 }
