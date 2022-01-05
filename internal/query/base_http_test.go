@@ -49,7 +49,7 @@ func (suite *MakeRequestSuite) TestMakingRequest() {
 	// Start a local HTTP server
 	suite.server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
-		rw.Write([]byte(serverResponse)) //nolint:errcheck
+		rw.Write([]byte(serverResponse))
 	}))
 
 	assert.NotNil(suite.T(), suite.server)
@@ -78,7 +78,7 @@ func (suite *MakeRequestSuite) TestMakingRequestWithHeaders() {
 	suite.server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		assert.EqualValues(suite.T(), requiredHeaderValue, req.Header.Get(requiredHeaderKey))
 		// Send response to be tested
-		rw.Write([]byte(serverResponse)) //nolint:errcheck
+		rw.Write([]byte(serverResponse))
 	}))
 
 	assert.NotNil(suite.T(), suite.server)
@@ -98,7 +98,7 @@ func (suite *MakeRequestSuite) TestMakingPOSTRequest() {
 	suite.server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		assert.Equal(suite.T(), "POST", req.Method)
 		// Send response to be tested
-		rw.Write([]byte(serverResponse)) //nolint:errcheck
+		rw.Write([]byte(serverResponse))
 	}))
 
 	assert.NotNil(suite.T(), suite.server)
@@ -147,7 +147,7 @@ func (suite *MakeRequestSuite) TestMakeHTTPRequestWithRetry() {
 		if calls < 3 {
 			rw.WriteHeader(404)
 		} else {
-			rw.Write([]byte(serverResponse)) //nolint:errcheck
+			rw.Write([]byte(serverResponse))
 		}
 	}))
 
