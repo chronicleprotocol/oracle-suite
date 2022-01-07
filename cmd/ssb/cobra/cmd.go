@@ -16,7 +16,11 @@
 package cobra
 
 import (
+	"net"
+
 	"github.com/spf13/cobra"
+	"go.cryptoscope.co/netwrap"
+	"go.cryptoscope.co/secretstream"
 	ssbServer "go.cryptoscope.co/ssb"
 	"go.cryptoscope.co/ssb/invite"
 
@@ -27,6 +31,8 @@ import (
 type Options struct {
 	CapsPath string
 	KeysPath string
+	SsbHost  string
+	SsbPort  int
 	Verbose  bool
 }
 
@@ -37,16 +43,29 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 	}
 	caps, err := ssbConf.LoadCapsFile(opts.CapsPath)
 	if err != nil {
-		return nil, err
+		caps, err = ssbConf.LoadCapsFromConfigFile(opts.CapsPath)
+		if err != nil {
+			return nil, err
+		}
 	}
-	inv, err := invite.ParseLegacyToken(caps.Invite)
-	if err != nil {
-		return nil, err
+	if caps.Invite != "" {
+		inv, err := invite.ParseLegacyToken(caps.Invite)
+		if err != nil {
+			return nil, err
+		}
+		return &ssb.Config{
+			Keys: keys,
+			Shs:  caps.Shs,
+			Addr: inv.Address,
+		}, nil
 	}
 	return &ssb.Config{
 		Keys: keys,
 		Shs:  caps.Shs,
-		Addr: inv.Address,
+		Addr: netwrap.WrapAddr(&net.TCPAddr{
+			IP:   net.ParseIP(opts.SsbHost),
+			Port: opts.SsbPort,
+		}, secretstream.Addr{PubKey: keys.ID().PubKey()}),
 	}, nil
 }
 
