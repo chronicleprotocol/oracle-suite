@@ -43,6 +43,9 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 	}
 	caps, err := ssbConf.LoadCapsFile(opts.CapsPath)
 	if err != nil {
+		return nil, err
+	}
+	if caps.Shs == "" || caps.Sign == "" {
 		caps, err = ssbConf.LoadCapsFromConfigFile(opts.CapsPath)
 		if err != nil {
 			return nil, err
@@ -62,15 +65,19 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 	return &ssb.Config{
 		Keys: keys,
 		Shs:  caps.Shs,
-		Addr: netwrap.WrapAddr(&net.TCPAddr{
-			IP:   net.ParseIP(opts.SsbHost),
-			Port: opts.SsbPort,
-		}, secretstream.Addr{PubKey: keys.ID().PubKey()}),
+		Addr: netwrap.WrapAddr(
+			&net.TCPAddr{
+				IP:   net.ParseIP(opts.SsbHost),
+				Port: opts.SsbPort,
+			},
+			secretstream.Addr{PubKey: keys.ID().PubKey()},
+		),
 	}, nil
 }
 
 func Root() (*Options, *cobra.Command) {
 	return &Options{}, &cobra.Command{
-		Use: "ssb",
+		Use:               "ssb",
+		DisableAutoGenTag: false,
 	}
 }

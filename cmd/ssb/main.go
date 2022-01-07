@@ -42,19 +42,19 @@ func main() {
 		"keys",
 		"k",
 		"./local.ssb.json",
-		"caps file path",
+		"keys file path",
 	)
 	cmd.PersistentFlags().StringVarP(
 		&opts.SsbHost,
 		"host",
-		"h",
+		"H",
 		"127.0.0.1",
 		"ssb server host",
 	)
 	cmd.PersistentFlags().IntVarP(
 		&opts.SsbPort,
 		"port",
-		"p",
+		"P",
 		8008,
 		"ssb server port",
 	)
