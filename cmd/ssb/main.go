@@ -44,6 +44,20 @@ func main() {
 		"./local.ssb.json",
 		"caps file path",
 	)
+	cmd.PersistentFlags().StringVarP(
+		&opts.SsbHost,
+		"host",
+		"h",
+		"127.0.0.1",
+		"ssb server host",
+	)
+	cmd.PersistentFlags().IntVarP(
+		&opts.SsbPort,
+		"port",
+		"p",
+		8008,
+		"ssb server port",
+	)
 	cmd.AddCommand(
 		cobra.Publish(opts),
 		cobra.Pull(opts),
