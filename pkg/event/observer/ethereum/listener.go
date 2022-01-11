@@ -187,19 +187,27 @@ type wormholeGUID struct {
 }
 
 func (g *wormholeGUID) hash() (common.Hash, error) {
-	bts, err := abiWormholeGUID.Pack(
+	b, err := packWormholeGUID(g)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return crypto.Keccak256Hash(b), nil
+}
+
+func packWormholeGUID(g *wormholeGUID) ([]byte, error) {
+	b, err := abiWormholeGUID.Pack(
 		g.sourceDomain,
 		g.targetDomain,
 		g.receiver,
 		g.operator,
 		g.amount,
 		g.nonce,
-		g.timestamp,
+		big.NewInt(g.timestamp),
 	)
 	if err != nil {
-		return common.Hash{}, nil
+		return nil, err
 	}
-	return crypto.Keccak256Hash(bts), nil
+	return b, nil
 }
 
 func unpackWormholeGUID(data []byte) (*wormholeGUID, error) {
