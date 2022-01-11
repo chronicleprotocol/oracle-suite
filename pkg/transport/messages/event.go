@@ -39,8 +39,8 @@ type Event struct {
 	Type string
 	// Unique ID of the event.
 	ID []byte
-	// Specifies a group to which the event belongs to, like transaction hash.
-	Group []byte
+	// Event index used to search for events.
+	Index []byte
 	// List of event data.
 	Data map[string][]byte
 	// List of event signatures.
@@ -56,7 +56,7 @@ func (e *Event) MarshallBinary() ([]byte, error) {
 		Timestamp:  e.Date.Unix(),
 		Type:       e.Type,
 		Id:         e.ID,
-		Group:      e.Group,
+		Index:      e.Index,
 		Data:       e.Data,
 		Signatures: e.Signatures,
 	})
@@ -71,7 +71,7 @@ func (e *Event) UnmarshallBinary(data []byte) error {
 	e.Date = time.Unix(msg.Timestamp, 0)
 	e.Type = msg.Type
 	e.ID = msg.Id
-	e.Group = msg.Group
+	e.Index = msg.Index
 	e.Data = msg.Data
 	e.Signatures = msg.Signatures
 	return e.validate()
@@ -84,8 +84,8 @@ func (e *Event) validate() error {
 	if len(e.ID) > eventMessageMaxFieldSize {
 		return errors.New("invalid event message, ID size too large")
 	}
-	if len(e.Group) > eventMessageMaxFieldSize {
-		return errors.New("invalid event message, group size too large")
+	if len(e.Index) > eventMessageMaxFieldSize {
+		return errors.New("invalid event message, index size too large")
 	}
 	if len(e.Data) > eventMessageMaxDataFields {
 		return errors.New("invalid event message, too many data fields")

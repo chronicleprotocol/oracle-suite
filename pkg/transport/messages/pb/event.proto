@@ -21,7 +21,7 @@ message Event {
   int64 timestamp = 1;
   string type = 2;
   bytes id = 3;
-  bytes group = 4;
+  bytes index = 4;
   map<string, bytes> data = 5;
   map<string, bytes> signatures = 6;
 }

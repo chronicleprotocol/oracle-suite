@@ -36,7 +36,7 @@ func TestEvent_Marshalling(t *testing.T) {
 				Date:  time.Unix(9, 0),
 				Type:  "test",
 				ID:    []byte{10, 10, 10},
-				Group: []byte{11, 11, 11},
+				Index: []byte{11, 11, 11},
 				Data: map[string][]byte{
 					"a": {12, 12, 12},
 					"b": {13, 13, 13},
@@ -53,7 +53,7 @@ func TestEvent_Marshalling(t *testing.T) {
 				Date:  time.Unix(9, 0),
 				Type:  strings.Repeat("a", eventMessageMaxFieldSize),
 				ID:    bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				Group: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
+				Index: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
 				Data: map[string][]byte{
 					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
 					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
@@ -79,7 +79,7 @@ func TestEvent_Marshalling(t *testing.T) {
 		},
 		{
 			event: Event{
-				Group: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
+				Index: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
 			},
 			wantErr: true,
 		},
@@ -129,7 +129,7 @@ func TestEvent_Marshalling(t *testing.T) {
 				assert.Equal(t, tt.event.Date, event.Date)
 				assert.Equal(t, tt.event.Type, event.Type)
 				assert.Equal(t, tt.event.ID, event.ID)
-				assert.Equal(t, tt.event.Group, event.Group)
+				assert.Equal(t, tt.event.Index, event.Index)
 				assert.Equal(t, tt.event.Data, event.Data)
 				assert.Equal(t, tt.event.Signatures, event.Signatures)
 			}

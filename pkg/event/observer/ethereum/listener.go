@@ -154,7 +154,7 @@ func logToMessage(log types.Log) (*messages.Event, error) {
 		Date:       time.Now(),
 		Type:       WormholeEventType,
 		ID:         append(log.TxHash.Bytes(), big.NewInt(int64(log.Index)).Bytes()...),
-		Group:      log.TxHash.Bytes(),
+		Index:      log.TxHash.Bytes(),
 		Data:       data,
 		Signatures: map[string][]byte{},
 	}, nil

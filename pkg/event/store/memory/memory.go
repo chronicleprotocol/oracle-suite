@@ -54,8 +54,8 @@ func (m *EventStore) Wait() error {
 	return nil
 }
 
-func (m *EventStore) Events(typ string, group []byte) []*messages.Event {
-	return m.events[mapHash(typ, group)]
+func (m *EventStore) Events(typ string, index []byte) []*messages.Event {
+	return m.events[mapHash(typ, index)]
 }
 
 func (m *EventStore) collectorLoop() {
@@ -75,7 +75,7 @@ func (m *EventStore) collectorLoop() {
 				m.log.Error("Unexpected value returned from transport layer")
 				continue
 			}
-			h := mapHash(event.Type, event.Group)
+			h := mapHash(event.Type, event.Index)
 			m.events[h] = append(m.events[h], event)
 		}
 	}
@@ -114,6 +114,6 @@ func removeMessage(s []*messages.Event, n int) []*messages.Event {
 	return append(s[:n], s[n+1:]...)
 }
 
-func mapHash(typ string, group []byte) [md5.Size]byte {
-	return md5.Sum(append([]byte(typ), group...))
+func mapHash(typ string, index []byte) [md5.Size]byte {
+	return md5.Sum(append([]byte(typ), index...))
 }

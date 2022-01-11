@@ -8,7 +8,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const Signature = "ethereum"
+const SignatureKey = "ethereum"
+const SignerKey = "ethereum_signer"
 
 // Signer signs Ethereum log messages using Ethereum signature.
 type Signer struct {
@@ -46,6 +47,7 @@ func (l *Signer) Sign(event *messages.Event) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	event.Signatures[Signature] = s.Bytes()
+	event.Data[SignerKey] = l.signer.Address().Bytes()
+	event.Signatures[SignatureKey] = s.Bytes()
 	return true, nil
 }

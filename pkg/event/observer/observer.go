@@ -103,7 +103,7 @@ func (l *EventObserver) broadcast(event *messages.Event) {
 	l.log.
 		WithField("id", hex.EncodeToString(event.ID)).
 		WithField("type", event.Type).
-		WithField("group", hex.EncodeToString(event.Group)).
+		WithField("index", hex.EncodeToString(event.Index)).
 		Info("Event broadcast")
 	err := l.transport.Broadcast(messages.EventMessageName, event)
 	if err != nil {

@@ -77,17 +77,17 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	group, ok := req.URL.Query()["group"]
-	if !ok || len(group) != 1 {
+	idxHex, ok := req.URL.Query()["index"]
+	if !ok || len(idxHex) != 1 {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	groupBts, err := hex.DecodeString(group[0])
+	idx, err := hex.DecodeString(idxHex[0])
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	events := e.es.Events(typ[0], groupBts)
+	events := e.es.Events(typ[0], idx)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	json.NewEncoder(res).Encode(mapEvents(events))
