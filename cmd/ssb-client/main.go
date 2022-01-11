@@ -18,7 +18,7 @@ package main
 import (
 	"os"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd/ssb/cobra"
+	"github.com/chronicleprotocol/oracle-suite/cmd/ssb-client/cobra"
 )
 
 func main() {
@@ -62,6 +62,7 @@ func main() {
 		cobra.Publish(opts),
 		cobra.Pull(opts),
 		cobra.Log(opts),
+		cobra.Whoami(opts),
 	)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)

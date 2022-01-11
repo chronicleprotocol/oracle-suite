@@ -69,7 +69,7 @@ func NewHd(opts *Options) *cobra.Command {
 	var prefix, password, format string
 	var index int
 	cmd := &cobra.Command{
-		Use:     "derive [--prefix path] [--format eth|ssb|b32] [--password] path...",
+		Use:     "derive [--prefix path] [--format eth|ssb-client|b32] [--password] path...",
 		Aliases: []string{"der", "d"},
 		Short:   "Derive a key pair from the provided mnemonic phrase",
 		RunE: func(_ *cobra.Command, args []string) error {

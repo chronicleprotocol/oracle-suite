@@ -17,6 +17,7 @@ package ssb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -25,6 +26,7 @@ import (
 	"go.cryptoscope.co/ssb/client"
 	"go.cryptoscope.co/ssb/invite"
 	"go.cryptoscope.co/ssb/message"
+	refs "go.mindeco.de/ssb-refs"
 )
 
 type Client struct {
@@ -61,13 +63,14 @@ func (c *Client) Log() error {
 		if err != nil {
 			return err
 		}
+
 		fmt.Println(string(b))
 	}
 	return nil
 }
 
 func (c *Client) Hist() error {
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createHistoryStream"}, message.CreateHistArgs{
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeBinary, muxrpc.Method{"createHistoryStream"}, message.CreateHistArgs{
 		CommonArgs: message.CommonArgs{
 			Live: true,
 		},
@@ -88,18 +91,26 @@ func (c *Client) Hist() error {
 	}
 	return nil
 }
-
-func (c *Client) Last(assetName string) ([]byte, error) {
-	feedRef, err := c.rpc.Whoami()
+func (c *Client) Whoami() ([]byte, error) {
+	var resp []byte
+	err := c.rpc.Async(c.ctx, &resp, muxrpc.TypeBinary, muxrpc.Method{"whoami"})
 	if err != nil {
 		return nil, err
 	}
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createHistoryStream"}, message.CreateHistArgs{
+	return resp, nil
+}
+
+func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
+	feedRef, err := refs.ParseFeedRef(id)
+	if err != nil {
+		return nil, err
+	}
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createUserStream"}, message.CreateHistArgs{
 		CommonArgs: message.CommonArgs{
 			Keys: true,
 		},
 		StreamArgs: message.StreamArgs{
-			Limit:   1,
+			Limit:   limit,
 			Reverse: true,
 		},
 		ID: feedRef,
@@ -107,16 +118,22 @@ func (c *Client) Last(assetName string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	var d [][]byte
+	var data struct {
+		Value struct {
+			Content FeedAssetPrice `json:"content"`
+		} `json:"value"`
+	}
 	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
-		b, err := src.Bytes()
+		bytes, err := src.Bytes()
 		if err != nil {
 			return nil, err
 		}
-		d = append(d, b)
+		if err = json.Unmarshal(bytes, &data); err != nil {
+			return nil, err
+		}
+		if data.Value.Content.Type == contentType {
+			return bytes, nil
+		}
 	}
-	if len(d) == 0 {
-		return nil, errors.New("no data in the stream")
-	}
-	return d[len(d)-1], nil
+	return nil, errors.New("no data in the stream")
 }

@@ -21,11 +21,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Pull(opts *Options) *cobra.Command {
+func Whoami(opts *Options) *cobra.Command {
 	return &cobra.Command{
-		Use: "pull feedId assetName",
+		Use: "whoami",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			conf, err := opts.SSBConfig()
 			if err != nil {
 				return err
@@ -34,11 +33,11 @@ func Pull(opts *Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			last, err := c.Last("")
+			whoami, err := c.Whoami()
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(last))
+			fmt.Println(string(whoami))
 			return nil
 		},
 	}
