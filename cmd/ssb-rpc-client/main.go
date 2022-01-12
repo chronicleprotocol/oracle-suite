@@ -18,7 +18,7 @@ package main
 import (
 	"os"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd/ssb-client/cobra"
+	"github.com/chronicleprotocol/oracle-suite/cmd/ssb-rpc-client/cobra"
 )
 
 func main() {
