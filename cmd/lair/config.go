@@ -135,6 +135,6 @@ func (s *Service) Start() error {
 
 func (s *Service) CancelAndWait() {
 	s.ctxCancel()
-	s.Lair.Wait()
-	s.Transport.Wait()
+	<-s.Lair.Wait()
+	<-s.Transport.Wait()
 }

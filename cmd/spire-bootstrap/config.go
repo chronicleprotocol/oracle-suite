@@ -90,5 +90,5 @@ func (s *Service) Start() error {
 
 func (s *Service) CancelAndWait() {
 	s.ctxCancel()
-	s.Transport.Wait()
+	<-s.Transport.Wait()
 }

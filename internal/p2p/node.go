@@ -60,7 +60,7 @@ func init() {
 type Node struct {
 	ctx    context.Context
 	mu     sync.Mutex
-	doneCh chan struct{} // doneCh is used to unblock the Wait method.
+	waitCh chan error
 
 	host                  host.Host
 	pubSub                *pubsub.PubSub
@@ -88,7 +88,7 @@ func NewNode(ctx context.Context, opts ...Options) (*Node, error) {
 	}
 	n := &Node{
 		ctx:                   ctx,
-		doneCh:                make(chan struct{}),
+		waitCh:                make(chan error),
 		peerstore:             ps,
 		nodeEventHandler:      sets.NewNodeEventHandlerSet(),
 		pubSubEventHandlerSet: sets.NewPubSubEventHandlerSet(),
@@ -158,8 +158,8 @@ func (n *Node) Start() error {
 	return nil
 }
 
-func (n *Node) Wait() {
-	<-n.doneCh
+func (n *Node) Wait() chan error {
+	return n.waitCh
 }
 
 func (n *Node) Addrs() []multiaddr.Multiaddr {
@@ -305,7 +305,8 @@ func (n *Node) Subscription(topic string) (*Subscription, error) {
 
 // contextCancelHandler handles context cancellation.
 func (n *Node) contextCancelHandler() {
-	defer func() { close(n.doneCh) }()
+	var err error
+	defer func() { n.waitCh <- err }()
 	defer n.tsLog.get().Info("Stopped")
 	defer n.nodeEventHandler.Handle(sets.NodeStoppedEvent{})
 	<-n.ctx.Done()
@@ -317,10 +318,7 @@ func (n *Node) contextCancelHandler() {
 
 	n.subs = nil
 	n.closed = true
-	err := n.host.Close()
-	if err != nil {
-		n.tsLog.get().WithError(err).Error("Error during closing host")
-	}
+	err = n.host.Close()
 }
 
 // ListenAddrs returns all node's listen multiaddresses as a string list.

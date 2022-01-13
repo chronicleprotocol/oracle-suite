@@ -150,9 +150,9 @@ func (s *Services) Start() error {
 
 func (s *Services) CancelAndWait() {
 	s.ctxCancel()
-	s.Transport.Wait()
-	s.Ghost.Wait()
+	<-s.Transport.Wait()
+	<-s.Ghost.Wait()
 	if g, ok := s.Gofer.(gofer.StartableGofer); ok {
-		g.Wait()
+		<-g.Wait()
 	}
 }

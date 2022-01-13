@@ -230,8 +230,8 @@ func (p *P2P) Start() error {
 }
 
 // Wait implements the transport.Transport interface.
-func (p *P2P) Wait() {
-	p.node.Wait()
+func (p *P2P) Wait() chan error {
+	return p.node.Wait()
 }
 
 // Broadcast implements the transport.Transport interface.

@@ -114,5 +114,5 @@ type Gofer interface {
 type StartableGofer interface {
 	Gofer
 	Start() error
-	Wait()
+	Wait() chan error
 }

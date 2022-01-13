@@ -145,7 +145,7 @@ func (s *Services) Start() error {
 
 func (s *Services) CancelAndWait() {
 	s.ctxCancel()
-	s.Transport.Wait()
-	s.Datastore.Wait()
-	s.Spectre.Wait()
+	<-s.Transport.Wait()
+	<-s.Datastore.Wait()
+	<-s.Spectre.Wait()
 }

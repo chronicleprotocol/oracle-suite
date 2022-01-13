@@ -29,7 +29,7 @@ var ErrNotStarted = errors.New("gofer RPC client is not started")
 // to fetch prices and models.
 type Gofer struct {
 	ctx    context.Context
-	doneCh chan struct{}
+	waitCh chan error
 
 	rpc     *rpc.Client
 	network string
@@ -43,7 +43,7 @@ func NewGofer(ctx context.Context, network, address string) (*Gofer, error) {
 	}
 	return &Gofer{
 		ctx:     ctx,
-		doneCh:  make(chan struct{}),
+		waitCh:  make(chan error),
 		network: network,
 		address: address,
 	}, nil
@@ -56,14 +56,13 @@ func (g *Gofer) Start() error {
 		return err
 	}
 	g.rpc = client
-
 	go g.contextCancelHandler()
 	return nil
 }
 
 // Wait implements the gofer.StartableGofer interface.
-func (g *Gofer) Wait() {
-	<-g.doneCh
+func (g *Gofer) Wait() chan error {
+	return g.waitCh
 }
 
 // Models implements the gofer.Gofer interface.
@@ -118,8 +117,6 @@ func (g *Gofer) Pairs() ([]gofer.Pair, error) {
 }
 
 func (g *Gofer) contextCancelHandler() {
-	defer func() { close(g.doneCh) }()
 	<-g.ctx.Done()
-
-	g.rpc.Close()
+	g.waitCh <- g.rpc.Close()
 }

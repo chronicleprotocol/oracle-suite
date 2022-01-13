@@ -116,9 +116,9 @@ func TestMain(m *testing.M) {
 	retCode := m.Run()
 
 	ctxCancel()
-	agent.Wait()
-	spire.Wait()
-	dat.Wait()
+	<-agent.Wait()
+	<-spire.Wait()
+	<-dat.Wait()
 
 	os.Exit(retCode)
 }

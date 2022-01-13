@@ -69,9 +69,13 @@ func NewRunCmd(opts *options) *cobra.Command {
 				})
 			}
 
-			srv.Start()
+			err = srv.Start()
+			if err != nil {
+				return fmt.Errorf("unable to start the HTTP server: %w", err)
+			}
+
 			defer func() {
-				err := srv.Wait()
+				err := <-srv.Wait()
 				if err != nil {
 					log.WithError(err).Error("Error while closing HTTP server")
 				}

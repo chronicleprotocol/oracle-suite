@@ -39,7 +39,7 @@ var errUnknownFeeder = errors.New("feeder is not allowed to send prices")
 type Datastore struct {
 	ctx    context.Context
 	mu     sync.Mutex
-	doneCh chan struct{}
+	waitCh chan error
 
 	signer     ethereum.Signer
 	transport  transport.Transport
@@ -75,7 +75,7 @@ func NewDatastore(ctx context.Context, cfg Config) (*Datastore, error) {
 	}
 	return &Datastore{
 		ctx:        ctx,
-		doneCh:     make(chan struct{}),
+		waitCh:     make(chan error),
 		signer:     cfg.Signer,
 		transport:  cfg.Transport,
 		pairs:      cfg.Pairs,
@@ -93,8 +93,8 @@ func (c *Datastore) Start() error {
 }
 
 // Wait implements the datastore.Datastore interface.
-func (c *Datastore) Wait() {
-	<-c.doneCh
+func (c *Datastore) Wait() chan error {
+	return c.waitCh
 }
 
 // Prices implements the datastore.Datastore interface.
@@ -180,7 +180,7 @@ func (c *Datastore) isFeedAllowed(assetPair string, address ethereum.Address) bo
 }
 
 func (c *Datastore) contextCancelHandler() {
-	defer func() { close(c.doneCh) }()
+	defer func() { c.waitCh <- nil }()
 	defer c.log.Info("Stopped")
 	<-c.ctx.Done()
 }

@@ -87,32 +87,36 @@ func (s *HTTPServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 // Start starts HTTP server.
-func (s *HTTPServer) Start() {
+func (s *HTTPServer) Start() error {
 	addr := s.srv.Addr
 	if addr == "" {
 		addr = ":http"
 	}
 	ln, err := (&net.ListenConfig{}).Listen(s.ctx, "tcp", addr)
 	if err != nil {
-		s.waitCh <- err
+		return err
 	}
 	s.ln = ln
 	go s.contextCancelHandler()
-	go func() {
-		if err := s.srv.Serve(ln); err != nil {
-			s.waitCh <- err
-		}
-	}()
+	go s.serve()
+	return nil
 }
 
 // Wait waits until server is closed.
-func (s *HTTPServer) Wait() error {
-	return <-s.waitCh
+func (s *HTTPServer) Wait() chan error {
+	return s.waitCh
 }
 
 // Addr returns the server's network address.
 func (s *HTTPServer) Addr() net.Addr {
 	return s.ln.Addr()
+}
+
+// contextCancelHandler handles context cancellation.
+func (s *HTTPServer) serve() {
+	if err := s.srv.Serve(s.ln); err != nil {
+		s.waitCh <- err
+	}
 }
 
 // contextCancelHandler handles context cancellation.

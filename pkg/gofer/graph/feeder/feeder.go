@@ -67,11 +67,11 @@ type Feedable interface {
 
 // Feeder sets prices from origins to the Feedable nodes.
 type Feeder struct {
-	ctx context.Context
+	ctx    context.Context
+	waitCh chan error
 
-	set    *origins.Set
-	log    log.Logger
-	doneCh chan struct{}
+	set *origins.Set
+	log log.Logger
 }
 
 // NewFeeder creates new Feeder instance.
@@ -80,7 +80,7 @@ func NewFeeder(ctx context.Context, set *origins.Set, log log.Logger) *Feeder {
 		ctx:    ctx,
 		set:    set,
 		log:    log.WithField("tag", LoggerTag),
-		doneCh: make(chan struct{}),
+		waitCh: make(chan error),
 	}
 }
 
@@ -129,15 +129,8 @@ func (f *Feeder) Start(ns ...nodes.Node) error {
 }
 
 // Wait waits until feeder's context is cancelled.
-func (f *Feeder) Wait() {
-	<-f.doneCh
-}
-
-func (f *Feeder) contextCancelHandler() {
-	defer func() { close(f.doneCh) }()
-	defer f.log.Info("Stopped")
-
-	<-f.ctx.Done()
+func (f *Feeder) Wait() chan error {
+	return f.waitCh
 }
 
 // findFeedableNodes returns a list of children nodes from given root nodes
@@ -211,6 +204,12 @@ func (f *Feeder) fetchPricesAndFeedThemToFeedableNodes(ns []Feedable) Warnings {
 	}
 
 	return warns
+}
+
+func (f *Feeder) contextCancelHandler() {
+	defer func() { f.waitCh <- nil }()
+	defer f.log.Info("Stopped")
+	<-f.ctx.Done()
 }
 
 func appendPairIfUnique(pairs []origins.Pair, pair origins.Pair) []origins.Pair {

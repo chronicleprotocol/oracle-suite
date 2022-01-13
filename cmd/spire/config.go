@@ -159,7 +159,7 @@ func (s *ClientServices) Start() error {
 
 func (s *ClientServices) CancelAndWait() {
 	s.ctxCancel()
-	s.Client.Wait()
+	<-s.Client.Wait()
 }
 
 type AgentServices struct {
@@ -223,7 +223,7 @@ func (s *AgentServices) Start() error {
 
 func (s *AgentServices) CancelAndWait() {
 	s.ctxCancel()
-	s.Transport.Wait()
-	s.Datastore.Wait()
-	s.Agent.Wait()
+	<-s.Transport.Wait()
+	<-s.Datastore.Wait()
+	<-s.Agent.Wait()
 }

@@ -97,7 +97,7 @@ func (s *GoferClientServices) Start() error {
 func (s *GoferClientServices) CancelAndWait() {
 	s.ctxCancel()
 	if g, ok := s.Gofer.(pkgGofer.StartableGofer); ok {
-		g.Wait()
+		<-g.Wait()
 	}
 }
 
@@ -139,5 +139,5 @@ func (s *GoferAgentService) Start() error {
 
 func (s *GoferAgentService) CancelAndWait() {
 	s.ctxCancel()
-	s.Agent.Wait()
+	<-s.Agent.Wait()
 }

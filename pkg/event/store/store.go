@@ -107,7 +107,7 @@ func (e *EventStore) eventCollectorRoutine() {
 
 // contextCancelHandler handles context cancellation.
 func (e *EventStore) contextCancelHandler() {
-	defer func() { close(e.waitCh) }()
+	defer func() { e.waitCh <- nil }()
 	defer e.log.Info("Stopped")
 	<-e.ctx.Done()
 }

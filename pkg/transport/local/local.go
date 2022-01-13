@@ -29,7 +29,7 @@ var ErrNotSubscribed = errors.New("topic is not subscribed")
 // using local channels.
 type Local struct {
 	ctx    context.Context
-	doneCh chan struct{} // doneCh is used to unblock the Wait method.
+	waitCh chan error
 	subs   map[string]subscription
 }
 
@@ -50,7 +50,7 @@ type subscription struct {
 func New(ctx context.Context, b int, s map[string]transport.Message) *Local {
 	l := &Local{
 		ctx:    ctx,
-		doneCh: make(chan struct{}),
+		waitCh: make(chan error),
 		subs:   make(map[string]subscription),
 	}
 	for topic, typ := range s {
@@ -70,8 +70,8 @@ func (l *Local) Start() error {
 }
 
 // Wait implements the transport.Transport interface.
-func (l *Local) Wait() {
-	<-l.doneCh
+func (l *Local) Wait() chan error {
+	return l.waitCh
 }
 
 // Broadcast implements the transport.Transport interface.
@@ -109,9 +109,8 @@ func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
 
 // contextCancelHandler handles context cancellation.
 func (l *Local) contextCancelHandler() {
-	defer func() { close(l.doneCh) }()
+	defer func() { l.waitCh <- nil }()
 	<-l.ctx.Done()
-
 	for _, sub := range l.subs {
 		close(sub.status)
 	}

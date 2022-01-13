@@ -18,6 +18,7 @@ package spire
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/rpc"
 
@@ -71,19 +72,22 @@ func NewAgent(ctx context.Context, cfg AgentConfig) (*Agent, error) {
 
 func (s *Agent) Start() error {
 	s.log.Infof("Starting")
+	err := s.srv.Start()
+	if err != nil {
+		return fmt.Errorf("unable to start the HTTP server: %w", err)
+	}
 	go s.contextCancelHandler()
-	s.srv.Start()
+
 	return nil
 }
 
 // Wait waits until agent's context is cancelled.
-func (s *Agent) Wait() error {
-	defer close(s.waitCh) // we can write to channel only once
-	return <-s.waitCh
+func (s *Agent) Wait() chan error {
+	return s.waitCh
 }
 
 func (s *Agent) contextCancelHandler() {
 	defer s.log.Info("Stopped")
 	<-s.ctx.Done()
-	s.waitCh <- s.srv.Wait()
+	s.waitCh <- <-s.srv.Wait()
 }

@@ -60,7 +60,7 @@ func (e errNoPrices) Error() string {
 type Spectre struct {
 	ctx    context.Context
 	mu     sync.Mutex
-	doneCh chan struct{}
+	waitCh chan error
 
 	signer    ethereum.Signer
 	datastore datastore.Datastore
@@ -105,7 +105,7 @@ func NewSpectre(ctx context.Context, cfg Config) (*Spectre, error) {
 	}
 	r := &Spectre{
 		ctx:       ctx,
-		doneCh:    make(chan struct{}),
+		waitCh:    make(chan error),
 		signer:    cfg.Signer,
 		datastore: cfg.Datastore,
 		interval:  cfg.Interval,
@@ -127,8 +127,8 @@ func (s *Spectre) Start() error {
 	return nil
 }
 
-func (s *Spectre) Wait() {
-	<-s.doneCh
+func (s *Spectre) Wait() chan error {
+	return s.waitCh
 }
 
 // relay tries to update an Oracle contract for given pair. It'll return
@@ -218,7 +218,7 @@ func (s *Spectre) relayerLoop() {
 	go func() {
 		for {
 			select {
-			case <-s.doneCh:
+			case <-s.waitCh:
 				ticker.Stop()
 				return
 			case <-ticker.C:
@@ -251,7 +251,7 @@ func (s *Spectre) relayerLoop() {
 }
 
 func (s *Spectre) contextCancelHandler() {
-	defer func() { close(s.doneCh) }()
+	defer func() { s.waitCh <- nil }()
 	defer s.log.Info("Stopped")
 	<-s.ctx.Done()
 }

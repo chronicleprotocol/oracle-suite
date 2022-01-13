@@ -76,8 +76,8 @@ func (l *EventObserver) Start() error {
 	return nil
 }
 
-func (l *EventObserver) Wait() error {
-	return <-l.waitCh
+func (l *EventObserver) Wait() chan error {
+	return l.waitCh
 }
 
 func (l *EventObserver) listenerLoop() {
@@ -139,7 +139,7 @@ func (l *EventObserver) sign(event *messages.Event) bool {
 }
 
 func (l *EventObserver) contextCancelHandler() {
-	defer func() { close(l.waitCh) }()
+	defer func() { l.waitCh <- nil }()
 	defer l.log.Info("Stopped")
 	<-l.ctx.Done()
 }

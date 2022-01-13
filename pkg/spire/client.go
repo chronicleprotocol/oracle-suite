@@ -60,8 +60,8 @@ func (c *Client) Start() error {
 	return nil
 }
 
-func (c *Client) Wait() error {
-	return <-c.waitCh
+func (c *Client) Wait() chan error {
+	return c.waitCh
 }
 
 func (c *Client) PublishPrice(price *messages.Price) error {

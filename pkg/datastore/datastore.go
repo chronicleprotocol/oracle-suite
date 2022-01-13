@@ -17,6 +17,6 @@ package datastore
 
 type Datastore interface {
 	Start() error
-	Wait()
+	Wait() chan error
 	Prices() PriceStore
 }

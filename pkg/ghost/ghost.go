@@ -43,7 +43,7 @@ func (e ErrUnableToFindAsset) Error() string {
 
 type Ghost struct {
 	ctx    context.Context
-	doneCh chan struct{}
+	waitCh chan error
 
 	gofer      gofer.Gofer
 	signer     ethereum.Signer
@@ -79,7 +79,7 @@ func NewGhost(ctx context.Context, cfg Config) (*Ghost, error) {
 	}
 	g := &Ghost{
 		ctx:        ctx,
-		doneCh:     make(chan struct{}),
+		waitCh:     make(chan error),
 		gofer:      cfg.Gofer,
 		signer:     cfg.Signer,
 		transport:  cfg.Transport,
@@ -124,8 +124,8 @@ func (g *Ghost) Start() error {
 	return nil
 }
 
-func (g *Ghost) Wait() {
-	<-g.doneCh
+func (g *Ghost) Wait() chan error {
+	return g.waitCh
 }
 
 // broadcast sends price for single pair to the network. This method uses
@@ -177,7 +177,7 @@ func (g *Ghost) broadcasterLoop() error {
 	go func() {
 		for {
 			select {
-			case <-g.doneCh:
+			case <-g.waitCh:
 				ticker.Stop()
 				return
 			case <-ticker.C:
@@ -213,7 +213,7 @@ func (g *Ghost) broadcasterLoop() error {
 }
 
 func (g *Ghost) contextCancelHandler() {
-	defer func() { close(g.doneCh) }()
+	defer func() { g.waitCh <- nil }()
 	defer g.log.Info("Stopped")
 	<-g.ctx.Done()
 }

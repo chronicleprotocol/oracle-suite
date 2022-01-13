@@ -128,6 +128,6 @@ func (s *Service) Start() error {
 
 func (s *Service) CancelAndWait() {
 	s.ctxCancel()
-	s.Leeloo.Wait()
-	s.Transport.Wait()
+	<-s.Leeloo.Wait()
+	<-s.Transport.Wait()
 }

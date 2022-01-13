@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -54,21 +55,17 @@ func NewEventAPI(ctx context.Context, cfg Config) (*EventAPI, error) {
 
 func (e *EventAPI) Start() error {
 	e.log.Infof("Starting")
+	err := e.srv.Start()
+	if err != nil {
+		return fmt.Errorf("unable to start the HTTP server: %w", err)
+	}
 	go e.contextCancelHandler()
-	e.srv.Start()
 	return nil
 }
 
 // Wait waits until context is cancelled.
-func (e *EventAPI) Wait() error {
-	defer close(e.waitCh) // we can write to channel only once
-	return <-e.waitCh
-}
-
-func (e *EventAPI) contextCancelHandler() {
-	defer e.log.Info("Stopped")
-	<-e.ctx.Done()
-	e.waitCh <- e.srv.Wait()
+func (e *EventAPI) Wait() chan error {
+	return e.waitCh
 }
 
 func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
@@ -93,7 +90,6 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	json.NewEncoder(res).Encode(mapEvents(events))
@@ -116,4 +112,12 @@ func mapEvents(es []*messages.Event) (r []*jsonEvent) {
 		r = append(r, j)
 	}
 	return r
+}
+
+func (e *EventAPI) contextCancelHandler() {
+	var err error
+	defer func() { e.waitCh <- err }()
+	defer e.log.Info("Stopped")
+	<-e.ctx.Done()
+	err = <-e.srv.Wait()
 }
