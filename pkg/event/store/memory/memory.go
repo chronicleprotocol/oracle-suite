@@ -1,119 +1,77 @@
 package memory
 
 import (
-	"context"
-	"crypto/md5"
-	"errors"
+	"crypto/sha256"
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const LoggerTag = "EVENTSTORE"
+type Memory struct {
+	mu sync.Mutex
 
-type EventStore struct {
-	ctx    context.Context
-	mu     sync.Mutex
-	doneCh chan struct{}
+	ttl    time.Duration // Message TTL.
+	events map[[sha256.Size]byte][]*messages.Event
 
-	events    map[[md5.Size]byte][]*messages.Event
-	transport transport.Transport
-	log       log.Logger
+	// Variables used for message garbage collector.
+	gccount int // Increases every time a message is added.
+	gcevery int // Specifies every how many messages the garbage collector should be called.
 }
 
-type Config struct {
-	Transport transport.Transport
-	Logger    log.Logger
-}
-
-func NewEventStore(ctx context.Context, cfg Config) (*EventStore, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
+func New(ttl time.Duration) *Memory {
+	return &Memory{
+		ttl:     ttl,
+		events:  map[[sha256.Size]byte][]*messages.Event{},
+		gcevery: 100,
 	}
-	return &EventStore{
-		ctx:       ctx,
-		events:    map[[16]byte][]*messages.Event{},
-		transport: cfg.Transport,
-		log:       cfg.Logger.WithField("tag", LoggerTag),
-	}, nil
 }
 
-func (m *EventStore) Start() error {
-	m.log.Info("Starting")
-	go m.collectorLoop()
-	go m.contextCancelHandler()
-	go m.cleanupOldEvents()
+func (m *Memory) Add(msg *messages.Event) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	h := hash(msg.Type, msg.Index)
+	if _, ok := m.events[h]; !ok {
+		m.events[h] = nil
+	}
+	m.events[h] = append(m.events[h], msg)
+	m.gc()
 	return nil
 }
 
-func (m *EventStore) Wait() error {
-	<-m.doneCh
-	return nil
+func (m *Memory) Get(typ string, idx []byte) ([]*messages.Event, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.events[hash(typ, idx)], nil
 }
 
-func (m *EventStore) Events(typ string, index []byte) []*messages.Event {
-	return m.events[mapHash(typ, index)]
-}
-
-func (m *EventStore) collectorLoop() {
-	for {
-		select {
-		case <-m.ctx.Done():
-			return
-		case msg := <-m.transport.Messages(messages.EventMessageName):
-			if msg.Error != nil {
-				m.log.
-					WithError(msg.Error).
-					Warn("Unable to read events from the transport")
-				continue
+// Garbage Collector removes messages with expired TTL.
+func (m *Memory) gc() {
+	m.gccount++
+	if m.gccount%m.gcevery != 0 {
+		return
+	}
+	for h, events := range m.events {
+		expired := 0
+		for _, event := range events {
+			if time.Since(event.Date) > m.ttl {
+				expired++
 			}
-			event, ok := msg.Message.(*messages.Event)
-			if !ok {
-				m.log.Error("Unexpected value returned from transport layer")
-				continue
+		}
+		if expired == len(m.events[h]) {
+			delete(m.events, h)
+		} else {
+			var es []*messages.Event
+			for _, event := range events {
+				if time.Since(event.Date) <= m.ttl {
+					es = append(es, event)
+				}
 			}
-			h := mapHash(event.Type, event.Index)
-			m.events[h] = append(m.events[h], event)
+			m.events[h] = es
 		}
 	}
 }
 
-func (m *EventStore) cleanupOldEvents() {
-	t := time.NewTicker(120 * time.Second)
-	defer t.Stop()
-	for {
-		select {
-		case <-m.ctx.Done():
-			return
-		case <-t.C:
-			for h, events := range m.events {
-				s := m.events[h]
-				for n, event := range events {
-					if time.Since(event.Date) > 7*24*time.Hour {
-						s = removeMessage(s, n)
-					}
-				}
-				if len(s) == 0 {
-					delete(m.events, h)
-				}
-			}
-		}
-	}
-}
-
-func (m *EventStore) contextCancelHandler() {
-	defer func() { close(m.doneCh) }()
-	defer m.log.Info("Stopped")
-	<-m.ctx.Done()
-}
-
-func removeMessage(s []*messages.Event, n int) []*messages.Event {
-	return append(s[:n], s[n+1:]...)
-}
-
-func mapHash(typ string, index []byte) [md5.Size]byte {
-	return md5.Sum(append([]byte(typ), index...))
+func hash(typ string, index []byte) [sha256.Size]byte {
+	return sha256.Sum256(append([]byte(typ), index...))
 }

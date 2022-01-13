@@ -34,13 +34,9 @@ type EventAPI struct {
 	Address string `json:"address"`
 }
 
-type logSigner struct {
-	Enable bool `json:"enable"`
-}
-
 type Dependencies struct {
 	Context    context.Context
-	EventStore store.EventStore
+	EventStore *store.EventStore
 	Transport  transport.Transport
 	Logger     log.Logger
 }

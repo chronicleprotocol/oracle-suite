@@ -21,12 +21,12 @@ type EventAPI struct {
 	waitCh chan error
 
 	srv *httpserver.HTTPServer
-	es  store.EventStore
+	es  *store.EventStore
 	log log.Logger
 }
 
 type Config struct {
-	EventStore store.EventStore
+	EventStore *store.EventStore
 	Address    string
 	Logger     log.Logger
 }
@@ -87,7 +87,13 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	events := e.es.Events(typ[0], idx)
+	events, err := e.es.Events(typ[0], idx)
+	if err != nil {
+		e.log.WithError(err).Error("Event store error")
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	json.NewEncoder(res).Encode(mapEvents(events))

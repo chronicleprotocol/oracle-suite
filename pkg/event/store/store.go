@@ -15,10 +15,99 @@
 
 package store
 
-import "github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+import (
+	"context"
+	"errors"
 
-type EventStore interface {
-	Start() error
-	Wait() error
-	Events(typ string, group []byte) []*messages.Event
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+)
+
+const LoggerTag = "EVENTSTORE"
+
+type EventStore struct {
+	ctx       context.Context
+	storage   Storage
+	transport transport.Transport
+	log       log.Logger
+	waitCh    chan error
+}
+
+type Config struct {
+	Storage   Storage
+	Transport transport.Transport
+	Logger    log.Logger
+}
+
+type Storage interface {
+	// Add adds a message to the store. If the message already exists, no error
+	// will be returned. Method is thread safe.
+	Add(msg *messages.Event) error
+	// Get returns a message form the store. If the message does not exist,
+	// nil will be returned. Method is thread safe.
+	Get(typ string, idx []byte) ([]*messages.Event, error)
+}
+
+func NewEventStore(ctx context.Context, cfg Config) (*EventStore, error) {
+	if ctx == nil {
+		return nil, errors.New("context must not be nil")
+	}
+	return &EventStore{
+		ctx:       ctx,
+		storage:   cfg.Storage,
+		transport: cfg.Transport,
+		log:       cfg.Logger.WithField("tag", LoggerTag),
+		waitCh:    make(chan error),
+	}, nil
+}
+
+func (e *EventStore) Start() error {
+	e.log.Info("Starting")
+	go e.eventCollectorRoutine()
+	go e.contextCancelHandler()
+	return nil
+}
+
+func (e *EventStore) Wait() chan error {
+	return e.waitCh
+}
+
+func (e *EventStore) Events(typ string, idx []byte) ([]*messages.Event, error) {
+	return e.storage.Get(typ, idx)
+}
+
+func (e *EventStore) eventCollectorRoutine() {
+	for {
+		select {
+		case <-e.ctx.Done():
+			return
+		case msg := <-e.transport.Messages(messages.EventMessageName):
+			if msg.Error != nil {
+				e.log.
+					WithError(msg.Error).
+					Warn("Unable to read events from the transport layer")
+				continue
+			}
+			evtMsg, ok := msg.Message.(*messages.Event)
+			if !ok {
+				e.log.Error("Unexpected value returned from the transport layer")
+				continue
+			}
+			err := e.storage.Add(evtMsg)
+			if err != nil {
+				e.log.
+					WithError(msg.Error).
+					Warn("Unable to store the event")
+				continue
+			}
+		}
+	}
+}
+
+// contextCancelHandler handles context cancellation.
+func (e *EventStore) contextCancelHandler() {
+	defer func() { close(e.waitCh) }()
+	defer e.log.Info("Stopped")
+	<-e.ctx.Done()
 }

@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventapi"
@@ -42,7 +43,7 @@ type Dependencies struct {
 	Logger  log.Logger
 }
 
-func (c *Config) Configure(d Dependencies) (transport.Transport, store.EventStore, *eventAPI.EventAPI, error) {
+func (c *Config) Configure(d Dependencies) (transport.Transport, *store.EventStore, *eventAPI.EventAPI, error) {
 	fed, err := c.Feeds.Addresses()
 	if err != nil {
 		return nil, nil, nil, err
@@ -58,7 +59,9 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, store.EventStor
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	evs, err := memory.NewEventStore(d.Context, memory.Config{
+	mem := memory.New(time.Hour * 7 * 24)
+	evs, err := store.NewEventStore(d.Context, store.Config{
+		Storage:   mem,
 		Transport: tra,
 		Logger:    d.Logger,
 	})
@@ -80,7 +83,7 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, store.EventStor
 type Service struct {
 	ctxCancel  context.CancelFunc
 	Transport  transport.Transport
-	EventStore store.EventStore
+	EventStore *store.EventStore
 	Lair       *eventAPI.EventAPI
 }
 
