@@ -18,7 +18,6 @@ package ssb
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"go.cryptoscope.co/muxrpc/v2"
@@ -131,9 +130,9 @@ func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
 		if err = json.Unmarshal(bytes, &data); err != nil {
 			return nil, err
 		}
-		if contentType == "" || data.Value.Content.Type == contentType {
+		if data.Value.Content.Type == contentType {
 			return bytes, nil
 		}
 	}
-	return nil, errors.New("no data in the stream")
+	return nil, nil
 }
