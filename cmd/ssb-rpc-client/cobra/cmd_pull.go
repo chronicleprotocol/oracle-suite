@@ -54,7 +54,9 @@ func Pull(opts *Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(last))
+			if len(last) > 0 {
+				fmt.Println(string(last))
+			}
 			return nil
 		},
 	}
