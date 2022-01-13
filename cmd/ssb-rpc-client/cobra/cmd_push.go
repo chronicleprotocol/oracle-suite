@@ -43,7 +43,7 @@ func Push(opts *Options) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				//TODO Add Rate Limiter
+				// TODO Add Rate Limiter
 				err = c.Publish(fap)
 				if err != nil {
 					return err

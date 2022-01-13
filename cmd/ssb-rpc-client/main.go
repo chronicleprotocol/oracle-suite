@@ -55,7 +55,7 @@ func main() {
 		&opts.SsbPort,
 		"port",
 		"P",
-		8008,
+		8008, //nolint:gomnd
 		"ssb server port",
 	)
 	cmd.AddCommand(

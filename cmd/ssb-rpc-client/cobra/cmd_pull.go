@@ -44,12 +44,12 @@ func Pull(opts *Options) *cobra.Command {
 					return err
 				}
 				var w struct {
-					Id string `json:"id"`
+					ID string `json:"id"`
 				}
 				if err := json.Unmarshal(b, &w); err != nil {
 					return err
 				}
-				id = w.Id
+				id = w.ID
 				log.Println("defaulting to id: ", id)
 			}
 			last, err := c.Last(id, contentType, limit)

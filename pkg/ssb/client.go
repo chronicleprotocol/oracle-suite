@@ -22,9 +22,7 @@ import (
 	"fmt"
 
 	"go.cryptoscope.co/muxrpc/v2"
-	"go.cryptoscope.co/ssb"
 	"go.cryptoscope.co/ssb/client"
-	"go.cryptoscope.co/ssb/invite"
 	"go.cryptoscope.co/ssb/message"
 	refs "go.mindeco.de/ssb-refs"
 )
@@ -33,10 +31,7 @@ type Client struct {
 	ctx    context.Context
 	doneCh chan struct{}
 
-	rpc    *client.Client
-	keys   ssb.KeyPair
-	shs    string
-	invite invite.Token
+	rpc *client.Client
 }
 
 func (c *Client) Publish(v interface{}) error {
