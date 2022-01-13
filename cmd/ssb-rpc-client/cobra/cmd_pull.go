@@ -18,6 +18,7 @@ package cobra
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,6 @@ func Pull(opts *Options) *cobra.Command {
 		Use:          "pull",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			conf, err := opts.SSBConfig()
 			if err != nil {
 				return err
@@ -50,6 +50,7 @@ func Pull(opts *Options) *cobra.Command {
 					return err
 				}
 				id = w.Id
+				log.Println("defaulting to id: ", id)
 			}
 			last, err := c.Last(id, contentType, limit)
 			if err != nil {
