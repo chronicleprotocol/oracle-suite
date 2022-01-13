@@ -24,6 +24,7 @@ import (
 	ssbServer "go.cryptoscope.co/ssb"
 	"go.cryptoscope.co/ssb/invite"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	ssbConf "github.com/chronicleprotocol/oracle-suite/internal/config/ssb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ssb"
 )
@@ -77,6 +78,7 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 
 func Root() (*Options, *cobra.Command) {
 	return &Options{}, &cobra.Command{
+		Version:           suite.Version,
 		Use:               "ssb",
 		DisableAutoGenTag: false,
 	}
