@@ -16,6 +16,7 @@
 package cobra
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -35,6 +36,19 @@ func Pull(opts *Options) *cobra.Command {
 			c, err := conf.Client(cmd.Context())
 			if err != nil {
 				return err
+			}
+			if id == "" {
+				b, err := c.Whoami()
+				if err != nil {
+					return err
+				}
+				var w struct {
+					Id string `json:"id"`
+				}
+				if err := json.Unmarshal(b, &w); err != nil {
+					return err
+				}
+				id = w.Id
 			}
 			last, err := c.Last(id, contentType, limit)
 			if err != nil {

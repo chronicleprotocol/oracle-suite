@@ -23,9 +23,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ssb"
 )
 
-func Publish(opts *Options) *cobra.Command {
+func Push(opts *Options) *cobra.Command {
 	return &cobra.Command{
-		Use: "publish",
+		Use:     "push",
+		Aliases: []string{"publish"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf, err := opts.SSBConfig()
 			if err != nil {

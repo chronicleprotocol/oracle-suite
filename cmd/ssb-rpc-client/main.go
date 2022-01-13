@@ -59,7 +59,7 @@ func main() {
 		"ssb server port",
 	)
 	cmd.AddCommand(
-		cobra.Publish(opts),
+		cobra.Push(opts),
 		cobra.Pull(opts),
 		cobra.Log(opts),
 		cobra.Whoami(opts),

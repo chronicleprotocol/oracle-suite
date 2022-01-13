@@ -131,7 +131,7 @@ func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
 		if err = json.Unmarshal(bytes, &data); err != nil {
 			return nil, err
 		}
-		if data.Value.Content.Type == contentType {
+		if contentType == "" || data.Value.Content.Type == contentType {
 			return bytes, nil
 		}
 	}
