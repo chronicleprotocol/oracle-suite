@@ -20,13 +20,14 @@ import (
 )
 
 type FeedAssetPrice struct {
-	Type      string          `json:"type"`
-	Version   string          `json:"version"`
-	Price     float64         `json:"price"`
-	PriceHex  string          `json:"priceHex"`
-	Time      int             `json:"time"`
-	TimeHex   string          `json:"timeHex"`
-	Hash      string          `json:"hash"`
-	Signature string          `json:"signature"`
-	Sources   json.RawMessage `json:"sources"`
+	Type           string          `json:"type"`
+	Version        string          `json:"version"`
+	Price          float64         `json:"price"`
+	PriceHex       string          `json:"priceHex"`
+	Time           int             `json:"time"`
+	TimeHex        string          `json:"timeHex"`
+	Hash           string          `json:"hash"`
+	Signature      string          `json:"signature"`
+	Sources        json.RawMessage `json:"sources"`
+	StarkSignature json.RawMessage `json:"starkSignature"`
 }

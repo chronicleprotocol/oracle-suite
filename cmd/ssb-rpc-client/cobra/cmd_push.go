@@ -27,6 +27,7 @@ func Push(opts *Options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "push",
 		Aliases: []string{"publish"},
+		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf, err := opts.SSBConfig()
 			if err != nil {
