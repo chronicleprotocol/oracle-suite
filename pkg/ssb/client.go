@@ -122,8 +122,9 @@ func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
 			Content FeedAssetPrice `json:"content"`
 		} `json:"value"`
 	}
+	var bytes []byte
 	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
-		bytes, err := src.Bytes()
+		bytes, err = src.Bytes()
 		if err != nil {
 			return nil, err
 		}
@@ -134,5 +135,5 @@ func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
 			return bytes, nil
 		}
 	}
-	return nil, nil
+	return bytes, nil
 }
