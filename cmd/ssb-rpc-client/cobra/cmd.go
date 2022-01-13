@@ -78,8 +78,9 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 
 func Root() (*Options, *cobra.Command) {
 	return &Options{}, &cobra.Command{
-		Version:           suite.Version,
-		Use:               "ssb",
-		DisableAutoGenTag: false,
+		Version:            suite.Version,
+		Use:                "ssb",
+		DisableAutoGenTag:  true,
+		DisableSuggestions: true,
 	}
 }

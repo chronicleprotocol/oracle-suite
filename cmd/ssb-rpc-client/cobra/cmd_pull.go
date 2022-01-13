@@ -26,7 +26,8 @@ func Pull(opts *Options) *cobra.Command {
 	var id, contentType string
 	var limit int64
 	cmd := &cobra.Command{
-		Use: "pull",
+		Use:          "pull",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			conf, err := opts.SSBConfig()
