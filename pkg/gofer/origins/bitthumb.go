@@ -24,7 +24,8 @@ import (
 )
 
 // Exchange URL
-const bitThumpURL = "https://global-openapi.bithumb.pro/openapi/v1/spot/ticker?symbol=%s"
+const bitThumpBaseURL = "https://global-openapi.bithumb.pro"
+const bitThumpURL = "%s/openapi/v1/spot/ticker?symbol=%s"
 
 type bitThumbPriceResponse struct {
 	Low    stringAsFloat64 `json:"l"`
@@ -43,6 +44,7 @@ type bitThumbResponse struct {
 // Bithumb origin handler
 type BitThump struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (c *BitThump) localPairName(pair Pair) string {
@@ -50,7 +52,7 @@ func (c *BitThump) localPairName(pair Pair) string {
 }
 
 func (c *BitThump) getURL(pair Pair) string {
-	return fmt.Sprintf(bitThumpURL, c.localPairName(pair))
+	return buildOriginURL(bitThumpURL, c.BaseURL, bitThumpBaseURL, c.localPairName(pair))
 }
 
 func (c BitThump) Pool() query.WorkerPool {

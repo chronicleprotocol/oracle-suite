@@ -23,8 +23,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
+const ftxBaseURL = "https://ftx.com"
+const ftxURL = "%s/api/markets"
+
 type Ftx struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (f Ftx) Pool() query.WorkerPool {
@@ -33,7 +37,7 @@ func (f Ftx) Pool() query.WorkerPool {
 
 func (f Ftx) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: ftxURL,
+		URL: buildOriginURL(ftxURL, f.BaseURL, ftxBaseURL),
 	}
 	res := f.Pool().Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {
@@ -41,8 +45,6 @@ func (f Ftx) PullPrices(pairs []Pair) []FetchResult {
 	}
 	return f.parseResponse(pairs, res)
 }
-
-const ftxURL = "https://ftx.com/api/markets"
 
 type ftxResponse struct {
 	Results []ftxTicker `json:"result"`

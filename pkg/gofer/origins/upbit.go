@@ -23,8 +23,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
+const upbitBaseURL = "https://api.upbit.com"
+const upbitURL = "%s/v1/ticker?markets=%s"
+
 type Upbit struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (o Upbit) Pool() query.WorkerPool {
@@ -32,7 +36,7 @@ func (o Upbit) Pool() query.WorkerPool {
 }
 func (o Upbit) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: fmt.Sprintf(upbitURL, o.localPairName(pairs...)),
+		URL: buildOriginURL(upbitURL, o.BaseURL, upbitBaseURL, o.localPairName(pairs...)),
 	}
 	res := o.Pool().Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {
@@ -40,8 +44,6 @@ func (o Upbit) PullPrices(pairs []Pair) []FetchResult {
 	}
 	return o.parseResponse(pairs, res)
 }
-
-const upbitURL = "https://api.upbit.com/v1/ticker?markets=%s"
 
 type upbitTicker struct {
 	Market             string               `json:"market"`

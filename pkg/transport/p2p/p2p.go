@@ -120,6 +120,7 @@ type Config struct {
 
 // New returns a new instance of a transport, implemented with
 // the libp2p library.
+// nolint: gocyclo
 func New(ctx context.Context, cfg Config) (*P2P, error) {
 	var err error
 

@@ -24,8 +24,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-//nolint:lll
-const cryptoCompareMultiURL = "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=%s&tsyms=%s&tryConversion=false&extraParams=gofer&relaxedValidation=true"
+const cryptoCompareMultiBaseURL = "https://min-api.cryptocompare.com"
+
+// nolint:lll
+const cryptoCompareMultiURL = "%s/data/pricemultifull?fsyms=%s&tsyms=%s&tryConversion=false&extraParams=gofer&relaxedValidation=true"
 
 type cryptoCompareMultiResponse struct {
 	Raw map[string]map[string]struct {
@@ -39,6 +41,7 @@ type cryptoCompareMultiResponse struct {
 
 type CryptoCompare struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (c CryptoCompare) Pool() query.WorkerPool {
@@ -65,7 +68,13 @@ func (c *CryptoCompare) makeRequest(pairs []Pair) *query.HTTPRequest {
 	}
 
 	req := &query.HTTPRequest{
-		URL: fmt.Sprintf(cryptoCompareMultiURL, strings.Join(bList, ","), strings.Join(qList, ",")),
+		URL: buildOriginURL(
+			cryptoCompareMultiURL,
+			c.BaseURL,
+			cryptoCompareMultiBaseURL,
+			strings.Join(bList, ","),
+			strings.Join(qList, ","),
+		),
 	}
 	return req
 }

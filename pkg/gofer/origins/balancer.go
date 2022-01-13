@@ -25,7 +25,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
-const balancerURL = "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer"
+const balancerBaseURL = "https://api.thegraph.com"
+const balancerURL = "%s/subgraphs/name/balancer-labs/balancer"
 
 type balancerResponse struct {
 	Data struct {
@@ -41,6 +42,7 @@ type balancerPairResponse struct {
 
 type Balancer struct {
 	WorkerPool        query.WorkerPool
+	BaseURL           string
 	ContractAddresses ContractAddresses
 }
 
@@ -84,7 +86,7 @@ func (s *Balancer) callOne(pair Pair) (*Price, error) {
 	)
 
 	req := &query.HTTPRequest{
-		URL:    balancerURL,
+		URL:    buildOriginURL(balancerURL, s.BaseURL, balancerBaseURL),
 		Method: "POST",
 		Body:   bytes.NewBuffer([]byte(body)),
 	}

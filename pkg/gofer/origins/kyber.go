@@ -22,8 +22,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
+const kyberBaseURL = "https://api.kyber.network"
+const kyberURL = "%s/change24h"
+
 type Kyber struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (k Kyber) Pool() query.WorkerPool {
@@ -32,7 +36,7 @@ func (k Kyber) Pool() query.WorkerPool {
 
 func (k Kyber) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: kyberURL,
+		URL: buildOriginURL(kyberURL, k.BaseURL, kyberBaseURL),
 	}
 	res := k.Pool().Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {
@@ -40,8 +44,6 @@ func (k Kyber) PullPrices(pairs []Pair) []FetchResult {
 	}
 	return k.parseResponse(pairs, res)
 }
-
-const kyberURL = "https://api.kyber.network/change24h"
 
 type kyberTicker struct {
 	Timestamp    intAsUnixTimestampMs `json:"timestamp"`

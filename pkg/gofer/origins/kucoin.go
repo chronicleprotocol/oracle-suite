@@ -25,7 +25,8 @@ import (
 )
 
 // Kucoin URL
-const kucoinURL = "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=%s"
+const kucoinBaseURL = "https://api.kucoin.com"
+const kucoinURL = "%s/api/v1/market/orderbook/level1?symbol=%s"
 
 type kucoinResponse struct {
 	Code string `json:"code"`
@@ -40,6 +41,7 @@ type kucoinResponse struct {
 // Kucoin origin handler
 type Kucoin struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
 
 func (k *Kucoin) localPairName(pair Pair) string {
@@ -47,7 +49,7 @@ func (k *Kucoin) localPairName(pair Pair) string {
 }
 
 func (k *Kucoin) getURL(pair Pair) string {
-	return fmt.Sprintf(kucoinURL, k.localPairName(pair))
+	return buildOriginURL(kucoinURL, k.BaseURL, kucoinBaseURL, k.localPairName(pair))
 }
 
 func (k Kucoin) Pool() query.WorkerPool {

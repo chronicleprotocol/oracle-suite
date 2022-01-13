@@ -24,18 +24,20 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
+const krakenBaseURL = "https://api.kraken.com"
+const krakenURL = "%s/0/public/Ticker?pair=%s"
+
 type Kraken struct {
 	WorkerPool query.WorkerPool
+	BaseURL    string
 }
-
-const krakenURL = "https://api.kraken.com/0/public/Ticker?pair=%s"
 
 func (k Kraken) Pool() query.WorkerPool {
 	return k.WorkerPool
 }
 func (k Kraken) PullPrices(pairs []Pair) []FetchResult {
 	req := &query.HTTPRequest{
-		URL: fmt.Sprintf(krakenURL, k.localPairName(pairs...)),
+		URL: buildOriginURL(krakenURL, k.BaseURL, krakenBaseURL, k.localPairName(pairs...)),
 	}
 	res := k.Pool().Query(req)
 	if errorResponses := validateResponse(pairs, res); len(errorResponses) > 0 {

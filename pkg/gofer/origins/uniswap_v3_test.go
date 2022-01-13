@@ -44,7 +44,7 @@ func (suite *UniswapV3Suite) SetupSuite() {
 		"CRV/WETH": "0x58dc5a51fe44589beb22e8ce67720b5bc5378009",
 	}
 	suite.origin = NewBaseExchangeHandler(
-		UniswapV3{query.NewMockWorkerPool(), addresses},
+		UniswapV3{WorkerPool: query.NewMockWorkerPool(), ContractAddresses: addresses},
 		aliases,
 	)
 }

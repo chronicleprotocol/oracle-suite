@@ -33,7 +33,7 @@ func TestPrivKey_Equals(t *testing.T) {
 	sig2.On("Address").Return(testAddress2)
 	prv2 := NewPrivKey(sig2)
 
-	assert.True(t, prv1.Equals(prv1))
+	assert.True(t, prv1.Equals(prv1)) //nolint:gocritic
 	assert.False(t, prv1.Equals(prv2))
 }
 
