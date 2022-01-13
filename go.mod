@@ -22,6 +22,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	go.cryptoscope.co/muxrpc/v2 v2.0.10
+	go.cryptoscope.co/netwrap v0.1.1
+	go.cryptoscope.co/secretstream v1.2.9
 	go.cryptoscope.co/ssb v0.2.1
 	go.mindeco.de v1.12.0
 	go.mindeco.de/ssb-refs v0.4.1
@@ -150,9 +152,7 @@ require (
 	github.com/zeebo/bencode v1.0.0 // indirect
 	go.cryptoscope.co/luigi v0.3.6-0.20200131144242-3256b54e72c8 // indirect
 	go.cryptoscope.co/margaret v0.4.0 // indirect
-	go.cryptoscope.co/netwrap v0.1.1 // indirect
 	go.cryptoscope.co/nocomment v0.0.0-20210520094614-fb744e81f810 // indirect
-	go.cryptoscope.co/secretstream v1.2.9 // indirect
 	go.mindeco.de/ssb-gabbygrove v0.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

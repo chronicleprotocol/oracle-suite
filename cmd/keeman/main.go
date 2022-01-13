@@ -45,7 +45,7 @@ func main() {
 		"verbose logging",
 	)
 	cmd.AddCommand(
-		cobra.DeriveFromHD(opts),
+		cobra.NewHd(opts),
 		cobra.GenerateSeed(opts),
 		cobra.NewList(opts),
 	)
