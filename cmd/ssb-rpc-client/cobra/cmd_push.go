@@ -17,6 +17,7 @@ package cobra
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -43,10 +44,12 @@ func Push(opts *Options) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				// TODO Add Rate Limiter
-				err = c.Publish(fap)
+				resp, err := c.Transmit(fap)
 				if err != nil {
 					return err
+				}
+				if len(resp) > 0 {
+					fmt.Println(string(resp))
 				}
 			}
 			return nil

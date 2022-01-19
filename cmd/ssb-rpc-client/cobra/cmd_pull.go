@@ -39,7 +39,7 @@ func Pull(opts *Options) *cobra.Command {
 				return err
 			}
 			if id == "" {
-				b, err := c.Whoami()
+				b, err := c.WhoAmI()
 				if err != nil {
 					return err
 				}
@@ -52,7 +52,7 @@ func Pull(opts *Options) *cobra.Command {
 				id = w.ID
 				log.Println("defaulting to id: ", id)
 			}
-			last, err := c.Last(id, contentType, limit)
+			last, err := c.ReceiveLast(id, contentType, limit)
 			if err != nil {
 				return err
 			}

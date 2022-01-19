@@ -18,8 +18,8 @@ package ssb
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"log"
 
 	"go.cryptoscope.co/muxrpc/v2"
 	"go.cryptoscope.co/ssb/client"
@@ -27,80 +27,34 @@ import (
 	refs "go.mindeco.de/ssb-refs"
 )
 
-type Client struct {
-	ctx    context.Context
-	doneCh chan struct{}
+const methodPublish = "publish"
+const methodWhoAmI = "whoami"
+const methodCreateHistoryStream = "createHistoryStream"
+const methodCreateLogStream = "createLogStream"
+const methodCreateUserStream = "createUserStream"
 
+type Client struct {
+	ctx context.Context
 	rpc *client.Client
 }
 
-func (c *Client) Publish(v interface{}) error {
-	var resp string
-	defer func() { fmt.Println(resp) }()
-	return c.rpc.Async(c.ctx, &resp, muxrpc.TypeString, muxrpc.Method{"publish"}, v)
-}
-
-func (c *Client) Log() error {
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createLogStream"}, message.CreateLogArgs{
-		CommonArgs: message.CommonArgs{
-			Live: true,
-		},
-		StreamArgs: message.StreamArgs{
-			Limit:   -1,
-			Reverse: false,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
-		b, err := src.Bytes()
-		if err != nil {
-			return err
-		}
-
-		fmt.Println(string(b))
-	}
-	return nil
-}
-
-func (c *Client) Hist() error {
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeBinary, muxrpc.Method{"createHistoryStream"}, message.CreateHistArgs{
-		CommonArgs: message.CommonArgs{
-			Live: true,
-		},
-		StreamArgs: message.StreamArgs{
-			Limit:   -1,
-			Reverse: false,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
-		b, err := src.Bytes()
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(b))
-	}
-	return nil
-}
-func (c *Client) Whoami() ([]byte, error) {
+func (c *Client) Transmit(v interface{}) ([]byte, error) {
 	var resp []byte
-	err := c.rpc.Async(c.ctx, &resp, muxrpc.TypeBinary, muxrpc.Method{"whoami"})
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	// TODO Add Rate Limiter
+	return resp, c.rpc.Async(c.ctx, &resp, muxrpc.TypeBinary, muxrpc.Method{methodPublish}, v)
 }
 
-func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
+func (c *Client) WhoAmI() ([]byte, error) {
+	var resp []byte
+	return resp, c.rpc.Async(c.ctx, &resp, muxrpc.TypeBinary, muxrpc.Method{methodWhoAmI})
+}
+
+func (c *Client) ReceiveLast(id, contentType string, limit int64) ([]byte, error) {
 	feedRef, err := refs.ParseFeedRef(id)
 	if err != nil {
 		return nil, err
 	}
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeJSON, muxrpc.Method{"createUserStream"}, message.CreateHistArgs{
+	ch, err := c.callSSB(methodCreateUserStream, message.CreateHistArgs{
 		CommonArgs: message.CommonArgs{
 			Keys: true,
 		},
@@ -118,18 +72,61 @@ func (c *Client) Last(id, contentType string, limit int64) ([]byte, error) {
 			Content FeedAssetPrice `json:"content"`
 		} `json:"value"`
 	}
-	var bytes []byte
-	for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
-		bytes, err = src.Bytes()
-		if err != nil {
+	for b := range ch {
+		if err = json.Unmarshal(b, &data); err != nil {
 			return nil, err
 		}
-		if err = json.Unmarshal(bytes, &data); err != nil {
-			return nil, err
-		}
-		if contentType == "" || data.Value.Content.Type == contentType {
-			return bytes, nil
+		t := data.Value.Content.Type
+		if contentType == "" || t == contentType {
+			return b, nil
 		}
 	}
-	return nil, errors.New("no data in the stream")
+	if contentType != "" {
+		return nil, fmt.Errorf("no data of type %s in the stream for ref: %s", contentType, feedRef.Ref())
+	}
+	return nil, fmt.Errorf("no data in the stream for ref: %s", feedRef.Ref())
+}
+
+func (c *Client) LogStream() (chan []byte, error) {
+	return c.callSSB(methodCreateLogStream, message.CreateLogArgs{
+		CommonArgs: message.CommonArgs{
+			Live: true,
+		},
+		StreamArgs: message.StreamArgs{
+			Limit:   -1,
+			Reverse: false,
+		},
+	})
+}
+
+func (c *Client) HistoryStream() (chan []byte, error) {
+	return c.callSSB(methodCreateHistoryStream, message.CreateHistArgs{
+		CommonArgs: message.CommonArgs{
+			Live: true,
+		},
+		StreamArgs: message.StreamArgs{
+			Limit:   -1,
+			Reverse: false,
+		},
+	})
+}
+
+func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
+	if err != nil {
+		return nil, err
+	}
+	ch := make(chan []byte)
+	go func() {
+		defer close(ch)
+		for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
+			b, err := src.Bytes()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			ch <- b
+		}
+	}()
+	return ch, err
 }

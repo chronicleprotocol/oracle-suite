@@ -33,7 +33,7 @@ func Whoami(opts *Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			whoami, err := c.Whoami()
+			whoami, err := c.WhoAmI()
 			if err != nil {
 				return err
 			}

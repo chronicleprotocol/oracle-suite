@@ -16,6 +16,8 @@
 package cobra
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +33,14 @@ func Log(opts *Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return c.Log()
+			ch, err := c.LogStream()
+			if err != nil {
+				return err
+			}
+			for b := range ch {
+				fmt.Println(string(b))
+			}
+			return err
 		},
 	}
 }

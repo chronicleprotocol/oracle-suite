@@ -49,9 +49,8 @@ func (cfg *Config) Client(ctx context.Context) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		ctx:    ctx,
-		doneCh: make(chan struct{}),
-		rpc:    rpc,
+		ctx: ctx,
+		rpc: rpc,
 	}, nil
 }
 
