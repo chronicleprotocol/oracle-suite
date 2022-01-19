@@ -22,7 +22,6 @@ import (
 	"log"
 
 	"go.cryptoscope.co/muxrpc/v2"
-	"go.cryptoscope.co/ssb/client"
 	"go.cryptoscope.co/ssb/message"
 	refs "go.mindeco.de/ssb-refs"
 )
@@ -35,18 +34,23 @@ const methodCreateUserStream = "createUserStream"
 
 type Client struct {
 	ctx context.Context
-	rpc *client.Client
+	rpc Endpoint
 }
 
-func (c *Client) Transmit(v interface{}) ([]byte, error) {
-	var resp []byte
-	// TODO Add Rate Limiter
-	return resp, c.rpc.Async(c.ctx, &resp, muxrpc.TypeBinary, muxrpc.Method{methodPublish}, v)
+type Endpoint interface {
+	Async(context.Context, interface{}, muxrpc.RequestEncoding, muxrpc.Method, ...interface{}) error
+	Source(context.Context, muxrpc.RequestEncoding, muxrpc.Method, ...interface{}) (*muxrpc.ByteSource, error)
 }
 
 func (c *Client) WhoAmI() ([]byte, error) {
-	var resp []byte
-	return resp, c.rpc.Async(c.ctx, &resp, muxrpc.TypeBinary, muxrpc.Method{methodWhoAmI})
+	var ret []byte
+	return ret, c.rpc.Async(c.ctx, &ret, muxrpc.TypeBinary, muxrpc.Method{methodWhoAmI})
+}
+
+func (c *Client) Transmit(v interface{}) ([]byte, error) {
+	var ret []byte
+	// TODO Add Rate Limiter
+	return ret, c.rpc.Async(c.ctx, &ret, muxrpc.TypeBinary, muxrpc.Method{methodPublish}, v)
 }
 
 func (c *Client) ReceiveLast(id, contentType string, limit int64) ([]byte, error) {
