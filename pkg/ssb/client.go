@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"go.cryptoscope.co/muxrpc/v2"
 	"go.cryptoscope.co/ssb/message"
@@ -28,7 +29,6 @@ import (
 
 const methodPublish = "publish"
 const methodWhoAmI = "whoami"
-const methodCreateHistoryStream = "createHistoryStream"
 const methodCreateLogStream = "createLogStream"
 const methodCreateUserStream = "createUserStream"
 
@@ -80,8 +80,7 @@ func (c *Client) ReceiveLast(id, contentType string, limit int64) ([]byte, error
 		if err = json.Unmarshal(b, &data); err != nil {
 			return nil, err
 		}
-		t := data.Value.Content.Type
-		if contentType == "" || t == contentType {
+		if contentType == "" || data.Value.Content.Type == contentType {
 			return b, nil
 		}
 	}
@@ -103,27 +102,18 @@ func (c *Client) LogStream() (chan []byte, error) {
 	})
 }
 
-func (c *Client) HistoryStream() (chan []byte, error) {
-	return c.callSSB(methodCreateHistoryStream, message.CreateHistArgs{
-		CommonArgs: message.CommonArgs{
-			Live: true,
-		},
-		StreamArgs: message.StreamArgs{
-			Limit:   -1,
-			Reverse: false,
-		},
-	})
-}
-
 func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
+	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
+	src, err := c.rpc.Source(ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	ch := make(chan []byte)
 	go func() {
+		defer cancel()
 		defer close(ch)
-		for nxt := src.Next(c.ctx); nxt; nxt = src.Next(c.ctx) {
+		for nxt := src.Next(ctx); nxt; nxt = src.Next(ctx) {
 			b, err := src.Bytes()
 			if err != nil {
 				log.Println(err)
@@ -132,5 +122,5 @@ func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
 			ch <- b
 		}
 	}()
-	return ch, err
+	return ch, nil
 }
