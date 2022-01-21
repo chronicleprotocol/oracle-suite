@@ -54,13 +54,13 @@ type WormholeListenerConfig struct {
 	Interval time.Duration
 	// BlocksBehind specifies the distance between the newest block on the
 	// blockchain and the newest block from which logs are to be taken. This
-	// parameter can be used to ensure sufficient acknowledgements.
+	// parameter can be used to ensure sufficient block confirmations.
 	BlocksBehind int
 	// MaxBlocks specifies how from many blocks logs can be fetched at once.
 	MaxBlocks int
-	// Log is an instance of a logger. Logger is used mostly to report
+	// Logger is an instance of a logger. Logger is used mostly to report
 	// recoverable errors.
-	Log log.Logger
+	Logger log.Logger
 }
 
 // NewWormholeListener returns a new instance of the WormholeListener struct.
@@ -74,9 +74,9 @@ func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
 			cfg.Interval,
 			uint64(cfg.BlocksBehind),
 			uint64(cfg.MaxBlocks),
-			cfg.Log,
+			cfg.Logger,
 		),
-		log: cfg.Log,
+		log: cfg.Logger,
 	}
 }
 
@@ -142,8 +142,8 @@ func logToMessage(log types.Log) (*messages.Event, error) {
 type wormholeGUID struct {
 	sourceDomain common.Hash
 	targetDomain common.Hash
-	receiver     common.Address
-	operator     common.Address
+	receiver     common.Hash
+	operator     common.Hash
 	amount       *big.Int
 	nonce        *big.Int
 	timestamp    int64
@@ -186,8 +186,8 @@ func unpackWormholeGUID(data []byte) (*wormholeGUID, error) {
 	return &wormholeGUID{
 		sourceDomain: bytes32ToHash(u[0].([32]uint8)),
 		targetDomain: bytes32ToHash(u[1].([32]uint8)),
-		receiver:     u[2].(common.Address),
-		operator:     u[3].(common.Address),
+		receiver:     bytes32ToHash(u[2].([32]uint8)),
+		operator:     bytes32ToHash(u[3].([32]uint8)),
 		amount:       u[4].(*big.Int),
 		nonce:        u[5].(*big.Int),
 		timestamp:    u[6].(*big.Int).Int64(),
@@ -202,15 +202,14 @@ var abiWormholeGUID abi.Arguments
 
 func init() {
 	bytes32, _ := abi.NewType("bytes32", "", nil)
-	address, _ := abi.NewType("address", "", nil)
 	uint128, _ := abi.NewType("uint128", "", nil)
 	uint80, _ := abi.NewType("uint128", "", nil)
 	uint48, _ := abi.NewType("uint48", "", nil)
 	abiWormholeGUID = abi.Arguments{
 		{Type: bytes32}, // sourceDomain
 		{Type: bytes32}, // targetDomain
-		{Type: address}, // receiver
-		{Type: address}, // operator
+		{Type: bytes32}, // receiver
+		{Type: bytes32}, // operator
 		{Type: uint128}, // amount
 		{Type: uint80},  // nonce
 		{Type: uint48},  // timestamp

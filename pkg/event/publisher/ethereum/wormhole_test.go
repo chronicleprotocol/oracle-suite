@@ -45,7 +45,7 @@ func Test_wormholeListener(t *testing.T) {
 		Interval:     time.Millisecond * 100,
 		BlocksBehind: 10,
 		MaxBlocks:    15,
-		Log:          null.New(),
+		Logger:       null.New(),
 	})
 
 	txHash := common.HexToHash("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8")
@@ -95,8 +95,8 @@ func Test_unpackWormholeGUID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111"), g.sourceDomain)
 	assert.Equal(t, common.HexToHash("0x2222222222222222222222222222222222222222222222222222222222222222"), g.targetDomain)
-	assert.Equal(t, common.HexToAddress("0x3333333333333333333333333333333333333333"), g.receiver)
-	assert.Equal(t, common.HexToAddress("0x4444444444444444444444444444444444444444"), g.operator)
+	assert.Equal(t, common.HexToHash("0x0000000000000000000000003333333333333333333333333333333333333333"), g.receiver)
+	assert.Equal(t, common.HexToHash("0x0000000000000000000000004444444444444444444444444444444444444444"), g.operator)
 	assert.Equal(t, big.NewInt(55), g.amount)
 	assert.Equal(t, big.NewInt(66), g.nonce)
 	assert.Equal(t, int64(77), g.timestamp)

@@ -74,7 +74,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 				Interval:     time.Second * time.Duration(interval),
 				BlocksBehind: blocksBehind,
 				MaxBlocks:    c.Listeners.Wormhole.MaxBlocks,
-				Log:          d.Logger,
+				Logger:       d.Logger,
 			}))
 		}
 		sig = append(sig, publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.WormholeEventType}))
