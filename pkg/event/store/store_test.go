@@ -17,19 +17,23 @@ import (
 
 func TestNewEventStore(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-
 	tra := local.New(ctx, 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
-	require.NoError(t, tra.Start())
 
 	mem := memory.New(time.Minute)
-	evs, err := NewEventStore(ctx, Config{
+	evs, err := New(ctx, Config{
 		Storage:   mem,
 		Transport: tra,
-		Logger:    null.New(),
+		Log:       null.New(),
 	})
 	require.NoError(t, err)
+
 	require.NoError(t, evs.Start())
+	require.NoError(t, tra.Start())
+	defer func() {
+		cancelFunc()
+		require.NoError(t, <-evs.Wait())
+		require.NoError(t, <-tra.Wait())
+	}()
 
 	event := &messages.Event{
 		Date:       time.Now(),

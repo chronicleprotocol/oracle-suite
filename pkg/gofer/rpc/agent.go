@@ -112,7 +112,7 @@ func (s *Agent) Start() error {
 	return nil
 }
 
-// Wait waits until agent's context is cancelled.
+// Wait waits until the context is canceled or until an error occurs.
 func (s *Agent) Wait() chan error {
 	return s.waitCh
 }

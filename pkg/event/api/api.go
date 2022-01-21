@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/httpserver"
@@ -17,6 +18,9 @@ import (
 
 const LoggerTag = "EVENT_API"
 
+const defaultTimeout = 3 * time.Second
+
+// EventAPI provides an HTTP API for EventStore.
 type EventAPI struct {
 	ctx    context.Context
 	waitCh chan error
@@ -39,7 +43,8 @@ type jsonEvent struct {
 	Signatures map[string]string `json:"signatures"`
 }
 
-func NewEventAPI(ctx context.Context, cfg Config) (*EventAPI, error) {
+// New returns a new instance of the EventAPI struct.
+func New(ctx context.Context, cfg Config) (*EventAPI, error) {
 	if ctx == nil {
 		return nil, errors.New("context must not be nil")
 	}
@@ -49,10 +54,17 @@ func NewEventAPI(ctx context.Context, cfg Config) (*EventAPI, error) {
 		es:     cfg.EventStore,
 		log:    cfg.Logger.WithField("tag", LoggerTag),
 	}
-	api.srv = httpserver.New(ctx, &http.Server{Addr: cfg.Address, Handler: http.HandlerFunc(api.handler)})
+	api.srv = httpserver.New(ctx, &http.Server{
+		Addr:         cfg.Address,
+		Handler:      http.HandlerFunc(api.handler),
+		IdleTimeout:  defaultTimeout,
+		ReadTimeout:  defaultTimeout,
+		WriteTimeout: defaultTimeout,
+	})
 	return api, nil
 }
 
+// Start starts HTTP server.
 func (e *EventAPI) Start() error {
 	e.log.Infof("Starting")
 	err := e.srv.Start()
@@ -63,7 +75,7 @@ func (e *EventAPI) Start() error {
 	return nil
 }
 
-// Wait waits until context is cancelled.
+// Wait waits until the context is canceled or until an error occurs.
 func (e *EventAPI) Wait() chan error {
 	return e.waitCh
 }
@@ -79,7 +91,7 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	idx, err := hex.DecodeString(idxHex[0])
+	idx, err := decodeHex(idxHex[0])
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -120,4 +132,11 @@ func (e *EventAPI) contextCancelHandler() {
 	defer e.log.Info("Stopped")
 	<-e.ctx.Done()
 	err = <-e.srv.Wait()
+}
+
+func decodeHex(h string) ([]byte, error) {
+	if strings.HasPrefix(h, "0x") {
+		h = h[2:]
+	}
+	return hex.DecodeString(h)
 }

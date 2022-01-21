@@ -127,6 +127,7 @@ func (s *Spectre) Start() error {
 	return nil
 }
 
+// Wait waits until the context is canceled or until an error occurs.
 func (s *Spectre) Wait() chan error {
 	return s.waitCh
 }

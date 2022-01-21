@@ -75,6 +75,6 @@ func (e *EthClient) BlockNumber(ctx context.Context) (uint64, error) {
 }
 
 func (e *EthClient) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
-	args := e.Called(ctx)
+	args := e.Called(ctx, q)
 	return args.Get(0).([]types.Log), args.Error(1)
 }

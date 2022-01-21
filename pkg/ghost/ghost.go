@@ -124,6 +124,7 @@ func (g *Ghost) Start() error {
 	return nil
 }
 
+// Wait waits until the context is canceled or until an error occurs.
 func (g *Ghost) Wait() chan error {
 	return g.waitCh
 }

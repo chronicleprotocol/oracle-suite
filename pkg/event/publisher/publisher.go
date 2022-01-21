@@ -1,4 +1,4 @@
-package observer
+package publisher
 
 import (
 	"context"
@@ -12,7 +12,9 @@ import (
 
 const LoggerTag = "EVENT_OBSERVER"
 
-type EventObserver struct {
+// EventPublisher collects event messages from listeners and publishes them
+// using transport.
+type EventPublisher struct {
 	ctx    context.Context
 	waitCh chan error
 
@@ -22,42 +24,43 @@ type EventObserver struct {
 	log       log.Logger
 }
 
-type Listener interface {
-	Events() chan *messages.Event
-	Start(ctx context.Context) error
-}
-
-type Signer interface {
-	Sign(event *messages.Event) (bool, error)
-	Start(ctx context.Context) error
-}
-
+// Config contains configuration parameters for EventPublisher.
 type Config struct {
 	Listeners []Listener
 	// Signer is a list of Signers used to sign events.
 	Signers []Signer
 	// Transport is implementation of transport used to send events to relayers.
 	Transport transport.Transport
-	// Logger is a current logger interface used by the EventObserver. The Logger
+	// Log is a current logger interface used by the EventPublisher. The Logger
 	// helps to monitor asynchronous processes.
-	Logger log.Logger
+	Log log.Logger
 }
 
-func NewEventObserver(ctx context.Context, cfg Config) (*EventObserver, error) {
+type Listener interface {
+	Start(ctx context.Context) error
+	Events() chan *messages.Event
+}
+
+type Signer interface {
+	Sign(event *messages.Event) (bool, error)
+}
+
+// New returns a new instance of the EventPublisher struct.
+func New(ctx context.Context, cfg Config) (*EventPublisher, error) {
 	if ctx == nil {
 		return nil, errors.New("context must not be nil")
 	}
-	return &EventObserver{
+	return &EventPublisher{
 		ctx:       ctx,
 		waitCh:    make(chan error),
 		transport: cfg.Transport,
 		listeners: cfg.Listeners,
 		signers:   cfg.Signers,
-		log:       cfg.Logger.WithField("tag", LoggerTag),
+		log:       cfg.Log.WithField("tag", LoggerTag),
 	}, nil
 }
 
-func (l *EventObserver) Start() error {
+func (l *EventPublisher) Start() error {
 	l.log.Infof("Starting")
 	l.listenerLoop()
 	for _, lis := range l.listeners {
@@ -66,21 +69,16 @@ func (l *EventObserver) Start() error {
 			return err
 		}
 	}
-	for _, sig := range l.signers {
-		err := sig.Start(l.ctx)
-		if err != nil {
-			return err
-		}
-	}
 	go l.contextCancelHandler()
 	return nil
 }
 
-func (l *EventObserver) Wait() chan error {
+// Wait waits until the context is canceled or until an error occurs.
+func (l *EventPublisher) Wait() chan error {
 	return l.waitCh
 }
 
-func (l *EventObserver) listenerLoop() {
+func (l *EventPublisher) listenerLoop() {
 	for _, li := range l.listeners {
 		li := li
 		go func() {
@@ -96,7 +94,7 @@ func (l *EventObserver) listenerLoop() {
 	}
 }
 
-func (l *EventObserver) broadcast(event *messages.Event) {
+func (l *EventPublisher) broadcast(event *messages.Event) {
 	if !l.sign(event) {
 		return
 	}
@@ -114,7 +112,7 @@ func (l *EventObserver) broadcast(event *messages.Event) {
 	return
 }
 
-func (l *EventObserver) sign(event *messages.Event) bool {
+func (l *EventPublisher) sign(event *messages.Event) bool {
 	var err error
 	var signed bool
 	for _, s := range l.signers {
@@ -138,7 +136,7 @@ func (l *EventObserver) sign(event *messages.Event) bool {
 	return signed
 }
 
-func (l *EventObserver) contextCancelHandler() {
+func (l *EventPublisher) contextCancelHandler() {
 	defer func() { l.waitCh <- nil }()
 	defer l.log.Info("Stopped")
 	<-l.ctx.Done()

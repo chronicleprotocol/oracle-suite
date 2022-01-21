@@ -44,7 +44,6 @@ type Transport interface {
 	Messages(topic string) chan ReceivedMessage
 	// Start starts listening for messages.
 	Start() error
-	// Wait return channel which send a nil or error when transport's context
-	// is cancelled.
+	// Wait waits until the context is canceled or until an error occurs.
 	Wait() chan error
 }

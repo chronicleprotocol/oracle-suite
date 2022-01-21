@@ -26,6 +26,8 @@ import (
 
 const LoggerTag = "EVENTSTORE"
 
+// EventStore listens for event messages using the transport and stores
+// them for later use.
 type EventStore struct {
 	ctx       context.Context
 	storage   Storage
@@ -34,10 +36,11 @@ type EventStore struct {
 	waitCh    chan error
 }
 
+// Config contains configuration parameters for EventStore.
 type Config struct {
 	Storage   Storage
 	Transport transport.Transport
-	Logger    log.Logger
+	Log       log.Logger
 }
 
 type Storage interface {
@@ -49,7 +52,8 @@ type Storage interface {
 	Get(typ string, idx []byte) ([]*messages.Event, error)
 }
 
-func NewEventStore(ctx context.Context, cfg Config) (*EventStore, error) {
+// New returns a new instance of the EventStore struct.
+func New(ctx context.Context, cfg Config) (*EventStore, error) {
 	if ctx == nil {
 		return nil, errors.New("context must not be nil")
 	}
@@ -57,7 +61,7 @@ func NewEventStore(ctx context.Context, cfg Config) (*EventStore, error) {
 		ctx:       ctx,
 		storage:   cfg.Storage,
 		transport: cfg.Transport,
-		log:       cfg.Logger.WithField("tag", LoggerTag),
+		log:       cfg.Log.WithField("tag", LoggerTag),
 		waitCh:    make(chan error),
 	}, nil
 }
@@ -69,6 +73,7 @@ func (e *EventStore) Start() error {
 	return nil
 }
 
+// Wait waits until the context is canceled or until an error occurs.
 func (e *EventStore) Wait() chan error {
 	return e.waitCh
 }

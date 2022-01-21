@@ -19,6 +19,8 @@ type Memory struct {
 	gcevery int // Specifies every how many messages the garbage collector should be called.
 }
 
+// New returns a new instance of Memory. The ttl argument specifies how long
+// the message should be kept in storage.
 func New(ttl time.Duration) *Memory {
 	return &Memory{
 		ttl:     ttl,
@@ -27,6 +29,7 @@ func New(ttl time.Duration) *Memory {
 	}
 }
 
+// Add implements the store.Storage interface.
 func (m *Memory) Add(msg *messages.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -39,28 +42,33 @@ func (m *Memory) Add(msg *messages.Event) error {
 	return nil
 }
 
+// Get implements the store.Storage interface.
 func (m *Memory) Get(typ string, idx []byte) ([]*messages.Event, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.events[hash(typ, idx)], nil
 }
 
-// Garbage Collector removes messages with expired TTL.
+// Garbage Collector removes expired messages.
 func (m *Memory) gc() {
 	m.gccount++
 	if m.gccount%m.gcevery != 0 {
 		return
 	}
 	for h, events := range m.events {
+		// Count number of expired messages:
 		expired := 0
 		for _, event := range events {
 			if time.Since(event.Date) > m.ttl {
 				expired++
 			}
 		}
+		// Delete expired messages:
 		if expired == len(m.events[h]) {
+			// If all messages with the same hash are expired.
 			delete(m.events, h)
-		} else {
+		} else if expired > 0 {
+			// If only some messages are expired.
 			var es []*messages.Event
 			for _, event := range events {
 				if time.Since(event.Date) <= m.ttl {

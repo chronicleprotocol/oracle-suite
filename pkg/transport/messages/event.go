@@ -32,15 +32,15 @@ const eventMessageMaxKeyLen = 32
 const eventMessageMaxFieldSize = 1024
 
 type Event struct {
-	// The date when the event message was created. It is *not* the date of
-	// the event itself.
-	Date time.Time
 	// Type of the event.
 	Type string
 	// Unique ID of the event.
 	ID []byte
 	// Event index used to search for events.
 	Index []byte
+	// The date when the event message was created. It is *not* the date of
+	// the event itself.
+	Date time.Time
 	// List of event data.
 	Data map[string][]byte
 	// List of event signatures.
@@ -53,10 +53,10 @@ func (e *Event) MarshallBinary() ([]byte, error) {
 		return nil, err
 	}
 	return proto.Marshal(&pb.Event{
-		Timestamp:  e.Date.Unix(),
 		Type:       e.Type,
 		Id:         e.ID,
 		Index:      e.Index,
+		Timestamp:  e.Date.Unix(),
 		Data:       e.Data,
 		Signatures: e.Signatures,
 	})
@@ -68,10 +68,10 @@ func (e *Event) UnmarshallBinary(data []byte) error {
 	if err := proto.Unmarshal(data, msg); err != nil {
 		return err
 	}
-	e.Date = time.Unix(msg.Timestamp, 0)
 	e.Type = msg.Type
 	e.ID = msg.Id
 	e.Index = msg.Index
+	e.Date = time.Unix(msg.Timestamp, 0)
 	e.Data = msg.Data
 	e.Signatures = msg.Signatures
 	return e.validate()

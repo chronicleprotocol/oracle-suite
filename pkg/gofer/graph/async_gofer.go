@@ -53,7 +53,7 @@ func (a *AsyncGofer) Start() error {
 	return a.feeder.Start(ns...)
 }
 
-// Wait waits until feeder's context is cancelled.
+// Wait waits until the context is canceled or until an error occurs.
 func (a *AsyncGofer) Wait() chan error {
 	return a.waitCh
 }

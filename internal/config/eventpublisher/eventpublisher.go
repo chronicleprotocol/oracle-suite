@@ -20,15 +20,15 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/observer"
-	eventObserverEth "github.com/chronicleprotocol/oracle-suite/pkg/event/observer/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
+	eventObserverEth "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 //nolint
-var eventObserverFactory = func(ctx context.Context, cfg observer.Config) (*observer.EventObserver, error) {
-	return observer.NewEventObserver(ctx, cfg)
+var eventObserverFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
+	return publisher.NewEventPublisher(ctx, cfg)
 }
 
 type EventObserver struct {
@@ -60,9 +60,9 @@ type DatastoreDependencies struct {
 	Logger    log.Logger
 }
 
-func (c *EventObserver) ConfigureLeeloo(d Dependencies) (*observer.EventObserver, error) {
-	var lis []observer.Listener
-	var sig []observer.Signer
+func (c *EventObserver) ConfigureLeeloo(d Dependencies) (*publisher.EventPublisher, error) {
+	var lis []publisher.Listener
+	var sig []publisher.Signer
 	if c.Listeners.Wormhole.Enable {
 		var addrs []ethereum.Address
 		for _, addr := range c.Listeners.Wormhole.Addresses {
@@ -80,7 +80,7 @@ func (c *EventObserver) ConfigureLeeloo(d Dependencies) (*observer.EventObserver
 		}))
 	}
 	sig = append(sig, eventObserverEth.NewSigner(d.Signer, []string{eventObserverEth.WormholeEventType}))
-	cfg := observer.Config{
+	cfg := publisher.Config{
 		Listeners: lis,
 		Signers:   sig,
 		Transport: d.Transport,

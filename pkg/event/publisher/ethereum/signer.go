@@ -1,7 +1,6 @@
 package ethereum
 
 import (
-	"context"
 	"errors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -20,11 +19,6 @@ type Signer struct {
 // NewSigner returns a new instance of the Signer struct.
 func NewSigner(signer ethereum.Signer, types []string) *Signer {
 	return &Signer{signer: signer, types: types}
-}
-
-// Start implements the Signer interface.
-func (l *Signer) Start(_ context.Context) error {
-	return nil
 }
 
 // Sign implements the Signer interface.
@@ -46,6 +40,9 @@ func (l *Signer) Sign(event *messages.Event) (bool, error) {
 	s, err := l.signer.Signature(h)
 	if err != nil {
 		return false, err
+	}
+	if event.Signatures == nil {
+		event.Signatures = map[string][]byte{}
 	}
 	event.Data[SignerKey] = l.signer.Address().Bytes()
 	event.Signatures[SignatureKey] = s.Bytes()
