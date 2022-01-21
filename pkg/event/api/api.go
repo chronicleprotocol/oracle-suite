@@ -37,7 +37,7 @@ type Config struct {
 }
 
 type jsonEvent struct {
-	Date       time.Time         `json:"date"`
+	Timestamp  int64             `json:"timestamp"`
 	ID         string            `json:"id"`
 	Data       map[string]string `json:"data"`
 	Signatures map[string]string `json:"signatures"`
@@ -110,7 +110,7 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 func mapEvents(es []*messages.Event) (r []*jsonEvent) {
 	for _, e := range es {
 		j := &jsonEvent{
-			Date:       e.Date,
+			Timestamp:  e.Date.Unix(),
 			ID:         hex.EncodeToString(e.ID),
 			Data:       map[string]string{},
 			Signatures: map[string]string{},
