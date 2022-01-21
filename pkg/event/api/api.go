@@ -104,7 +104,7 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 	}
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
-	json.NewEncoder(res).Encode(mapEvents(events))
+	_ = json.NewEncoder(res).Encode(mapEvents(events))
 }
 
 func mapEvents(es []*messages.Event) (r []*jsonEvent) {
@@ -135,8 +135,5 @@ func (e *EventAPI) contextCancelHandler() {
 }
 
 func decodeHex(h string) ([]byte, error) {
-	if strings.HasPrefix(h, "0x") {
-		h = h[2:]
-	}
-	return hex.DecodeString(h)
+	return hex.DecodeString(strings.TrimPrefix(h, "0x"))
 }

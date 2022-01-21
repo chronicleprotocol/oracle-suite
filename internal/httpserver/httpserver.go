@@ -17,6 +17,7 @@ package httpserver
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"time"
@@ -102,7 +103,7 @@ func (s *HTTPServer) Start() error {
 	return nil
 }
 
-// Wait waits until server is closed.
+// Wait waits until the context is canceled or until an error occurs.
 func (s *HTTPServer) Wait() chan error {
 	return s.waitCh
 }
@@ -114,7 +115,7 @@ func (s *HTTPServer) Addr() net.Addr {
 
 // contextCancelHandler handles context cancellation.
 func (s *HTTPServer) serve() {
-	if err := s.srv.Serve(s.ln); err != nil {
+	if err := s.srv.Serve(s.ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.waitCh <- err
 	}
 }
@@ -128,5 +129,4 @@ func (s *HTTPServer) contextCancelHandler() {
 		defer ctxCancel()
 		s.waitCh <- s.srv.Shutdown(ctx)
 	}
-	close(s.waitCh)
 }

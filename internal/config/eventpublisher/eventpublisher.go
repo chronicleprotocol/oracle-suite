@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package eventobserver
+package eventpublisher
 
 import (
 	"context"
@@ -27,11 +27,11 @@ import (
 )
 
 //nolint
-var eventObserverFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
-	return publisher.NewEventPublisher(ctx, cfg)
+var eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
+	return publisher.New(ctx, cfg)
 }
 
-type EventObserver struct {
+type EventPublisher struct {
 	Listeners struct {
 		Wormhole wormholeListener `json:"wormhole"`
 	} `json:"listeners"`
@@ -41,6 +41,7 @@ type wormholeListener struct {
 	Enable        bool     `json:"enable"`
 	Interval      int64    `json:"interval"`
 	Confirmations int      `json:"confirmations"`
+	MaxBlocks     int      `json:"maxBlocks"`
 	Addresses     []string `json:"addresses"`
 }
 
@@ -60,7 +61,7 @@ type DatastoreDependencies struct {
 	Logger    log.Logger
 }
 
-func (c *EventObserver) ConfigureLeeloo(d Dependencies) (*publisher.EventPublisher, error) {
+func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, error) {
 	var lis []publisher.Listener
 	var sig []publisher.Signer
 	if c.Listeners.Wormhole.Enable {
@@ -73,10 +74,12 @@ func (c *EventObserver) ConfigureLeeloo(d Dependencies) (*publisher.EventPublish
 			interval = 1
 		}
 		lis = append(lis, eventObserverEth.NewWormholeListener(eventObserverEth.WormholeListenerConfig{
-			Client:        d.EthereumClient,
-			Addresses:     addrs,
-			Interval:      time.Second * time.Duration(interval),
-			Confirmations: c.Listeners.Wormhole.Confirmations,
+			Client:       d.EthereumClient,
+			Addresses:    addrs,
+			Interval:     time.Second * time.Duration(interval),
+			BlocksBehind: c.Listeners.Wormhole.Confirmations,
+			MaxBlocks:    c.Listeners.Wormhole.MaxBlocks,
+			Log:          d.Logger,
 		}))
 	}
 	sig = append(sig, eventObserverEth.NewSigner(d.Signer, []string{eventObserverEth.WormholeEventType}))
@@ -84,7 +87,7 @@ func (c *EventObserver) ConfigureLeeloo(d Dependencies) (*publisher.EventPublish
 		Listeners: lis,
 		Signers:   sig,
 		Transport: d.Transport,
-		Logger:    d.Logger,
+		Log:       d.Logger,
 	}
-	return eventObserverFactory(d.Context, cfg)
+	return eventPublisherFactory(d.Context, cfg)
 }

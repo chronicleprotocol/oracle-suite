@@ -27,7 +27,7 @@ import (
 
 //nolint
 var eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, error) {
-	return api.NewEventAPI(ctx, cfg)
+	return api.New(ctx, cfg)
 }
 
 type EventAPI struct {

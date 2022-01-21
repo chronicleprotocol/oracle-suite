@@ -82,12 +82,15 @@ func TestEventAPI(t *testing.T) {
 	time.Sleep(time.Second)
 
 	res, err := http.Get(fmt.Sprintf("http://%s?type=event1&index=%x", api.srv.Addr().String(), "idx1"))
+	assert.NoError(t, err)
 	assert.JSONEq(t, `[{"date":"1970-01-01T01:00:01+01:00","id":"696431","data":{"data_key":"76616c"},"signatures":{"sig_key":"76616c"}},{"date":"1970-01-01T01:00:02+01:00","id":"696432","data":{"data_key":"76616c"},"signatures":{"sig_key":"76616c"}}]`, read(res))
 
 	res, err = http.Get(fmt.Sprintf("http://%s?type=event1&index=0x%x", api.srv.Addr().String(), "idx2"))
+	assert.NoError(t, err)
 	assert.JSONEq(t, `[{"date":"1970-01-01T01:00:03+01:00","id":"696433","data":{"data_key":"76616c"},"signatures":{"sig_key":"76616c"}}]`, read(res))
 
 	res, err = http.Get(fmt.Sprintf("http://%s?type=event2&index=0x%x", api.srv.Addr().String(), "idx1"))
+	assert.NoError(t, err)
 	assert.JSONEq(t, `[{"date":"1970-01-01T01:00:04+01:00","id":"696434","data":{"data_key":"76616c"},"signatures":{"sig_key":"76616c"}}]`, read(res))
 }
 

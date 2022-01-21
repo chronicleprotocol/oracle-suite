@@ -109,7 +109,6 @@ func (l *EventPublisher) broadcast(event *messages.Event) {
 			WithError(err).
 			Error("Unable to broadcast the event")
 	}
-	return
 }
 
 func (l *EventPublisher) sign(event *messages.Event) bool {

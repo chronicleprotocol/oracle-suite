@@ -158,6 +158,7 @@ func (n *Node) Start() error {
 	return nil
 }
 
+// Wait waits until the context is canceled or until an error occurs.
 func (n *Node) Wait() chan error {
 	return n.waitCh
 }
