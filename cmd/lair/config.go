@@ -32,6 +32,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+const week = time.Hour * 7 * 24
+
 type Config struct {
 	Lair      eventAPIConfig.EventAPI   `json:"lair"`
 	Transport transportConfig.Transport `json:"transport"`
@@ -59,11 +61,11 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *store.EventSto
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	mem := memory.New(time.Hour * 7 * 24)
-	evs, err := store.NewEventStore(d.Context, store.Config{
+	mem := memory.New(week)
+	evs, err := store.New(d.Context, store.Config{
 		Storage:   mem,
 		Transport: tra,
-		Logger:    d.Logger,
+		Log:       d.Logger,
 	})
 	if err != nil {
 		return nil, nil, nil, err

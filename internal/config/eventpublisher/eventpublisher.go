@@ -87,7 +87,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		Listeners: lis,
 		Signers:   sig,
 		Transport: d.Transport,
-		Log:       d.Logger,
+		Logger:    d.Logger,
 	}
 	return eventPublisherFactory(d.Context, cfg)
 }

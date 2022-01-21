@@ -33,7 +33,7 @@ type EventAPI struct {
 type Config struct {
 	EventStore *store.EventStore
 	Address    string
-	Logger     log.Logger
+	Log        log.Logger
 }
 
 type jsonEvent struct {
@@ -52,7 +52,7 @@ func New(ctx context.Context, cfg Config) (*EventAPI, error) {
 		ctx:    ctx,
 		waitCh: make(chan error),
 		es:     cfg.EventStore,
-		log:    cfg.Logger.WithField("tag", LoggerTag),
+		log:    cfg.Log.WithField("tag", LoggerTag),
 	}
 	api.srv = httpserver.New(ctx, &http.Server{
 		Addr:         cfg.Address,

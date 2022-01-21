@@ -53,7 +53,7 @@ func (c *EventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
 	cfg := api.Config{
 		EventStore: d.EventStore,
 		Address:    c.Address,
-		Logger:     d.Logger,
+		Log:        d.Logger,
 	}
 	return eventAPIFactory(d.Context, cfg)
 }

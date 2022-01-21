@@ -20,20 +20,20 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
-	leelooConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventobserver"
+	leelooConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventpublisher"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/observer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 type Config struct {
-	Leeloo    leelooConfig.EventObserver `json:"leeloo"`
-	Ethereum  ethereumConfig.Ethereum    `json:"ethereum"`
-	Transport transportConfig.Transport  `json:"transport"`
-	Feeds     feedsConfig.Feeds          `json:"feeds"`
+	Leeloo    leelooConfig.EventPublisher `json:"leeloo"`
+	Ethereum  ethereumConfig.Ethereum     `json:"ethereum"`
+	Transport transportConfig.Transport   `json:"transport"`
+	Feeds     feedsConfig.Feeds           `json:"feeds"`
 }
 
 type Dependencies struct {
@@ -41,7 +41,7 @@ type Dependencies struct {
 	Logger  log.Logger
 }
 
-func (c *Config) Configure(d Dependencies) (transport.Transport, *observer.EventObserver, error) {
+func (c *Config) Configure(d Dependencies) (transport.Transport, *publisher.EventPublisher, error) {
 	sig, err := c.Ethereum.ConfigureSigner()
 	if err != nil {
 		return nil, nil, err
@@ -65,7 +65,7 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *observer.Event
 	if err != nil {
 		return nil, nil, err
 	}
-	lel, err := c.Leeloo.ConfigureLeeloo(leelooConfig.Dependencies{
+	lel, err := c.Leeloo.Configure(leelooConfig.Dependencies{
 		Context:        d.Context,
 		Signer:         sig,
 		EthereumClient: cli,
@@ -81,7 +81,7 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *observer.Event
 type Service struct {
 	ctxCancel context.CancelFunc
 	Transport transport.Transport
-	Leeloo    *observer.EventObserver
+	Leeloo    *publisher.EventPublisher
 }
 
 func PrepareService(ctx context.Context, opts *options) (*Service, error) {

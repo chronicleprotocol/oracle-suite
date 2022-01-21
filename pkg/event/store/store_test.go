@@ -15,7 +15,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func TestNewEventStore(t *testing.T) {
+func TestEventStore(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	tra := local.New(ctx, 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 

@@ -32,7 +32,7 @@ func TestEventAPI(t *testing.T) {
 	api, err := New(ctx, Config{
 		EventStore: evs,
 		Address:    "127.0.0.1:0",
-		Logger:     null.New(),
+		Log:        null.New(),
 	})
 	require.NoError(t, err)
 

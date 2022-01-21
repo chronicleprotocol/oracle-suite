@@ -31,9 +31,9 @@ type Config struct {
 	Signers []Signer
 	// Transport is implementation of transport used to send events to relayers.
 	Transport transport.Transport
-	// Log is a current logger interface used by the EventPublisher. The Logger
+	// Logger is a current logger interface used by the EventPublisher. The Logger
 	// helps to monitor asynchronous processes.
-	Log log.Logger
+	Logger log.Logger
 }
 
 type Listener interface {
@@ -56,7 +56,7 @@ func New(ctx context.Context, cfg Config) (*EventPublisher, error) {
 		transport: cfg.Transport,
 		listeners: cfg.Listeners,
 		signers:   cfg.Signers,
-		log:       cfg.Log.WithField("tag", LoggerTag),
+		log:       cfg.Logger.WithField("tag", LoggerTag),
 	}, nil
 }
 

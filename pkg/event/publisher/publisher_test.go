@@ -40,7 +40,7 @@ func TestEventPublisher(t *testing.T) {
 		Listeners: []Listener{lis},
 		Signers:   []Signer{sig},
 		Transport: loc,
-		Log:       null.New(),
+		Logger:    null.New(),
 	})
 	require.NoError(t, err)
 
