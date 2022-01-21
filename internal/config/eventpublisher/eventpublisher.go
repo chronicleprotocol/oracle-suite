@@ -21,7 +21,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
-	eventObserverEth "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/ethereum"
+	publisherEthereum "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
@@ -32,33 +32,27 @@ var eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*pu
 }
 
 type EventPublisher struct {
-	Listeners struct {
-		Wormhole wormholeListener `json:"wormhole"`
-	} `json:"listeners"`
+	Listeners listeners `json:"listeners"`
+}
+
+type listeners struct {
+	Wormhole wormholeListener `json:"wormhole"`
 }
 
 type wormholeListener struct {
-	Enable        bool     `json:"enable"`
-	Interval      int64    `json:"interval"`
-	Confirmations int      `json:"confirmations"`
-	MaxBlocks     int      `json:"maxBlocks"`
-	Addresses     []string `json:"addresses"`
+	Enable       bool     `json:"enable"`
+	Interval     int64    `json:"interval"`
+	BlocksBehind []int    `json:"blocksBehind"`
+	MaxBlocks    int      `json:"maxBlocks"`
+	Addresses    []string `json:"addresses"`
 }
 
 type Dependencies struct {
 	Context        context.Context
 	Signer         ethereum.Signer
-	EthereumClient eventObserverEth.EthClient
+	EthereumClient publisherEthereum.EthClient
 	Transport      transport.Transport
 	Logger         log.Logger
-}
-
-type DatastoreDependencies struct {
-	Context   context.Context
-	Signer    ethereum.Signer
-	Transport transport.Transport
-	Feeds     []ethereum.Address
-	Logger    log.Logger
 }
 
 func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, error) {
@@ -73,16 +67,18 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		if interval < 1 {
 			interval = 1
 		}
-		lis = append(lis, eventObserverEth.NewWormholeListener(eventObserverEth.WormholeListenerConfig{
-			Client:       d.EthereumClient,
-			Addresses:    addrs,
-			Interval:     time.Second * time.Duration(interval),
-			BlocksBehind: c.Listeners.Wormhole.Confirmations,
-			MaxBlocks:    c.Listeners.Wormhole.MaxBlocks,
-			Log:          d.Logger,
-		}))
+		for _, blocksBehind := range c.Listeners.Wormhole.BlocksBehind {
+			lis = append(lis, publisherEthereum.NewWormholeListener(publisherEthereum.WormholeListenerConfig{
+				Client:       d.EthereumClient,
+				Addresses:    addrs,
+				Interval:     time.Second * time.Duration(interval),
+				BlocksBehind: blocksBehind,
+				MaxBlocks:    c.Listeners.Wormhole.MaxBlocks,
+				Log:          d.Logger,
+			}))
+		}
+		sig = append(sig, publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.WormholeEventType}))
 	}
-	sig = append(sig, eventObserverEth.NewSigner(d.Signer, []string{eventObserverEth.WormholeEventType}))
 	cfg := publisher.Config{
 		Listeners: lis,
 		Signers:   sig,
