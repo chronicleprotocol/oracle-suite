@@ -17,9 +17,12 @@ package eventpublisher
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	publisherEthereum "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -36,44 +39,48 @@ type EventPublisher struct {
 }
 
 type listeners struct {
-	Wormhole wormholeListener `json:"wormhole"`
+	Wormhole []wormholeListener `json:"wormhole"`
 }
 
 type wormholeListener struct {
-	Enable       bool     `json:"enable"`
-	Interval     int64    `json:"interval"`
-	BlocksBehind []int    `json:"blocksBehind"`
-	MaxBlocks    int      `json:"maxBlocks"`
-	Addresses    []string `json:"addresses"`
+	RPC          interface{} `json:"rpc"`
+	Interval     int64       `json:"interval"`
+	BlocksBehind []int       `json:"blocksBehind"`
+	MaxBlocks    int         `json:"maxBlocks"`
+	Addresses    []string    `json:"addresses"`
 }
 
 type Dependencies struct {
-	Context        context.Context
-	Signer         ethereum.Signer
-	EthereumClient publisherEthereum.EthClient
-	Transport      transport.Transport
-	Logger         log.Logger
+	Context   context.Context
+	Signer    ethereum.Signer
+	Transport transport.Transport
+	Logger    log.Logger
 }
 
 func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, error) {
 	var lis []publisher.Listener
 	var sig []publisher.Signer
-	if c.Listeners.Wormhole.Enable {
+	clis := ethClients{}
+	for _, w := range c.Listeners.Wormhole {
+		cli, err := clis.configure(w.RPC)
+		if err != nil {
+			return nil, err
+		}
 		var addrs []ethereum.Address
-		for _, addr := range c.Listeners.Wormhole.Addresses {
+		for _, addr := range w.Addresses {
 			addrs = append(addrs, ethereum.HexToAddress(addr))
 		}
-		interval := c.Listeners.Wormhole.Interval
+		interval := w.Interval
 		if interval < 1 {
 			interval = 1
 		}
-		for _, blocksBehind := range c.Listeners.Wormhole.BlocksBehind {
+		for _, blocksBehind := range w.BlocksBehind {
 			lis = append(lis, publisherEthereum.NewWormholeListener(publisherEthereum.WormholeListenerConfig{
-				Client:       d.EthereumClient,
+				Client:       cli,
 				Addresses:    addrs,
 				Interval:     time.Second * time.Duration(interval),
 				BlocksBehind: blocksBehind,
-				MaxBlocks:    c.Listeners.Wormhole.MaxBlocks,
+				MaxBlocks:    w.MaxBlocks,
 				Logger:       d.Logger,
 			}))
 		}
@@ -86,4 +93,25 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		Logger:    d.Logger,
 	}
 	return eventPublisherFactory(d.Context, cfg)
+}
+
+type ethClients map[string]geth.EthClient
+
+// configure returns an Ethereum client for given RPC endpoints.
+// Returned client will be reused if provided RPC are the same.
+func (m ethClients) configure(rpc interface{}) (geth.EthClient, error) {
+	key, err := json.Marshal(rpc)
+	if err != nil {
+		return nil, err
+	}
+	if c, ok := m[string(key)]; ok {
+		return c, nil
+	}
+	e := &ethereumConfig.Ethereum{RPC: rpc}
+	c, err := e.ConfigureRPCClient()
+	if err != nil {
+		return nil, err
+	}
+	m[string(key)] = c
+	return c, nil
 }

@@ -46,10 +46,6 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *publisher.Even
 	if err != nil {
 		return nil, nil, err
 	}
-	cli, err := c.Ethereum.ConfigureRPCClient()
-	if err != nil {
-		return nil, nil, err
-	}
 	fed, err := c.Feeds.Addresses()
 	if err != nil {
 		return nil, nil, err
@@ -66,11 +62,9 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *publisher.Even
 		return nil, nil, err
 	}
 	lel, err := c.Leeloo.Configure(leelooConfig.Dependencies{
-		Context:        d.Context,
-		Signer:         sig,
-		EthereumClient: cli,
-		Transport:      tra,
-		Logger:         d.Logger,
+		Context:   d.Context,
+		Transport: tra,
+		Logger:    d.Logger,
 	})
 	if err != nil {
 		return nil, nil, err

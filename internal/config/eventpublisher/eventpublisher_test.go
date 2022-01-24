@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
@@ -35,17 +34,16 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 
 	ctx := context.Background()
 	sig := geth.NewSigner(nil)
-	eth := &mocks.EthClient{}
 	tra := local.New(ctx, 0, nil)
 	log := null.New()
 
-	config := EventPublisher{Listeners: listeners{Wormhole: wormholeListener{
-		Enable:       true,
+	config := EventPublisher{Listeners: listeners{Wormhole: []wormholeListener{{
+		RPC:          "https://example.com/",
 		Interval:     1,
 		BlocksBehind: []int{10, 60},
 		MaxBlocks:    10,
 		Addresses:    []string{"0x07a35a1d4b751a818d93aa38e615c0df23064881"},
-	}}}
+	}}}}
 
 	eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
 		assert.NotNil(t, ctx)
@@ -57,44 +55,25 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 	}
 
 	ep, err := config.Configure(Dependencies{
-		Context:        ctx,
-		Signer:         sig,
-		EthereumClient: eth,
-		Transport:      tra,
-		Logger:         log,
+		Context:   ctx,
+		Signer:    sig,
+		Transport: tra,
+		Logger:    log,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, ep)
 }
 
-func TestEventPublisher_Configure_Wormhole_Disabled(t *testing.T) {
-	prevEventPublisherFactory := eventPublisherFactory
-	defer func() { eventPublisherFactory = prevEventPublisherFactory }()
+func Test_ethClients_configure(t *testing.T) {
+	c := &ethClients{}
 
-	ctx := context.Background()
-	sig := geth.NewSigner(nil)
-	eth := &mocks.EthClient{}
-	tra := local.New(ctx, 0, nil)
-	log := null.New()
-
-	config := EventPublisher{Listeners: listeners{Wormhole: wormholeListener{Enable: false}}}
-
-	eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
-		assert.NotNil(t, ctx)
-		assert.Equal(t, tra, cfg.Transport)
-		assert.Equal(t, log, cfg.Logger)
-		assert.Len(t, cfg.Listeners, 0)
-		assert.Len(t, cfg.Signers, 0)
-		return &publisher.EventPublisher{}, nil
-	}
-
-	ep, err := config.Configure(Dependencies{
-		Context:        ctx,
-		Signer:         sig,
-		EthereumClient: eth,
-		Transport:      tra,
-		Logger:         log,
-	})
+	c1, err := c.configure("https://example.com/foo")
 	require.NoError(t, err)
-	require.NotNil(t, ep)
+	c2, err := c.configure("https://example.com/foo")
+	require.NoError(t, err)
+	c3, err := c.configure("https://example.com/bar")
+	require.NoError(t, err)
+
+	assert.Same(t, c1, c2)
+	assert.NotSame(t, c1, c3)
 }
