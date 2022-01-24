@@ -1,0 +1,14 @@
+FROM golang:1-alpine as builder
+RUN apk --no-cache add git gcc libc-dev linux-headers
+WORKDIR /go/src/lair
+COPY . .
+RUN    export CGO_ENABLED=1 \
+    && mkdir dist \
+    && go mod vendor \
+    && go build -o dist/lair ./cmd/lair
+
+FROM alpine:3.14
+RUN apk --no-cache add ca-certificates
+WORKDIR /root
+COPY --from=builder /go/src/lair/dist/ /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/lair"]

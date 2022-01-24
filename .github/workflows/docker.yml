@@ -39,7 +39,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-#
+
       - name: Build and Publish Gofer to Github Packages
         uses: docker/build-push-action@v2.7.0
         with:
@@ -48,7 +48,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ghcr.io/chronicleprotocol/gofer:${{ steps.prep.outputs.version }},ghcr.io/chronicleprotocol/gofer:latest
-#
+
       - name: Build and Publish Spire to Github Packages
         uses: docker/build-push-action@v2.7.0
         with:
@@ -66,7 +66,25 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ghcr.io/chronicleprotocol/ghost:${{ steps.prep.outputs.version }},ghcr.io/chronicleprotocol/ghost:latest
-      
+
+      - name: Build and Publish Leeloo to Github Packages
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile-leeloo
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/leeloo:${{ steps.prep.outputs.version }},ghcr.io/chronicleprotocol/leeloo:latest
+
+      - name: Build and Publish Lair to Github Packages
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile-lair
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/lair:${{ steps.prep.outputs.version }},ghcr.io/chronicleprotocol/lair:latest
+
       - name: Build and Publish Spectre to Github Packages
         uses: docker/build-push-action@v2.7.0
         with:

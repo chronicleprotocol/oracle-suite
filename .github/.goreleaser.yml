@@ -13,6 +13,20 @@ builds:
       - linux
       - darwin
 
+  - main: ./cmd/leeloo
+    id: "leeloo"
+    binary: leeloo
+    goos:
+      - linux
+      - darwin
+
+  - main: ./cmd/lair
+    id: "lair"
+    binary: lair
+    goos:
+      - linux
+      - darwin
+
   - main: ./cmd/ssb-rpc-client
     id: "ssb-rpc-client"
     binary: ssb-rpc-client
@@ -31,6 +45,18 @@ archives:
     id: "spire"
     builds:
       - spire
+    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  -
+    id: "leeloo"
+    builds:
+      - leeloo
+    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  -
+    id: "lair"
+    builds:
+      - lair
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
   -
