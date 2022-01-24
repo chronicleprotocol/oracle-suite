@@ -65,7 +65,7 @@ func Test_wormholeListener(t *testing.T) {
 
 	require.NoError(t, w.Start(ctx))
 	for {
-		if len(cli.Calls) >= 2 { // 2 is the number of mocked calls above.
+		if len(cli.Calls()) >= 2 { // 2 is the number of mocked calls above.
 			cancelFunc()
 			break
 		}

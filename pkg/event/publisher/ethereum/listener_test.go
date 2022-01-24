@@ -67,7 +67,7 @@ func Test_logListener(t *testing.T) {
 	lis.Start(ctx)
 	var logs []types.Log
 	for {
-		if len(cli.Calls) >= 5 { // 5 is the number of mocked calls above.
+		if len(cli.Calls()) >= 5 { // 5 is the number of mocked calls above.
 			cancelFunc()
 			break
 		}

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sync"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
@@ -28,7 +29,9 @@ var ErrNotSubscribed = errors.New("topic is not subscribed")
 // Local is a simple implementation of the transport.Transport interface
 // using local channels.
 type Local struct {
-	ctx    context.Context
+	mu  sync.RWMutex
+	ctx context.Context
+
 	waitCh chan error
 	subs   map[string]subscription
 }
@@ -76,6 +79,8 @@ func (l *Local) Wait() chan error {
 
 // Broadcast implements the transport.Transport interface.
 func (l *Local) Broadcast(topic string, message transport.Message) error {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	if sub, ok := l.subs[topic]; ok {
 		b, err := message.MarshallBinary()
 		if err != nil {
@@ -89,6 +94,8 @@ func (l *Local) Broadcast(topic string, message transport.Message) error {
 
 // Messages implements the transport.Transport interface.
 func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	if sub, ok := l.subs[topic]; ok {
 		go func() {
 			select {
@@ -111,6 +118,8 @@ func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
 func (l *Local) contextCancelHandler() {
 	defer func() { l.waitCh <- nil }()
 	<-l.ctx.Done()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	for _, sub := range l.subs {
 		close(sub.status)
 	}
