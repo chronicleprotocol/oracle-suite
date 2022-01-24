@@ -47,3 +47,18 @@ func Parse(out interface{}, config []byte) error {
 	}
 	return nil
 }
+
+func LoadFile(fileName string) (b []byte, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("could not open file %s: %w", fileName, err)
+	}
+	defer func() {
+		err = f.Close()
+	}()
+	b, err = ioutil.ReadAll(f)
+	return b, err
+}

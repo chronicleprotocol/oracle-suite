@@ -16,46 +16,69 @@
 package cobra
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
+
 	"github.com/spf13/cobra"
 )
 
-func NewList(opts *Options) *cobra.Command {
-	var all bool
-	var index int
+func Pull(opts *Options) *cobra.Command {
+	var id, contentType string
+	var limit int64
 	cmd := &cobra.Command{
-		Use:   "list [--all]",
-		Short: "List word count and first word from the input, omitting the comments",
-		RunE: func(_ *cobra.Command, args []string) error {
-			if all {
-				lines, err := linesFromFile(opts.InputFile)
-				if err != nil {
-					return err
-				}
-				for _, l := range lines {
-					printLine(l)
-				}
-				return nil
-			}
-			l, err := lineFromFile(opts.InputFile, index)
+		Use:          "pull",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := opts.SSBConfig()
 			if err != nil {
 				return err
 			}
-			printLine(l)
+			c, err := conf.Client(cmd.Context())
+			if err != nil {
+				return err
+			}
+			if id == "" {
+				b, err := c.WhoAmI()
+				if err != nil {
+					return err
+				}
+				var w struct {
+					ID string `json:"id"`
+				}
+				if err := json.Unmarshal(b, &w); err != nil {
+					return err
+				}
+				id = w.ID
+				log.Println("defaulting to id: ", id)
+			}
+			last, err := c.ReceiveLast(id, contentType, limit)
+			if err != nil {
+				return err
+			}
+			if len(last) > 0 {
+				fmt.Println(string(last))
+			}
 			return nil
 		},
 	}
-	cmd.Flags().IntVar(
-		&index,
-		"index",
-		0,
-		"data index",
+	cmd.Flags().StringVar(
+		&id,
+		"id",
+		"",
+		"feed id",
 	)
-	cmd.Flags().BoolVarP(
-		&all,
-		"all",
-		"a",
-		false,
-		"all data",
+	cmd.Flags().StringVar(
+		&contentType,
+		"type",
+		"",
+		"content type",
+	)
+	cmd.Flags().Int64Var(
+		&limit,
+		"limit",
+		-1,
+		"max message count",
 	)
 	return cmd
 }

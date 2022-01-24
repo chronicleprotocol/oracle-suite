@@ -21,24 +21,10 @@ import (
 	"math/rand"
 )
 
-func SeededRandBytes(seedBytes []byte, len int) ([]byte, error) {
-	var seed int64
-	buf := bytes.NewBuffer(seedBytes)
-	err := binary.Read(buf, binary.BigEndian, &seed)
-	if err != nil {
-		return nil, err
-	}
-	rand.Seed(seed)
-	rb := make([]byte, len)
-	rand.Read(rb) //nolint:gosec
-	return rb, nil
-}
-
 func SeededRandBytesGen(seedBytes []byte, len int) (func() []byte, error) {
 	var seed int64
 	buf := bytes.NewBuffer(seedBytes)
-	err := binary.Read(buf, binary.BigEndian, &seed)
-	if err != nil {
+	if err := binary.Read(buf, binary.BigEndian, &seed); err != nil {
 		return nil, err
 	}
 	rand.Seed(seed)

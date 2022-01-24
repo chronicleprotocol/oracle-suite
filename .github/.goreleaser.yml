@@ -5,7 +5,6 @@ builds:
     goos:
       - linux
       - darwin
-      # - windows
 
   - main: ./cmd/spire
     id: "spire"
@@ -13,7 +12,13 @@ builds:
     goos:
       - linux
       - darwin
-      # - windows
+
+  - main: ./cmd/ssb-rpc-client
+    id: "ssb-rpc-client"
+    binary: ssb-rpc-client
+    goos:
+      - linux
+      - darwin
 
 archives:
   - 
@@ -26,4 +31,10 @@ archives:
     id: "spire"
     builds:
       - spire
+    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  -
+    id: "ssb-rpc-client"
+    builds:
+      - ssb-rpc-client
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"

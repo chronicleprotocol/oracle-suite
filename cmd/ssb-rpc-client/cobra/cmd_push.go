@@ -16,46 +16,43 @@
 package cobra
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/spf13/cobra"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/ssb"
 )
 
-func NewList(opts *Options) *cobra.Command {
-	var all bool
-	var index int
-	cmd := &cobra.Command{
-		Use:   "list [--all]",
-		Short: "List word count and first word from the input, omitting the comments",
-		RunE: func(_ *cobra.Command, args []string) error {
-			if all {
-				lines, err := linesFromFile(opts.InputFile)
-				if err != nil {
-					return err
-				}
-				for _, l := range lines {
-					printLine(l)
-				}
-				return nil
-			}
-			l, err := lineFromFile(opts.InputFile, index)
+func Push(opts *Options) *cobra.Command {
+	return &cobra.Command{
+		Use:     "push",
+		Aliases: []string{"publish"},
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := opts.SSBConfig()
 			if err != nil {
 				return err
 			}
-			printLine(l)
+			c, err := conf.Client(cmd.Context())
+			if err != nil {
+				return err
+			}
+			var fap ssb.FeedAssetPrice
+			for _, a := range args {
+				err = json.Unmarshal([]byte(a), &fap)
+				if err != nil {
+					return err
+				}
+				resp, err := c.Transmit(fap)
+				if err != nil {
+					return err
+				}
+				if len(resp) > 0 {
+					fmt.Println(string(resp))
+				}
+			}
 			return nil
 		},
 	}
-	cmd.Flags().IntVar(
-		&index,
-		"index",
-		0,
-		"data index",
-	)
-	cmd.Flags().BoolVarP(
-		&all,
-		"all",
-		"a",
-		false,
-		"all data",
-	)
-	return cmd
 }

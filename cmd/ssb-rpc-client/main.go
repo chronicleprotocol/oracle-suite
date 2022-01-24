@@ -18,25 +18,11 @@ package main
 import (
 	"os"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/cobra"
+	"github.com/chronicleprotocol/oracle-suite/cmd/ssb-rpc-client/cobra"
 )
 
 func main() {
-	opts, cmd := cobra.Command()
-	cmd.PersistentFlags().StringVarP(
-		&opts.InputFile,
-		"input",
-		"i",
-		"",
-		"input file path",
-	)
-	cmd.PersistentFlags().StringVarP(
-		&opts.OutputFile,
-		"output",
-		"o",
-		"",
-		"output file path",
-	)
+	opts, cmd := cobra.Root()
 	cmd.PersistentFlags().BoolVarP(
 		&opts.Verbose,
 		"verbose",
@@ -44,10 +30,39 @@ func main() {
 		false,
 		"verbose logging",
 	)
+	cmd.PersistentFlags().StringVarP(
+		&opts.CapsPath,
+		"caps",
+		"c",
+		"./local.caps.json",
+		"caps file path",
+	)
+	cmd.PersistentFlags().StringVarP(
+		&opts.KeysPath,
+		"keys",
+		"k",
+		"./local.ssb.json",
+		"keys file path",
+	)
+	cmd.PersistentFlags().StringVarP(
+		&opts.SsbHost,
+		"host",
+		"H",
+		"127.0.0.1",
+		"ssb server host",
+	)
+	cmd.PersistentFlags().IntVarP(
+		&opts.SsbPort,
+		"port",
+		"P",
+		8008, //nolint:gomnd
+		"ssb server port",
+	)
 	cmd.AddCommand(
-		cobra.NewHd(opts),
-		cobra.GenerateSeed(opts),
-		cobra.NewList(opts),
+		cobra.Push(opts),
+		cobra.Pull(opts),
+		cobra.Log(opts),
+		cobra.Whoami(opts),
 	)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)

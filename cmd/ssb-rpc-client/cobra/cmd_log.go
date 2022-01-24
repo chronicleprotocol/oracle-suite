@@ -13,44 +13,34 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cobra
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/cobra"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	opts, cmd := cobra.Command()
-	cmd.PersistentFlags().StringVarP(
-		&opts.InputFile,
-		"input",
-		"i",
-		"",
-		"input file path",
-	)
-	cmd.PersistentFlags().StringVarP(
-		&opts.OutputFile,
-		"output",
-		"o",
-		"",
-		"output file path",
-	)
-	cmd.PersistentFlags().BoolVarP(
-		&opts.Verbose,
-		"verbose",
-		"v",
-		false,
-		"verbose logging",
-	)
-	cmd.AddCommand(
-		cobra.NewHd(opts),
-		cobra.GenerateSeed(opts),
-		cobra.NewList(opts),
-	)
-	if err := cmd.Execute(); err != nil {
-		os.Exit(1)
+func Log(opts *Options) *cobra.Command {
+	return &cobra.Command{
+		Use: "log",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := opts.SSBConfig()
+			if err != nil {
+				return err
+			}
+			c, err := conf.Client(cmd.Context())
+			if err != nil {
+				return err
+			}
+			ch, err := c.LogStream()
+			if err != nil {
+				return err
+			}
+			for b := range ch {
+				fmt.Println(string(b))
+			}
+			return err
+		},
 	}
-	os.Exit(0)
 }

@@ -16,46 +16,47 @@
 package cobra
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/spf13/cobra"
+	"github.com/tyler-smith/go-bip39"
 )
 
-func NewList(opts *Options) *cobra.Command {
-	var all bool
-	var index int
+func GenerateSeed(opts *Options) *cobra.Command {
+	var bitSizeMultiplier int
 	cmd := &cobra.Command{
-		Use:   "list [--all]",
-		Short: "List word count and first word from the input, omitting the comments",
+		Use:     "generate",
+		Aliases: []string{"gen", "g"},
+		Args:    cobra.NoArgs,
+		Short:   "Generate HD seed phrase with a specific bit size",
 		RunE: func(_ *cobra.Command, args []string) error {
-			if all {
-				lines, err := linesFromFile(opts.InputFile)
-				if err != nil {
-					return err
-				}
-				for _, l := range lines {
-					printLine(l)
-				}
-				return nil
+			if bitSizeMultiplier < 4 || bitSizeMultiplier > 8 {
+				return fmt.Errorf("entropy size multiplier must be between 4 and 8")
 			}
-			l, err := lineFromFile(opts.InputFile, index)
+			bitSize := 32 * bitSizeMultiplier
+			log.Printf("entropy bit size: %d * 32 = %d\n", bitSizeMultiplier, bitSize)
+			entropy, err := bip39.NewEntropy(bitSize)
 			if err != nil {
 				return err
 			}
-			printLine(l)
+			mnemonic, err := bip39.NewMnemonic(entropy)
+			if err != nil {
+				return err
+			}
+			fmt.Println(mnemonic)
+			if opts.Verbose {
+				log.Println(mnemonic)
+			}
 			return nil
 		},
 	}
-	cmd.Flags().IntVar(
-		&index,
-		"index",
-		0,
-		"data index",
-	)
-	cmd.Flags().BoolVarP(
-		&all,
-		"all",
-		"a",
-		false,
-		"all data",
+	cmd.Flags().IntVarP(
+		&bitSizeMultiplier,
+		"entropy",
+		"n",
+		4,
+		"number of 32 bit size blocks for entropy <4;8>",
 	)
 	return cmd
 }

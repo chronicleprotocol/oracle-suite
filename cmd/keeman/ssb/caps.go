@@ -17,23 +17,21 @@ package ssb
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"go.cryptoscope.co/ssb"
 	refs "go.mindeco.de/ssb-refs"
 
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/rand"
 )
 
-type Caps struct {
+type Caps000 struct {
 	Shs  []byte
 	Sign []byte
 }
 
-func (c Caps) MarshalJSON() ([]byte, error) {
+func (c Caps000) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Shs    string `json:"shs"`
 		Sign   string `json:"sign,omitempty"`
@@ -44,20 +42,20 @@ func (c Caps) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func NewCaps(privateKey *ecdsa.PrivateKey) (*Caps, error) {
-	randBytes, err := rand.SeededRandBytesGen(crypto.FromECDSA(privateKey), 32)
+func NewCaps(seed []byte) (*Caps000, error) {
+	randBytes, err := rand.SeededRandBytesGen(seed, 32)
 	if err != nil {
 		return nil, err
 	}
-	return &Caps{
+	return &Caps000{
 		Shs:  randBytes(),
 		Sign: randBytes(),
 	}, nil
 }
 
-func NewKeyPair(privateKey *ecdsa.PrivateKey) (ssb.KeyPair, error) {
+func NewKeyPair(b []byte) (ssb.KeyPair, error) {
 	return ssb.NewKeyPair(
-		bytes.NewReader(crypto.FromECDSA(privateKey)),
+		bytes.NewReader(b),
 		refs.RefAlgoFeedSSB1,
 	)
 }

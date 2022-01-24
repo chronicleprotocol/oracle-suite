@@ -29,38 +29,11 @@ import (
 type Options struct {
 	InputFile  string
 	OutputFile string
-	Index      int
+	Verbose    bool
 }
 
-func Execute() error {
-	var opts Options
-	cmd := &cobra.Command{Use: "keeman"}
-	cmd.PersistentFlags().StringVarP(
-		&opts.InputFile,
-		"input",
-		"i",
-		"",
-		"input file path",
-	)
-	cmd.PersistentFlags().StringVarP(
-		&opts.OutputFile,
-		"output",
-		"o",
-		"",
-		"output file path",
-	)
-	cmd.PersistentFlags().IntVarP(
-		&opts.Index,
-		"index",
-		"n",
-		0,
-		"data index",
-	)
-	cmd.AddCommand(
-		NewHd(&opts),
-		NewList(&opts),
-	)
-	return cmd.Execute()
+func Command() (*Options, *cobra.Command) {
+	return &Options{}, &cobra.Command{Use: "keeman"}
 }
 
 func lineFromFile(filename string, idx int) (string, error) {

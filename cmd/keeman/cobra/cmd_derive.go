@@ -16,7 +16,9 @@
 package cobra
 
 import (
+	"crypto/ecdsa"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,7 +26,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/spf13/cobra"
@@ -63,22 +64,22 @@ const (
 	ThunderCore               = "m/44'/1001'/0'/0"
 )
 
-// nolint:funlen,gocyclo
 func NewHd(opts *Options) *cobra.Command {
 	var prefix, password, format string
+	var index int
 	cmd := &cobra.Command{
-		Use:     "hd [--prefix path] [--format eth|ssb|b32] [--password] path...",
-		Aliases: []string{"derive", "der", "d"},
-		Short:   "Generate a key pair from the provided mnemonic phrase",
+		Use:     "derive [--prefix path] [--format eth|ssb|b32] [--password] path...",
+		Aliases: []string{"der", "d"},
+		Short:   "Derive a key pair from the provided mnemonic phrase",
 		RunE: func(_ *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				args = []string{"0"}
 			}
-			l, err := lineFromFile(opts.InputFile, opts.Index)
+			mnemonic, err := lineFromFile(opts.InputFile, index)
 			if err != nil {
 				return err
 			}
-			wallet, err := hdwallet.NewFromMnemonic(l)
+			wallet, err := hdwallet.NewFromMnemonic(mnemonic)
 			if err != nil {
 				return err
 			}
@@ -100,55 +101,21 @@ func NewHd(opts *Options) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				switch format {
-				case FormatETH:
-					key, err := eth.NewKeyWithID(privateKey)
-					if err != nil {
-						return err
-					}
-					j, err := keystore.EncryptKey(
-						key,
-						password,
-						keystore.StandardScryptN,
-						keystore.StandardScryptP,
-					)
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(j))
-				case FormatSSB:
-					o, err := ssb.NewKeyPair(privateKey)
-					if err != nil {
-						return err
-					}
-					j, err := json.Marshal(o)
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(j))
-				case FormatBytes32, FormatSSBSHS:
-					randBytes, err := rand.SeededRandBytes(crypto.FromECDSA(privateKey), 32)
-					if err != nil {
-						return err
-					}
-					fmt.Println(base64.StdEncoding.EncodeToString(randBytes))
-				case FormatSSBCaps:
-					o, err := ssb.NewCaps(privateKey)
-					if err != nil {
-						return err
-					}
-					j, err := json.Marshal(o)
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(j))
-				case FormatPrivHex:
-					fmt.Println(hexutil.Encode(crypto.FromECDSA(privateKey)))
+				b, err := formattedBytes(format, privateKey, password)
+				if err != nil {
+					return err
 				}
+				fmt.Println(string(b))
 			}
 			return nil
 		},
 	}
+	cmd.Flags().IntVar(
+		&index,
+		"index",
+		0,
+		"data index",
+	)
 	cmd.Flags().StringVar(
 		&prefix,
 		"prefix",
@@ -164,17 +131,87 @@ func NewHd(opts *Options) *cobra.Command {
 	cmd.Flags().StringVar(
 		&format,
 		"format",
-		FormatETH,
+		FormatKeystore,
 		"output format",
 	)
 	return cmd
 }
 
 const (
-	FormatETH     = "eth"
-	FormatSSB     = "ssb"
-	FormatSSBSHS  = "shs"
-	FormatSSBCaps = "caps"
-	FormatBytes32 = "b32"
-	FormatPrivHex = "privhex"
+	FormatKeystore = "eth"
+	FormatSSB      = "ssb"
+	FormatSSBSHS   = "shs"
+	FormatSSBCaps  = "caps"
+	FormatBytes32  = "b32"
+	FormatPrivHex  = "privhex"
 )
+
+func formattedBytes(format string, privateKey *ecdsa.PrivateKey, password string) ([]byte, error) {
+	switch format {
+	case FormatBytes32, FormatSSBSHS:
+		return seededB64(privateKey)
+	case FormatSSB:
+		return jsonSSB(privateKey)
+	case FormatSSBCaps:
+		return jsonCaps(privateKey)
+	case FormatKeystore:
+		return jsonKey(privateKey, password)
+	case FormatPrivHex:
+		return hexEncodeKey(privateKey), nil
+	}
+	return nil, fmt.Errorf("unknown format: %s", format)
+}
+
+func seededB64(privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	seed := crypto.FromECDSA(privateKey)
+	randBytes, err := rand.SeededRandBytesGen(seed, 32)
+	if err != nil {
+		return nil, err
+	}
+	return b64Encode(randBytes()), nil
+}
+
+func jsonSSB(privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	seed := crypto.FromECDSA(privateKey)
+	o, err := ssb.NewKeyPair(seed)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(o)
+}
+
+func jsonCaps(privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	seed := crypto.FromECDSA(privateKey)
+	o, err := ssb.NewCaps(seed)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(o)
+}
+
+func jsonKey(privateKey *ecdsa.PrivateKey, password string) ([]byte, error) {
+	key, err := eth.NewKeyWithID(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	return keystore.EncryptKey(
+		key,
+		password,
+		keystore.StandardScryptN,
+		keystore.StandardScryptP,
+	)
+}
+
+func hexEncodeKey(privateKey *ecdsa.PrivateKey) []byte {
+	b := crypto.FromECDSA(privateKey)
+	buff := make([]byte, len(b)*2)
+	hex.Encode(buff, b)
+	return buff
+}
+
+func b64Encode(b []byte) []byte {
+	enc := base64.StdEncoding
+	buff := make([]byte, enc.EncodedLen(len(b)))
+	enc.Encode(buff, b)
+	return buff
+}
