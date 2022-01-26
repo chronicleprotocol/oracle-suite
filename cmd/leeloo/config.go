@@ -63,6 +63,7 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *publisher.Even
 	}
 	lel, err := c.Leeloo.Configure(leelooConfig.Dependencies{
 		Context:   d.Context,
+		Signer:    sig,
 		Transport: tra,
 		Logger:    d.Logger,
 	})
