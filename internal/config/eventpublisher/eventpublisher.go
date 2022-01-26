@@ -113,7 +113,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	}
 	ep, err := eventPublisherFactory(d.Context, cfg)
 	if err != nil {
-		fmt.Errorf("eventpublisher config: %w", err)
+		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
 	return ep, nil
 }
