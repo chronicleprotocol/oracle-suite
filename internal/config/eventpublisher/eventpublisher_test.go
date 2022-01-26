@@ -48,6 +48,7 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 	eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
 		assert.NotNil(t, ctx)
 		assert.Equal(t, tra, cfg.Transport)
+		assert.NotNil(t, cfg.Signers)
 		assert.Equal(t, log, cfg.Logger)
 		assert.Len(t, cfg.Listeners, 2)
 		assert.Len(t, cfg.Signers, 1)

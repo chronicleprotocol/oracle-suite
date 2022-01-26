@@ -18,6 +18,7 @@ package eventpublisher
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -58,13 +59,25 @@ type Dependencies struct {
 }
 
 func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, error) {
+	if d.Context == nil {
+		return nil, fmt.Errorf("eventpublisher config: context cannot be nil")
+	}
+	if d.Signer == nil {
+		return nil, fmt.Errorf("eventpublisher config: signer cannot be nil")
+	}
+	if d.Transport == nil {
+		return nil, fmt.Errorf("eventpublisher config: transport cannot be nil")
+	}
+	if d.Logger == nil {
+		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
+	}
 	var lis []publisher.Listener
 	var sig []publisher.Signer
 	clis := ethClients{}
 	for _, w := range c.Listeners.Wormhole {
 		cli, err := clis.configure(w.RPC)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("eventpublisher config: %w", err)
 		}
 		var addrs []ethereum.Address
 		for _, addr := range w.Addresses {
@@ -73,6 +86,12 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		interval := w.Interval
 		if interval < 1 {
 			interval = 1
+		}
+		if len(w.BlocksBehind) < 1 {
+			return nil, fmt.Errorf("eventpublisher config: blocksBehind must contains at least one element")
+		}
+		if w.MaxBlocks <= 0 {
+			return nil, fmt.Errorf("eventpublisher config: maxBlocks must greather than 0")
 		}
 		for _, blocksBehind := range w.BlocksBehind {
 			lis = append(lis, publisherEthereum.NewWormholeListener(publisherEthereum.WormholeListenerConfig{
@@ -92,13 +111,17 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		Transport: d.Transport,
 		Logger:    d.Logger,
 	}
-	return eventPublisherFactory(d.Context, cfg)
+	ep, err := eventPublisherFactory(d.Context, cfg)
+	if err != nil {
+		fmt.Errorf("eventpublisher config: %w", err)
+	}
+	return ep, nil
 }
 
 type ethClients map[string]geth.EthClient
 
 // configure returns an Ethereum client for given RPC endpoints.
-// Returned client will be reused if provided RPC are the same.
+// Returned client will be reused if provided RPCs are the same.
 func (m ethClients) configure(rpc interface{}) (geth.EthClient, error) {
 	key, err := json.Marshal(rpc)
 	if err != nil {
