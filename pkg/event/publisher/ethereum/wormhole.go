@@ -33,8 +33,8 @@ import (
 
 const WormholeEventType = "wormhole"
 
-// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,address,address,uint128,uint80,uint48))")
-var wormholeTopic0 = ethereum.HexToHash("0x0162851814eed5360ac17d1b3d942e6619fa2d803de71e7159ed9bebf724072a")
+// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
+var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
 
 // WormholeListener listens to particular logs on Ethereum compatible blockchain and
 // converts them into event messages.
