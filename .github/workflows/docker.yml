@@ -4,6 +4,8 @@ name: Publish Docker Images
 on:
   workflow_dispatch: # Allow manual trigger
   push:
+    branches:
+      - dev-.+
     tags:
       - v[0-9]+.[0-9]+.[0-9]+
       - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
@@ -21,8 +23,8 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/}
           elif [[ $GITHUB_REF == refs/heads/* ]]; then
             VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
-            if [ "${{ github.event.repository.default_branch }}" = "$VERSION" ]; then
-              VERSION=latest
+            if [[ "${{ github.event.repository.default_branch }}" == "$VERSION" ]]; then
+              VERSION=dev
             fi
           fi
           echo ::set-output name=version::${VERSION}
@@ -41,14 +43,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Publish Gofer Docker image to Github Packages
+      - name: Docker image with all binaries
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile-gofer
+          file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/gofer:${{ steps.prep.outputs.version }},ghcr.io/chronicleprotocol/gofer:latest
+          tags: ghcr.io/chronicleprotocol/oracle-suite:${{ steps.prep.outputs.version }}
 
       - name: Build and Publish Spire Docker image to Github Packages
         uses: docker/build-push-action@v2.7.0
