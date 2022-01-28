@@ -4,9 +4,7 @@ services:
   gofer:
     build:
       context: "."
-      dockerfile: "Dockerfile-gofer"
-    volumes:
-      - "./gofer.json:/root/gofer.json"
+      dockerfile: "Dockerfile"
 
   ghost:
     build:
