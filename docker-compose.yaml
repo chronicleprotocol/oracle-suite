@@ -1,29 +1,8 @@
 version: "3.8"
 services:
-
   gofer:
+    image: ghcr.io/chronicleprotocol/oracle-suite:dev
     build:
       context: "."
-      dockerfile: "Dockerfile"
-
-  ghost:
-    build:
-      context: "."
-      dockerfile: "Dockerfile-ghost"
-    volumes:
-      - "./gofer.json:/root/gofer.json"
-      - "./ghost.json:/root/ghost.json"
-
-  spectre:
-    build:
-      context: "."
-      dockerfile: "Dockerfile-spectre"
-    volumes:
-      - "./spectre.json:/root/spectre.json"
-
-  spire:
-    build:
-      context: "."
-      dockerfile: "Dockerfile-spire"
-    volumes:
-      - "./spire.json:/root/spire.json"
+    entrypoint: ["/usr/local/bin/gofer"]
+    command: ["-v","debug","agent"]

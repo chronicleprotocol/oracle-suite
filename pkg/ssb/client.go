@@ -111,11 +111,11 @@ func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
 	}
 	ch := make(chan []byte)
 	go func() {
-		defer cancel()
 		defer close(ch)
+		defer cancel()
 		defer func() {
 			if r := recover(); r != nil {
-				log.Println("Recovered:", r)
+				log.Println("recovered:", r)
 			}
 		}()
 		for nxt := src.Next(ctx); nxt; nxt = src.Next(ctx) {
