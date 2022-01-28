@@ -38,7 +38,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 var ErrConnectionClosed = errors.New("connection is closed")
@@ -244,9 +243,9 @@ func (n *Node) AddMessageHandler(messageHandlers ...sets.MessageHandler) {
 	n.messageHandlerSet.Add(messageHandlers...)
 }
 
-func (n *Node) Subscribe(topic string, typ pkgTransport.Message) error {
+func (n *Node) Subscribe(topic string) (*Subscription, error) {
 	if n.pubSub == nil {
-		return ErrPubSubDisabled
+		return nil, ErrPubSubDisabled
 	}
 	defer n.nodeEventHandler.Handle(sets.NodeTopicSubscribedEvent{Topic: topic})
 
@@ -254,19 +253,19 @@ func (n *Node) Subscribe(topic string, typ pkgTransport.Message) error {
 	defer n.mu.Unlock()
 
 	if n.closed {
-		return fmt.Errorf("libp2p node error: %v", ErrConnectionClosed)
+		return nil, fmt.Errorf("libp2p node error: %v", ErrConnectionClosed)
 	}
 	if _, ok := n.subs[topic]; ok {
-		return fmt.Errorf("libp2p node error: %v", ErrAlreadySubscribed)
+		return nil, fmt.Errorf("libp2p node error: %v", ErrAlreadySubscribed)
 	}
 
-	sub, err := newSubscription(n, topic, typ)
+	sub, err := newSubscription(n, topic)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	n.subs[topic] = sub
 
-	return nil
+	return sub, nil
 }
 
 func (n *Node) Unsubscribe(topic string) error {

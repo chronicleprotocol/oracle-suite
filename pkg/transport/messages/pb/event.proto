@@ -18,10 +18,15 @@ syntax = "proto3";
 option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p/messages/pb";
 
 message Event {
+  message Signature {
+    bytes signer = 1;
+    bytes signature = 2;
+  }
+
   string type = 1;
   bytes id = 2;
   bytes index = 3;
   int64 timestamp = 4;
   map<string, bytes> data = 5;
-  map<string, bytes> signatures = 6;
+  map<string, Signature> signatures = 6;
 }

@@ -46,7 +46,7 @@ type WormholeListener struct {
 
 // WormholeListenerConfig contains a configuration options for NewWormholeListener.
 type WormholeListenerConfig struct {
-	// Ethereum client.
+	// Client is an instance of Ethereum RPC client.
 	Client EthClient
 	// Addresses is a list of contracts from which logs will be fetched.
 	Addresses []ethereum.Address
@@ -133,7 +133,7 @@ func logToMessage(log types.Log) (*messages.Event, error) {
 		Index:      log.TxHash.Bytes(),
 		Date:       time.Now(),
 		Data:       data,
-		Signatures: map[string][]byte{},
+		Signatures: map[string]messages.EventSignature{},
 	}, nil
 }
 

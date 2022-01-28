@@ -46,7 +46,7 @@ type Config struct {
 type Storage interface {
 	// Add adds a message to the store. If the message already exists, no error
 	// will be returned. Method is thread safe.
-	Add(msg *messages.Event) error
+	Add(author []byte, msg *messages.Event) error
 	// Get returns a message form the store. If the message does not exist,
 	// nil will be returned. Method is thread safe.
 	Get(typ string, idx []byte) ([]*messages.Event, error)
@@ -99,7 +99,7 @@ func (e *EventStore) eventCollectorRoutine() {
 				e.log.Error("Unexpected value returned from the transport layer")
 				continue
 			}
-			err := e.storage.Add(evtMsg)
+			err := e.storage.Add(msg.Author, evtMsg)
 			if err != nil {
 				e.log.
 					WithError(msg.Error).

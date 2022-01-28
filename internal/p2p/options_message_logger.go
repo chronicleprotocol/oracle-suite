@@ -21,7 +21,6 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 // MessageLogger logs published and received messages.
@@ -37,14 +36,14 @@ type messageLoggerHandler struct {
 	n *Node
 }
 
-func (m *messageLoggerHandler) Published(topic string, raw []byte, _ transport.Message) {
+func (m *messageLoggerHandler) Published(topic string, msg []byte) {
 	if m.n.tsLog.get().Level() < log.Debug {
 		return
 	}
 	m.n.tsLog.get().
 		WithFields(log.Fields{
 			"topic":   topic,
-			"message": dumpMessage(raw),
+			"message": dumpMessage(msg),
 		}).
 		Debug("Published a new message")
 }
@@ -61,20 +60,6 @@ func (m *messageLoggerHandler) Received(topic string, msg *pubsub.Message, _ pub
 			"receivedFromPeerID": msg.ReceivedFrom.String(),
 		}).
 		Debug("Received a new message")
-}
-
-func (m *messageLoggerHandler) Broken(topic string, msg *pubsub.Message, err error) {
-	if m.n.tsLog.get().Level() < log.Debug {
-		return
-	}
-	m.n.tsLog.get().
-		WithError(err).
-		WithFields(log.Fields{
-			"topic":              topic,
-			"peerID":             msg.GetFrom().String(),
-			"receivedFromPeerID": msg.ReceivedFrom.String(),
-		}).
-		Debug("Unable to unmarshall received message")
 }
 
 func dumpMessage(s []byte) string {

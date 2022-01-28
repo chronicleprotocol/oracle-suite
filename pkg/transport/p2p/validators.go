@@ -17,6 +17,7 @@ package p2p
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -25,9 +26,38 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/p2p"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p/crypto/ethkey"
 )
+
+func messageValidator(topics map[string]transport.Message, logger log.Logger) p2p.Options {
+	return func(n *p2p.Node) error {
+		// Validator actually have two roles in the libp2p: it unmarshalls messages
+		// and then validates them. Unmarshalled message is stored in the
+		// ValidatorData field which was created for this purpose:
+		// https://github.com/libp2p/go-libp2p-pubsub/pull/231
+		n.AddValidator(func(ctx context.Context, topic string, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
+			if typ, ok := topics[topic]; ok {
+				typRefl := reflect.TypeOf(typ).Elem()
+				msg := reflect.New(typRefl).Interface().(transport.Message)
+				err := msg.UnmarshallBinary(psMsg.Data)
+				if err != nil {
+					feedAddr := ethkey.PeerIDToAddress(psMsg.GetFrom())
+					logger.
+						WithField("peerID", psMsg.GetFrom().String()).
+						WithField("from", feedAddr).
+						Warn("The message has been rejected, unable to unmarshall")
+					return pubsub.ValidationReject
+				}
+				psMsg.ValidatorData = msg
+				return pubsub.ValidationAccept
+			}
+			return pubsub.ValidationIgnore // should never happen
+		})
+		return nil
+	}
+}
 
 func feederValidator(feeders []ethereum.Address, logger log.Logger) p2p.Options {
 	return func(n *p2p.Node) error {

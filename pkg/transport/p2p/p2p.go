@@ -31,6 +31,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p/crypto/ethkey"
 )
 
 const LoggerTag = "P2P"
@@ -70,6 +71,7 @@ type P2P struct {
 	node   *p2p.Node
 	mode   Mode
 	topics map[string]transport.Message
+	msgCh  map[string]chan transport.ReceivedMessage
 }
 
 // Config is the configuration for the P2P transport.
@@ -166,6 +168,7 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 	if cfg.PeerPrivKey != nil {
 		opts = append(opts, p2p.PeerPrivKey(cfg.PeerPrivKey))
 	}
+
 	switch cfg.Mode {
 	case ClientMode:
 		priceTopicScoreParams, err := calculatePriceTopicScoreParams(cfg)
@@ -188,6 +191,7 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 				}
 				return nil
 			}),
+			messageValidator(cfg.Topics, logger), // must be registered before any other validator
 			feederValidator(cfg.FeedersAddrs, logger),
 			eventValidator(logger),
 			priceValidator(cfg.Signer, logger),
@@ -210,7 +214,7 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 		return nil, fmt.Errorf("P2P transport error, unable to initialize node: %w", err)
 	}
 
-	return &P2P{node: n, mode: cfg.Mode, topics: cfg.Topics}, nil
+	return &P2P{node: n, mode: cfg.Mode, topics: cfg.Topics, msgCh: map[string]chan transport.ReceivedMessage{}}, nil
 }
 
 // Start implements the transport.Transport interface.
@@ -220,8 +224,9 @@ func (p *P2P) Start() error {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
 	}
 	if p.mode == ClientMode {
-		for topic, typ := range p.topics {
-			err := p.subscribe(topic, typ)
+		for topic, _ := range p.topics {
+			p.msgCh[topic] = make(chan transport.ReceivedMessage)
+			err := p.subscribe(topic)
 			if err != nil {
 				return err
 			}
@@ -241,24 +246,41 @@ func (p *P2P) Broadcast(topic string, message transport.Message) error {
 	if err != nil {
 		return fmt.Errorf("P2P transport error, unable to get subscription for %s topic: %w", topic, err)
 	}
-	return sub.Publish(message)
+	data, err := message.MarshallBinary()
+	if err != nil {
+		return fmt.Errorf("P2P transport error, unable to marshall message: %w", err)
+	}
+	return sub.Publish(data)
 }
 
 // Messages implements the transport.Transport interface.
 func (p *P2P) Messages(topic string) chan transport.ReceivedMessage {
-	sub, err := p.node.Subscription(topic)
-	if err != nil {
-		return nil
-	}
-	return sub.Next()
+	return p.msgCh[topic]
 }
 
-func (p *P2P) subscribe(topic string, typ transport.Message) error {
-	err := p.node.Subscribe(topic, typ)
+func (p *P2P) subscribe(topic string) error {
+	sub, err := p.node.Subscribe(topic)
 	if err != nil {
 		return fmt.Errorf("P2P transport error, unable to subscribe to topic %s: %w", topic, err)
 	}
+	go p.messagesLoop(topic, sub)
 	return nil
+}
+
+func (p *P2P) messagesLoop(topic string, sub *p2p.Subscription) {
+	for {
+		nodeMsg, ok := <-sub.Next()
+		if !ok {
+			return
+		}
+		if msg, ok := nodeMsg.ValidatorData.(transport.Message); ok {
+			p.msgCh[topic] <- transport.ReceivedMessage{
+				Message: msg,
+				Author:  ethkey.PeerIDToAddress(nodeMsg.GetFrom()).Bytes(),
+				Data:    nodeMsg,
+			}
+		}
+	}
 }
 
 // strsToMaddrs converts multiaddresses given as strings to a

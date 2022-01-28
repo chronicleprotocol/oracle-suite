@@ -21,6 +21,8 @@ type ReceivedMessage struct {
 	// Message contains the message content. It is nil when the Error field
 	// is not nil.
 	Message Message
+	// Author is the ID of the author of the message.
+	Author []byte
 	// Data contains an optional data associated with the message. A type of
 	// the data is different depending on a transport implementation.
 	Data interface{}

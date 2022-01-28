@@ -26,10 +26,12 @@ import (
 
 const EventMessageName = "event/v0"
 
-const eventMessageMaxDataFields = 10
-const eventMessageMaxSignatureFields = 10
-const eventMessageMaxKeyLen = 32
-const eventMessageMaxFieldSize = 1024
+const eventMessageMaxSize = 1 * 1024 * 1024 // 1MB
+
+type EventSignature struct {
+	Signer    []byte
+	Signature []byte
+}
 
 type Event struct {
 	// Type of the event.
@@ -44,70 +46,56 @@ type Event struct {
 	// List of event data.
 	Data map[string][]byte
 	// List of event signatures.
-	Signatures map[string][]byte
+	Signatures map[string]EventSignature
 }
 
 // MarshallBinary implements the transport.Message interface.
 func (e *Event) MarshallBinary() ([]byte, error) {
-	if err := e.validate(); err != nil {
-		return nil, err
+	signatures := map[string]*pb.Event_Signature{}
+	for k, s := range e.Signatures {
+		signatures[k] = &pb.Event_Signature{
+			Signer:    s.Signer,
+			Signature: s.Signature,
+		}
 	}
-	return proto.Marshal(&pb.Event{
+	data, err := proto.Marshal(&pb.Event{
 		Type:       e.Type,
 		Id:         e.ID,
 		Index:      e.Index,
 		Timestamp:  e.Date.Unix(),
 		Data:       e.Data,
-		Signatures: e.Signatures,
+		Signatures: signatures,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > eventMessageMaxSize {
+		return nil, errors.New("invalid event message, message too large")
+	}
+	return data, nil
 }
 
 // UnmarshallBinary implements the transport.Message interface.
 func (e *Event) UnmarshallBinary(data []byte) error {
+	if len(data) > eventMessageMaxSize {
+		return errors.New("invalid event message, message too large")
+	}
 	msg := &pb.Event{}
 	if err := proto.Unmarshal(data, msg); err != nil {
 		return err
+	}
+	signatures := map[string]EventSignature{}
+	for k, s := range msg.Signatures {
+		signatures[k] = EventSignature{
+			Signer:    s.Signer,
+			Signature: s.Signature,
+		}
 	}
 	e.Type = msg.Type
 	e.ID = msg.Id
 	e.Index = msg.Index
 	e.Date = time.Unix(msg.Timestamp, 0)
 	e.Data = msg.Data
-	e.Signatures = msg.Signatures
-	return e.validate()
-}
-
-func (e *Event) validate() error {
-	if len(e.Type) > eventMessageMaxFieldSize {
-		return errors.New("invalid event message, type length too large")
-	}
-	if len(e.ID) > eventMessageMaxFieldSize {
-		return errors.New("invalid event message, ID size too large")
-	}
-	if len(e.Index) > eventMessageMaxFieldSize {
-		return errors.New("invalid event message, index size too large")
-	}
-	if len(e.Data) > eventMessageMaxDataFields {
-		return errors.New("invalid event message, too many data fields")
-	}
-	if len(e.Signatures) > eventMessageMaxSignatureFields {
-		return errors.New("invalid event message, too many signatures")
-	}
-	for k, v := range e.Data {
-		if len(k) > eventMessageMaxKeyLen {
-			return errors.New("invalid event message, data key too long")
-		}
-		if len(v) > eventMessageMaxFieldSize {
-			return errors.New("invalid event message, data size too large")
-		}
-	}
-	for k, v := range e.Signatures {
-		if len(k) > eventMessageMaxKeyLen {
-			return errors.New("invalid event message, signature key too long")
-		}
-		if len(v) > eventMessageMaxFieldSize {
-			return errors.New("invalid event message, signature size too large")
-		}
-	}
+	e.Signatures = signatures
 	return nil
 }

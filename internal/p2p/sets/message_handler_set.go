@@ -17,19 +17,15 @@ package sets
 
 import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 // MessageHandler can ba implemented by type that supports handling the PubSub
 // system messages.
 type MessageHandler interface {
 	// Published is called when new message is published.
-	Published(topic string, raw []byte, msg transport.Message)
+	Published(topic string, msg []byte)
 	// Received is called when new message is received.
 	Received(topic string, msg *pubsub.Message, result pubsub.ValidationResult)
-	// Broken is called when it is impossible to unmarshall message,
-	Broken(topic string, msg *pubsub.Message, err error)
 }
 
 // MessageHandlerSet stores multiple instances of the MessageHandler interface.
@@ -48,9 +44,9 @@ func (n *MessageHandlerSet) Add(messageHandler ...MessageHandler) {
 }
 
 // Published invokes all registered handlers.
-func (n *MessageHandlerSet) Published(topic string, raw []byte, msg transport.Message) {
+func (n *MessageHandlerSet) Published(topic string, msg []byte) {
 	for _, messageHandler := range n.messageHandler {
-		messageHandler.Published(topic, raw, msg)
+		messageHandler.Published(topic, msg)
 	}
 }
 
@@ -58,13 +54,6 @@ func (n *MessageHandlerSet) Published(topic string, raw []byte, msg transport.Me
 func (n *MessageHandlerSet) Received(topic string, msg *pubsub.Message, result pubsub.ValidationResult) {
 	for _, messageHandler := range n.messageHandler {
 		messageHandler.Received(topic, msg, result)
-	}
-}
-
-// Broken invokes all registered handlers.
-func (n *MessageHandlerSet) Broken(topic string, msg *pubsub.Message, err error) {
-	for _, messageHandler := range n.messageHandler {
-		messageHandler.Broken(topic, msg, err)
 	}
 }
 

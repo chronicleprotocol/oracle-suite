@@ -122,12 +122,14 @@ func (l *EventPublisher) broadcast(event *messages.Event) {
 	if err != nil {
 		l.log.
 			WithError(err).
+			WithField("id", hex.EncodeToString(event.ID)).
+			WithField("type", event.Type).
+			WithField("index", hex.EncodeToString(event.Index)).
 			Error("Unable to broadcast the event")
 	}
 }
 
 func (l *EventPublisher) sign(event *messages.Event) bool {
-	var err error
 	var signed bool
 	for _, s := range l.signers {
 		ok, err := s.Sign(event)
@@ -137,15 +139,20 @@ func (l *EventPublisher) sign(event *messages.Event) bool {
 		if err != nil {
 			l.log.
 				WithError(err).
-				Error("Unable to sign event")
+				WithField("id", hex.EncodeToString(event.ID)).
+				WithField("type", event.Type).
+				WithField("index", hex.EncodeToString(event.Index)).
+				Error("Unable to sign the event")
 			continue
 		}
 		signed = true
 	}
 	if !signed {
 		l.log.
-			WithError(err).
-			Error("There are no signers that supports the event")
+			WithField("id", hex.EncodeToString(event.ID)).
+			WithField("type", event.Type).
+			WithField("index", hex.EncodeToString(event.Index)).
+			Warn("There are no signers that supports the event")
 	}
 	return signed
 }

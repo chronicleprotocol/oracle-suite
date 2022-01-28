@@ -18,13 +18,11 @@ package p2p
 import (
 	"context"
 	"errors"
-	"reflect"
 
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 var ErrNilMessage = errors.New("message is nil")
@@ -42,10 +40,10 @@ type Subscription struct {
 
 	// msgCh is used to send a notification about a new message, it's
 	// returned by the Transport.Messages function.
-	msgCh chan transport.ReceivedMessage
+	msgCh chan *pubsub.Message
 }
 
-func newSubscription(node *Node, topic string, typ transport.Message) (*Subscription, error) {
+func newSubscription(node *Node, topic string) (*Subscription, error) {
 	var err error
 	ctx, ctxCancel := context.WithCancel(node.ctx)
 	s := &Subscription{
@@ -54,9 +52,9 @@ func newSubscription(node *Node, topic string, typ transport.Message) (*Subscrip
 		validatorSet:   node.validatorSet,
 		eventHandler:   node.pubSubEventHandlerSet,
 		messageHandler: node.messageHandlerSet,
-		msgCh:          make(chan transport.ReceivedMessage),
+		msgCh:          make(chan *pubsub.Message),
 	}
-	err = node.pubSub.RegisterTopicValidator(topic, s.validator(topic, typ))
+	err = node.pubSub.RegisterTopicValidator(topic, s.validator(topic))
 	if err != nil {
 		return nil, err
 	}
@@ -72,41 +70,25 @@ func newSubscription(node *Node, topic string, typ transport.Message) (*Subscrip
 	if err != nil {
 		return nil, err
 	}
-	s.messageLoop()
-	s.eventLoop()
+	go s.messageLoop()
+	go s.eventLoop()
 	return s, err
 }
 
-func (s *Subscription) Publish(message transport.Message) error {
-	b, err := message.MarshallBinary()
-	if err != nil {
-		return err
-	}
-	if b == nil {
+func (s *Subscription) Publish(msg []byte) error {
+	if msg == nil {
 		return ErrNilMessage
 	}
-	s.messageHandler.Published(s.topic.String(), b, message)
-	return s.topic.Publish(s.ctx, b)
+	s.messageHandler.Published(s.topic.String(), msg)
+	return s.topic.Publish(s.ctx, msg)
 }
 
-func (s *Subscription) Next() chan transport.ReceivedMessage {
+func (s *Subscription) Next() chan *pubsub.Message {
 	return s.msgCh
 }
 
-func (s *Subscription) validator(topic string, typ transport.Message) pubsub.ValidatorEx {
-	// Validator actually have two roles in the libp2p: it unmarshalls messages
-	// and then validates them. Unmarshalled message is stored in the
-	// ValidatorData field which was created for this purpose:
-	// https://github.com/libp2p/go-libp2p-pubsub/pull/231
-	r := reflect.TypeOf(typ).Elem()
+func (s *Subscription) validator(topic string) pubsub.ValidatorEx {
 	return func(ctx context.Context, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
-		msg := reflect.New(r).Interface().(transport.Message)
-		err := msg.UnmarshallBinary(psMsg.Data)
-		if err != nil {
-			s.messageHandler.Broken(topic, psMsg, err)
-			return pubsub.ValidationReject
-		}
-		psMsg.ValidatorData = msg
 		vr := s.validatorSet.Validator(topic)(ctx, id, psMsg)
 		s.messageHandler.Received(topic, psMsg, vr)
 		return vr
@@ -114,30 +96,22 @@ func (s *Subscription) validator(topic string, typ transport.Message) pubsub.Val
 }
 
 func (s *Subscription) messageLoop() {
-	go func() {
+	defer close(s.msgCh)
+	func() {
 		for {
-			var msg transport.Message
-			psMsg, err := s.sub.Next(s.ctx)
-
-			if psMsg != nil && err == nil {
-				msg = psMsg.ValidatorData.(transport.Message)
-			}
-			select {
-			case <-s.ctx.Done():
-				close(s.msgCh)
+			msg, err := s.sub.Next(s.ctx)
+			if err != nil {
+				// The only time when an error may be returned here is
+				// when the subscription is canceled.
 				return
-			case s.msgCh <- transport.ReceivedMessage{
-				Message: msg,
-				Data:    psMsg,
-				Error:   err,
-			}:
 			}
+			s.msgCh <- msg
 		}
 	}()
 }
 
 func (s *Subscription) eventLoop() {
-	go func() {
+	func() {
 		for {
 			pe, err := s.teh.NextPeerEvent(s.ctx)
 			if err != nil {

@@ -23,7 +23,6 @@ import (
 )
 
 const SignatureKey = "ethereum"
-const SignerKey = "ethereum_signer"
 
 // Signer signs Ethereum log messages using Ethereum signature.
 type Signer struct {
@@ -57,9 +56,11 @@ func (l *Signer) Sign(event *messages.Event) (bool, error) {
 		return false, err
 	}
 	if event.Signatures == nil {
-		event.Signatures = map[string][]byte{}
+		event.Signatures = map[string]messages.EventSignature{}
 	}
-	event.Data[SignerKey] = l.signer.Address().Bytes()
-	event.Signatures[SignatureKey] = s.Bytes()
+	event.Signatures[SignatureKey] = messages.EventSignature{
+		Signer:    l.signer.Address().Bytes(),
+		Signature: s.Bytes(),
+	}
 	return true, nil
 }

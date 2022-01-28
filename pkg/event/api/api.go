@@ -52,10 +52,15 @@ type Config struct {
 }
 
 type jsonEvent struct {
-	Timestamp  int64             `json:"timestamp"`
-	ID         string            `json:"id"`
-	Data       map[string]string `json:"data"`
-	Signatures map[string]string `json:"signatures"`
+	Timestamp  int64                    `json:"timestamp"`
+	ID         string                   `json:"id"`
+	Data       map[string]string        `json:"data"`
+	Signatures map[string]jsonSignature `json:"signatures"`
+}
+
+type jsonSignature struct {
+	Signer    string
+	Signature string
 }
 
 // New returns a new instance of the EventAPI struct.
@@ -128,13 +133,16 @@ func mapEvents(es []*messages.Event) (r []*jsonEvent) {
 			Timestamp:  e.Date.Unix(),
 			ID:         hex.EncodeToString(e.ID),
 			Data:       map[string]string{},
-			Signatures: map[string]string{},
+			Signatures: map[string]jsonSignature{},
 		}
 		for k, v := range e.Data {
 			j.Data[k] = hex.EncodeToString(v)
 		}
 		for k, v := range e.Signatures {
-			j.Signatures[k] = hex.EncodeToString(v)
+			j.Signatures[k] = jsonSignature{
+				Signer:    hex.EncodeToString(v.Signer),
+				Signature: hex.EncodeToString(v.Signature),
+			}
 		}
 		r = append(r, j)
 	}

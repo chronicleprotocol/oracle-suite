@@ -33,7 +33,7 @@ func TestMemory_Add(t *testing.T) {
 		ID:         []byte("test"),
 		Index:      []byte("idx"),
 		Data:       map[string][]byte{"test": []byte("test")},
-		Signatures: map[string][]byte{"test": []byte("test")},
+		Signatures: map[string]messages.EventSignature{},
 	}
 	e2 := &messages.Event{
 		Date:       time.Now(),
@@ -41,7 +41,7 @@ func TestMemory_Add(t *testing.T) {
 		ID:         []byte("test2"),
 		Index:      []byte("idx"),
 		Data:       map[string][]byte{"test": []byte("test2")},
-		Signatures: map[string][]byte{"test": []byte("test2")},
+		Signatures: map[string]messages.EventSignature{},
 	}
 	e3 := &messages.Event{
 		Date:       time.Now(),
@@ -49,12 +49,12 @@ func TestMemory_Add(t *testing.T) {
 		ID:         []byte("test2"),
 		Index:      []byte("idx2"),
 		Data:       map[string][]byte{"test": []byte("test2")},
-		Signatures: map[string][]byte{"test": []byte("test2")},
+		Signatures: map[string]messages.EventSignature{},
 	}
 
-	assert.NoError(t, m.Add(e1))
-	assert.NoError(t, m.Add(e2))
-	assert.NoError(t, m.Add(e3)) // different index
+	assert.NoError(t, m.Add([]byte("author1"), e1))
+	assert.NoError(t, m.Add([]byte("author2"), e2))
+	assert.NoError(t, m.Add([]byte("author3"), e3)) // different index
 
 	es, err := m.Get("test", []byte("idx"))
 	assert.NoError(t, err)
@@ -63,13 +63,13 @@ func TestMemory_Add(t *testing.T) {
 
 func TestMemory_gc(t *testing.T) {
 	m := New(time.Minute)
-	assert.NoError(t, m.Add(&messages.Event{
+	assert.NoError(t, m.Add([]byte("author"), &messages.Event{
 		Date:       time.Now(),
 		Type:       "test",
 		ID:         []byte("test"),
 		Index:      []byte("idx"),
 		Data:       map[string][]byte{"test": []byte("test")},
-		Signatures: map[string][]byte{"test": []byte("test")},
+		Signatures: map[string]messages.EventSignature{},
 	}))
 	for i := 0; i < m.gcevery-1; i++ {
 		e := &messages.Event{
@@ -78,9 +78,9 @@ func TestMemory_gc(t *testing.T) {
 			ID:         []byte(strconv.Itoa(i)),
 			Index:      []byte("idx"),
 			Data:       map[string][]byte{"test": []byte("test")},
-			Signatures: map[string][]byte{"test": []byte("test")},
+			Signatures: map[string]messages.EventSignature{},
 		}
-		assert.NoError(t, m.Add(e))
+		assert.NoError(t, m.Add([]byte("author"), e))
 	}
 
 	es, err := m.Get("test", []byte("idx"))
@@ -97,9 +97,9 @@ func TestMemory_gc_allExpired(t *testing.T) {
 			ID:         []byte(strconv.Itoa(i)),
 			Index:      []byte("idx"),
 			Data:       map[string][]byte{"test": []byte("test")},
-			Signatures: map[string][]byte{"test": []byte("test")},
+			Signatures: map[string]messages.EventSignature{},
 		}
-		assert.NoError(t, m.Add(e))
+		assert.NoError(t, m.Add([]byte("author"), e))
 	}
 
 	es, err := m.Get("test", []byte("idx"))
