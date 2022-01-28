@@ -104,7 +104,7 @@ func (c *Client) LogStream() (chan []byte, error) {
 
 func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
 	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
-	src, err := c.rpc.Source(c.ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
+	src, err := c.rpc.Source(ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
 	if err != nil {
 		cancel()
 		return nil, err
