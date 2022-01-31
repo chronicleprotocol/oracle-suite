@@ -34,10 +34,6 @@ type Memory struct {
 	gcevery int // Specifies every how many messages the garbage collector should be called.
 }
 
-type evtPtr struct {
-	ptr *messages.Event
-}
-
 // New returns a new instance of Memory. The ttl argument specifies how long
 // the message should be kept in storage.
 func New(ttl time.Duration) *Memory {

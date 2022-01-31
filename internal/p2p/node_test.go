@@ -106,12 +106,6 @@ func TestNode_MessagePropagation(t *testing.T) {
 // message is the simplest implementation of the transport.Message interface.
 type message []byte
 
-// newMessage returns a new message.
-func newMessage(msg string) *message {
-	b := message(msg)
-	return &b
-}
-
 func (m *message) String() string {
 	if m == nil {
 		return ""
