@@ -24,7 +24,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,22 +62,22 @@ func TestNode_MessagePrivKey(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, n.Start())
 
-	require.NoError(t, n.Subscribe("test", (*message)(nil)))
+	_, err = n.Subscribe("test")
+	require.NoError(t, err)
 	s, err := n.Subscription("test")
 	require.NoError(t, err)
 
-	err = s.Publish(newMessage("makerdao"))
+	err = s.Publish([]byte("makerdao"))
 	require.NoError(t, err)
 
 	// The public key used to sign the message should be derived from the key
 	// passed to the MessagePrivKey function:
 	id, _ := peer.IDFromPrivateKey(sk)
 	msg := <-s.Next()
-	require.NoError(t, msg.Error)
-	assert.Equal(t, id, msg.Data.(*pubsub.Message).GetFrom())
+	assert.Equal(t, id, msg.GetFrom())
 	// The public key extracted form a message must be different
 	// than peer's public key:
-	assert.NotEqual(t, n.Host().ID(), msg.Data.(*pubsub.Message).GetFrom())
+	assert.NotEqual(t, n.Host().ID(), msg.GetFrom())
 }
 
 func TestNode_Discovery(t *testing.T) {
@@ -121,9 +120,12 @@ func TestNode_Discovery(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, n2.Start())
 
-	require.NoError(t, n0.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n1.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n2.Subscribe("test", (*message)(nil)))
+	_, err = n0.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n1.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n2.Subscribe("test")
+	require.NoError(t, err)
 
 	// Every peer should see two other peers:
 	waitFor(t, func() bool {
@@ -186,9 +188,12 @@ func TestNode_Discovery_AddrNotLeaking(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, n2.Start())
 
-	require.NoError(t, n0.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n1.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n2.Subscribe("test", (*message)(nil)))
+	_, err = n0.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n1.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n2.Subscribe("test")
+	require.NoError(t, err)
 
 	waitFor(t, func() bool {
 		lp := n0.PubSub().ListPeers("test")

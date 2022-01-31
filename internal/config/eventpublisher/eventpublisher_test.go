@@ -34,7 +34,7 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 
 	ctx := context.Background()
 	sig := geth.NewSigner(nil)
-	tra := local.New(ctx, 0, nil)
+	tra := local.New(ctx, []byte("test"), 0, nil)
 	log := null.New()
 
 	config := EventPublisher{Listeners: listeners{Wormhole: []wormholeListener{{

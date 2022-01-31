@@ -60,10 +60,10 @@ func TestSigner_Sign(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify if address in signer field is correct:
-	assert.Equal(t, msg.Data[SignerKey], address.Bytes())
+	assert.Equal(t, msg.Signatures[SignatureKey].Signer, address.Bytes())
 
 	// Verify signature:
-	recovered, err := gethSigner.Recover(ethereum.SignatureFromBytes(msg.Signatures[SignatureKey]), msg.Data["hash"])
+	recovered, err := gethSigner.Recover(ethereum.SignatureFromBytes(msg.Signatures[SignatureKey].Signature), msg.Data["hash"])
 	require.NoError(t, err)
 	assert.Equal(t, address, *recovered)
 }

@@ -59,8 +59,8 @@ type jsonEvent struct {
 }
 
 type jsonSignature struct {
-	Signer    string
-	Signature string
+	Signer    string `json:"signer"`
+	Signature string `json:"signature"`
 }
 
 // New returns a new instance of the EventAPI struct.

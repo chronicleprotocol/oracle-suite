@@ -33,7 +33,7 @@ func TestEventAPI_Configure(t *testing.T) {
 	defer func() { eventAPIFactory = prevEventAPIFactory }()
 
 	ctx := context.Background()
-	tra := local.New(ctx, 0, nil)
+	tra := local.New(ctx, []byte("test"), 0, nil)
 	log := null.New()
 	evs := &store.EventStore{}
 

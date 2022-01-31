@@ -41,13 +41,16 @@ func (t *testListener) Events() chan *messages.Event {
 }
 
 func (t testSigner) Sign(event *messages.Event) (bool, error) {
-	event.Signatures["test"] = []byte("test")
+	event.Signatures["test"] = messages.EventSignature{
+		Signer:    []byte("signer"),
+		Signature: []byte("signature"),
+	}
 	return true, nil
 }
 
 func TestEventPublisher(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	loc := local.New(ctx, 10, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	loc := local.New(ctx, []byte("test"), 10, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 	lis := &testListener{ch: make(chan *messages.Event, 10)}
 	sig := &testSigner{}
 
@@ -73,7 +76,7 @@ func TestEventPublisher(t *testing.T) {
 		Index:      []byte("idx1"),
 		Date:       time.Unix(1, 0),
 		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string][]byte{"sig_key": []byte("val")},
+		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
 	msg2 := &messages.Event{
 		Type:       "event2",
@@ -81,7 +84,7 @@ func TestEventPublisher(t *testing.T) {
 		Index:      []byte("idx2"),
 		Date:       time.Unix(2, 0),
 		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string][]byte{"sig_key": []byte("val")},
+		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
 	lis.ch <- msg1
 	lis.ch <- msg2
@@ -91,8 +94,10 @@ func TestEventPublisher(t *testing.T) {
 	rMsg1 := <-loc.Messages(messages.EventMessageName)
 	rMsg2 := <-loc.Messages(messages.EventMessageName)
 
-	assert.Equal(t, []byte("test"), rMsg1.Message.(*messages.Event).Signatures["test"])
-	assert.Equal(t, []byte("test"), rMsg2.Message.(*messages.Event).Signatures["test"])
+	assert.Equal(t, []byte("signer"), rMsg1.Message.(*messages.Event).Signatures["test"].Signer)
+	assert.Equal(t, []byte("signer"), rMsg2.Message.(*messages.Event).Signatures["test"].Signer)
+	assert.Equal(t, []byte("signature"), rMsg1.Message.(*messages.Event).Signatures["test"].Signature)
+	assert.Equal(t, []byte("signature"), rMsg2.Message.(*messages.Event).Signatures["test"].Signature)
 	// This test relies on us passing the same message instances, so the values
 	// added by the signer will be visible in all objects, but this behavior is
 	// not required.

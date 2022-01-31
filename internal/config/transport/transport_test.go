@@ -64,7 +64,7 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 		assert.Same(t, signer, cfg.Signer)
 		assert.Same(t, logger, cfg.Logger)
 
-		return local.New(context.Background(), 0, nil), nil
+		return local.New(context.Background(), []byte("test"), 0, nil), nil
 	}
 
 	tra, err := config.Configure(Dependencies{
@@ -117,7 +117,7 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 		assert.Same(t, signer, cfg.Signer)
 		assert.Same(t, logger, cfg.Logger)
 
-		return local.New(context.Background(), 0, nil), nil
+		return local.New(context.Background(), []byte("test"), 0, nil), nil
 	}
 
 	tra, err := config.Configure(Dependencies{
@@ -153,7 +153,7 @@ func TestTransport_P2P_InvalidSeed(t *testing.T) {
 
 	p2pTransportFactory = func(ctx context.Context, cfg p2p.Config) (transport.Transport, error) {
 		assert.NotNil(t, ctx)
-		return local.New(context.Background(), 0, nil), nil
+		return local.New(context.Background(), []byte("test"), 0, nil), nil
 	}
 
 	_, err := config.Configure(Dependencies{

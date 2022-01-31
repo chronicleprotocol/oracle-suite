@@ -61,8 +61,10 @@ func TestNode_RateLimiter_PeerLimit(t *testing.T) {
 	require.NoError(t, n1.Start())
 
 	require.NoError(t, n1.Connect(peers[0].PeerAddrs[0]))
-	require.NoError(t, n0.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n1.Subscribe("test", (*message)(nil)))
+	_, err = n0.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n1.Subscribe("test")
+	require.NoError(t, err)
 
 	s1, err := n0.Subscription("test")
 	require.NoError(t, err)
@@ -76,7 +78,7 @@ func TestNode_RateLimiter_PeerLimit(t *testing.T) {
 
 	// Send messages:
 	msgsCh := countMessages(s1, 2*time.Second)
-	msg := newMessage(strings.Repeat("a", 128))
+	msg := []byte(strings.Repeat("a", 128))
 	require.NoError(t, s2.Publish(msg))
 	require.NoError(t, s2.Publish(msg)) // exceeds limit
 	time.Sleep(1 * time.Second)
@@ -122,8 +124,10 @@ func TestNode_RateLimiter_PeerBurst(t *testing.T) {
 	require.NoError(t, n1.Start())
 
 	require.NoError(t, n1.Connect(peers[0].PeerAddrs[0]))
-	require.NoError(t, n0.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n1.Subscribe("test", (*message)(nil)))
+	_, err = n0.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n1.Subscribe("test")
+	require.NoError(t, err)
 
 	s1, err := n0.Subscription("test")
 	require.NoError(t, err)
@@ -137,7 +141,7 @@ func TestNode_RateLimiter_PeerBurst(t *testing.T) {
 
 	// Send messages:
 	msgsCh := countMessages(s1, 2*time.Second)
-	msg := newMessage(strings.Repeat("a", 128))
+	msg := []byte(strings.Repeat("a", 128))
 	require.NoError(t, s2.Publish(msg))
 	require.NoError(t, s2.Publish(msg))
 

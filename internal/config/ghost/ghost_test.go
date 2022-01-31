@@ -38,7 +38,7 @@ func TestGhost_Configure(t *testing.T) {
 	pairs := []string{"AAABBB", "XXXYYY"}
 	gofer := &goferMocks.Gofer{}
 	signer := &ethereumMocks.Signer{}
-	transport := local.New(context.Background(), 0, nil)
+	transport := local.New(context.Background(), []byte("test"), 0, nil)
 	logger := null.New()
 
 	config := Ghost{

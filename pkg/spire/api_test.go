@@ -61,7 +61,7 @@ func newTestInstances() (*Agent, *Client) {
 
 	log := null.New()
 	sig := &mocks.Signer{}
-	tra := local.New(ctx, 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
+	tra := local.New(ctx, []byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
 	dat, err = datastoreMemory.NewDatastore(ctx, datastoreMemory.Config{
 		Signer:    sig,
 		Transport: tra,

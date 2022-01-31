@@ -24,7 +24,7 @@ import (
 )
 
 type Memory struct {
-	mu sync.Mutex
+	mu sync.RWMutex
 
 	ttl   time.Duration // Message TTL.
 	index map[[sha256.Size]byte]map[[sha256.Size]byte]*messages.Event
@@ -53,13 +53,13 @@ func (m *Memory) Add(author []byte, msg *messages.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	hi := hashIndex(msg.Type, msg.Index)
-	ha := hashAuthor(author)
+	hu := hashUnique(author, msg.ID)
 	if _, ok := m.index[hi]; !ok {
 		m.index[hi] = map[[32]byte]*messages.Event{}
 	}
-	evt, ok := m.index[hi][ha]
+	evt, ok := m.index[hi][hu]
 	if !ok || (ok && evt.Date.Before(msg.Date)) {
-		m.index[hi][ha] = msg
+		m.index[hi][hu] = msg
 		m.gc()
 	}
 	return nil
@@ -67,8 +67,8 @@ func (m *Memory) Add(author []byte, msg *messages.Event) error {
 
 // Get implements the store.Storage interface.
 func (m *Memory) Get(typ string, idx []byte) ([]*messages.Event, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	hi := hashIndex(typ, idx)
 	if _, ok := m.index[hi]; ok {
 		var evts []*messages.Event
@@ -101,7 +101,7 @@ func (m *Memory) gc() {
 		} else if expired > 0 {
 			// If only some messages are expired.
 			for ha, evt := range evts {
-				if time.Since(evt.Date) <= m.ttl {
+				if time.Since(evt.Date) >= m.ttl {
 					delete(m.index[hi], ha)
 				}
 			}
@@ -109,8 +109,8 @@ func (m *Memory) gc() {
 	}
 }
 
-func hashAuthor(author []byte) [sha256.Size]byte {
-	return sha256.Sum256(author)
+func hashUnique(author []byte, id []byte) [sha256.Size]byte {
+	return sha256.Sum256(append(author, id...))
 }
 
 func hashIndex(typ string, index []byte) [sha256.Size]byte {

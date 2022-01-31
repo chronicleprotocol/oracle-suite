@@ -30,8 +30,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 const defaultTimeout = 10 * time.Second
@@ -75,9 +73,12 @@ func TestNode_MessagePropagation(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, n2.Start())
 
-	require.NoError(t, n0.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n1.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n2.Subscribe("test", (*message)(nil)))
+	_, err = n0.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n1.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n2.Subscribe("test")
+	require.NoError(t, err)
 
 	// Wait for the peers to connect to each other:
 	waitFor(t, func() bool {
@@ -93,13 +94,13 @@ func TestNode_MessagePropagation(t *testing.T) {
 	s3, err := n2.Subscription("test")
 	require.NoError(t, err)
 
-	err = s1.Publish(newMessage("makerdao"))
+	err = s1.Publish([]byte("makerdao"))
 	assert.NoError(t, err)
 
 	// Message should be received on both nodes:
-	waitForMessage(t, s1.Next(), newMessage("makerdao"))
-	waitForMessage(t, s2.Next(), newMessage("makerdao"))
-	waitForMessage(t, s3.Next(), newMessage("makerdao"))
+	waitForMessage(t, s1.Next(), []byte("makerdao"))
+	waitForMessage(t, s2.Next(), []byte("makerdao"))
+	waitForMessage(t, s3.Next(), []byte("makerdao"))
 }
 
 // message is the simplest implementation of the transport.Message interface.
@@ -197,20 +198,11 @@ func waitFor(t *testing.T, cond func() bool) {
 }
 
 // waitForMessage waits for the expected message.
-func waitForMessage(t *testing.T, stat chan transport.ReceivedMessage, expected *message) {
+func waitForMessage(t *testing.T, stat chan *pubsub.Message, expected []byte) {
 	to := time.After(defaultTimeout)
 	select {
 	case received := <-stat:
-		require.NoError(t, received.Error, "subscription returned an error")
-		receivedBts, err := received.Message.MarshallBinary()
-		if err != nil {
-			assert.NoError(t, err, "unable to unmarshall received message")
-		}
-		expectedBts, err := expected.MarshallBinary()
-		if err != nil {
-			assert.NoError(t, err, "unable to unmarshall expected message")
-		}
-		assert.Equal(t, expectedBts, receivedBts)
+		assert.Equal(t, expected, received.GetData())
 	case <-to:
 		assert.Fail(t, "timeout")
 		return
@@ -232,7 +224,7 @@ func countMessages(sub *Subscription, duration time.Duration) chan map[peer.ID]i
 				if !ok {
 					return
 				}
-				id := msg.Data.(*pubsub.Message).GetFrom()
+				id := msg.GetFrom()
 				if _, ok := count[id]; !ok {
 					count[id] = 0
 				}

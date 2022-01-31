@@ -37,7 +37,7 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 	}()
 
 	signer := &ethereumMocks.Signer{}
-	transport := local.New(context.Background(), 0, nil)
+	transport := local.New(context.Background(), []byte("test"), 0, nil)
 	feeds := []ethereum.Address{ethereum.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")}
 	logger := null.New()
 	ds := &datastoreMemory.Datastore{}

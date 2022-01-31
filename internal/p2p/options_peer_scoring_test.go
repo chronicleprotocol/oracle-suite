@@ -121,8 +121,10 @@ func TestNode_PeerScoring(t *testing.T) {
 	})
 
 	require.NoError(t, n1.Connect(peers[0].PeerAddrs[0]))
-	require.NoError(t, n0.Subscribe("test", (*message)(nil)))
-	require.NoError(t, n1.Subscribe("test", (*message)(nil)))
+	_, err = n0.Subscribe("test")
+	require.NoError(t, err)
+	_, err = n1.Subscribe("test")
+	require.NoError(t, err)
 
 	s0, err := n0.Subscription("test")
 	require.NoError(t, err)
@@ -138,7 +140,7 @@ func TestNode_PeerScoring(t *testing.T) {
 
 	// Send a few valid messages to boost a peer score:
 	for i := 0; i < 5; i++ {
-		err := s1.Publish(newMessage("valid"))
+		err := s1.Publish([]byte("valid"))
 		if err != nil {
 			panic(err)
 		}
@@ -146,7 +148,7 @@ func TestNode_PeerScoring(t *testing.T) {
 
 	// Now send 4 invalid messages, that should be enough to lower the score below 0:
 	for i := 0; i < 4; i++ {
-		err := s1.Publish(newMessage("invalid"))
+		err := s1.Publish([]byte("invalid"))
 		if err != nil {
 			panic(err)
 		}

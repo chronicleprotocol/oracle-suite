@@ -16,7 +16,6 @@
 package messages
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -41,77 +40,17 @@ func TestEvent_Marshalling(t *testing.T) {
 					"a": {12, 12, 12},
 					"b": {13, 13, 13},
 				},
-				Signatures: map[string][]byte{
-					"c": {14, 14, 14},
-					"d": {15, 15, 15},
+				Signatures: map[string]EventSignature{
+					"c": {Signer: []byte{14}, Signature: []byte{15}},
+					"d": {Signer: []byte{15}, Signature: []byte{16}},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			event: Event{
-				Date:  time.Unix(9, 0),
-				Type:  strings.Repeat("a", eventMessageMaxFieldSize),
-				ID:    bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				Index: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				Data: map[string][]byte{
-					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				},
-				Signatures: map[string][]byte{
-					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				},
-			},
-			wantErr: false,
-		},
-		{
-			event: Event{
-				Type: strings.Repeat("a", eventMessageMaxFieldSize+1),
-			},
-			wantErr: true,
-		},
-		{
-			event: Event{
-				ID: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
-			},
-			wantErr: true,
-		},
-		{
-			event: Event{
-				Index: bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
-			},
-			wantErr: true,
-		},
-		{
-			event: Event{
-				Data: map[string][]byte{
-					strings.Repeat("a", eventMessageMaxKeyLen+1): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			event: Event{
-				Data: map[string][]byte{
-					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			event: Event{
-				Signatures: map[string][]byte{
-					strings.Repeat("a", eventMessageMaxKeyLen+1): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			event: Event{
-				Signatures: map[string][]byte{
-					strings.Repeat("a", eventMessageMaxKeyLen): bytes.Repeat([]byte{'a'}, eventMessageMaxFieldSize+1),
-				},
+				Date: time.Unix(9, 0),
+				Type: strings.Repeat("a", 1*1024*1024),
 			},
 			wantErr: true,
 		},

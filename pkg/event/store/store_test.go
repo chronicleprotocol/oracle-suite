@@ -32,7 +32,7 @@ import (
 
 func TestEventStore(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	tra := local.New(ctx, 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	tra := local.New(ctx, []byte("test"), 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 
 	mem := memory.New(time.Minute)
 	evs, err := New(ctx, Config{
@@ -56,7 +56,7 @@ func TestEventStore(t *testing.T) {
 		ID:         []byte("test"),
 		Index:      []byte("idx"),
 		Data:       map[string][]byte{"test": []byte("test")},
-		Signatures: map[string][]byte{"test": []byte("test")},
+		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
 	require.NoError(t, tra.Broadcast(messages.EventMessageName, event))
 

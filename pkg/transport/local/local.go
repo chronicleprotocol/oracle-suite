@@ -29,9 +29,9 @@ var ErrNotSubscribed = errors.New("topic is not subscribed")
 // Local is a simple implementation of the transport.Transport interface
 // using local channels.
 type Local struct {
-	mu  sync.RWMutex
-	ctx context.Context
-
+	mu     sync.RWMutex
+	ctx    context.Context
+	author []byte
 	waitCh chan error
 	subs   map[string]subscription
 }
@@ -46,20 +46,22 @@ type subscription struct {
 }
 
 // New returns a new instance of the Local structure. The created transport
-// can handle up to b unread messages before it is blocked. The list of
-// supported subscriptions must be given as a map in s argument, where the
-// key is the subscription's topic name, and the map value is the message type
-// messages given as a nil pointer, e.g: (*Message)(nil).
-func New(ctx context.Context, b int, s map[string]transport.Message) *Local {
+// can as many unread messages before it is blocked as defined in the queue
+// arg. The list of supported subscriptions must be given as a map in the
+// topics argument, where the key is the subscription's topic name, and the
+// map value is the message type messages given as a nil pointer,
+// e.g: (*Message)(nil).
+func New(ctx context.Context, author []byte, queue int, topics map[string]transport.Message) *Local {
 	l := &Local{
 		ctx:    ctx,
+		author: author,
 		waitCh: make(chan error),
 		subs:   make(map[string]subscription),
 	}
-	for topic, typ := range s {
+	for topic, typ := range topics {
 		l.subs[topic] = subscription{
 			typ:    reflect.TypeOf(typ).Elem(),
-			msgs:   make(chan []byte, b),
+			msgs:   make(chan []byte, queue),
 			status: make(chan transport.ReceivedMessage),
 		}
 	}
@@ -105,6 +107,7 @@ func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
 				message := reflect.New(sub.typ).Interface().(transport.Message)
 				sub.status <- transport.ReceivedMessage{
 					Message: message,
+					Author:  l.author,
 					Error:   message.UnmarshallBinary(msg),
 				}
 			}

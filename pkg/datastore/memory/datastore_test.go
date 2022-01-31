@@ -39,7 +39,7 @@ func TestDatastore_Prices(t *testing.T) {
 	defer ctxCancel()
 
 	sig := &mocks.Signer{}
-	tra := local.New(ctx, 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
+	tra := local.New(ctx, []byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
 
 	ds, err := NewDatastore(ctx, Config{
 		Signer:    sig,
