@@ -1,6 +1,6 @@
 {
   "transport": {
-    "p2p": {
+    "libp2p": {
       "privKeySeed": "",
       "listenAddrs": ["/ip4/0.0.0.0/tcp/8000"],
       "bootstrapAddrs": [
@@ -12,15 +12,15 @@
       "disableDiscovery": false
     },
     "ssb": {
-      "caps": "./local.caps.json",
-      "key": "./local.ssb.json"
+      "caps": "./caps.json",
+      "key": "./ssb.json"
     }
   },
   "ethereum": {
     "from": "",
     "keystore": "",
     "password": "",
-    "rpc": ""
+    "rpc": "http://127.0.0.1:9989"
   },
   "feeds": [
     "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
@@ -221,7 +221,6 @@
     ]
   },
   "gofer": {
-    "ethRpc": "http://127.0.0.1:9989",
     "rpc": {
       "disable": false,
       "address": "127.0.0.1:9000"

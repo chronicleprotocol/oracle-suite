@@ -63,7 +63,6 @@ func (e ErrCyclicReference) Error() string {
 
 type Gofer struct {
 	RPC         RPC                   `json:"rpc"`
-	EthRPC      string                `json:"ethRpc"`
 	Origins     map[string]Origin     `json:"origins"`
 	PriceModels map[string]PriceModel `json:"priceModels"`
 }

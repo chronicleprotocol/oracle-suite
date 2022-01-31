@@ -104,15 +104,20 @@ func (c *Client) LogStream() (chan []byte, error) {
 
 func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
 	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
-	src, err := c.rpc.Source(ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
+	src, err := c.rpc.Source(c.ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
 	if err != nil {
 		cancel()
 		return nil, err
 	}
 	ch := make(chan []byte)
 	go func() {
-		defer cancel()
 		defer close(ch)
+		defer cancel()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Println("recovered:", r)
+			}
+		}()
 		for nxt := src.Next(ctx); nxt; nxt = src.Next(ctx) {
 			b, err := src.Bytes()
 			if err != nil {

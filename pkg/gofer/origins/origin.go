@@ -327,5 +327,5 @@ func buildOriginURL(template, configURL, defaultURL string, a ...interface{}) st
 	replacement := []interface{}{url}
 	replacement = append(replacement, a...)
 
-	return fmt.Sprintf(template, replacement)
+	return fmt.Sprintf(template, replacement...)
 }
