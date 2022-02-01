@@ -54,7 +54,7 @@ func (m *Memory) Add(author []byte, msg *messages.Event) error {
 		m.index[hi] = map[[32]byte]*messages.Event{}
 	}
 	evt, ok := m.index[hi][hu]
-	if !ok || (ok && evt.Date.Before(msg.Date)) {
+	if !ok || (ok && evt.EventDate.Before(msg.EventDate)) {
 		m.index[hi][hu] = msg
 		m.gc()
 	}
@@ -86,7 +86,7 @@ func (m *Memory) gc() {
 		// Count number of expired messages:
 		expired := 0
 		for _, evt := range evts {
-			if time.Since(evt.Date) > m.ttl {
+			if time.Since(evt.EventDate) > m.ttl {
 				expired++
 			}
 		}
@@ -97,7 +97,7 @@ func (m *Memory) gc() {
 		} else if expired > 0 {
 			// If only some messages are expired.
 			for ha, evt := range evts {
-				if time.Since(evt.Date) >= m.ttl {
+				if time.Since(evt.EventDate) >= m.ttl {
 					delete(m.index[hi], ha)
 				}
 			}

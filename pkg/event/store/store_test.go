@@ -51,12 +51,13 @@ func TestEventStore(t *testing.T) {
 	}()
 
 	event := &messages.Event{
-		Date:       time.Now(),
-		Type:       "test",
-		ID:         []byte("test"),
-		Index:      []byte("idx"),
-		Data:       map[string][]byte{"test": []byte("test")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "test",
+		ID:          []byte("test"),
+		Index:       []byte("idx"),
+		EventDate:   time.Now(),
+		MessageDate: time.Now(),
+		Data:        map[string][]byte{"test": []byte("test")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
 	require.NoError(t, tra.Broadcast(messages.EventMessageName, event))
 
@@ -66,10 +67,11 @@ func TestEventStore(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, events, 1)
-	assert.Equal(t, event.Date.Unix(), events[0].Date.Unix())
 	assert.Equal(t, event.Type, events[0].Type)
 	assert.Equal(t, event.ID, events[0].ID)
 	assert.Equal(t, event.Index, events[0].Index)
+	assert.Equal(t, event.EventDate.Unix(), events[0].EventDate.Unix())
+	assert.Equal(t, event.MessageDate.Unix(), events[0].MessageDate.Unix())
 	assert.Equal(t, event.Data, events[0].Data)
 	assert.Equal(t, event.Signatures, events[0].Signatures)
 }

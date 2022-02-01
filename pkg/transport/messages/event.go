@@ -40,9 +40,10 @@ type Event struct {
 	ID []byte
 	// Event index used to search for events.
 	Index []byte
-	// The date when the event message was created. It is *not* the date of
-	// the event itself.
-	Date time.Time
+	// The date of the event.
+	EventDate time.Time
+	// The date when the event message was created.
+	MessageDate time.Time
 	// List of event data.
 	Data map[string][]byte
 	// List of event signatures.
@@ -59,12 +60,13 @@ func (e *Event) MarshallBinary() ([]byte, error) {
 		}
 	}
 	data, err := proto.Marshal(&pb.Event{
-		Type:       e.Type,
-		Id:         e.ID,
-		Index:      e.Index,
-		Timestamp:  e.Date.Unix(),
-		Data:       e.Data,
-		Signatures: signatures,
+		Type:             e.Type,
+		Id:               e.ID,
+		Index:            e.Index,
+		EventTimestamp:   e.EventDate.Unix(),
+		MessageTimestamp: e.MessageDate.Unix(),
+		Data:             e.Data,
+		Signatures:       signatures,
 	})
 	if err != nil {
 		return nil, err
@@ -94,7 +96,8 @@ func (e *Event) UnmarshallBinary(data []byte) error {
 	e.Type = msg.Type
 	e.ID = msg.Id
 	e.Index = msg.Index
-	e.Date = time.Unix(msg.Timestamp, 0)
+	e.EventDate = time.Unix(msg.EventTimestamp, 0)
+	e.MessageDate = time.Unix(msg.MessageTimestamp, 0)
 	e.Data = msg.Data
 	e.Signatures = signatures
 	return nil

@@ -71,20 +71,22 @@ func TestEventPublisher(t *testing.T) {
 	}()
 
 	msg1 := &messages.Event{
-		Type:       "event1",
-		ID:         []byte("id1"),
-		Index:      []byte("idx1"),
-		Date:       time.Unix(1, 0),
-		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "event1",
+		ID:          []byte("id1"),
+		Index:       []byte("idx1"),
+		EventDate:   time.Unix(1, 0),
+		MessageDate: time.Unix(1, 0),
+		Data:        map[string][]byte{"data_key": []byte("val")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
 	msg2 := &messages.Event{
-		Type:       "event2",
-		ID:         []byte("id2"),
-		Index:      []byte("idx2"),
-		Date:       time.Unix(2, 0),
-		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "event2",
+		ID:          []byte("id2"),
+		Index:       []byte("idx2"),
+		EventDate:   time.Unix(2, 0),
+		MessageDate: time.Unix(2, 0),
+		Data:        map[string][]byte{"data_key": []byte("val")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
 	lis.ch <- msg1
 	lis.ch <- msg2

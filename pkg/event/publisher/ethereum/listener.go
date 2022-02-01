@@ -74,7 +74,7 @@ func newEthClientLogListener(
 		interval:     interval,
 		blocksBehind: blocksBehind,
 		maxBlocks:    maxBlocks,
-		outCh:        make(chan types.Log, 128),
+		outCh:        make(chan types.Log, 1),
 		log:          logger,
 	}
 	for _, t := range topics {

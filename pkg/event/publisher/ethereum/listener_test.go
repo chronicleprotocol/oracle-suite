@@ -37,6 +37,7 @@ var listenerTestTopic2 = ethereum.HexToHash("0x618b439c5646a69d0ee5bf11275cce693
 
 func Test_logListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 	cli := &mocks.EthClient{}
 	lis := newEthClientLogListener(cli, []common.Address{listenerTestAddress}, []common.Hash{listenerTestTopic1, listenerTestTopic2}, time.Millisecond*100, 10, 15, null.New())
 
@@ -66,15 +67,9 @@ func Test_logListener(t *testing.T) {
 	// Start listener and collect logs:
 	lis.Start(ctx)
 	var logs []types.Log
-	for {
-		if len(cli.Calls()) >= 5 { // 5 is the number of mocked calls above.
-			cancelFunc()
-			break
-		}
-		time.Sleep(time.Millisecond * 10)
-	}
-	for len(lis.Logs()) > 0 {
+	for len(logs) < 4 {
 		logs = append(logs, <-lis.Logs())
+		time.Sleep(time.Millisecond * 10)
 	}
 	assert.Len(t, logs, 4)
 }

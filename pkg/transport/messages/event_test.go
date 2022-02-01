@@ -32,24 +32,24 @@ func TestEvent_Marshalling(t *testing.T) {
 	}{
 		{
 			event: Event{
-				Date:  time.Unix(9, 0),
-				Type:  "test",
-				ID:    []byte{10, 10, 10},
-				Index: []byte{11, 11, 11},
+				Type:        "test",
+				ID:          []byte{10, 10, 10},
+				Index:       []byte{11, 11, 11},
+				EventDate:   time.Unix(12, 0),
+				MessageDate: time.Unix(13, 0),
 				Data: map[string][]byte{
-					"a": {12, 12, 12},
-					"b": {13, 13, 13},
+					"a": {14, 14, 14},
+					"b": {15, 15, 15},
 				},
 				Signatures: map[string]EventSignature{
-					"c": {Signer: []byte{14}, Signature: []byte{15}},
-					"d": {Signer: []byte{15}, Signature: []byte{16}},
+					"c": {Signer: []byte{16}, Signature: []byte{16}},
+					"d": {Signer: []byte{17}, Signature: []byte{17}},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			event: Event{
-				Date: time.Unix(9, 0),
 				Type: strings.Repeat("a", 1*1024*1024),
 			},
 			wantErr: true,
@@ -65,10 +65,11 @@ func TestEvent_Marshalling(t *testing.T) {
 				err := event.UnmarshallBinary(msg)
 
 				require.NoError(t, err)
-				assert.Equal(t, tt.event.Date, event.Date)
 				assert.Equal(t, tt.event.Type, event.Type)
 				assert.Equal(t, tt.event.ID, event.ID)
 				assert.Equal(t, tt.event.Index, event.Index)
+				assert.Equal(t, tt.event.EventDate, event.EventDate)
+				assert.Equal(t, tt.event.MessageDate, event.MessageDate)
 				assert.Equal(t, tt.event.Data, event.Data)
 				assert.Equal(t, tt.event.Signatures, event.Signatures)
 			}

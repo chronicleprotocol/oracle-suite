@@ -62,51 +62,55 @@ func TestEventAPI(t *testing.T) {
 	}()
 
 	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
-		Type:       "event1",
-		ID:         []byte("id1"),
-		Index:      []byte("idx1"),
-		Date:       time.Unix(1, 0),
-		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "event1",
+		ID:          []byte("id1"),
+		Index:       []byte("idx1"),
+		EventDate:   time.Unix(1, 0),
+		MessageDate: time.Unix(2, 0),
+		Data:        map[string][]byte{"data_key": []byte("val")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
 	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
-		Type:       "event1",
-		ID:         []byte("id2"),
-		Index:      []byte("idx1"),
-		Date:       time.Unix(2, 0),
-		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "event1",
+		ID:          []byte("id2"),
+		Index:       []byte("idx1"),
+		EventDate:   time.Unix(2, 0),
+		MessageDate: time.Unix(3, 0),
+		Data:        map[string][]byte{"data_key": []byte("val")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
 	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
-		Type:       "event1",
-		ID:         []byte("id3"),
-		Index:      []byte("idx2"), // different index
-		Date:       time.Unix(3, 0),
-		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "event1",
+		ID:          []byte("id3"),
+		Index:       []byte("idx2"), // different index
+		EventDate:   time.Unix(3, 0),
+		MessageDate: time.Unix(4, 0),
+		Data:        map[string][]byte{"data_key": []byte("val")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
 	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
-		Type:       "event2", // different type
-		ID:         []byte("id4"),
-		Index:      []byte("idx1"),
-		Date:       time.Unix(4, 0),
-		Data:       map[string][]byte{"data_key": []byte("val")},
-		Signatures: map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
+		Type:        "event2", // different type
+		ID:          []byte("id4"),
+		Index:       []byte("idx1"),
+		EventDate:   time.Unix(4, 0),
+		MessageDate: time.Unix(5, 0),
+		Data:        map[string][]byte{"data_key": []byte("val")},
+		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
 
 	time.Sleep(time.Second)
 
 	res, err := http.Get(fmt.Sprintf("http://%s?type=event1&index=%x", api.srv.Addr().String(), "idx1"))
 	assert.NoError(t, err)
-	assert.JSONEq(t, `[{"timestamp":1,"id":"696431","data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}},{"timestamp":2,"id":"696432","data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
+	assert.JSONEq(t, `[{"timestamp":1,"data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}},{"timestamp":2,"data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
 
 	res, err = http.Get(fmt.Sprintf("http://%s?type=event1&index=0x%x", api.srv.Addr().String(), "idx2"))
 	assert.NoError(t, err)
-	assert.JSONEq(t, `[{"timestamp":3,"id":"696433","data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
+	assert.JSONEq(t, `[{"timestamp":3,"data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
 
 	res, err = http.Get(fmt.Sprintf("http://%s?type=event2&index=0x%x", api.srv.Addr().String(), "idx1"))
 	assert.NoError(t, err)
-	assert.JSONEq(t, `[{"timestamp":4,"id":"696434","data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
+	assert.JSONEq(t, `[{"timestamp":4,"data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
 }
 
 func read(res *http.Response) string {

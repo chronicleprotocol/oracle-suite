@@ -66,7 +66,7 @@ type WormholeListenerConfig struct {
 // NewWormholeListener returns a new instance of the WormholeListener struct.
 func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
 	return &WormholeListener{
-		msgCh: make(chan *messages.Event, 128),
+		msgCh: make(chan *messages.Event, 1),
 		listener: newEthClientLogListener(
 			cfg.Client,
 			cfg.Addresses,
@@ -129,11 +129,12 @@ func logToMessage(log types.Log) (*messages.Event, error) {
 		// ID is additionally hashed to ensure that it is not similar to
 		// any other field, so it will not be misused. This field is intended
 		// to be used only be the event store.
-		ID:         crypto.Keccak256Hash(append(log.TxHash.Bytes(), big.NewInt(int64(log.Index)).Bytes()...)).Bytes(),
-		Index:      log.TxHash.Bytes(),
-		Date:       time.Now(),
-		Data:       data,
-		Signatures: map[string]messages.EventSignature{},
+		ID:          crypto.Keccak256Hash(append(log.TxHash.Bytes(), big.NewInt(int64(log.Index)).Bytes()...)).Bytes(),
+		Index:       log.TxHash.Bytes(),
+		EventDate:   time.Unix(guid.timestamp, 0),
+		MessageDate: time.Now(),
+		Data:        data,
+		Signatures:  map[string]messages.EventSignature{},
 	}, nil
 }
 

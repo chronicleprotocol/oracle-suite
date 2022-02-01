@@ -71,13 +71,15 @@ func Test_wormholeListener(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond * 10)
 	}
-	assert.Len(t, w.Events(), 2) // 2 events are expected
+	events := 0
 	for len(w.Events()) > 0 {
+		events++
 		msg := <-w.Events()
 		assert.Equal(t, txHash.Bytes(), msg.Index)
 		assert.Equal(t, common.FromHex("0x69515a78ae1ad8c4650b57eb6dcd0c866b71e828316dabbc64f430588d043452"), msg.Data["hash"])
 		assert.Equal(t, wormholeTestGUID, msg.Data["event"])
 	}
+	assert.Equal(t, 2, events)
 }
 
 func Test_packWormholeGUID(t *testing.T) {

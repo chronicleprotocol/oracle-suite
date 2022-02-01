@@ -93,12 +93,12 @@ func eventValidator(logger log.Logger) p2p.Options {
 			}
 			feedAddr := ethkey.PeerIDToAddress(psMsg.GetFrom())
 			// Check when message was created, ignore if older than 5 min, reject if older than 10 min:
-			if time.Since(eventMsg.Date) > 5*time.Minute {
+			if time.Since(eventMsg.MessageDate) > 5*time.Minute {
 				logger.
 					WithField("peerID", psMsg.GetFrom().String()).
 					WithField("from", feedAddr.String()).
 					Warn("The event message has been rejected, the message is older than 5 min")
-				if time.Since(eventMsg.Date) > 10*time.Minute {
+				if time.Since(eventMsg.MessageDate) > 10*time.Minute {
 					return pubsub.ValidationReject
 				}
 				return pubsub.ValidationIgnore
