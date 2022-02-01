@@ -224,7 +224,7 @@ func (p *P2P) Start() error {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
 	}
 	if p.mode == ClientMode {
-		for topic, _ := range p.topics {
+		for topic := range p.topics {
 			p.msgCh[topic] = make(chan transport.ReceivedMessage)
 			err := p.subscribe(topic)
 			if err != nil {
