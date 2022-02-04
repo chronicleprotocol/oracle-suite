@@ -82,5 +82,6 @@ func Root() (*Options, *cobra.Command) {
 		Use:                "ssb",
 		DisableAutoGenTag:  true,
 		DisableSuggestions: true,
+		SilenceUsage:       true,
 	}
 }
