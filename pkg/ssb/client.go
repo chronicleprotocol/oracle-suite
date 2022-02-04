@@ -67,7 +67,7 @@ func (c *Client) ReceiveLast(id, contentType string, limit int64) ([]byte, error
 			Reverse: true,
 		},
 		ID: feedRef,
-	})
+	}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -99,11 +99,17 @@ func (c *Client) LogStream() (chan []byte, error) {
 			Limit:   -1,
 			Reverse: false,
 		},
-	})
+	}, true)
 }
 
-func (c *Client) callSSB(method string, arg interface{}) (chan []byte, error) {
-	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
+func (c *Client) callSSB(method string, arg interface{}, live bool) (chan []byte, error) {
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if live {
+		ctx, cancel = context.WithCancel(c.ctx)
+	} else {
+		ctx, cancel = context.WithTimeout(c.ctx, time.Second)
+	}
 	src, err := c.rpc.Source(ctx, muxrpc.TypeBinary, muxrpc.Method{method}, arg)
 	if err != nil {
 		cancel()
