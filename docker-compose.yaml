@@ -4,5 +4,5 @@ services:
     image: ghcr.io/chronicleprotocol/oracle-suite:dev
     build:
       context: "."
-    entrypoint: ["/usr/local/bin/gofer"]
-    command: ["-v","debug","agent"]
+    entrypoint: [ "/usr/local/bin/gofer" ]
+    command: [ "agent", "-v", "info" ]
