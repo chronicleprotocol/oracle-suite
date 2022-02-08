@@ -63,7 +63,7 @@ func TestEventStore(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	events, err := evs.Events("test", []byte("idx"))
+	events, err := evs.Events(context.Background(), "test", []byte("idx"))
 	require.NoError(t, err)
 
 	require.Len(t, events, 1)

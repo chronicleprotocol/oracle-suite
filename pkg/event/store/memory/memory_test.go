@@ -16,6 +16,7 @@
 package memory
 
 import (
+	"context"
 	"strconv"
 	"testing"
 	"time"
@@ -55,11 +56,11 @@ func TestMemory_Add(t *testing.T) {
 		Signatures:  map[string]messages.EventSignature{},
 	}
 
-	assert.NoError(t, m.Add([]byte("author1"), e1))
-	assert.NoError(t, m.Add([]byte("author2"), e2))
-	assert.NoError(t, m.Add([]byte("author3"), e3)) // different index
+	assert.NoError(t, m.Add(context.Background(), []byte("author1"), e1))
+	assert.NoError(t, m.Add(context.Background(), []byte("author2"), e2))
+	assert.NoError(t, m.Add(context.Background(), []byte("author3"), e3)) // different index
 
-	es, err := m.Get("test", []byte("idx"))
+	es, err := m.Get(context.Background(), "test", []byte("idx"))
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, []*messages.Event{e1, e2}, es)
 }
@@ -85,24 +86,24 @@ func TestMemory_Add_replacePreviousEvent(t *testing.T) {
 		Signatures:  map[string]messages.EventSignature{},
 	}
 
-	assert.NoError(t, m.Add([]byte("author1"), e1))
+	assert.NoError(t, m.Add(context.Background(), []byte("author1"), e1))
 
 	// Replace if never
-	assert.NoError(t, m.Add([]byte("author1"), e2))
-	es, err := m.Get("test", []byte("idx"))
+	assert.NoError(t, m.Add(context.Background(), []byte("author1"), e2))
+	es, err := m.Get(context.Background(), "test", []byte("idx"))
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, []*messages.Event{e2}, es)
 
 	// Keep previous if older
-	assert.NoError(t, m.Add([]byte("author1"), e1))
-	es, err = m.Get("test", []byte("idx"))
+	assert.NoError(t, m.Add(context.Background(), []byte("author1"), e1))
+	es, err = m.Get(context.Background(), "test", []byte("idx"))
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, []*messages.Event{e2}, es)
 }
 
 func TestMemory_gc(t *testing.T) {
 	m := New(time.Minute)
-	assert.NoError(t, m.Add([]byte("author"), &messages.Event{
+	assert.NoError(t, m.Add(context.Background(), []byte("author"), &messages.Event{
 		Type:        "test",
 		ID:          []byte("test"),
 		Index:       []byte("idx"),
@@ -121,10 +122,10 @@ func TestMemory_gc(t *testing.T) {
 			Data:        map[string][]byte{"test": []byte("test")},
 			Signatures:  map[string]messages.EventSignature{},
 		}
-		assert.NoError(t, m.Add([]byte(strconv.Itoa(i)), e))
+		assert.NoError(t, m.Add(context.Background(), []byte(strconv.Itoa(i)), e))
 	}
 
-	es, err := m.Get("test", []byte("idx"))
+	es, err := m.Get(context.Background(), "test", []byte("idx"))
 	assert.NoError(t, err)
 	assert.Len(t, es, 1)
 }
@@ -141,10 +142,10 @@ func TestMemory_gc_allExpired(t *testing.T) {
 			Data:        map[string][]byte{"test": []byte("test")},
 			Signatures:  map[string]messages.EventSignature{},
 		}
-		assert.NoError(t, m.Add([]byte(strconv.Itoa(i)), e))
+		assert.NoError(t, m.Add(context.Background(), []byte(strconv.Itoa(i)), e))
 	}
 
-	es, err := m.Get("test", []byte("idx"))
+	es, err := m.Get(context.Background(), "test", []byte("idx"))
 	assert.NoError(t, err)
 	assert.Len(t, es, 0)
 }

@@ -16,6 +16,7 @@
 package memory
 
 import (
+	"context"
 	"crypto/sha256"
 	"sync"
 	"time"
@@ -35,7 +36,7 @@ type Memory struct {
 }
 
 // New returns a new instance of Memory. The ttl argument specifies how long
-// the message should be kept in storage.
+// messages should be kept in storage.
 func New(ttl time.Duration) *Memory {
 	return &Memory{
 		ttl:     ttl,
@@ -45,24 +46,24 @@ func New(ttl time.Duration) *Memory {
 }
 
 // Add implements the store.Storage interface.
-func (m *Memory) Add(author []byte, msg *messages.Event) error {
+func (m *Memory) Add(_ context.Context, author []byte, evt *messages.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	hi := hashIndex(msg.Type, msg.Index)
-	hu := hashUnique(author, msg.ID)
+	hi := hashIndex(evt.Type, evt.Index)
+	hu := hashUnique(author, evt.ID)
 	if _, ok := m.index[hi]; !ok {
 		m.index[hi] = map[[32]byte]*messages.Event{}
 	}
-	evt, ok := m.index[hi][hu]
-	if !ok || (ok && evt.EventDate.Before(msg.EventDate)) {
-		m.index[hi][hu] = msg
+	currEvt, ok := m.index[hi][hu]
+	if !ok || (ok && currEvt.MessageDate.Before(evt.MessageDate)) {
+		m.index[hi][hu] = evt
 		m.gc()
 	}
 	return nil
 }
 
 // Get implements the store.Storage interface.
-func (m *Memory) Get(typ string, idx []byte) ([]*messages.Event, error) {
+func (m *Memory) Get(_ context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	hi := hashIndex(typ, idx)

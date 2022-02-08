@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -12,22 +13,28 @@ import (
 )
 
 type Redis struct {
-	ctx    context.Context
+	mu sync.Mutex
+
 	client *redis.Client
 	ttl    time.Duration
 }
 
 type Config struct {
-	TTL      time.Duration
-	Addr     string
+	// TTL specifies how long messages should be kept in storage.
+	TTL time.Duration
+	// Address specifies Redis server address as "host:port".
+	Address string
+	// Password specifies Redis server password.
 	Password string
-	DB       int
+	// DB is the Redis database number.
+	DB int
 }
 
-func NewRedis(ctx context.Context, cfg Config) *Redis {
+// New returns a new instance of Redis.
+func New(cfg Config) *Redis {
 	return &Redis{
 		client: redis.NewClient(&redis.Options{
-			Addr:     cfg.Addr,
+			Addr:     cfg.Address,
 			Password: cfg.Password,
 			DB:       cfg.DB,
 		}),
@@ -35,53 +42,85 @@ func NewRedis(ctx context.Context, cfg Config) *Redis {
 	}
 }
 
-func (r Redis) Add(author []byte, msg *messages.Event) error {
-	val, err := msg.MarshallBinary()
+// Add implements the store.Storage interface.
+func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tx := r.client.TxPipeline()
+	defer func() {
+		_, txErr := tx.Exec(ctx)
+		if err == nil {
+			err = txErr
+		}
+	}()
+	key := redisMessageKey(evt.Type, evt.Index, author, evt.ID)
+	val, err := evt.MarshallBinary()
 	if err != nil {
 		return err
 	}
-	s := r.client.Set(
-		r.ctx,
-		fmt.Sprintf("%s:%s", hashIndex(msg.Type, msg.Index), hashUnique(author, msg.ID)),
-		val,
-		r.ttl,
-	)
-	return s.Err()
+	getRes := r.client.Get(ctx, key)
+	if getRes.Err() == redis.Nil {
+		tx.Set(ctx, key, val, 0)
+		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
+	} else {
+		currEvt := &messages.Event{}
+		err = currEvt.UnmarshallBinary([]byte(getRes.Val()))
+		if err != nil {
+			return err
+		}
+		if currEvt.MessageDate.Before(evt.MessageDate) {
+			tx.Set(ctx, key, val, 0)
+			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
+		}
+	}
+	return err
 }
 
-func (r Redis) Get(typ string, idx []byte) ([]*messages.Event, error) {
+// Get implements the store.Storage interface.
+func (r *Redis) Get(ctx context.Context, typ string, idx []byte) (evts []*messages.Event, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	var keys []string
 	var cursor uint64
-	var err error
-	var msgs []*messages.Event
-	match := fmt.Sprintf("%s:*", hashIndex(typ, idx))
+	key := redisWildcardKey(typ, idx)
 	for {
-		scanRes := r.client.Scan(r.ctx, cursor, match, 0)
+		scanRes := r.client.Scan(ctx, cursor, key, 0)
 		keys, cursor, err = scanRes.Result()
 		if err != nil {
 			return nil, err
 		}
-		getRes := r.client.MGet(r.ctx, keys...)
+		if len(keys) == 0 {
+			break
+		}
+		getRes := r.client.MGet(ctx, keys...)
 		if getRes.Err() != nil {
 			return nil, getRes.Err()
 		}
 		for _, val := range getRes.Val() {
-			b, ok := val.([]byte)
+			b, ok := val.(string)
 			if !ok {
 				continue
 			}
-			msg := &messages.Event{}
-			err = msg.UnmarshallBinary(b)
+			evt := &messages.Event{}
+			err = evt.UnmarshallBinary([]byte(b))
 			if err != nil {
 				continue
 			}
-			msgs = append(msgs, msg)
+			evts = append(evts, evt)
 		}
 		if cursor == 0 {
 			break
 		}
 	}
-	return msgs, nil
+	return evts, nil
+}
+
+func redisMessageKey(typ string, index []byte, author []byte, id []byte) string {
+	return fmt.Sprintf("%x:%x", hashIndex(typ, index), hashUnique(author, id))
+}
+
+func redisWildcardKey(typ string, index []byte) string {
+	return fmt.Sprintf("%x:*", hashIndex(typ, index))
 }
 
 func hashUnique(author []byte, id []byte) [sha256.Size]byte {

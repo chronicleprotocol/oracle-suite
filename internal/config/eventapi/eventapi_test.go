@@ -24,6 +24,8 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/redis"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 )
@@ -58,4 +60,43 @@ func TestEventAPI_Configure(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, a)
+}
+
+func TestEventAPI_ConfigureStorage_memory(t *testing.T) {
+	config := EventAPI{
+		Storage: storage{
+			Type: "memory",
+		},
+	}
+	sto, err := config.ConfigureStorage()
+	require.NoError(t, err)
+	require.IsType(t, &memory.Memory{}, sto)
+}
+
+func TestEventAPI_ConfigureStorage_redis(t *testing.T) {
+	config := EventAPI{
+		Storage: storage{
+			Type: "redis",
+		},
+	}
+	sto, err := config.ConfigureStorage()
+	require.NoError(t, err)
+	require.IsType(t, &redis.Redis{}, sto)
+}
+
+func TestEventAPI_ConfigureStorage_invalidType(t *testing.T) {
+	config := EventAPI{
+		Storage: storage{
+			Type: "invalid",
+		},
+	}
+	_, err := config.ConfigureStorage()
+	require.Error(t, err)
+}
+
+func TestEventAPI_ConfigureStorage_defaultType(t *testing.T) {
+	config := EventAPI{}
+	sto, err := config.ConfigureStorage()
+	require.NoError(t, err)
+	require.IsType(t, &memory.Memory{}, sto)
 }

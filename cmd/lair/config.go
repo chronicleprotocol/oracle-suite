@@ -26,7 +26,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	eventAPI "github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -61,9 +60,12 @@ func (c *Config) Configure(d Dependencies) (transport.Transport, *store.EventSto
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	mem := memory.New(week)
+	sto, err := c.Lair.ConfigureStorage()
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	evs, err := store.New(d.Context, store.Config{
-		Storage:   mem,
+		Storage:   sto,
 		Transport: tra,
 		Log:       d.Logger,
 	})

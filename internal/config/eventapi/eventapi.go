@@ -17,13 +17,19 @@ package eventapi
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/redis"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
+
+const week = 3600 * 24 * 7
 
 //nolint
 var eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, error) {
@@ -31,7 +37,25 @@ var eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, 
 }
 
 type EventAPI struct {
-	Address string `json:"address"`
+	Address string  `json:"address"`
+	Storage storage `json:"storage"`
+}
+
+type storage struct {
+	Type   string        `json:"type"`
+	Memory storageMemory `json:"memory"`
+	Redis  storageRedis  `json:"redis"`
+}
+
+type storageMemory struct {
+	TTL int `json:"ttl"`
+}
+
+type storageRedis struct {
+	TTL      int    `json:"ttl"`
+	Address  string `json:"address"`
+	Password string `json:"password"`
+	DB       int    `json:"db"`
 }
 
 type Dependencies struct {
@@ -50,10 +74,33 @@ type DatastoreDependencies struct {
 }
 
 func (c *EventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
-	cfg := api.Config{
+	return eventAPIFactory(d.Context, api.Config{
 		EventStore: d.EventStore,
 		Address:    c.Address,
 		Logger:     d.Logger,
+	})
+}
+
+func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
+	switch c.Storage.Type {
+	case "memory", "":
+		ttl := week
+		if c.Storage.Memory.TTL > 0 {
+			ttl = c.Storage.Memory.TTL
+		}
+		return memory.New(time.Second * time.Duration(ttl)), nil
+	case "redis":
+		ttl := week
+		if c.Storage.Redis.TTL > 0 {
+			ttl = c.Storage.Redis.TTL
+		}
+		return redis.New(redis.Config{
+			TTL:      time.Duration(ttl) * time.Second,
+			Address:  c.Storage.Redis.Address,
+			Password: c.Storage.Redis.Password,
+			DB:       c.Storage.Redis.DB,
+		}), nil
+	default:
+		return nil, fmt.Errorf(`eventapi config: storage type must be "memory", "redis" or empty to use default one`)
 	}
-	return eventAPIFactory(d.Context, cfg)
 }
