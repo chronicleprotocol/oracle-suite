@@ -17,6 +17,8 @@ package eventapi
 
 import (
 	"context"
+	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,9 +76,22 @@ func TestEventAPI_ConfigureStorage_memory(t *testing.T) {
 }
 
 func TestEventAPI_ConfigureStorage_redis(t *testing.T) {
+	addr := os.Getenv("TEST_REDIS_ADDR")
+	pass := os.Getenv("TEST_REDIS_PASS")
+	db, _ := strconv.Atoi(os.Getenv("TEST_REDIS_DB"))
+	if len(addr) == 0 {
+		t.Skip()
+		return
+	}
 	config := EventAPI{
 		Storage: storage{
 			Type: "redis",
+			Redis: storageRedis{
+				TTL:      60,
+				Address:  addr,
+				Password: pass,
+				DB:       db,
+			},
 		},
 	}
 	sto, err := config.ConfigureStorage()
