@@ -24,7 +24,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const LoggerTag = "EVENTSTORE"
+const LoggerTag = "EVENT_STORE"
 
 // EventStore listens for event messages using the transport and stores
 // them for later use.
@@ -43,12 +43,13 @@ type Config struct {
 	Log       log.Logger
 }
 
+// Storage provides an interface to the event storage mechanism.
 type Storage interface {
-	// Add adds a message to the store. If the message already exists, no error
-	// will be returned. Method is thread safe.
+	// Add adds a message to the store. If the message already exists, it will
+	// be updated if the MessageDate is newer. The method is thread-safe.
 	Add(ctx context.Context, author []byte, evt *messages.Event) error
-	// Get returns a message form the store. If the message does not exist,
-	// nil will be returned. Method is thread safe.
+	// Get returns messages form the store for the given type and index. If the
+	// message does not exist, nil will be returned. Method is thread-safe.
 	Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error)
 }
 
@@ -78,6 +79,7 @@ func (e *EventStore) Wait() chan error {
 	return e.waitCh
 }
 
+// Events returns events for the given type and index. Method is thread-safe.
 func (e *EventStore) Events(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	return e.storage.Get(ctx, typ, idx)
 }
@@ -89,9 +91,7 @@ func (e *EventStore) eventCollectorRoutine() {
 			return
 		case msg := <-e.transport.Messages(messages.EventMessageName):
 			if msg.Error != nil {
-				e.log.
-					WithError(msg.Error).
-					Warn("Unable to read events from the transport layer")
+				e.log.WithError(msg.Error).Error("Unable to read events from the transport layer")
 				continue
 			}
 			evtMsg, ok := msg.Message.(*messages.Event)
@@ -101,9 +101,7 @@ func (e *EventStore) eventCollectorRoutine() {
 			}
 			err := e.storage.Add(e.ctx, msg.Author, evtMsg)
 			if err != nil {
-				e.log.
-					WithError(msg.Error).
-					Warn("Unable to store the event")
+				e.log.WithError(msg.Error).Error("Unable to store the event")
 				continue
 			}
 		}

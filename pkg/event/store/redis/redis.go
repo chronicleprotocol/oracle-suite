@@ -12,6 +12,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+// Redis provides storage mechanism for store.EventStore.
+// It uses Redis database to store events.
 type Redis struct {
 	mu sync.Mutex
 
@@ -19,6 +21,7 @@ type Redis struct {
 	ttl    time.Duration
 }
 
+// Config contains configuration parameters for Redis.
 type Config struct {
 	// TTL specifies how long messages should be kept in storage.
 	TTL time.Duration
@@ -46,6 +49,11 @@ func New(cfg Config) *Redis {
 func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	key := redisMessageKey(evt.Type, evt.Index, author, evt.ID)
+	val, err := evt.MarshallBinary()
+	if err != nil {
+		return err
+	}
 	tx := r.client.TxPipeline()
 	defer func() {
 		_, txErr := tx.Exec(ctx)
@@ -53,16 +61,13 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 			err = txErr
 		}
 	}()
-	key := redisMessageKey(evt.Type, evt.Index, author, evt.ID)
-	val, err := evt.MarshallBinary()
-	if err != nil {
-		return err
-	}
 	getRes := r.client.Get(ctx, key)
 	if getRes.Err() == redis.Nil {
+		// If an event with same ID does not exist, add it.
 		tx.Set(ctx, key, val, 0)
 		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 	} else {
+		// If an event with the same ID exists, replace it if it is older.
 		currEvt := &messages.Event{}
 		err = currEvt.UnmarshallBinary([]byte(getRes.Val()))
 		if err != nil {

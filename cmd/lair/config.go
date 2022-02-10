@@ -17,7 +17,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventapi"
@@ -30,8 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
-
-const week = time.Hour * 7 * 24
 
 type Config struct {
 	Lair      eventAPIConfig.EventAPI   `json:"lair"`

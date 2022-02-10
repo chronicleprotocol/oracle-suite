@@ -24,6 +24,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+// Memory provides storage mechanism for store.EventStore.
+// It stores events in local memory.
 type Memory struct {
 	mu sync.RWMutex
 

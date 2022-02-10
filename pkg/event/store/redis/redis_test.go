@@ -94,8 +94,8 @@ func TestRedis_Add_replacePreviousEvent(t *testing.T) {
 		Type:        typ,
 		ID:          []byte("test"),
 		Index:       []byte("idx"),
-		MessageDate: time.Now().Add(time.Second * 5),
-		EventDate:   time.Now().Add(time.Second * 5),
+		MessageDate: time.Now().Add(time.Second * 1),
+		EventDate:   time.Now().Add(time.Second * 1),
 		Data:        map[string][]byte{"test": []byte("test2")},
 		Signatures:  map[string]messages.EventSignature{},
 	}

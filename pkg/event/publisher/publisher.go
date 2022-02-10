@@ -25,7 +25,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const LoggerTag = "EVENT_OBSERVER"
+const LoggerTag = "EVENT_PUBLISHER"
 
 // EventPublisher collects event messages from listeners and publishes them
 // using transport.
