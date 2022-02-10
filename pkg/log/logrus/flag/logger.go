@@ -84,6 +84,9 @@ func (f *verbosityFlag) Set(v string) (err error) {
 func (f *verbosityFlag) Type() string {
 	var s string
 	for _, l := range logrus.AllLevels {
+		if l == logrus.TraceLevel || l == logrus.FatalLevel { // Don't display unused log levels
+			continue
+		}
 		if len(s) > 0 {
 			s += "|"
 		}

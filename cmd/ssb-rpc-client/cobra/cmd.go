@@ -63,12 +63,20 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 			Addr: inv.Address,
 		}, nil
 	}
+	ip := net.ParseIP(opts.SsbHost)
+	if ip == nil {
+		resolvedAddr, err := net.ResolveIPAddr("ip", opts.SsbHost)
+		if err != nil {
+			return nil, err
+		}
+		ip = resolvedAddr.IP
+	}
 	return &ssb.Config{
 		Keys: keys,
 		Shs:  caps.Shs,
 		Addr: netwrap.WrapAddr(
 			&net.TCPAddr{
-				IP:   net.ParseIP(opts.SsbHost),
+				IP:   ip,
 				Port: opts.SsbPort,
 			},
 			secretstream.Addr{PubKey: keys.ID().PubKey()},
@@ -82,5 +90,6 @@ func Root() (*Options, *cobra.Command) {
 		Use:                "ssb",
 		DisableAutoGenTag:  true,
 		DisableSuggestions: true,
+		SilenceUsage:       true,
 	}
 }
