@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -35,7 +36,8 @@ func TestRedis_Add(t *testing.T) {
 		return
 	}
 	typ := strconv.Itoa(rand.Int())
-	r := New(cfg)
+	r, err := New(cfg)
+	require.NoError(t, err)
 	e1 := &messages.Event{
 		Type:        typ,
 		ID:          []byte("test"),
@@ -80,7 +82,8 @@ func TestRedis_Add_replacePreviousEvent(t *testing.T) {
 		return
 	}
 	typ := strconv.Itoa(rand.Int())
-	r := New(cfg)
+	r, err := New(cfg)
+	require.NoError(t, err)
 	e1 := &messages.Event{
 		Type:        typ,
 		ID:          []byte("test"),

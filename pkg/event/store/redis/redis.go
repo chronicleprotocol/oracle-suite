@@ -49,15 +49,20 @@ type Config struct {
 }
 
 // New returns a new instance of Redis.
-func New(cfg Config) *Redis {
-	return &Redis{
-		client: redis.NewClient(&redis.Options{
-			Addr:     cfg.Address,
-			Password: cfg.Password,
-			DB:       cfg.DB,
-		}),
-		ttl: cfg.TTL,
+func New(cfg Config) (*Redis, error) {
+	cli := redis.NewClient(&redis.Options{
+		Addr:     cfg.Address,
+		Password: cfg.Password,
+		DB:       cfg.DB,
+	})
+	res := cli.Ping(context.Background())
+	if res.Err() != nil {
+		return nil, res.Err()
 	}
+	return &Redis{
+		client: cli,
+		ttl:    cfg.TTL,
+	}, nil
 }
 
 // Add implements the store.Storage interface.

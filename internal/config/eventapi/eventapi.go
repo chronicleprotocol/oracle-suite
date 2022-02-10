@@ -94,12 +94,16 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 		if c.Storage.Redis.TTL > 0 {
 			ttl = c.Storage.Redis.TTL
 		}
-		return redis.New(redis.Config{
+		r, err := redis.New(redis.Config{
 			TTL:      time.Duration(ttl) * time.Second,
 			Address:  c.Storage.Redis.Address,
 			Password: c.Storage.Redis.Password,
 			DB:       c.Storage.Redis.DB,
-		}), nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf(`eventapi config: unable to connect to the Redis server: %w`, err)
+		}
+		return r, nil
 	default:
 		return nil, fmt.Errorf(`eventapi config: storage type must be "memory", "redis" or empty to use default one`)
 	}
