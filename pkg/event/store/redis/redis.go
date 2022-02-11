@@ -28,7 +28,7 @@ import (
 )
 
 // Redis provides storage mechanism for store.EventStore.
-// It uses Redis database to store events.
+// It uses a Redis database to store events.
 type Redis struct {
 	mu sync.Mutex
 
@@ -55,6 +55,7 @@ func New(cfg Config) (*Redis, error) {
 		Password: cfg.Password,
 		DB:       cfg.DB,
 	})
+	// go-redis default timeout is 5 seconds, so using background context should be ok
 	res := cli.Ping(context.Background())
 	if res.Err() != nil {
 		return nil, res.Err()
@@ -82,11 +83,7 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 		}
 	}()
 	getRes := r.client.Get(ctx, key)
-	if getRes.Err() == redis.Nil {
-		// If an event with same ID does not exist, add it.
-		tx.Set(ctx, key, val, 0)
-		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
-	} else {
+	if getRes.Err() == nil {
 		// If an event with the same ID exists, replace it if it is older.
 		currEvt := &messages.Event{}
 		err = currEvt.UnmarshallBinary([]byte(getRes.Val()))
@@ -97,8 +94,14 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 			tx.Set(ctx, key, val, 0)
 			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 		}
+	} else if getRes.Err() == redis.Nil {
+		// If an event with that ID does not exist, add it.
+		tx.Set(ctx, key, val, 0)
+		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
+	} else {
+		return getRes.Err()
 	}
-	return err
+	return
 }
 
 // Get implements the store.Storage interface.

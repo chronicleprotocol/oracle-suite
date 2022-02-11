@@ -25,7 +25,7 @@ import (
 )
 
 // Memory provides storage mechanism for store.EventStore.
-// It stores events in local memory.
+// It stores events in a local memory.
 type Memory struct {
 	mu sync.RWMutex
 

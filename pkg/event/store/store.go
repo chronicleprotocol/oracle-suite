@@ -49,7 +49,7 @@ type Storage interface {
 	// be updated if the MessageDate is newer. The method is thread-safe.
 	Add(ctx context.Context, author []byte, evt *messages.Event) error
 	// Get returns messages form the store for the given type and index. If the
-	// message does not exist, nil will be returned. Method is thread-safe.
+	// message does not exist, nil will be returned. The method is thread-safe.
 	Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error)
 }
 
@@ -79,7 +79,7 @@ func (e *EventStore) Wait() chan error {
 	return e.waitCh
 }
 
-// Events returns events for the given type and index. Method is thread-safe.
+// Events returns events for the given type and index. The method is thread-safe.
 func (e *EventStore) Events(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	return e.storage.Get(ctx, typ, idx)
 }
