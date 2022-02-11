@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -129,6 +130,9 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 }
 
 func mapEvents(es []*messages.Event) (r []*jsonEvent) {
+	sort.Slice(es, func(i, j int) bool {
+		return es[i].MessageDate.Unix() < es[j].MessageDate.Unix()
+	})
 	for _, e := range es {
 		j := &jsonEvent{
 			Timestamp:  e.EventDate.Unix(),
