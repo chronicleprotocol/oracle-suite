@@ -83,7 +83,8 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 		}
 	}()
 	getRes := r.client.Get(ctx, key)
-	if getRes.Err() == nil {
+	switch getRes.Err() {
+	case nil:
 		// If an event with the same ID exists, replace it if it is older.
 		currEvt := &messages.Event{}
 		err = currEvt.UnmarshallBinary([]byte(getRes.Val()))
@@ -94,14 +95,14 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 			tx.Set(ctx, key, val, 0)
 			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 		}
-	} else if getRes.Err() == redis.Nil {
+	case redis.Nil:
 		// If an event with that ID does not exist, add it.
 		tx.Set(ctx, key, val, 0)
 		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
-	} else {
+	default:
 		return getRes.Err()
 	}
-	return
+	return nil
 }
 
 // Get implements the store.Storage interface.
