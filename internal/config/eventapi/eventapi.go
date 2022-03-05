@@ -37,8 +37,8 @@ var eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, 
 }
 
 type EventAPI struct {
-	Address string  `json:"address"`
-	Storage storage `json:"storage"`
+	ListenAddr string  `json:"listenAddr"`
+	Storage    storage `json:"storage"`
 }
 
 type storage struct {
@@ -76,7 +76,7 @@ type DatastoreDependencies struct {
 func (c *EventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
 	return eventAPIFactory(d.Context, api.Config{
 		EventStore: d.EventStore,
-		Address:    c.Address,
+		Address:    c.ListenAddr,
 		Logger:     d.Logger,
 	})
 }

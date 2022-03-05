@@ -25,7 +25,7 @@ see: [Leeloo CLI Readme](cmd/leeloo/README.md)
 
 ## Lair
 
-A tool to store and provide HTTP API for Leeloo events.
+A tool to store and provide HTTP API for blockchain events provided by Leeloo.
 
 see: [Lair CLI Readme](cmd/lair/README.md)
 

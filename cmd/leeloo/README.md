@@ -1,7 +1,7 @@
 # Leeloo CLI Readme
 
-Leeloo is an application run by Oracles. The application is responsible for collecting specified events from a different
-blockchain (such as Arbitrium or Optimism) and sending them to the Spire P2P network.
+Leeloo is an application run by Oracles. This application is responsible for collecting specific events from other
+blockchains (such as Arbitrium or Optimism), attesting them, and sending them to the Spire P2P network.
 
 Leeloo is one of the components of Maker Wormhole: https://forum.makerdao.com/t/introducing-maker-wormhole/11550
 
@@ -9,6 +9,7 @@ Leeloo is one of the components of Maker Wormhole: https://forum.makerdao.com/t/
 
 * [Installation](#installation)
 * [Configuration](#configuration)
+* [Supported events](#supported-events)
 * [Commands](#commands)
 * [License](#license)
 
@@ -38,7 +39,9 @@ is `config.json` in the current working directory. You can change the config fil
   "transport": {
     "libp2p": {
       "privKeySeed": "02082cf471002b5c5dfefdd6cbd30666ff02c4df90169f766877caec26ed4f88",
-      "listenAddrs": ["/ip4/0.0.0.0/tcp/8000"],
+      "listenAddrs": [
+        "/ip4/0.0.0.0/tcp/8000"
+      ],
       "bootstrapAddrs": [
         "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
         "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
@@ -79,7 +82,7 @@ is `config.json` in the current working directory. You can change the config fil
   "ethereum": {
     "from": "0x2d800d93b065ce011af83f316cef9f0d005b0aa4",
     "keystore": "./keys",
-    "password": "password",
+    "password": "password"
   },
   "leeloo": {
     "listeners": {
@@ -91,9 +94,19 @@ is `config.json` in the current working directory. You can change the config fil
             "https://ethereum.provider-3.example/rpc"
           ],
           "interval": 60,
-          "blocksBehind": [30, 5760, 11520, 17280, 23040, 28800, 34560],
+          "blocksBehind": [
+            30,
+            5760,
+            11520,
+            17280,
+            23040,
+            28800,
+            34560
+          ],
           "maxBlocks": 1000,
-          "addresses": ["0x20265780907778b4d0e9431c8ba5c7f152707f1d"]
+          "addresses": [
+            "0x20265780907778b4d0e9431c8ba5c7f152707f1d"
+          ]
         }
       ]
     }
@@ -105,36 +118,48 @@ is `config.json` in the current working directory. You can change the config fil
 
 - `transport` - Configuration parameters for transports mechanisms used to relay messages.
     - `libp2p` - Configuration parameters for the libp2p transport (Spire network).
-        - `privKeySeed` - The random hex-encoded 32 bytes. It is used to generate unique identity in libp2p network. It may
-          be empty to generate a random secret.
-        - `listenAddrs` - The list of listen addresses for the libp2p node encoded using the
+        - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the
+          libp2p network. The value may be empty to generate a random seed.
+        - `listenAddrs` (`[]string`) - List of listening addresses for libp2p node encoded using the
           [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-        - `bootstrapAddrs` - The list of addresses of bootstrap nodes for the libp2p node encoded using the
+        - `bootstrapAddrs` (`[]string`) - List of addresses of bootstrap nodes for the libp2p node encoded using the
           [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-        - `directPeersAddrs` - The list of direct peers addresses to which messages will be send directly encoded using the
-          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format. This option has to be configured symmetrically
-          at both ends.
-        - `blockedAddrs` - The list of blocked peeers or addresses encoded using the
+        - `directPeersAddrs` (`[]string`) - List of direct peer addresses to which messages will be sent directly.
+          Addresses are encoded using the format. [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
+          This option must be configured symmetrically on both ends.
+        - `blockedAddrs` (`[]string`) - List of blocked peers or IP addresses encoded using the
           [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-        - `disableDiscovery` - Disables node discoverability. If enabled, then IP address of a node will not be broadcast.
-          to other peers. This option must be used along with `directPeersAddrs`.
-- `feeds` - List of hex encoded addresses of other Oracles. Event messages from Oracles outside that list will be ignored.
-- `ethereum` - Configuraiton of Ethereum wallet used to sign event messages.
-  - `from` - Ethereum wallet address.
-  - `keystore` - Keystore path.
-  - `password` - Path to password file. If empty, no password is used.
+        - `disableDiscovery` (`bool`) - Disables node discovery. If enabled, the IP address of a node will not be
+          broadcast to other peers. This option must be used together with `directPeersAddrs`.
+- `feeds` (`[]string`) - List of hex-encoded addresses of other Oracles. Event messages from Oracles outside that list
+  will be ignored.
+- `ethereum` - Configuration of the Ethereum wallet used to sign event messages.
+    - `from` (`string`) - The Ethereum wallet address.
+    - `keystore` (`string`) - The keystore path.
+    - `password` (`string`) - The path to the password file. If empty, the password is not used.
 - `leeloo` - Leeloo configuration.
-  - `listeners` - Event listeners configuration.
-    - `wormhole` - Configuration of "wormhole" event listener. It listens for `WormhholeGUID` events on Ethereum-compatible
-      blockchains.
-      - `rpc` - List of RPC server addresses. If more than one is used, then rpc-splitter is used. it is highly recommended
-        to use at least three addresses from different providers.
-      - `interval` - How often listener should check for a new events.
-      - `blocksBehind` - The list of numbers that specify from which blocks, relative to the newest, events should be
-        retrieved. 
-      - `maxBlocks` - The number of block from which events may be fetched at once. The number must be large enough to 
-        ensure that no more blocks are added to the blockchain, within the interval defined above.
-      - `addresses` - Addresses of Wormhole contracts that emits `WormholeGUID` events.
+    - `listeners` - Event listeners configuration.
+        - `wormhole` - Configuration of the "wormhole" event listener. It listens for `WormhholeGUID` events on
+          Ethereum-compatible blockchains.
+            - `rpc` (`string|[]string`) - List of RPC server addresses. If more than one is used, rpc-splitter is used.
+              It is recommended to use at least three addresses from different providers.
+            - `blocksBehind` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
+              events should be retrieved.
+            - `maxBlocks` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This
+              number must be large enough to ensure that no more blocks are added to the blockchain during the time
+              interval defined above.
+            - `addresses` (`[]string`) - List of addresses of Wormhole contracts that emits `WormholeGUID` events.
+
+## Supported events
+
+Currently, only the `wormhole` event type is supported:
+
+- Type: `wormhole`  
+  This type of event is used for events emitted on Ethereum compatible blockchains, like Optimism or Arbitrium. It looks
+  for `WormholeGUID` events on specified contract addresses.  
+  Reference:  
+  [https://github.com/makerdao/dss-wormhole/blob/master/src/WormholeGUID.sol](https://github.com/makerdao/dss-wormhole/blob/master/src/WormholeGUID.sol)  
+  [https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/wormhole.go#L156](https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/wormhole.go#L156)
 
 ## Commands
 
@@ -145,7 +170,7 @@ Usage:
 Available Commands:
   completion  generate the autocompletion script for the specified shell
   help        Help about any command
-  run         
+  run         Start the agent
 
 Flags:
   -c, --config string                                  ghost config file (default "./config.json")

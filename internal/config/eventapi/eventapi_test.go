@@ -42,13 +42,13 @@ func TestEventAPI_Configure(t *testing.T) {
 	evs := &store.EventStore{}
 
 	config := EventAPI{
-		Address: "127.0.0.1:0",
+		ListenAddr: "127.0.0.1:0",
 	}
 
 	eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, error) {
 		assert.NotNil(t, ctx)
 		assert.Equal(t, evs, cfg.EventStore)
-		assert.Equal(t, config.Address, cfg.Address)
+		assert.Equal(t, config.ListenAddr, cfg.Address)
 		assert.Equal(t, log, cfg.Logger)
 
 		return &api.EventAPI{}, nil

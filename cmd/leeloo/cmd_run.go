@@ -29,8 +29,8 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Use:     "run",
 		Args:    cobra.ExactArgs(0),
 		Aliases: []string{"agent"},
-		Short:   "",
-		Long:    ``,
+		Short:   "Start the agent",
+		Long:    `Start the agent`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			srv, err := PrepareService(context.Background(), opts)
 			if err != nil {

@@ -15,7 +15,7 @@ return the same response.
 ## Installation
 
 To install it, you'll first need Go installed on your machine. Then you can use standard Go
-command: `go get -u github.com/chronicleprotocol/oracle-suite/cmd/RPC-Splitter`.
+command: `go get -u github.com/chronicleprotocol/oracle-suite/cmd/rpc-splitter`.
 
 Alternatively, you can build RPC-Splitter using `Makefile` directly from the repository. This approach is recommended if
 you wish to work on RPC-Splitter source.
@@ -29,18 +29,16 @@ make
 ## How it works
 
 Using third-party RPC providers is convenient, but for tasks that require a high level of security, it makes the
-security of the entire system dependent on that one RPC provider. RPC-Splitter solves this problem by comparing results
-from multiple RPC endpoints.
+security of the entire system dependent on that one RPC provider. The RPC Splitter helps to solve this problem.
 
-RPC-Splitter works similarly to a proxy, but instead of passing the request to a single server, it passes the request to
-multiple servers and returns the result only if all servers return the same response (for some commands, it calculates
-the median of the returned values). If more than two endpoints are specified, then if one of the servers returns a
-different result or error, it will be ignored.
+The RPC Splitter works similarly to a proxy, but instead of forwarding the request to one server, it forwards it to
+multiple servers and compares the results against each other, thereby guaranteeing data integrity. If more than two
+endpoints are specified then if one of the servers returns a different result or error, it will be ignored.
 
 ## Supported methods
 
-- `eth_blockNumber` (returns the lowest block number that is equal to or greater than the median of all block numbers
-  minus 3)
+- `eth_blockNumber` - returns the lowest block number that is equal to or greater than the median of all block numbers
+  minus 3
 - `eth_getBlockByHash`
 - `eth_getBlockByNumber`
 - `eth_getTransactionByHash`
@@ -52,10 +50,10 @@ different result or error, it will be ignored.
 - `eth_getStorageAt`
 - `eth_call`
 - `eth_getLogs`
-- `eth_gasPrice` (median value is returned)
-- `eth_estimateGas` (median value is returned)
+- `eth_gasPrice` - median value is returned
+- `eth_estimateGas` - median value is returned
 - `eth_feeHistory`
-- `eth_maxPriorityFeePerGas` (median value is returned)
+- `eth_maxPriorityFeePerGas` - median value is returned
 - `eth_chainId`
 - `net_version`
 
@@ -76,7 +74,7 @@ Usage:
 Available Commands:
   completion  generate the autocompletion script for the specified shell
   help        Help about any command
-  run         
+  run         Start server
 
 Flags:
   -c, --enable-cors                                    enables CORS requests for all origins

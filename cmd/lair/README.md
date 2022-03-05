@@ -1,7 +1,7 @@
 # Lair CLI Readme
 
-Lair is an application responsible for collecting all signed events from the Spire P2P network, storing them, and
-providing an API that allows to retrieve them along with Oracle signatures.
+Lair is an application responsible for collecting signed events from the Spire P2P network, storing them, and providing
+an HTTP API to retrieve them along with Oracle signatures.
 
 Lair is one of the components of Maker Wormhole: https://forum.makerdao.com/t/introducing-maker-wormhole/11550
 
@@ -9,6 +9,7 @@ Lair is one of the components of Maker Wormhole: https://forum.makerdao.com/t/in
 
 * [Installation](#installation)
 * [Configuration](#configuration)
+* [API](#api)
 * [Commands](#commands)
 * [License](#license)
 
@@ -79,7 +80,7 @@ is `config.json` in the current working directory. You can change the config fil
     "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42"
   ],
   "lair": {
-    "address": "127.0.0.1:8082",
+    "listenAddr": "127.0.0.1:8082",
     "storage": {
       "type": "redis",
       "redis": {
@@ -94,35 +95,125 @@ is `config.json` in the current working directory. You can change the config fil
 
 ### Configuration reference
 
-- `transport` - Configuration parameters for transports mechanisms used to relay messages. 
+- `transport` - Configuration parameters for transports mechanisms used to relay messages.
     - `libp2p` - Configuration parameters for the libp2p transport (Spire network).
-      - `privKeySeed` - The random hex-encoded 32 bytes. It is used to generate unique identity in libp2p network. It may
-        be empty to generate a random secret.
-      - `listenAddrs` - The list of listen addresses for the libp2p node encoded using the 
-        [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-      - `bootstrapAddrs` - The list of addresses of bootstrap nodes for the libp2p node encoded using the
-        [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-      - `directPeersAddrs` - The list of direct peers addresses to which messages will be send directly encoded using the
-        [multiaddress](https://docs.libp2p.io/concepts/addressing/) format. This option has to be configured symmetrically
-        at both ends.
-      - `blockedAddrs` - The list of blocked peeers or addresses encoded using the
-        [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-      - `disableDiscovery` - Disables node discoverability. If enabled, then IP address of a node will not be broadcast.
-        to other peers. This option must be used along with `directPeersAddrs`.
-- `feeds` - List of hex encoded addresses of other Oracles. Event messages from Oracles outside that list will be ignored.
+        - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the
+          libp2p network. The value may be empty to generate a random seed.
+        - `listenAddrs` (`[]string`) - List of listening addresses for libp2p node encoded using the
+          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
+        - `bootstrapAddrs` (`[]string`) - List of addresses of bootstrap nodes for the libp2p node encoded using the
+          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
+        - `directPeersAddrs` (`[]string`) - List of direct peer addresses to which messages will be sent directly.
+          Addresses are encoded using the format. [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
+          This option must be configured symmetrically on both ends.
+        - `blockedAddrs` (`[]string`) - List of blocked peers or IP addresses encoded using the
+          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
+        - `disableDiscovery` (`bool`) - Disables node discovery. If enabled, the IP address of a node will not be
+          broadcast to other peers. This option must be used together with `directPeersAddrs`.
+- `feeds` (`[]string`) - List of hex-encoded addresses of other Oracles. Event messages from Oracles outside that list
+  will be ignored.
 - `lair` - Lair configuration.
-  - `address` - Listen address for the HTTP server provided as the combination of IP address and port number.
-    - `storage` - Configuration of storage mechanism used by Lair.
-      - `type` - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (default: `memory`).
-      - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
-        - `ttl` - Specifies how long messages should be stored in seconds. (default: 604800 seconds - about one week)
-        - `address` - Redis server address provided as the combination of IP address or host and port number.
-        - `password` - Redis server password.
-        - `db` - Redis server database number.
-      - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
-        - - `ttl` - Specifies how long messages should be stored in seconds. (default: 604800 seconds - about one week)
+    - `listenAddr` (`string`) - Listen address for the HTTP server provided as the combination of IP address and port
+      number.
+    - `storage` - Configure the data storage mechanism used by Lair.
+        - `type` (`string`) - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (
+          default: `memory`).
+        - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
+            - `ttl` (`integer`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
+              about one week)
+            - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
+              number, e.g. `0.0.0.0:8080`.
+            - `password` (`string`) - Redis server password.
+            - `db` (`int`) - Redis server database number.
+        - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
+            - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds - about
+              one week)
+
+## API
+
+### Sample API response
+
+```
+Request:
+GET http://127.0.0.1:8080/?type=wormhole&index=0x17b4079be1518b2df6e04f9206ac2e2a8822247760627f822aff87dfcad63150
+```
+
+```
+Response:
+Content-Type: application/json
+```
+
+```json
+[
+  {
+    "timestamp": 1645275636,
+    "data": {
+      "event": "fe5b7488e442f5e8bdf7c9af40cc60dcaeda3f2704ebeddcf44f64e3e92a9c9b87de3d18c69fc10999eaf51d6536e28a069b008c8671417aa2695f6d725a8d72d97485d3c569202192525cbc677b366ef8fc2100000000000000000000000007ee98c5ec985fa2675fd4694c621ce2731ad42f500000000000000000000000000000000000000000000000000000000fbb8ecc280c973c158e88e38aa29849a0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000006210e9f4",
+      "hash": "ce33e762dcfb265e7bf7c2d77f3a8d87520299557014613a2718e49efc18107f"
+    },
+    "signatures": {
+      "ethereum": {
+        "signer": "774d5aa0eee4897a9a6e65cbed845c13ffbc6d16",
+        "signature": "7d9dce86f196c5d270653f54c41c6e1092e76c7088ddf0c60754d789a90308603cb3d59e37745a700b5caa1d570b4ecd7339d97734f7e365a01d96e3d65b49551b"
+      }
+    }
+  },
+  {
+    "timestamp": 1645275636,
+    "data": {
+      "event": "2fe5b7488e442f5e8bdf7c9af40cc60dcaeda3f2704ebeddcf44f64e3e92a9c9b87de3d18c69fc10999eaf51d6536e28a069b008c8671417aa2695f6d725a8d72d97485d3c569202192525cbc677b366ef8fc2100000000000000000000000007ee98c5ec985fa2675fd4694c621ce2731ad42f500000000000000000000000000000000000000000000000000000000fbb8ecc280c973c158e88e38aa29849a0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000006210e9f4",
+      "hash": "ce33e762dcfb265e7bf7c2d77f3a8d87520299557014613a2718e49efc18107f"
+    },
+    "signatures": {
+      "ethereum": {
+        "signer": "b41e8d40b7ac4eb34064e079c8eca9d7570eba1d",
+        "signature": "ba4da22453ac98647fa5ff3dbce27ac2a9c85d5e88a92ca46ab590c8c54514ba3554a9e687a03ccbae0dac0fad15a8370c71857e294a934d109f16e00cf8ed291c"
+      }
+    }
+  },
+  {
+    "timestamp": 1645275636,
+    "data": {
+      "event": "2fe5b7488e442f5e8bdf7c9af40cc60dcaeda3f2704ebeddcf44f64e3e92a9c9b87de3d18c69fc10999eaf51d6536e28a069b008c8671417aa2695f6d725a8d72d97485d3c569202192525cbc677b366ef8fc2100000000000000000000000007ee98c5ec985fa2675fd4694c621ce2731ad42f500000000000000000000000000000000000000000000000000000000fbb8ecc280c973c158e88e38aa29849a0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000006210e9f4",
+      "hash": "ce33e762dcfb265e7bf7c2d77f3a8d87520299557014613a2718e49efc18107f"
+    },
+    "signatures": {
+      "ethereum": {
+        "signer": "23ce419dce1de6b3647ca2484a25f595132dfbd2",
+        "signature": "1cf9005dbb8cbdb5afe5da5e13c6656e935ceb1c72c71a7f462321de08c8e8b41856939172b8ea1c3d9f0803a1b9b4d05fb70645a9f210dbad9e57749d42a6e71c"
+      }
+    }
+  },
+  {
+    "timestamp": 1645275636,
+    "data": {
+      "event": "2fe5b7488e442f5e8bdf7c9af40cc60dcaeda3f2704ebeddcf44f64e3e92a9c9b87de3d18c69fc10999eaf51d6536e28a069b008c8671417aa2695f6d725a8d72d97485d3c569202192525cbc677b366ef8fc2100000000000000000000000007ee98c5ec985fa2675fd4694c621ce2731ad42f500000000000000000000000000000000000000000000000000000000fbb8ecc280c973c158e88e38aa29849a0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000006210e9f4",
+      "hash": "ce33e762dcfb265e7bf7c2d77f3a8d87520299557014613a2718e49efc18107f"
+    },
+    "signatures": {
+      "ethereum": {
+        "signer": "c4756a9dae297a046556261fa3cd922dfc32db78",
+        "signature": "fd61dd58b01118532dc011a8cc8014f5cd3c03b0e76c1aca043f3714d3593ad22b4e6f796823d1b6c57345e492dd476dde3c9b34daae51e432c0de38cc3950b01c"
+      }
+    }
+  }
+]
+```
+
+The requested URL has two parameters, the event type, and index. In the response above we got a list of all messages
+(four in the example) for the given event type and index.
+
+The fields in the response are:
+
+- `[]` Array of events emitted during a given transaction.
+    - `timestamp` - Date of the event.
+    - `[string]data` - List of data associated with the event.
+    - `[string]Signatures` - List of the Oracle signatures, where the key is the signature type.
+        - `Signer` - Address of the Oracle.
+        - `Signature` - Oracle signature.
 
 ## Commands
+
 ```
 Usage:
   lair [command]
@@ -130,7 +221,7 @@ Usage:
 Available Commands:
   completion  generate the autocompletion script for the specified shell
   help        Help about any command
-  run         
+  run         Start the agent
 
 Flags:
   -c, --config string                                  ghost config file (default "./config.json")
