@@ -18,7 +18,9 @@ package redis
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -27,17 +29,24 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+var ErrMemoryLimitExceed = errors.New("memory limit exceeded")
+
+const memUsageTimeQuantum = 3600
+
 // Redis provides storage mechanism for store.EventStore.
 // It uses a Redis database to store events.
 type Redis struct {
 	mu sync.Mutex
 
-	client *redis.Client
-	ttl    time.Duration
+	client   *redis.Client
+	ttl      time.Duration
+	memLimit int64
 }
 
 // Config contains configuration parameters for Redis.
 type Config struct {
+	// MemoryLimit specifies a maximum memory limit for a single Oracle.
+	MemoryLimit int64
 	// TTL specifies how long messages should be kept in storage.
 	TTL time.Duration
 	// Address specifies Redis server address as "host:port".
@@ -61,8 +70,9 @@ func New(cfg Config) (*Redis, error) {
 		return nil, res.Err()
 	}
 	return &Redis{
-		client: cli,
-		ttl:    cfg.TTL,
+		client:   cli,
+		ttl:      cfg.TTL,
+		memLimit: cfg.MemoryLimit,
 	}, nil
 }
 
@@ -70,11 +80,18 @@ func New(cfg Config) (*Redis, error) {
 func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	key := redisMessageKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
 		return err
 	}
+	availMem, err := r.getAvailMem(ctx, author)
+	if err != nil {
+		return err
+	}
+	if r.memLimit > 0 && availMem < int64(len(val)) {
+		return ErrMemoryLimitExceed
+	}
+	key := redisMessageKey(evt.Type, evt.Index, author, evt.ID)
 	tx := r.client.TxPipeline()
 	defer func() {
 		_, txErr := tx.Exec(ctx)
@@ -92,11 +109,19 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 			return err
 		}
 		if currEvt.MessageDate.Before(evt.MessageDate) {
+			err = r.incrMemUsage(ctx, author, len(val)-len(getRes.Val()), evt.EventDate)
+			if err != nil {
+				return err
+			}
 			tx.Set(ctx, key, val, 0)
 			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 		}
 	case redis.Nil:
 		// If an event with that ID does not exist, add it.
+		err = r.incrMemUsage(ctx, author, len(val), evt.EventDate)
+		if err != nil {
+			return err
+		}
 		tx.Set(ctx, key, val, 0)
 		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 	default:
@@ -107,11 +132,9 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (er
 
 // Get implements the store.Storage interface.
 func (r *Redis) Get(ctx context.Context, typ string, idx []byte) (evts []*messages.Event, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	var keys []string
 	var cursor uint64
-	key := redisWildcardKey(typ, idx)
+	key := redisWildcardMessageKey(typ, idx)
 	for {
 		scanRes := r.client.Scan(ctx, cursor, key, 0)
 		keys, cursor, err = scanRes.Result()
@@ -144,11 +167,72 @@ func (r *Redis) Get(ctx context.Context, typ string, idx []byte) (evts []*messag
 	return evts, nil
 }
 
+func (r *Redis) incrMemUsage(ctx context.Context, author []byte, eventSize int, eventDate time.Time) error {
+	k := redisMemUsageKey(author, eventDate)
+	t := time.Unix(eventDate.Unix()/memUsageTimeQuantum*memUsageTimeQuantum, 0)
+	p := r.client.Pipeline()
+	incrRes := p.IncrBy(ctx, k, int64(eventSize))
+	if incrRes.Err() != nil {
+		return incrRes.Err()
+	}
+	expireRes := p.ExpireAt(ctx, k, t.Add(r.ttl+(time.Second*memUsageTimeQuantum)))
+	if expireRes.Err() != nil {
+		return expireRes.Err()
+	}
+	_, err := p.Exec(ctx)
+	return err
+}
+
+func (r *Redis) getAvailMem(ctx context.Context, author []byte) (int64, error) {
+	var err error
+	var size int
+	var keys []string
+	var cursor uint64
+	key := redisWildcardMemUsageKey(author)
+	for {
+		scanRes := r.client.Scan(ctx, cursor, key, 0)
+		keys, cursor, err = scanRes.Result()
+		if err != nil {
+			return 0, err
+		}
+		if len(keys) == 0 {
+			break
+		}
+		getRes := r.client.MGet(ctx, keys...)
+		if getRes.Err() != nil {
+			return 0, getRes.Err()
+		}
+		for _, val := range getRes.Val() {
+			s, ok := val.(string)
+			if !ok {
+				continue
+			}
+			i, err := strconv.Atoi(s)
+			if err != nil {
+				continue
+			}
+			size += i
+		}
+		if cursor == 0 {
+			break
+		}
+	}
+	return r.memLimit - int64(size), nil
+}
+
+func redisMemUsageKey(author []byte, eventDate time.Time) string {
+	return fmt.Sprintf("%x:%x", author, eventDate.Unix()/memUsageTimeQuantum)
+}
+
+func redisWildcardMemUsageKey(author []byte) string {
+	return fmt.Sprintf("%x:*", author)
+}
+
 func redisMessageKey(typ string, index []byte, author []byte, id []byte) string {
 	return fmt.Sprintf("%x:%x", hashIndex(typ, index), hashUnique(author, id))
 }
 
-func redisWildcardKey(typ string, index []byte) string {
+func redisWildcardMessageKey(typ string, index []byte) string {
 	return fmt.Sprintf("%x:*", hashIndex(typ, index))
 }
 
