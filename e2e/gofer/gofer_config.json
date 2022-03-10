@@ -1,0 +1,118 @@
+{
+  "transport": {
+    "libp2p": {
+      "privKeySeed": "",
+      "listenAddrs": ["/ip4/0.0.0.0/tcp/8000"],
+      "bootstrapAddrs": [
+        "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
+        "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
+      ],
+      "directPeersAddrs": [],
+      "blockedAddrs": [],
+      "disableDiscovery": false
+    },
+    "ssb": {
+      "caps": "./caps.json",
+      "key": "./ssb.json"
+    }
+  },
+  "ethereum": {
+    "from": "",
+    "keystore": "",
+    "password": "",
+    "rpc": "http://127.0.0.1:9989"
+  },
+  "gofer": {
+    "rpc": {
+      "disable": false,
+      "address": "127.0.0.1:9000"
+    },
+    "origins": {
+      "binance": {
+        "type": "binance",
+        "name": "binance",
+        "url": "http://smocker:8080",
+        "params": {}
+      },
+      "bitfinex": {
+        "type": "bitfinex",
+        "name": "bitfinex",
+        "url": "http://smocker:8080",
+        "params": {}
+      },
+      "bittrex": {
+        "type": "bittrex",
+        "name": "bittrex",
+        "url": "http://smocker:8080",
+        "params": {
+          "symbolAliases": {
+            "REP": "REPV2"
+          }
+        }
+      },
+      "coinbasepro": {
+        "type": "coinbasepro",
+        "name": "coinbasepro",
+        "url": "http://smocker:8080",
+        "params": {}
+      },
+      "gemini": {
+        "type": "gemini",
+        "name": "gemini",
+        "url": "http://smocker:8080",
+        "params": {}
+      },
+      "huobi": {
+        "type": "huobi",
+        "name": "huobi",
+        "url": "http://smocker:8080",
+        "params": {}
+      },
+      "kraken": {
+        "type": "kraken",
+        "name": "kraken",
+        "url": "http://smocker:8080",
+        "params": {}
+      },
+      "poloniex": {
+        "type": "poloniex",
+        "name": "poloniex",
+        "url": "http://smocker:8080",
+        "params": {
+          "symbolAliases": {
+            "REP": "REPV2"
+          }
+        }
+      }
+    },
+    "priceModels": {
+      "BTC/USD": {
+        "method": "median",
+        "sources": [
+          [{ "origin": "bitstamp", "pair": "BTC/USD" }],
+          [{ "origin": "bittrex", "pair": "BTC/USD" }],
+          [{ "origin": "coinbasepro", "pair": "BTC/USD" }],
+          [{ "origin": "gemini", "pair": "BTC/USD" }],
+          [{ "origin": "kraken", "pair": "BTC/USD" }]
+        ],
+        "params": {
+          "minimumSuccessfulSources": 3
+        }
+      },
+      "ETH/BTC": {
+        "method": "median",
+        "sources": [
+          [{ "origin": "binance", "pair": "ETH/BTC" }],
+          [{ "origin": "bitfinex", "pair": "ETH/BTC" }],
+          [{ "origin": "coinbasepro", "pair": "ETH/BTC" }],
+          [{ "origin": "huobi", "pair": "ETH/BTC" }],
+          [{ "origin": "poloniex", "pair": "ETH/BTC" }],
+          [{ "origin": "kraken", "pair": "ETH/BTC" }]
+        ],
+        "params": {
+          "minimumSuccessfulSources": 4
+        }
+      }
+    }
+  }
+}
