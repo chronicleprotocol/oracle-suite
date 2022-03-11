@@ -56,7 +56,7 @@ type storageRedis struct {
 	Address     string `json:"address"`
 	Password    string `json:"password"`
 	DB          int    `json:"db"`
-	MemoryLimit uint64 `json:"memoryLimit"`
+	MemoryLimit int64  `json:"memoryLimit"`
 }
 
 type Dependencies struct {

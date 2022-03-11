@@ -170,18 +170,18 @@ func (r *Redis) get(ctx context.Context, typ string, idx []byte) ([]*messages.Ev
 	return evts, err
 }
 
-func (r *Redis) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, eventSize int, eventDate time.Time) error {
+func (r *Redis) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, mem int, evtDate time.Time) error {
 	if r.memLimit == 0 {
 		return nil
 	}
 	var err error
-	key := memUsageKey(author, eventDate)
-	err = c.IncrBy(ctx, key, int64(eventSize)).Err()
+	key := memUsageKey(author, evtDate)
+	err = c.IncrBy(ctx, key, int64(mem)).Err()
 	if err != nil {
 		return err
 	}
 	q := int64(memUsageTimeQuantum)
-	t := (eventDate.Unix()/q)*q + q
+	t := (evtDate.Unix()/q)*q + q
 	err = c.ExpireAt(ctx, key, time.Unix(t, 0).Add(r.ttl)).Err()
 	if err != nil {
 		return err
