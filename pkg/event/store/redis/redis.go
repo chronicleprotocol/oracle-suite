@@ -193,7 +193,7 @@ func (r *Redis) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte)
 	if r.memLimit == 0 {
 		return 0, nil
 	}
-	var size int
+	var size int64
 	err := r.scan(ctx, wildcardMemUsageKey(author), c, func(keys []string) error {
 		vals, err := c.MGet(ctx, keys...).Result()
 		if err != nil {
@@ -208,14 +208,14 @@ func (r *Redis) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte)
 			if err != nil {
 				continue
 			}
-			size += i
+			size += int64(i)
 		}
 		return nil
 	})
 	if err != nil {
 		return 0, err
 	}
-	return r.memLimit - int64(size), nil
+	return r.memLimit - size, nil
 }
 
 func (r *Redis) scan(ctx context.Context, pattern string, c redis.Cmdable, fn func(keys []string) error) error {
