@@ -64,7 +64,27 @@ const (
 	ThunderCore               = "m/44'/1001'/0'/0"
 )
 
-func NewHd(opts *Options) *cobra.Command {
+// Old paths:
+// m/<env=[0,1]>'/<purpose>/<role>/<idx>
+// key purpose
+// eth.account path: m/0'/0/0/0
+// p2p path: m/0'/1/0/0
+// ssb path: m/0'/2/0/0
+// caps.shs path: m/0'/3/0
+// caps.sign path: m/0'/3/1
+// nodeRoles = {
+// "eth" = 0;
+// "boot" = 1;
+// "feed" = 2;
+// "feed_lb" = 3;
+// "bb" = 4;
+// "relay" = 5;
+// "spectre" = 6;
+// "ghost" = 7;
+// "monitor" = 8;
+// };
+
+func NewDerive(opts *Options) *cobra.Command {
 	var prefix, password, format string
 	var index int
 	cmd := &cobra.Command{
@@ -114,7 +134,7 @@ func NewHd(opts *Options) *cobra.Command {
 		&index,
 		"index",
 		0,
-		"data index",
+		"data index (i.e. which seed line to take from input)",
 	)
 	cmd.Flags().StringVar(
 		&prefix,
@@ -173,7 +193,7 @@ func seededB64(privateKey *ecdsa.PrivateKey) ([]byte, error) {
 
 func jsonSSB(privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	seed := crypto.FromECDSA(privateKey)
-	o, err := ssb.NewKeyPair(seed)
+	o, err := ssb.NewSecret(seed)
 	if err != nil {
 		return nil, err
 	}

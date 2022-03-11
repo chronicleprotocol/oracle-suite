@@ -33,7 +33,12 @@ type Options struct {
 }
 
 func Command() (*Options, *cobra.Command) {
-	return &Options{}, &cobra.Command{Use: "keeman"}
+	return &Options{}, &cobra.Command{
+		Use: "keeman",
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd: true,
+		},
+	}
 }
 
 func lineFromFile(filename string, idx int) (string, error) {
