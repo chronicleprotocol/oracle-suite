@@ -125,6 +125,7 @@ is `config.json` in the current working directory. You can change the config fil
               number, e.g. `0.0.0.0:8080`.
             - `password` (`string`) - Redis server password.
             - `db` (`int`) - Redis server database number.
+            - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
         - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
             - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds - about
               one week)
