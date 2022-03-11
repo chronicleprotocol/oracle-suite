@@ -31,7 +31,9 @@ import (
 
 var ErrMemoryLimitExceed = errors.New("memory limit exceeded")
 
-const memUsageTimeQuantum = 3600
+const retryAttempts = 3               // The maximum number of attempts to call EthClient in case of an error.
+const retryInterval = 1 * time.Second // The delay between retry attempts.
+const memUsageTimeQuantum = 3600      // The length of the time interval in which memory usage information is stored.
 
 // Redis provides storage mechanism for store.EventStore.
 // It uses a Redis database to store events.
@@ -80,75 +82,78 @@ func New(cfg Config) (*Redis, error) {
 func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	return retry(func() error {
+		return r.add(ctx, author, evt)
+	})
+}
+
+// Get implements the store.Storage interface.
+func (r *Redis) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var err error
+	var evts []*messages.Event
+	err = retry(func() error {
+		evts, err = r.get(ctx, typ, idx)
+		return err
+	})
+	return evts, err
+}
+
+func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (err error) {
+	key := msgKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
 		return err
 	}
-	availMem, err := r.getAvailMem(ctx, author)
+	mem, err := r.getAvailMem(ctx, r.client, author)
 	if err != nil {
 		return err
 	}
-	if r.memLimit > 0 && availMem < int64(len(val)) {
+	if r.memLimit > 0 && int64(len(val)) > mem {
 		return ErrMemoryLimitExceed
 	}
-	key := redisMessageKey(evt.Type, evt.Index, author, evt.ID)
-	tx := r.client.TxPipeline()
-	defer func() {
-		_, txErr := tx.Exec(ctx)
-		if err == nil {
-			err = txErr
-		}
-	}()
-	getRes := r.client.Get(ctx, key)
-	switch getRes.Err() {
-	case nil:
-		// If an event with the same ID exists, replace it if it is older.
-		currEvt := &messages.Event{}
-		err = currEvt.UnmarshallBinary([]byte(getRes.Val()))
-		if err != nil {
-			return err
-		}
-		if currEvt.MessageDate.Before(evt.MessageDate) {
-			err = r.incrMemUsage(ctx, author, len(val)-len(getRes.Val()), evt.EventDate)
+	return r.client.Watch(ctx, func(tx *redis.Tx) error {
+		prevVal, err := r.client.Get(ctx, key).Result()
+		switch err {
+		case nil:
+			// If an event with the same ID exists, replace it if it is older.
+			prevEvt := &messages.Event{}
+			err = prevEvt.UnmarshallBinary([]byte(prevVal))
+			if err != nil {
+				return err
+			}
+			if prevEvt.MessageDate.Before(evt.MessageDate) {
+				err = r.incrMemUsage(ctx, tx, author, len(val)-len(prevVal), evt.EventDate)
+				if err != nil {
+					return err
+				}
+				tx.Set(ctx, key, val, 0)
+				tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
+			}
+		case redis.Nil:
+			// If an event with that ID does not exist, add it.
+			err = r.incrMemUsage(ctx, tx, author, len(val), evt.EventDate)
 			if err != nil {
 				return err
 			}
 			tx.Set(ctx, key, val, 0)
 			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
+		default:
+			return err
 		}
-	case redis.Nil:
-		// If an event with that ID does not exist, add it.
-		err = r.incrMemUsage(ctx, author, len(val), evt.EventDate)
+		return nil
+	}, key)
+}
+
+func (r *Redis) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+	var evts []*messages.Event
+	err := r.scan(ctx, wildcardMsgKey(typ, idx), r.client, func(keys []string) error {
+		vals, err := r.client.MGet(ctx, keys...).Result()
 		if err != nil {
 			return err
 		}
-		tx.Set(ctx, key, val, 0)
-		tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
-	default:
-		return getRes.Err()
-	}
-	return nil
-}
-
-// Get implements the store.Storage interface.
-func (r *Redis) Get(ctx context.Context, typ string, idx []byte) (evts []*messages.Event, err error) {
-	var keys []string
-	var cursor uint64
-	key := redisWildcardMessageKey(typ, idx)
-	for {
-		scanRes := r.client.Scan(ctx, cursor, key, 0)
-		keys, cursor, err = scanRes.Result()
-		if err != nil {
-			return nil, err
-		}
-		if len(keys) == 0 {
-			break
-		}
-		getRes := r.client.MGet(ctx, keys...)
-		if getRes.Err() != nil {
-			return nil, getRes.Err()
-		}
-		for _, val := range getRes.Val() {
+		for _, val := range vals {
 			b, ok := val.(string)
 			if !ok {
 				continue
@@ -160,49 +165,41 @@ func (r *Redis) Get(ctx context.Context, typ string, idx []byte) (evts []*messag
 			}
 			evts = append(evts, evt)
 		}
-		if cursor == 0 {
-			break
-		}
-	}
-	return evts, nil
+		return nil
+	})
+	return evts, err
 }
 
-func (r *Redis) incrMemUsage(ctx context.Context, author []byte, eventSize int, eventDate time.Time) error {
-	k := redisMemUsageKey(author, eventDate)
-	t := time.Unix(eventDate.Unix()/memUsageTimeQuantum*memUsageTimeQuantum, 0)
-	p := r.client.Pipeline()
-	incrRes := p.IncrBy(ctx, k, int64(eventSize))
-	if incrRes.Err() != nil {
-		return incrRes.Err()
+func (r *Redis) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, eventSize int, eventDate time.Time) error {
+	if r.memLimit == 0 {
+		return nil
 	}
-	expireRes := p.ExpireAt(ctx, k, t.Add(r.ttl+(time.Second*memUsageTimeQuantum)))
-	if expireRes.Err() != nil {
-		return expireRes.Err()
-	}
-	_, err := p.Exec(ctx)
-	return err
-}
-
-func (r *Redis) getAvailMem(ctx context.Context, author []byte) (int64, error) {
 	var err error
+	key := memUsageKey(author, eventDate)
+	err = c.IncrBy(ctx, key, int64(eventSize)).Err()
+	if err != nil {
+		return err
+	}
+	q := int64(memUsageTimeQuantum)
+	t := (eventDate.Unix()/q)*q + q
+	err = c.ExpireAt(ctx, key, time.Unix(t, 0).Add(r.ttl)).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Redis) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte) (int64, error) {
+	if r.memLimit == 0 {
+		return 0, nil
+	}
 	var size int
-	var keys []string
-	var cursor uint64
-	key := redisWildcardMemUsageKey(author)
-	for {
-		scanRes := r.client.Scan(ctx, cursor, key, 0)
-		keys, cursor, err = scanRes.Result()
+	err := r.scan(ctx, wildcardMemUsageKey(author), c, func(keys []string) error {
+		vals, err := c.MGet(ctx, keys...).Result()
 		if err != nil {
-			return 0, err
+			return err
 		}
-		if len(keys) == 0 {
-			break
-		}
-		getRes := r.client.MGet(ctx, keys...)
-		if getRes.Err() != nil {
-			return 0, getRes.Err()
-		}
-		for _, val := range getRes.Val() {
+		for _, val := range vals {
 			s, ok := val.(string)
 			if !ok {
 				continue
@@ -213,27 +210,50 @@ func (r *Redis) getAvailMem(ctx context.Context, author []byte) (int64, error) {
 			}
 			size += i
 		}
-		if cursor == 0 {
-			break
-		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
 	}
 	return r.memLimit - int64(size), nil
 }
 
-func redisMemUsageKey(author []byte, eventDate time.Time) string {
-	return fmt.Sprintf("%x:%x", author, eventDate.Unix()/memUsageTimeQuantum)
+func (r *Redis) scan(ctx context.Context, pattern string, c redis.Cmdable, fn func(keys []string) error) error {
+	var err error
+	var keys []string
+	var cursor uint64
+	for {
+		keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
+		if err != nil {
+			return err
+		}
+		if len(keys) > 0 {
+			err = fn(keys)
+			if err != nil {
+				return err
+			}
+		}
+		if cursor == 0 {
+			break
+		}
+	}
+	return nil
 }
 
-func redisWildcardMemUsageKey(author []byte) string {
-	return fmt.Sprintf("%x:*", author)
-}
-
-func redisMessageKey(typ string, index []byte, author []byte, id []byte) string {
+func msgKey(typ string, index []byte, author []byte, id []byte) string {
 	return fmt.Sprintf("%x:%x", hashIndex(typ, index), hashUnique(author, id))
 }
 
-func redisWildcardMessageKey(typ string, index []byte) string {
+func wildcardMsgKey(typ string, index []byte) string {
 	return fmt.Sprintf("%x:*", hashIndex(typ, index))
+}
+
+func memUsageKey(author []byte, eventDate time.Time) string {
+	return fmt.Sprintf("%x:%x", author, eventDate.Unix()/memUsageTimeQuantum)
+}
+
+func wildcardMemUsageKey(author []byte) string {
+	return fmt.Sprintf("%x:*", author)
 }
 
 func hashUnique(author []byte, id []byte) [sha256.Size]byte {
@@ -242,4 +262,25 @@ func hashUnique(author []byte, id []byte) [sha256.Size]byte {
 
 func hashIndex(typ string, index []byte) [sha256.Size]byte {
 	return sha256.Sum256(append([]byte(typ), index...))
+}
+
+// retry runs the f function until it returns nil. Maximum number of retries
+// and delay between them are defined in the retryAttempts and retryInterval
+// constants.
+//
+// If error is ErrMemoryLimitExceed, it will be returned immediately.
+func retry(f func() error) (err error) {
+	for i := 0; i < retryAttempts; i++ {
+		if i > 0 {
+			time.Sleep(retryInterval)
+		}
+		err = f()
+		if errors.Is(err, ErrMemoryLimitExceed) {
+			return err
+		}
+		if err == nil {
+			return nil
+		}
+	}
+	return err
 }
