@@ -101,7 +101,7 @@ func (r *Redis) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Ev
 }
 
 func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (err error) {
-	key := msgKey(evt.Type, evt.Index, author, evt.ID)
+	key := evtKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (er
 
 func (r *Redis) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	var evts []*messages.Event
-	err := r.scan(ctx, wildcardMsgKey(typ, idx), r.client, func(keys []string) error {
+	err := r.scan(ctx, wildcardEvtKey(typ, idx), r.client, func(keys []string) error {
 		vals, err := r.client.MGet(ctx, keys...).Result()
 		if err != nil {
 			return err
@@ -240,11 +240,11 @@ func (r *Redis) scan(ctx context.Context, pattern string, c redis.Cmdable, fn fu
 	return nil
 }
 
-func msgKey(typ string, index []byte, author []byte, id []byte) string {
+func evtKey(typ string, index []byte, author []byte, id []byte) string {
 	return fmt.Sprintf("%x:%x", hashIndex(typ, index), hashUnique(author, id))
 }
 
-func wildcardMsgKey(typ string, index []byte) string {
+func wildcardEvtKey(typ string, index []byte) string {
 	return fmt.Sprintf("%x:*", hashIndex(typ, index))
 }
 
