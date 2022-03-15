@@ -1,0 +1,166 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_l1Token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_l2WormholeGateway",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_l1Messenger",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_l1Escrow",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_l1WormholeRouter",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "targetDomain",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "daiToFlush",
+        "type": "uint256"
+      }
+    ],
+    "name": "finalizeFlush",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "sourceDomain",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "targetDomain",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "receiver",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "operator",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint128",
+            "name": "amount",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint80",
+            "name": "nonce",
+            "type": "uint80"
+          },
+          {
+            "internalType": "uint48",
+            "name": "timestamp",
+            "type": "uint48"
+          }
+        ],
+        "internalType": "struct WormholeGUID",
+        "name": "wormhole",
+        "type": "tuple"
+      }
+    ],
+    "name": "finalizeRegisterWormhole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "l1Escrow",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "l1Token",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "l1WormholeRouter",
+    "outputs": [
+      {
+        "internalType": "contract IL1WormholeRouter",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "l2WormholeGateway",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "messenger",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

@@ -80,6 +80,23 @@ run-test: $(TEST_BUILD_TARGET)
 	$(TEST_BUILD_TARGET) -test.v -gofer.test-api-calls
 .PHONY: run-test
 
+wormhole-e2e-init:
+	@echo "Run this target once, just to set stuff up (takes a long time)."
+	(pushd e2e/wormhole && make init && popd && make wormhole-e2e-leeloo)
+.PHONY: wormhole-e2e-init
+
+wormhole-e2e-leeloo:
+	./e2e/wormhole/start-leeloo.sh
+.PHONY: wormhole-e2e-leeloo
+
+wormhole-e2e:
+	(cd e2e/wormhole && make e2e)
+.PHONY: wormhole-e2e
+
+wormhole-e2e-clean:
+	(cd e2e/wormhole && make clean)
+.PHONY: wormhole-e2e-clean
+
 VERSION_TAG_CURRENT := $(shell git tag --list 'v*' --points-at HEAD | sort --version-sort | tr \~ - | tail -1)
 VERSION_TAG_LATEST := $(shell git tag --list 'v*' | tr - \~ | sort --version-sort | tr \~ - | tail -1)
 ifeq ($(VERSION_TAG_CURRENT),$(VERSION_TAG_LATEST))

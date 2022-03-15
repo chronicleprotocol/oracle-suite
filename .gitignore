@@ -21,3 +21,15 @@
 
 # Output of the go coverage tool
 *.out
+
+# These are all generated from e2e/wormhole/init.sh and are git pulled. No need
+# to track.
+e2e/wormhole/dss
+e2e/wormhole/dss-wormhole
+e2e/wormhole/esm
+e2e/wormhole/pause_proxy
+e2e/wormhole/optimism
+.DS_Store
+node_modules
+/package*.json
+.tmp

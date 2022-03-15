@@ -1,0 +1,15 @@
+{
+ "name": "dump-events",
+ "version": "1.0.0",
+ "description": "",
+ "main": "main.js",
+ "scripts": {
+   "test": "helowrld"
+ },
+ "keywords": [],
+ "author": "jarc",
+ "license": "MIT",
+ "bin": {
+   "dump-events": "./main.js"
+ }
+}
