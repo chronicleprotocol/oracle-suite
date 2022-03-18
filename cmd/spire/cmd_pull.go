@@ -88,9 +88,11 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "",
 		Long:  ``,
-		RunE: func(_ *cobra.Command, args []string) error {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		RunE: func(_ *cobra.Command, args []string) (err error) {
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			sup, cli, err := PrepareClientServices(ctx, opts)
+			defer func() { err = <-sup.Wait() }()
+			defer ctxCancel()
 			if err != nil {
 				return err
 			}
@@ -106,7 +108,7 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 				return err
 			}
 			fmt.Printf("%s\n", string(bts))
-			return <-sup.Wait()
+			return
 		},
 	}
 

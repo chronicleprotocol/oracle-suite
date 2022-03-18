@@ -34,8 +34,10 @@ func NewPairsCmd(opts *options) *cobra.Command {
 		Short:   "List all supported asset pairs",
 		Long:    `List all supported asset pairs.`,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			sup, gof, mar, err := PrepareClientServices(ctx, opts)
+			defer func() { err = <-sup.Wait() }()
+			defer ctxCancel()
 			if err != nil {
 				return err
 			}
@@ -64,7 +66,7 @@ func NewPairsCmd(opts *options) *cobra.Command {
 					_ = mar.Write(os.Stderr, mErr)
 				}
 			}
-			return <-sup.Wait()
+			return
 		},
 	}
 }
