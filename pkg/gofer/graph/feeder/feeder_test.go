@@ -16,7 +16,6 @@
 package feeder
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -72,20 +71,20 @@ func originsSetMock(prices map[string][]origins.Price, delay time.Duration, upda
 }
 
 func TestFeeder_Feed_EmptyGraph(t *testing.T) {
-	f := NewFeeder(originsSetMock(nil, 0, false), []nodes.Node{}, null.New())
+	f := NewFeeder(originsSetMock(nil, 0, false), null.New())
 
 	// Feed method shouldn't panic
-	warns := f.Feed()
+	warns := f.Feed(nil, time.Now())
 
 	assert.Len(t, warns.List, 0)
 }
 
 func TestFeeder_Feed_NoFeedableNodes(t *testing.T) {
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
-	f := NewFeeder(originsSetMock(nil, 0, false), []nodes.Node{nodes.Node(g)}, null.New())
+	f := NewFeeder(originsSetMock(nil, 0, false), null.New())
 
 	// Feed method shouldn't panic
-	warns := f.Feed(nodes.Node(g))
+	warns := f.Feed([]nodes.Node{nodes.Node(g)}, time.Now())
 
 	assert.Len(t, warns.List, 0)
 }
@@ -111,8 +110,8 @@ func TestFeeder_Feed_OneOriginNode(t *testing.T) {
 	}, 0, 0)
 
 	g.AddChild(o)
-	f := NewFeeder(s, []nodes.Node{o}, null.New())
-	warns := f.Feed(nodes.Node(g))
+	f := NewFeeder(s, null.New())
+	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
 	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
@@ -183,8 +182,8 @@ func TestFeeder_Feed_ManyOriginNodes(t *testing.T) {
 	g.AddChild(o3) // intentionally
 	g.AddChild(o4)
 
-	f := NewFeeder(s, []nodes.Node{o1, o2, o3, o4}, null.New())
-	warns := f.Feed(nodes.Node(g))
+	f := NewFeeder(s, null.New())
+	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
 
@@ -248,8 +247,8 @@ func TestFeeder_Feed_NestedOriginNode(t *testing.T) {
 	g.AddChild(i)
 	i.AddChild(o)
 
-	f := NewFeeder(s, []nodes.Node{i, o}, null.New())
-	warns := f.Feed(nodes.Node(g))
+	f := NewFeeder(s, null.New())
+	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
 	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
@@ -295,8 +294,8 @@ func TestFeeder_Feed_BelowMinTTL(t *testing.T) {
 
 	g.AddChild(o)
 
-	f := NewFeeder(s, []nodes.Node{o}, null.New())
-	warns := f.Feed(nodes.Node(g))
+	f := NewFeeder(s, null.New())
+	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	// OriginNode shouldn't be updated because time diff is below MinTTL setting:
 	assert.Len(t, warns.List, 0)
@@ -342,8 +341,8 @@ func TestFeeder_Feed_BetweenTTLs(t *testing.T) {
 
 	g.AddChild(o)
 
-	f := NewFeeder(s, []nodes.Node{o}, null.New())
-	warns := f.Feed(nodes.Node(g))
+	f := NewFeeder(s, null.New())
+	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	// OriginNode should be updated because time diff is above MinTTL setting:
 	assert.Len(t, warns.List, 0)
@@ -367,39 +366,4 @@ func Test_getGCDTTL(t *testing.T) {
 	root.AddChild(on3)
 
 	assert.Equal(t, 2*time.Second, getGCDTTL([]nodes.Node{root}))
-}
-
-// Test for ch11427 issue. Feeder updates feed nodes based on the interval from
-// the getGCDTTL function. Because the feeding process takes some time, during
-// the next tick, the time difference from the last update was shorter than
-// the value returned by the getGCDTTL. Because of this, some nodes were only
-// updated every second tick.
-func TestFeeder_ch11427(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
-
-	s := originsSetMock(map[string][]origins.Price{
-		"test": {
-			origins.Price{
-				Pair:      origins.Pair{Base: "A", Quote: "B"},
-				Price:     11,
-				Bid:       10,
-				Ask:       12,
-				Volume24h: 11,
-				Timestamp: time.Now(),
-			},
-		},
-	}, 750*time.Millisecond, true)
-
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
-	o := nodes.NewOriginNode(nodes.OriginPair{
-		Origin: "test",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
-	}, 1*time.Second, 1500*time.Millisecond)
-	g.AddChild(o)
-
-	f := NewFeeder(s, []nodes.Node{o}, null.New())
-	_ = f.Start(ctx)
-	time.Sleep(2500 * time.Millisecond)
-	assert.False(t, o.Expired())
 }

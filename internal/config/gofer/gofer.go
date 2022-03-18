@@ -94,32 +94,8 @@ type Source struct {
 	TTL    int    `json:"ttl"`
 }
 
-func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC bool) (gofer.Gofer, error) {
-	if c.RPC.Address == "" || noRPC {
-		return c.configureGofer(cli, logger)
-	}
-	return c.configureRPCClient()
-}
-
 // ConfigureRPCAgent returns a new rpc.Agent instance.
-func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, logger log.Logger) (*rpc.Agent, error) {
-	gra, err := c.buildGraphs()
-	if err != nil {
-		return nil, fmt.Errorf("unable to load price models: %w", err)
-	}
-	var ns []nodes.Node
-	for _, n := range gra {
-		ns = append(ns, n)
-	}
-	originSet, err := c.buildOrigins(cli)
-	if err != nil {
-		return nil, err
-	}
-	fed := feeder.NewFeeder(originSet, ns, logger)
-	gof, err := graph.NewAsyncGofer(gra, fed)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
-	}
+func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, gof gofer.Gofer, logger log.Logger) (*rpc.Agent, error) {
 	srv, err := rpc.NewAgent(rpc.AgentConfig{
 		Gofer:   gof,
 		Network: "tcp",
@@ -132,8 +108,8 @@ func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, logger log.Logger) (*r
 	return srv, nil
 }
 
-// ConfigureGofer returns a new Gofer instance.
-func (c *Gofer) configureGofer(cli pkgEthereum.Client, logger log.Logger) (gofer.Gofer, error) {
+// ConfigureAsyncGofer returns a new async gofer instance.
+func (c *Gofer) ConfigureAsyncGofer(cli pkgEthereum.Client, logger log.Logger) (gofer.StartableGofer, error) {
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load price models: %w", err)
@@ -146,9 +122,34 @@ func (c *Gofer) configureGofer(cli pkgEthereum.Client, logger log.Logger) (gofer
 	if err != nil {
 		return nil, err
 	}
-	fed := feeder.NewFeeder(originSet, ns, logger)
-	gof := graph.NewGofer(gra, fed)
+	fed := feeder.NewFeeder(originSet, logger)
+	gof, err := graph.NewAsyncGofer(gra, fed, ns, logger)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
+	}
 	return gof, nil
+}
+
+// ConfigureGofer returns a new async gofer instance.
+func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC bool) (gofer.Gofer, error) {
+	if c.RPC.Address == "" || noRPC {
+		gra, err := c.buildGraphs()
+		if err != nil {
+			return nil, fmt.Errorf("unable to load price models: %w", err)
+		}
+		var ns []nodes.Node
+		for _, n := range gra {
+			ns = append(ns, n)
+		}
+		originSet, err := c.buildOrigins(cli)
+		if err != nil {
+			return nil, err
+		}
+		fed := feeder.NewFeeder(originSet, logger)
+		gof := graph.NewGofer(gra, fed)
+		return gof, nil
+	}
+	return c.configureRPCClient()
 }
 
 // configureRPCClient returns a new rpc.RPC instance.

@@ -3,26 +3,34 @@ package supervisor
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type service struct {
+	mu sync.Mutex
+
 	started     bool
 	failOnStart bool
 	waitCh      chan error
 }
 
 func (s *service) Start(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.failOnStart {
 		return errors.New("err")
 	}
 	s.started = true
 	go func() {
-		s.started = false
 		<-ctx.Done()
+		s.mu.Lock()
+		s.started = false
+		s.mu.Unlock()
 		close(s.waitCh)
 	}()
 	return nil
@@ -30,6 +38,12 @@ func (s *service) Start(ctx context.Context) error {
 
 func (s *service) Wait() chan error {
 	return s.waitCh
+}
+
+func (s *service) Started() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.started
 }
 
 func TestSupervisor_CancelContext(t *testing.T) {
@@ -43,12 +57,13 @@ func TestSupervisor_CancelContext(t *testing.T) {
 	s.Watch(s1, s2, s3)
 
 	require.NoError(t, s.Start())
-	require.True(t, s1.started)
-	require.True(t, s2.started)
-	require.True(t, s3.started)
+	time.Sleep(100 * time.Millisecond)
+
+	assert.True(t, s1.Started())
+	assert.True(t, s2.Started())
+	assert.True(t, s3.Started())
 
 	cancel()
-
 	time.Sleep(100 * time.Millisecond)
 
 	select {
@@ -57,9 +72,9 @@ func TestSupervisor_CancelContext(t *testing.T) {
 		require.Fail(t, "Wait() channel should not be blocked")
 	}
 
-	require.False(t, s1.started)
-	require.False(t, s2.started)
-	require.False(t, s3.started)
+	assert.False(t, s1.Started())
+	assert.False(t, s2.Started())
+	assert.False(t, s3.Started())
 }
 
 func TestSupervisor_FailToStart(t *testing.T) {
@@ -74,12 +89,11 @@ func TestSupervisor_FailToStart(t *testing.T) {
 	s.Watch(s1, s2, s3)
 
 	require.Error(t, s.Start())
-
 	time.Sleep(100 * time.Millisecond)
 
-	require.False(t, s1.started)
-	require.False(t, s2.started)
-	require.False(t, s3.started)
+	assert.False(t, s1.Started())
+	assert.False(t, s2.Started())
+	assert.False(t, s3.Started())
 }
 
 func TestSupervisor_OneFail(t *testing.T) {
@@ -94,12 +108,13 @@ func TestSupervisor_OneFail(t *testing.T) {
 	s.Watch(s1, s2, s3)
 
 	require.NoError(t, s.Start())
-	require.True(t, s1.started)
-	require.True(t, s2.started)
-	require.True(t, s3.started)
+	time.Sleep(100 * time.Millisecond)
+
+	assert.True(t, s1.Started())
+	assert.True(t, s2.Started())
+	assert.True(t, s3.Started())
 
 	s2.waitCh <- errors.New("err")
-
 	time.Sleep(100 * time.Millisecond)
 
 	select {
@@ -109,7 +124,7 @@ func TestSupervisor_OneFail(t *testing.T) {
 		require.Fail(t, "Wait() channel should not be blocked")
 	}
 
-	require.False(t, s1.started)
-	require.False(t, s2.started)
-	require.False(t, s3.started)
+	assert.False(t, s1.Started())
+	assert.False(t, s2.Started())
+	assert.False(t, s3.Started())
 }

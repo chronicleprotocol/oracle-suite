@@ -249,7 +249,7 @@ func init() {
 		"b": &testExchange{},
 		"x": &testExchange{},
 		"y": &testExchange{},
-	}, 10), []nodes.Node{abGraph, xyGraph}, null.New())
+	}, 10), null.New())
 }
 
 func TestGofer_Models_SinglePair(t *testing.T) {

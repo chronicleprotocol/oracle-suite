@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/graph/feeder"
@@ -42,9 +43,9 @@ type Gofer struct {
 
 // NewGofer returns a new Gofer instance. If the Feeder is not nil,
 // then prices are automatically updated when the Price or Prices methods are
-// called. Otherwise prices have to be updated externally.
-func NewGofer(g map[gofer.Pair]nodes.Aggregator, f *feeder.Feeder) *Gofer {
-	return &Gofer{graphs: g, feeder: f}
+// called. Otherwise, prices have to be updated externally.
+func NewGofer(graph map[gofer.Pair]nodes.Aggregator, feeder *feeder.Feeder) *Gofer {
+	return &Gofer{graphs: graph, feeder: feeder}
 }
 
 // Models implements the gofer.Gofer interface.
@@ -69,7 +70,7 @@ func (g *Gofer) Price(pair gofer.Pair) (*gofer.Price, error) {
 		return nil, ErrPairNotFound{Pair: pair}
 	}
 	if g.feeder != nil {
-		g.feeder.Feed(n)
+		g.feeder.Feed([]nodes.Node{n}, time.Now())
 	}
 	return mapGraphPrice(n.Price()), nil
 }
@@ -81,7 +82,7 @@ func (g *Gofer) Prices(pairs ...gofer.Pair) (map[gofer.Pair]*gofer.Price, error)
 		return nil, err
 	}
 	if g.feeder != nil {
-		g.feeder.Feed(ns...)
+		g.feeder.Feed(ns, time.Now())
 	}
 	res := make(map[gofer.Pair]*gofer.Price)
 	for _, n := range ns {

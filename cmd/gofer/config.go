@@ -70,11 +70,15 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	if err != nil {
 		return nil, err
 	}
-	gof, err := opts.Config.Gofer.ConfigureRPCAgent(cli, log)
+	gof, err := opts.Config.Gofer.ConfigureAsyncGofer(cli, log)
+	if err != nil {
+		return nil, err
+	}
+	age, err := opts.Config.Gofer.ConfigureRPCAgent(cli, gof, log)
 	if err != nil {
 		return nil, err
 	}
 	sup := supervisor.New(ctx)
-	sup.Watch(gof)
+	sup.Watch(gof, age)
 	return sup, nil
 }

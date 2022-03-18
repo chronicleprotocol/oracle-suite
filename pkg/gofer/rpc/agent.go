@@ -64,7 +64,6 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 			log:   cfg.Logger.WithField("tag", AgentLoggerTag),
 		},
 		rpc:     rpc.NewServer(),
-		gofer:   cfg.Gofer,
 		network: cfg.Network,
 		address: cfg.Address,
 		log:     cfg.Logger.WithField("tag", AgentLoggerTag),
@@ -88,14 +87,6 @@ func (s *Agent) Start(ctx context.Context) error {
 		return errors.New("context must not be nil")
 	}
 	s.ctx = ctx
-
-	// Start Gofer if necessary:
-	if sg, ok := s.gofer.(gofer.StartableGofer); ok {
-		err = sg.Start(s.ctx)
-		if err != nil {
-			return err
-		}
-	}
 
 	// Start RPC server:
 	s.listener, err = net.Listen(s.network, s.address)
