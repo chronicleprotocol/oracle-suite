@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -43,20 +44,20 @@ type Config struct {
 func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil) // signer may be empty here
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	gof, err := opts.Config.Gofer.ConfigureGofer(cli, log, opts.GoferNoRPC)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
 
 	if sig.Address() == ethereum.EmptyAddress {
@@ -64,7 +65,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	}
 	fed, err := opts.Config.Feeds.Addresses()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
 	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
 		Signer: sig,
@@ -74,7 +75,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
 	gho, err := opts.Config.Ghost.Configure(ghostConfig.Dependencies{
 		Gofer:     gof,
@@ -83,7 +84,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Logger:    log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ghost config error: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(tra, gho)

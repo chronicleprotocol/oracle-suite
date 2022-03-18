@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -38,20 +39,20 @@ func PrepareClientServices(
 
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	gof, err := opts.Config.Gofer.ConfigureGofer(cli, log, opts.NoRPC)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
 	mar, err := marshal.NewMarshal(opts.Format.format)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf(`invalid format option: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	if g, ok := gof.(gofer.StartableGofer); ok {
@@ -63,20 +64,20 @@ func PrepareClientServices(
 func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	gof, err := opts.Config.Gofer.ConfigureAsyncGofer(cli, log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
 	age, err := opts.Config.Gofer.ConfigureRPCAgent(cli, gof, log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(gof, age)

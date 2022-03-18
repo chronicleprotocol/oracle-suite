@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -38,20 +39,20 @@ type Config struct {
 func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(sig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	fed, err := opts.Config.Feeds.Addresses()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
 	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
 		Signer: sig,
@@ -61,7 +62,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
 	dat, err := opts.Config.Spectre.ConfigureDatastore(spectreConfig.DatastoreDependencies{
 		Signer:    sig,
@@ -70,7 +71,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Logger:    log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
 	spe, err := opts.Config.Spectre.ConfigureSpectre(spectreConfig.Dependencies{
 		Signer:         sig,
@@ -79,7 +80,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Logger:         log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(tra, dat, spe)

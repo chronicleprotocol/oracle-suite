@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventapi"
@@ -38,12 +39,12 @@ type Config struct {
 func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	fed, err := opts.Config.Feeds.Addresses()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
 	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
 		Signer: geth.NewSigner(nil),
@@ -53,11 +54,11 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
 	sto, err := opts.Config.Lair.ConfigureStorage()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
 	evs, err := store.New(store.Config{
 		Storage:   sto,
@@ -65,7 +66,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Log:       log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
 	api, err := opts.Config.Lair.Configure(eventAPIConfig.Dependencies{
 		EventStore: evs,
@@ -73,7 +74,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Logger:     log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(tra, evs, api)

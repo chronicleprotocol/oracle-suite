@@ -17,10 +17,13 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p"
 )
 
 type Config struct {
@@ -30,14 +33,17 @@ type Config struct {
 func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	tra, err := opts.Config.Transport.ConfigureP2PBoostrap(transportConfig.BootstrapDependencies{
 		Logger: log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`transport config error: %w`, err)
+	}
+	if _, ok := tra.(*p2p.P2P); !ok {
+		return nil, errors.New("spire-bootstrap works only with the libp2p transport")
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(tra)

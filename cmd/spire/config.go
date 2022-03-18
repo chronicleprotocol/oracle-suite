@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -39,16 +40,16 @@ type Config struct {
 func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log := opts.Logger()
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	fed, err := opts.Config.Feeds.Addresses()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
 	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
 		Signer: sig,
@@ -58,7 +59,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
 	dat, err := opts.Config.Spire.ConfigureDatastore(spireConfig.DatastoreDependencies{
 		Signer:    sig,
@@ -67,7 +68,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		Logger:    log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
 	age, err := opts.Config.Spire.ConfigureAgent(spireConfig.AgentDependencies{
 		Signer:    sig,
@@ -77,7 +78,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		Logger:    log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(tra, dat, age)
@@ -87,17 +88,17 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supervisor, *spire.Client, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	cli, err := opts.Config.Spire.ConfigureClient(spireConfig.ClientDependencies{
 		Signer: sig,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf(`spire config error: %w`, err)
 	}
 	sup := supervisor.New(ctx)
 	sup.Watch(cli)
