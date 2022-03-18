@@ -38,19 +38,19 @@ type ClientConfig struct {
 	Address string
 }
 
-func NewClient(ctx context.Context, cfg ClientConfig) (*Client, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewClient(cfg ClientConfig) (*Client, error) {
 	return &Client{
-		ctx:    ctx,
 		waitCh: make(chan error),
 		addr:   cfg.Address,
 		signer: cfg.Signer,
 	}, nil
 }
 
-func (c *Client) Start() error {
+func (c *Client) Start(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	c.ctx = ctx
 	client, err := rpc.DialHTTP("tcp", c.addr)
 	if err != nil {
 		return err

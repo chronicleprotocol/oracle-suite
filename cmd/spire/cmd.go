@@ -18,7 +18,6 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
@@ -47,12 +46,6 @@ func NewRootCommand(opts *options) *cobra.Command {
 		"c",
 		"./config.json",
 		"spire config file",
-	)
-	rootCmd.PersistentFlags().StringVar(
-		&opts.TransportOverride,
-		"transport",
-		"",
-		"`"+spire.TransportLibP2P+"|"+spire.TransportLibSSB+"` transport spire connects to",
 	)
 
 	rootCmd.AddCommand(

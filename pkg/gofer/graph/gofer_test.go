@@ -16,7 +16,6 @@
 package graph
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -245,15 +244,12 @@ func init() {
 		xy: xyGraph,
 	}
 
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
-
-	testFeeder = feeder.NewFeeder(ctx, origins.NewSet(map[string]origins.Handler{
+	testFeeder = feeder.NewFeeder(origins.NewSet(map[string]origins.Handler{
 		"a": &testExchange{},
 		"b": &testExchange{},
 		"x": &testExchange{},
 		"y": &testExchange{},
-	}, 10), null.New())
+	}, 10), []nodes.Node{abGraph, xyGraph}, null.New())
 }
 
 func TestGofer_Models_SinglePair(t *testing.T) {

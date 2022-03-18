@@ -16,7 +16,6 @@
 package eventapi
 
 import (
-	"context"
 	"os"
 	"strconv"
 	"testing"
@@ -36,8 +35,7 @@ func TestEventAPI_Configure(t *testing.T) {
 	prevEventAPIFactory := eventAPIFactory
 	defer func() { eventAPIFactory = prevEventAPIFactory }()
 
-	ctx := context.Background()
-	tra := local.New(ctx, []byte("test"), 0, nil)
+	tra := local.New([]byte("test"), 0, nil)
 	log := null.New()
 	evs := &store.EventStore{}
 
@@ -45,17 +43,14 @@ func TestEventAPI_Configure(t *testing.T) {
 		ListenAddr: "127.0.0.1:0",
 	}
 
-	eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, error) {
-		assert.NotNil(t, ctx)
+	eventAPIFactory = func(cfg api.Config) (*api.EventAPI, error) {
 		assert.Equal(t, evs, cfg.EventStore)
 		assert.Equal(t, config.ListenAddr, cfg.Address)
 		assert.Equal(t, log, cfg.Logger)
-
 		return &api.EventAPI{}, nil
 	}
 
 	a, err := config.Configure(Dependencies{
-		Context:    ctx,
 		EventStore: evs,
 		Transport:  tra,
 		Logger:     log,

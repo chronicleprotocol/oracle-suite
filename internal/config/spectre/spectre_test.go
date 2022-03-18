@@ -16,7 +16,6 @@
 package spectre
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -57,8 +56,7 @@ func TestSpectre_Configure(t *testing.T) {
 		},
 	}
 
-	spectreFactory = func(ctx context.Context, cfg spectre.Config) (*spectre.Spectre, error) {
-		assert.NotNil(t, ctx)
+	spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, ds, cfg.Datastore)
 		assert.Equal(t, secToDuration(interval), cfg.Interval)
@@ -72,7 +70,6 @@ func TestSpectre_Configure(t *testing.T) {
 	}
 
 	s, err := config.ConfigureSpectre(Dependencies{
-		Context:        context.Background(),
 		Signer:         signer,
 		Datastore:      ds,
 		EthereumClient: ethClient,

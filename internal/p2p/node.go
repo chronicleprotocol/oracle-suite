@@ -80,13 +80,12 @@ type Node struct {
 	pubsubOpts []pubsub.Option
 }
 
-func NewNode(ctx context.Context, opts ...Options) (*Node, error) {
+func NewNode(opts ...Options) (*Node, error) {
 	ps, err := pstoremem.NewPeerstore()
 	if err != nil {
 		return nil, fmt.Errorf("libp2p node error, unable to initialize peerstore: %w", err)
 	}
 	n := &Node{
-		ctx:                   ctx,
 		waitCh:                make(chan error),
 		peerstore:             ps,
 		nodeEventHandler:      sets.NewNodeEventHandlerSet(),
@@ -109,7 +108,10 @@ func NewNode(ctx context.Context, opts ...Options) (*Node, error) {
 	}
 
 	if n.connmgr == nil {
-		n.connmgr = connmgr.NewConnManager(0, 0, 5*time.Minute)
+		n.connmgr, err = connmgr.NewConnManager(0, 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	n.nodeEventHandler.Handle(sets.NodeConfiguredEvent{})
@@ -117,9 +119,14 @@ func NewNode(ctx context.Context, opts ...Options) (*Node, error) {
 	return n, nil
 }
 
-func (n *Node) Start() error {
+func (n *Node) Start(ctx context.Context) error {
 	n.tsLog.get().Info("Starting")
 	var err error
+
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	n.ctx = ctx
 
 	n.nodeEventHandler.Handle(sets.NodeStartingEvent{})
 

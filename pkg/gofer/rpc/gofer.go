@@ -37,12 +37,8 @@ type Gofer struct {
 }
 
 // NewGofer returns a new Gofer instance.
-func NewGofer(ctx context.Context, network, address string) (*Gofer, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewGofer(network, address string) (*Gofer, error) {
 	return &Gofer{
-		ctx:     ctx,
 		waitCh:  make(chan error),
 		network: network,
 		address: address,
@@ -50,7 +46,11 @@ func NewGofer(ctx context.Context, network, address string) (*Gofer, error) {
 }
 
 // Start implements the gofer.StartableGofer interface.
-func (g *Gofer) Start() error {
+func (g *Gofer) Start(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	g.ctx = ctx
 	client, err := rpc.DialHTTP(g.network, g.address)
 	if err != nil {
 		return err

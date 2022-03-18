@@ -20,75 +20,26 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 )
 
 type Config struct {
 	Transport transportConfig.Transport `json:"transport"`
 }
 
-type Dependencies struct {
-	Context context.Context
-	Logger  log.Logger
-}
-
-func (c *Config) Configure(d Dependencies) (transport.Transport, error) {
-	tra, err := c.Transport.ConfigureP2PBoostrap(transportConfig.BootstrapDependencies{
-		Context: d.Context,
-		Logger:  d.Logger,
+func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+	if err != nil {
+		return nil, err
+	}
+	log := opts.Logger()
+	tra, err := opts.Config.Transport.ConfigureP2PBoostrap(transportConfig.BootstrapDependencies{
+		Logger: log,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return tra, nil
-}
-
-type Service struct {
-	ctxCancel context.CancelFunc
-	Transport transport.Transport
-}
-
-func PrepareService(ctx context.Context, opts *options) (*Service, error) {
-	var err error
-	ctx, ctxCancel := context.WithCancel(ctx)
-	defer func() {
-		if err != nil {
-			ctxCancel()
-		}
-	}()
-
-	// Load config file:
-	err = config.ParseFile(&opts.Config, opts.ConfigFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	// Services:
-	tra, err := opts.Config.Configure(Dependencies{
-		Context: ctx,
-		Logger:  opts.Logger(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &Service{
-		ctxCancel: ctxCancel,
-		Transport: tra,
-	}, nil
-}
-
-func (s *Service) Start() error {
-	var err error
-	if err = s.Transport.Start(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) CancelAndWait() {
-	s.ctxCancel()
-	<-s.Transport.Wait()
+	sup := supervisor.New(ctx)
+	sup.Watch(tra)
+	return sup, nil
 }

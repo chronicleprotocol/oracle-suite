@@ -17,16 +17,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
 	spectreConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spectre"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
+	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -38,114 +35,53 @@ type Config struct {
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
 }
 
-type Dependencies struct {
-	Context context.Context
-	Logger  log.Logger
-}
-
-func (c *Config) Configure(d Dependencies) (transport.Transport, datastore.Datastore, *spectre.Spectre, error) {
-	sig, err := c.Ethereum.ConfigureSigner()
+func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	cli, err := c.Ethereum.ConfigureEthereumClient(sig)
+	log := opts.Logger()
+	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	fed, err := c.Feeds.Addresses()
+	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(sig)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	tra, err := c.Transport.Configure(transportConfig.Dependencies{
-		Context: d.Context,
-		Signer:  sig,
-		Feeds:   fed,
-		Logger:  d.Logger,
+	fed, err := opts.Config.Feeds.Addresses()
+	if err != nil {
+		return nil, err
+	}
+	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
+		Signer: sig,
+		Feeds:  fed,
+		Logger: log,
 	},
 		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
 	)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	dat, err := c.Spectre.ConfigureDatastore(spectreConfig.DatastoreDependencies{
-		Context:   d.Context,
+	dat, err := opts.Config.Spectre.ConfigureDatastore(spectreConfig.DatastoreDependencies{
 		Signer:    sig,
 		Transport: tra,
 		Feeds:     fed,
-		Logger:    d.Logger,
+		Logger:    log,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	spe, err := c.Spectre.ConfigureSpectre(spectreConfig.Dependencies{
-		Context:        d.Context,
+	spe, err := opts.Config.Spectre.ConfigureSpectre(spectreConfig.Dependencies{
 		Signer:         sig,
 		Datastore:      dat,
 		EthereumClient: cli,
-		Logger:         d.Logger,
+		Logger:         log,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	return tra, dat, spe, nil
-}
-
-type Services struct {
-	ctxCancel context.CancelFunc
-	Transport transport.Transport
-	Datastore datastore.Datastore
-	Spectre   *spectre.Spectre
-}
-
-func PrepareServices(ctx context.Context, opts *options) (*Services, error) {
-	var err error
-	ctx, ctxCancel := context.WithCancel(ctx)
-	defer func() {
-		if err != nil {
-			ctxCancel()
-		}
-	}()
-
-	// Load config file:
-	err = config.ParseFile(&opts.Config, opts.ConfigFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
-	}
-
-	// Services:
-	tra, dat, spe, err := opts.Config.Configure(Dependencies{
-		Context: ctx,
-		Logger:  opts.Logger(),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load Spectre configuration: %w", err)
-	}
-
-	return &Services{
-		ctxCancel: ctxCancel,
-		Transport: tra,
-		Datastore: dat,
-		Spectre:   spe,
-	}, nil
-}
-
-func (s *Services) Start() error {
-	var err error
-	if err = s.Transport.Start(); err != nil {
-		return err
-	}
-	if err = s.Datastore.Start(); err != nil {
-		return err
-	}
-	if err = s.Spectre.Start(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Services) CancelAndWait() {
-	s.ctxCancel()
-	<-s.Transport.Wait()
-	<-s.Datastore.Wait()
-	<-s.Spectre.Wait()
+	sup := supervisor.New(ctx)
+	sup.Watch(tra, dat, spe)
+	return sup, nil
 }

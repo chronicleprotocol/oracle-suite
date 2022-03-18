@@ -16,7 +16,6 @@
 package spectre
 
 import (
-	"context"
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
@@ -29,12 +28,12 @@ import (
 )
 
 //nolint
-var spectreFactory = func(ctx context.Context, cfg spectre.Config) (*spectre.Spectre, error) {
-	return spectre.NewSpectre(ctx, cfg)
+var spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
+	return spectre.NewSpectre(cfg)
 }
 
-var datastoreFactory = func(ctx context.Context, cfg datastoreMemory.Config) (datastore.Datastore, error) {
-	return datastoreMemory.NewDatastore(ctx, cfg)
+var datastoreFactory = func(cfg datastoreMemory.Config) (datastore.Datastore, error) {
+	return datastoreMemory.NewDatastore(cfg)
 }
 
 type Spectre struct {
@@ -50,7 +49,6 @@ type Medianizer struct {
 }
 
 type Dependencies struct {
-	Context        context.Context
 	Signer         ethereum.Signer
 	Datastore      datastore.Datastore
 	EthereumClient ethereum.Client
@@ -59,7 +57,6 @@ type Dependencies struct {
 }
 
 type DatastoreDependencies struct {
-	Context   context.Context
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Feeds     []ethereum.Address
@@ -82,7 +79,7 @@ func (c *Spectre) ConfigureSpectre(d Dependencies) (*spectre.Spectre, error) {
 			Median:           oracleGeth.NewMedian(d.EthereumClient, ethereum.HexToAddress(pair.Contract)),
 		})
 	}
-	return spectreFactory(d.Context, cfg)
+	return spectreFactory(cfg)
 }
 
 func (c *Spectre) ConfigureDatastore(d DatastoreDependencies) (datastore.Datastore, error) {
@@ -95,5 +92,5 @@ func (c *Spectre) ConfigureDatastore(d DatastoreDependencies) (datastore.Datasto
 	for name := range c.Medianizers {
 		cfg.Pairs[name] = &datastoreMemory.Pair{Feeds: d.Feeds}
 	}
-	return datastoreFactory(d.Context, cfg)
+	return datastoreFactory(cfg)
 }

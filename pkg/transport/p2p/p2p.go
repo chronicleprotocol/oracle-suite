@@ -123,15 +123,13 @@ type Config struct {
 // New returns a new instance of a transport, implemented with
 // the libp2p library.
 // nolint: gocyclo
-func New(ctx context.Context, cfg Config) (*P2P, error) {
+func New(cfg Config) (*P2P, error) {
 	var err error
 
 	if len(cfg.ListenAddrs) == 0 {
 		cfg.ListenAddrs = defaultListenAddrs
 	}
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+
 	listenAddrs, err := strsToMaddrs(cfg.ListenAddrs)
 	if err != nil {
 		return nil, fmt.Errorf("P2P transport error, unable to parse listenAddrs: %w", err)
@@ -209,7 +207,7 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 		)
 	}
 
-	n, err := p2p.NewNode(ctx, opts...)
+	n, err := p2p.NewNode(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("P2P transport error, unable to initialize node: %w", err)
 	}
@@ -218,8 +216,11 @@ func New(ctx context.Context, cfg Config) (*P2P, error) {
 }
 
 // Start implements the transport.Transport interface.
-func (p *P2P) Start() error {
-	err := p.node.Start()
+func (p *P2P) Start(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	err := p.node.Start(ctx)
 	if err != nil {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
 	}

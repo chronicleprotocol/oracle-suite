@@ -39,9 +39,10 @@ func TestDatastore_Prices(t *testing.T) {
 	defer ctxCancel()
 
 	sig := &mocks.Signer{}
-	tra := local.New(ctx, []byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
+	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
+	_ = tra.Start(ctx)
 
-	ds, err := NewDatastore(ctx, Config{
+	ds, err := NewDatastore(Config{
 		Signer:    sig,
 		Transport: tra,
 		Pairs: map[string]*Pair{
@@ -51,7 +52,7 @@ func TestDatastore_Prices(t *testing.T) {
 		Logger: null.New(),
 	})
 	require.NoError(t, err)
-	require.NoError(t, ds.Start())
+	require.NoError(t, ds.Start(ctx))
 
 	sig.On("Recover", testutil.PriceAAABBB1.Price.Signature(), mock.Anything).Return(&testutil.Address1, nil)
 	sig.On("Recover", testutil.PriceAAABBB2.Price.Signature(), mock.Anything).Return(&testutil.Address2, nil)

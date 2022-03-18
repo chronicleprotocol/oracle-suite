@@ -73,12 +73,8 @@ type Config struct {
 	Pairs []string
 }
 
-func NewGhost(ctx context.Context, cfg Config) (*Ghost, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewGhost(cfg Config) (*Ghost, error) {
 	g := &Ghost{
-		ctx:        ctx,
 		waitCh:     make(chan error),
 		gofer:      cfg.Gofer,
 		signer:     cfg.Signer,
@@ -91,8 +87,13 @@ func NewGhost(ctx context.Context, cfg Config) (*Ghost, error) {
 	return g, nil
 }
 
-func (g *Ghost) Start() error {
+func (g *Ghost) Start(ctx context.Context) error {
 	g.log.Infof("Starting")
+
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	g.ctx = ctx
 
 	// Unfortunately, the Gofer stores pairs in the AAA/BBB format but Ghost
 	// (and oracle contract) stores them in AAABBB format. Because of this we
@@ -178,7 +179,7 @@ func (g *Ghost) broadcasterLoop() error {
 	go func() {
 		for {
 			select {
-			case <-g.waitCh:
+			case <-g.ctx.Done():
 				ticker.Stop()
 				return
 			case <-ticker.C:
@@ -214,7 +215,7 @@ func (g *Ghost) broadcasterLoop() error {
 }
 
 func (g *Ghost) contextCancelHandler() {
-	defer func() { g.waitCh <- nil }()
+	defer func() { close(g.waitCh) }()
 	defer g.log.Info("Stopped")
 	<-g.ctx.Done()
 }
@@ -224,7 +225,6 @@ func createPriceMessage(op *oracle.Price, gp *gofer.Price) (*messages.Price, err
 	if err != nil {
 		return nil, err
 	}
-
 	return &messages.Price{
 		Price: op,
 		Trace: trace,

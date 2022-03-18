@@ -99,12 +99,8 @@ type Pair struct {
 	Median oracle.Median
 }
 
-func NewSpectre(ctx context.Context, cfg Config) (*Spectre, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewSpectre(cfg Config) (*Spectre, error) {
 	r := &Spectre{
-		ctx:       ctx,
 		waitCh:    make(chan error),
 		signer:    cfg.Signer,
 		datastore: cfg.Datastore,
@@ -118,12 +114,14 @@ func NewSpectre(ctx context.Context, cfg Config) (*Spectre, error) {
 	return r, nil
 }
 
-func (s *Spectre) Start() error {
+func (s *Spectre) Start(ctx context.Context) error {
 	s.log.Info("Starting")
-
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	s.ctx = ctx
 	go s.contextCancelHandler()
 	s.relayerLoop()
-
 	return nil
 }
 
@@ -219,7 +217,7 @@ func (s *Spectre) relayerLoop() {
 	go func() {
 		for {
 			select {
-			case <-s.waitCh:
+			case <-s.ctx.Done():
 				ticker.Stop()
 				return
 			case <-ticker.C:
@@ -252,7 +250,7 @@ func (s *Spectre) relayerLoop() {
 }
 
 func (s *Spectre) contextCancelHandler() {
-	defer func() { s.waitCh <- nil }()
+	defer func() { close(s.waitCh) }()
 	defer s.log.Info("Stopped")
 	<-s.ctx.Done()
 }

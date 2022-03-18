@@ -51,9 +51,8 @@ type subscription struct {
 // topics argument, where the key is the subscription's topic name, and the
 // map value is the message type messages given as a nil pointer,
 // e.g: (*Message)(nil).
-func New(ctx context.Context, author []byte, queue int, topics map[string]transport.Message) *Local {
+func New(author []byte, queue int, topics map[string]transport.Message) *Local {
 	l := &Local{
-		ctx:    ctx,
 		author: author,
 		waitCh: make(chan error),
 		subs:   make(map[string]subscription),
@@ -69,7 +68,13 @@ func New(ctx context.Context, author []byte, queue int, topics map[string]transp
 }
 
 // Start implements the transport.Transport interface.
-func (l *Local) Start() error {
+func (l *Local) Start(ctx context.Context) error {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	l.ctx = ctx
 	go l.contextCancelHandler()
 	return nil
 }
@@ -119,7 +124,7 @@ func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
 
 // contextCancelHandler handles context cancellation.
 func (l *Local) contextCancelHandler() {
-	defer func() { l.waitCh <- nil }()
+	defer func() { close(l.waitCh) }()
 	<-l.ctx.Done()
 	l.mu.Lock()
 	defer l.mu.Unlock()

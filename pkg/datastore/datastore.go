@@ -15,8 +15,10 @@
 
 package datastore
 
+import "context"
+
 type Datastore interface {
-	Start() error
+	Start(ctx context.Context) error
 	Wait() chan error
 	Prices() PriceStore
 }

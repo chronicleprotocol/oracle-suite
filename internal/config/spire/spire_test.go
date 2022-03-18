@@ -16,7 +16,6 @@
 package spire
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,7 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 	}()
 
 	signer := &ethereumMocks.Signer{}
-	transport := local.New(context.Background(), []byte("test"), 0, nil)
+	transport := local.New([]byte("test"), 0, nil)
 	feeds := []ethereum.Address{ethereum.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")}
 	logger := null.New()
 	ds := &datastoreMemory.Datastore{}
@@ -47,8 +46,7 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 		Pairs: []string{"AAABBB"},
 	}
 
-	spireAgentFactory = func(ctx context.Context, cfg spire.AgentConfig) (*spire.Agent, error) {
-		assert.NotNil(t, ctx)
+	spireAgentFactory = func(cfg spire.AgentConfig) (*spire.Agent, error) {
 		assert.Equal(t, ds, cfg.Datastore)
 		assert.Equal(t, transport, cfg.Transport)
 		assert.Equal(t, signer, cfg.Signer)
@@ -58,7 +56,6 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 	}
 
 	a, err := config.ConfigureAgent(AgentDependencies{
-		Context:   context.Background(),
 		Signer:    signer,
 		Transport: transport,
 		Datastore: ds,
@@ -80,16 +77,14 @@ func TestSpire_ConfigureClient(t *testing.T) {
 		Pairs: []string{"AAABBB"},
 	}
 
-	spireClientFactory = func(ctx context.Context, cfg spire.ClientConfig) (*spire.Client, error) {
-		assert.NotNil(t, ctx)
+	spireClientFactory = func(cfg spire.ClientConfig) (*spire.Client, error) {
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, "1.2.3.4:1234", cfg.Address)
 		return &spire.Client{}, nil
 	}
 
 	c, err := config.ConfigureClient(ClientDependencies{
-		Context: context.Background(),
-		Signer:  signer,
+		Signer: signer,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, c)

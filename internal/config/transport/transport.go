@@ -17,12 +17,12 @@ package transport
 
 import (
 	"bytes"
-	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 
@@ -34,13 +34,18 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p/crypto/ethkey"
 )
 
-var p2pTransportFactory = func(ctx context.Context, cfg p2p.Config) (transport.Transport, error) {
-	return p2p.New(ctx, cfg)
+const LibP2P = "libp2p"
+const LibSSB = "ssb"
+const DefaultTransport = LibP2P
+
+var p2pTransportFactory = func(cfg p2p.Config) (transport.Transport, error) {
+	return p2p.New(cfg)
 }
 
 type Transport struct {
-	P2P P2P         `json:"libp2p"`
-	SSB Scuttlebutt `json:"ssb"`
+	Transport string      `json:"transport"`
+	P2P       P2P         `json:"libp2p"`
+	SSB       Scuttlebutt `json:"ssb"`
 }
 
 type P2P struct {
@@ -63,47 +68,48 @@ type Caps struct {
 }
 
 type Dependencies struct {
-	Context context.Context
-	Signer  ethereum.Signer
-	Feeds   []ethereum.Address
-	Logger  log.Logger
+	Signer ethereum.Signer
+	Feeds  []ethereum.Address
+	Logger log.Logger
 }
 
 type BootstrapDependencies struct {
-	Context context.Context
-	Logger  log.Logger
-}
-
-func (c *Transport) ConfigureSSB() (transport.Transport, error) {
-	return nil, errors.New("ssb not yet implemented")
+	Logger log.Logger
 }
 
 func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (transport.Transport, error) {
-	peerPrivKey, err := c.generatePrivKey()
-	if err != nil {
-		return nil, err
+	switch strings.ToLower(c.Transport) {
+	case LibSSB:
+		return nil, errors.New("ssb not yet implemented")
+	case LibP2P:
+		fallthrough
+	default:
+		peerPrivKey, err := c.generatePrivKey()
+		if err != nil {
+			return nil, err
+		}
+		cfg := p2p.Config{
+			Mode:             p2p.ClientMode,
+			PeerPrivKey:      peerPrivKey,
+			Topics:           t,
+			MessagePrivKey:   ethkey.NewPrivKey(d.Signer),
+			ListenAddrs:      c.P2P.ListenAddrs,
+			BootstrapAddrs:   c.P2P.BootstrapAddrs,
+			DirectPeersAddrs: c.P2P.DirectPeersAddrs,
+			BlockedAddrs:     c.P2P.BlockedAddrs,
+			FeedersAddrs:     d.Feeds,
+			Discovery:        !c.P2P.DisableDiscovery,
+			Signer:           d.Signer,
+			Logger:           d.Logger,
+			AppName:          "spire",
+			AppVersion:       suite.Version,
+		}
+		p, err := p2pTransportFactory(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return p, nil
 	}
-	cfg := p2p.Config{
-		Mode:             p2p.ClientMode,
-		PeerPrivKey:      peerPrivKey,
-		Topics:           t,
-		MessagePrivKey:   ethkey.NewPrivKey(d.Signer),
-		ListenAddrs:      c.P2P.ListenAddrs,
-		BootstrapAddrs:   c.P2P.BootstrapAddrs,
-		DirectPeersAddrs: c.P2P.DirectPeersAddrs,
-		BlockedAddrs:     c.P2P.BlockedAddrs,
-		FeedersAddrs:     d.Feeds,
-		Discovery:        !c.P2P.DisableDiscovery,
-		Signer:           d.Signer,
-		Logger:           d.Logger,
-		AppName:          "spire",
-		AppVersion:       suite.Version,
-	}
-	p, err := p2pTransportFactory(d.Context, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
 }
 
 func (c *Transport) ConfigureP2PBoostrap(d BootstrapDependencies) (transport.Transport, error) {
@@ -122,7 +128,7 @@ func (c *Transport) ConfigureP2PBoostrap(d BootstrapDependencies) (transport.Tra
 		AppName:          "bootstrap",
 		AppVersion:       suite.Version,
 	}
-	p, err := p2pTransportFactory(d.Context, cfg)
+	p, err := p2pTransportFactory(cfg)
 	if err != nil {
 		return nil, err
 	}

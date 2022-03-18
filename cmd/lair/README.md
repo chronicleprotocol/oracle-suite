@@ -37,6 +37,7 @@ is `config.json` in the current working directory. You can change the config fil
 ```json
 {
   "transport": {
+    "transport": "libp2p",
     "libp2p": {
       "privKeySeed": "02082cf471002b5c5dfefdd6cbd30666ff02c4df90169f766877caec26ed4f88",
       "listenAddrs": [
@@ -96,6 +97,8 @@ is `config.json` in the current working directory. You can change the config fil
 ### Configuration reference
 
 - `transport` - Configuration parameters for transports mechanisms used to relay messages.
+    - `transport` (string) - Transport to use. Supported mechanism are: `libp2p` and `ssb`. If empty, thw `libp2p` is
+      used.
     - `libp2p` - Configuration parameters for the libp2p transport (Spire network).
         - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the
           libp2p network. The value may be empty to generate a random seed.

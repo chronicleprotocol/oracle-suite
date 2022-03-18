@@ -38,9 +38,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Short:   "Start server",
 		Long:    `Start server`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			ctx, ctxCancel := context.WithCancel(context.Background())
-			defer ctxCancel()
-
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			log := opts.Logger()
 
 			handler, err := rpcsplitter.NewHandler(opts.EthRPCURLs, log)
@@ -48,7 +46,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 				return err
 			}
 
-			srv := httpserver.New(ctx, &http.Server{
+			srv := httpserver.New(&http.Server{
 				Addr:    opts.Listen,
 				Handler: handler,
 			})
@@ -69,7 +67,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 				})
 			}
 
-			err = srv.Start()
+			err = srv.Start(ctx)
 			if err != nil {
 				return fmt.Errorf("unable to start the HTTP server: %w", err)
 			}
@@ -81,11 +79,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 				}
 			}()
 
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-			<-c
-
-			return nil
+			return <-srv.Wait()
 		},
 	}
 }

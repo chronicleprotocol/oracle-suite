@@ -32,9 +32,9 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 	prevEventPublisherFactory := eventPublisherFactory
 	defer func() { eventPublisherFactory = prevEventPublisherFactory }()
 
-	ctx := context.Background()
 	sig := geth.NewSigner(nil)
-	tra := local.New(ctx, []byte("test"), 0, nil)
+	tra := local.New([]byte("test"), 0, nil)
+	_ = tra.Start(context.Background())
 	log := null.New()
 
 	config := EventPublisher{Listeners: listeners{Wormhole: []wormholeListener{{
@@ -45,8 +45,7 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 		Addresses:    []string{"0x07a35a1d4b751a818d93aa38e615c0df23064881"},
 	}}}}
 
-	eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
-		assert.NotNil(t, ctx)
+	eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublisher, error) {
 		assert.Equal(t, tra, cfg.Transport)
 		assert.NotNil(t, cfg.Signers)
 		assert.Equal(t, log, cfg.Logger)
@@ -56,7 +55,6 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 	}
 
 	ep, err := config.Configure(Dependencies{
-		Context:   ctx,
 		Signer:    sig,
 		Transport: tra,
 		Logger:    log,

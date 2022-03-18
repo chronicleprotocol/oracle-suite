@@ -34,23 +34,22 @@ type AsyncGofer struct {
 }
 
 // NewAsyncGofer returns a new AsyncGofer instance.
-func NewAsyncGofer(ctx context.Context, g map[gofer.Pair]nodes.Aggregator, f *feeder.Feeder) (*AsyncGofer, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewAsyncGofer(g map[gofer.Pair]nodes.Aggregator, f *feeder.Feeder) (*AsyncGofer, error) {
 	return &AsyncGofer{
 		Gofer:  NewGofer(g, nil),
-		ctx:    ctx,
 		feeder: f,
 		waitCh: make(chan error),
 	}, nil
 }
 
 // Start starts asynchronous price updater.
-func (a *AsyncGofer) Start() error {
+func (a *AsyncGofer) Start(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	a.ctx = ctx
 	go a.contextCancelHandler()
-	ns, _ := a.findNodes()
-	return a.feeder.Start(ns...)
+	return a.feeder.Start(ctx)
 }
 
 // Wait waits until the context is canceled or until an error occurs.
@@ -59,6 +58,6 @@ func (a *AsyncGofer) Wait() chan error {
 }
 
 func (a *AsyncGofer) contextCancelHandler() {
-	defer func() { a.waitCh <- nil }()
+	defer func() { close(a.waitCh) }()
 	<-a.ctx.Done()
 }

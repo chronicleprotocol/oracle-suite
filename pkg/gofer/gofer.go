@@ -16,6 +16,7 @@
 package gofer
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -113,6 +114,6 @@ type Gofer interface {
 // started first to work properly.
 type StartableGofer interface {
 	Gofer
-	Start() error
+	Start(ctx context.Context) error
 	Wait() chan error
 }

@@ -91,8 +91,9 @@ func UserAgent(userAgent string) Options {
 // dropped until we reach a low number of connections.
 func ConnectionLimit(low, high int, grace time.Duration) Options {
 	return func(n *Node) error {
-		n.connmgr = connmgr.NewConnManager(low, high, grace)
-		return nil
+		var err error
+		n.connmgr, err = connmgr.NewConnManager(low, high, connmgr.WithGracePeriod(grace))
+		return err
 	}
 }
 

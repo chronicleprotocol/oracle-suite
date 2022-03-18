@@ -19,6 +19,8 @@ import (
 	"context"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -45,17 +47,14 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 		Short: "",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
-			var err error
-			ctx := context.Background()
-			srv, err := PrepareClientServices(ctx, opts)
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			sup, cli, err := PrepareClientSupervisor(ctx, opts)
 			if err != nil {
 				return err
 			}
-			if err = srv.Start(); err != nil {
+			if err = sup.Start(); err != nil {
 				return err
 			}
-			defer srv.CancelAndWait()
-
 			in := os.Stdin
 			if len(args) == 1 {
 				in, err = os.Open(args[0])
@@ -63,26 +62,22 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 					return err
 				}
 			}
-
 			// Read JSON and parse it:
 			input, err := io.ReadAll(in)
 			if err != nil {
 				return err
 			}
-
 			msg := &messages.Price{}
 			err = msg.Unmarshall(input)
 			if err != nil {
 				return err
 			}
-
 			// Send price message to RPC client:
-			err = srv.Client.PublishPrice(msg)
+			err = cli.PublishPrice(msg)
 			if err != nil {
 				return err
 			}
-
-			return nil
+			return <-sup.Wait()
 		},
 	}
 }

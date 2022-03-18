@@ -18,7 +18,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -26,13 +25,11 @@ import (
 	ghostConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ghost"
 	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ghost"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 type Config struct {
@@ -43,116 +40,55 @@ type Config struct {
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
 }
 
-type Dependencies struct {
-	Context context.Context
-	Logger  log.Logger
-}
-
-func (c *Config) Configure(d Dependencies, noGoferRPC bool) (transport.Transport, gofer.Gofer, *ghost.Ghost, error) {
-	sig, err := c.Ethereum.ConfigureSigner()
+func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	cli, err := c.Ethereum.ConfigureEthereumClient(nil) // signer may be empty here
+	log := opts.Logger()
+	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	gof, err := c.Gofer.ConfigureGofer(d.Context, cli, d.Logger, noGoferRPC)
+	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil) // signer may be empty here
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
+	}
+	gof, err := opts.Config.Gofer.ConfigureGofer(cli, log, opts.GoferNoRPC)
+	if err != nil {
+		return nil, err
 	}
 
 	if sig.Address() == ethereum.EmptyAddress {
-		return nil, nil, nil, errors.New("ethereum account must be configured")
+		return nil, errors.New("ethereum account must be configured")
 	}
-	fed, err := c.Feeds.Addresses()
+	fed, err := opts.Config.Feeds.Addresses()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	tra, err := c.Transport.Configure(transportConfig.Dependencies{
-		Context: d.Context,
-		Signer:  sig,
-		Feeds:   fed,
-		Logger:  d.Logger,
+	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
+		Signer: sig,
+		Feeds:  fed,
+		Logger: log,
 	},
 		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
 	)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	gho, err := c.Ghost.Configure(ghostConfig.Dependencies{
-		Context:   d.Context,
+	gho, err := opts.Config.Ghost.Configure(ghostConfig.Dependencies{
 		Gofer:     gof,
 		Signer:    sig,
 		Transport: tra,
-		Logger:    d.Logger,
+		Logger:    log,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	return tra, gof, gho, nil
-}
-
-type Services struct {
-	ctxCancel context.CancelFunc
-	Transport transport.Transport
-	Gofer     gofer.Gofer
-	Ghost     *ghost.Ghost
-}
-
-func PrepareServices(ctx context.Context, opts *options) (*Services, error) {
-	var err error
-	ctx, ctxCancel := context.WithCancel(ctx)
-	defer func() {
-		if err != nil {
-			ctxCancel()
-		}
-	}()
-
-	// Load config file:
-	err = config.ParseFile(&opts.Config, opts.ConfigFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
+	sup := supervisor.New(ctx)
+	sup.Watch(tra, gho)
+	if g, ok := gof.(gofer.StartableGofer); ok {
+		sup.Watch(g)
 	}
-
-	// Services:
-	tra, gof, gho, err := opts.Config.Configure(Dependencies{
-		Context: ctx,
-		Logger:  opts.Logger(),
-	}, opts.GoferNoRPC)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load Ghost configuration: %w", err)
-	}
-
-	return &Services{
-		ctxCancel: ctxCancel,
-		Transport: tra,
-		Gofer:     gof,
-		Ghost:     gho,
-	}, nil
-}
-
-func (s *Services) Start() error {
-	var err error
-	if g, ok := s.Gofer.(gofer.StartableGofer); ok {
-		if err = g.Start(); err != nil {
-			return err
-		}
-	}
-	if err = s.Transport.Start(); err != nil {
-		return err
-	}
-	if err = s.Ghost.Start(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Services) CancelAndWait() {
-	s.ctxCancel()
-	<-s.Transport.Wait()
-	<-s.Ghost.Wait()
-	if g, ok := s.Gofer.(gofer.StartableGofer); ok {
-		<-g.Wait()
-	}
+	return sup, nil
 }

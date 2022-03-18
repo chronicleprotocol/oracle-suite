@@ -47,10 +47,7 @@ type AgentConfig struct {
 	Logger    log.Logger
 }
 
-func NewAgent(ctx context.Context, cfg AgentConfig) (*Agent, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewAgent(cfg AgentConfig) (*Agent, error) {
 	logger := cfg.Logger.WithField("tag", AgentLoggerTag)
 	rpcSrv := rpc.NewServer()
 	err := rpcSrv.Register(&API{
@@ -63,21 +60,23 @@ func NewAgent(ctx context.Context, cfg AgentConfig) (*Agent, error) {
 		return nil, err
 	}
 	return &Agent{
-		ctx:    ctx,
 		waitCh: make(chan error),
-		srv:    httpserver.New(ctx, &http.Server{Addr: cfg.Address, Handler: rpcSrv}),
+		srv:    httpserver.New(&http.Server{Addr: cfg.Address, Handler: rpcSrv}),
 		log:    logger,
 	}, nil
 }
 
-func (s *Agent) Start() error {
+func (s *Agent) Start(ctx context.Context) error {
 	s.log.Infof("Starting")
-	err := s.srv.Start()
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	s.ctx = ctx
+	err := s.srv.Start(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to start the HTTP server: %w", err)
 	}
 	go s.contextCancelHandler()
-
 	return nil
 }
 

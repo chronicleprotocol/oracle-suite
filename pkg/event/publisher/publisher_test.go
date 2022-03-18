@@ -50,11 +50,11 @@ func (t testSigner) Sign(event *messages.Event) (bool, error) {
 
 func TestEventPublisher(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	loc := local.New(ctx, []byte("test"), 10, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	loc := local.New([]byte("test"), 10, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 	lis := &testListener{ch: make(chan *messages.Event, 10)}
 	sig := &testSigner{}
 
-	pub, err := New(ctx, Config{
+	pub, err := New(Config{
 		Listeners: []Listener{lis},
 		Signers:   []Signer{sig},
 		Transport: loc,
@@ -62,8 +62,8 @@ func TestEventPublisher(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, loc.Start())
-	require.NoError(t, pub.Start())
+	require.NoError(t, loc.Start(ctx))
+	require.NoError(t, pub.Start(ctx))
 	defer func() {
 		cancelFunc()
 		require.NoError(t, <-loc.Wait())

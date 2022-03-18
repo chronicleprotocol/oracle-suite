@@ -16,7 +16,6 @@
 package ghost
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -38,7 +37,7 @@ func TestGhost_Configure(t *testing.T) {
 	pairs := []string{"AAABBB", "XXXYYY"}
 	gofer := &goferMocks.Gofer{}
 	signer := &ethereumMocks.Signer{}
-	transport := local.New(context.Background(), []byte("test"), 0, nil)
+	transport := local.New([]byte("test"), 0, nil)
 	logger := null.New()
 
 	config := Ghost{
@@ -46,8 +45,7 @@ func TestGhost_Configure(t *testing.T) {
 		Pairs:    pairs,
 	}
 
-	ghostFactory = func(ctx context.Context, cfg ghost.Config) (*ghost.Ghost, error) {
-		assert.NotNil(t, ctx)
+	ghostFactory = func(cfg ghost.Config) (*ghost.Ghost, error) {
 		assert.Equal(t, time.Duration(interval)*time.Second, cfg.Interval)
 		assert.Equal(t, pairs, cfg.Pairs)
 		assert.Equal(t, signer, cfg.Signer)
@@ -58,7 +56,6 @@ func TestGhost_Configure(t *testing.T) {
 	}
 
 	g, err := config.Configure(Dependencies{
-		Context:   context.Background(),
 		Gofer:     gofer,
 		Signer:    signer,
 		Transport: transport,

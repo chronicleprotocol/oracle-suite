@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -47,32 +50,27 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 		Short: "",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
-			ctx := context.Background()
-			srv, err := PrepareClientServices(ctx, opts)
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			sup, cli, err := PrepareClientSupervisor(ctx, opts)
 			if err != nil {
 				return err
 			}
-			if err = srv.Start(); err != nil {
+			if err = sup.Start(); err != nil {
 				return err
 			}
-			defer srv.CancelAndWait()
-
-			p, err := srv.Client.PullPrice(args[0], args[1])
+			p, err := cli.PullPrice(args[0], args[1])
 			if err != nil {
 				return err
 			}
 			if p == nil {
 				return errors.New("there is no price in the datastore for a given feeder and asset pair")
 			}
-
 			bts, err := json.Marshal(p)
 			if err != nil {
 				return err
 			}
-
 			fmt.Printf("%s\n", string(bts))
-
-			return nil
+			return <-sup.Wait()
 		},
 	}
 }
@@ -91,29 +89,24 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 		Short: "",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
-			ctx := context.Background()
-			srv, err := PrepareClientServices(ctx, opts)
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			sup, cli, err := PrepareClientSupervisor(ctx, opts)
 			if err != nil {
 				return err
 			}
-			if err = srv.Start(); err != nil {
+			if err = sup.Start(); err != nil {
 				return err
 			}
-			defer srv.CancelAndWait()
-
-			p, err := srv.Client.PullPrices(pullPricesOpts.FilterPair, pullPricesOpts.FilterFrom)
+			p, err := cli.PullPrices(pullPricesOpts.FilterPair, pullPricesOpts.FilterFrom)
 			if err != nil {
 				return err
 			}
-
 			bts, err := json.Marshal(p)
 			if err != nil {
 				return err
 			}
-
 			fmt.Printf("%s\n", string(bts))
-
-			return nil
+			return <-sup.Wait()
 		},
 	}
 

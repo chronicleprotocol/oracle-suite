@@ -32,18 +32,18 @@ import (
 
 func TestEventStore(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	tra := local.New(ctx, []byte("test"), 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	tra := local.New([]byte("test"), 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 
 	mem := memory.New(time.Minute)
-	evs, err := New(ctx, Config{
+	evs, err := New(Config{
 		Storage:   mem,
 		Transport: tra,
 		Log:       null.New(),
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, evs.Start())
-	require.NoError(t, tra.Start())
+	require.NoError(t, tra.Start(ctx))
+	require.NoError(t, evs.Start(ctx))
 	defer func() {
 		cancelFunc()
 		require.NoError(t, <-evs.Wait())

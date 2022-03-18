@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	var err error
 
 	mockGofer = &mocks.Gofer{}
-	agent, err = NewAgent(ctx, AgentConfig{
+	agent, err = NewAgent(AgentConfig{
 		Gofer:   mockGofer,
 		Network: "tcp",
 		Address: "127.0.0.1:0",
@@ -47,14 +47,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	if err = agent.Start(); err != nil {
+	if err = agent.Start(ctx); err != nil {
 		panic(err)
 	}
-	rpcGofer, err = NewGofer(ctx, "tcp", agent.listener.Addr().String())
+	rpcGofer, err = NewGofer("tcp", agent.listener.Addr().String())
 	if err != nil {
 		panic(err)
 	}
-	err = rpcGofer.Start()
+	err = rpcGofer.Start(ctx)
 	if err != nil {
 		panic(err)
 	}

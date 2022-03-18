@@ -17,6 +17,7 @@ package feeder
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -71,14 +72,15 @@ type Feeder struct {
 	waitCh chan error
 
 	set *origins.Set
+	ns  []nodes.Node
 	log log.Logger
 }
 
 // NewFeeder creates new Feeder instance.
-func NewFeeder(ctx context.Context, set *origins.Set, log log.Logger) *Feeder {
+func NewFeeder(set *origins.Set, ns []nodes.Node, log log.Logger) *Feeder {
 	return &Feeder{
-		ctx:    ctx,
 		set:    set,
+		ns:     ns,
 		log:    log.WithField("tag", LoggerTag),
 		waitCh: make(chan error),
 	}
@@ -91,10 +93,14 @@ func (f *Feeder) Feed(ns ...nodes.Node) Warnings {
 }
 
 // Start starts a goroutine which updates prices as often as the lowest TTL is.
-func (f *Feeder) Start(ns ...nodes.Node) error {
+func (f *Feeder) Start(ctx context.Context) error {
 	f.log.Infof("Starting")
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	f.ctx = ctx
 
-	gcdTTL := getGCDTTL(ns)
+	gcdTTL := getGCDTTL(f.ns)
 	if gcdTTL < time.Second {
 		gcdTTL = time.Second
 	}
@@ -104,7 +110,7 @@ func (f *Feeder) Start(ns ...nodes.Node) error {
 		// We have to add gcdTTL to the current time because we want
 		// to find all nodes that will expire before the next tick.
 		t := time.Now().Add(gcdTTL)
-		warns := f.fetchPricesAndFeedThemToFeedableNodes(f.findFeedableNodes(ns, t))
+		warns := f.fetchPricesAndFeedThemToFeedableNodes(f.findFeedableNodes(f.ns, t))
 		if len(warns.List) > 0 {
 			f.log.WithError(warns.ToError()).Warn("Unable to feed some nodes")
 		}
@@ -207,7 +213,7 @@ func (f *Feeder) fetchPricesAndFeedThemToFeedableNodes(ns []Feedable) Warnings {
 }
 
 func (f *Feeder) contextCancelHandler() {
-	defer func() { f.waitCh <- nil }()
+	defer func() { close(f.waitCh) }()
 	defer f.log.Info("Stopped")
 	<-f.ctx.Done()
 }

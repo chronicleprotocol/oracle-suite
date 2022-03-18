@@ -16,7 +16,6 @@
 package eventpublisher
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -31,8 +30,8 @@ import (
 )
 
 //nolint
-var eventPublisherFactory = func(ctx context.Context, cfg publisher.Config) (*publisher.EventPublisher, error) {
-	return publisher.New(ctx, cfg)
+var eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublisher, error) {
+	return publisher.New(cfg)
 }
 
 type EventPublisher struct {
@@ -52,16 +51,12 @@ type wormholeListener struct {
 }
 
 type Dependencies struct {
-	Context   context.Context
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Logger    log.Logger
 }
 
 func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, error) {
-	if d.Context == nil {
-		return nil, fmt.Errorf("eventpublisher config: context cannot be nil")
-	}
 	if d.Signer == nil {
 		return nil, fmt.Errorf("eventpublisher config: signer cannot be nil")
 	}
@@ -111,7 +106,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		Transport: d.Transport,
 		Logger:    d.Logger,
 	}
-	ep, err := eventPublisherFactory(d.Context, cfg)
+	ep, err := eventPublisherFactory(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}

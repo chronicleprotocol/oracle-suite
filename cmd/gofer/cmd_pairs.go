@@ -18,6 +18,8 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -32,41 +34,37 @@ func NewPairsCmd(opts *options) *cobra.Command {
 		Short:   "List all supported asset pairs",
 		Long:    `List all supported asset pairs.`,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			srv, err := PrepareGoferClientServices(context.Background(), opts)
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			sup, gof, mar, err := PrepareClientServices(ctx, opts)
 			if err != nil {
+				return err
+			}
+			if err = sup.Start(); err != nil {
 				return err
 			}
 			defer func() {
 				if err != nil {
 					exitCode = 1
-					_ = srv.Marshaller.Write(os.Stderr, err)
+					_ = mar.Write(os.Stderr, err)
 				}
-				_ = srv.Marshaller.Flush()
+				_ = mar.Flush()
 				// Set err to nil because error was already handled by marshaller.
 				err = nil
 			}()
-			if err = srv.Start(); err != nil {
-				return err
-			}
-			defer srv.CancelAndWait()
-
 			pairs, err := gofer.NewPairs(args...)
 			if err != nil {
 				return err
 			}
-
-			models, err := srv.Gofer.Models(pairs...)
+			models, err := gof.Models(pairs...)
 			if err != nil {
 				return err
 			}
-
 			for _, p := range models {
-				if mErr := srv.Marshaller.Write(os.Stdout, p); mErr != nil {
-					_ = srv.Marshaller.Write(os.Stderr, mErr)
+				if mErr := mar.Write(os.Stdout, p); mErr != nil {
+					_ = mar.Write(os.Stderr, mErr)
 				}
 			}
-
-			return
+			return <-sup.Wait()
 		},
 	}
 }

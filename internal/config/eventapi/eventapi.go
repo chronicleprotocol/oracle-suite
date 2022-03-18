@@ -16,7 +16,6 @@
 package eventapi
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -32,8 +31,8 @@ import (
 const week = 3600 * 24 * 7
 
 //nolint
-var eventAPIFactory = func(ctx context.Context, cfg api.Config) (*api.EventAPI, error) {
-	return api.New(ctx, cfg)
+var eventAPIFactory = func(cfg api.Config) (*api.EventAPI, error) {
+	return api.New(cfg)
 }
 
 type EventAPI struct {
@@ -59,14 +58,12 @@ type storageRedis struct {
 }
 
 type Dependencies struct {
-	Context    context.Context
 	EventStore *store.EventStore
 	Transport  transport.Transport
 	Logger     log.Logger
 }
 
 type DatastoreDependencies struct {
-	Context   context.Context
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Feeds     []ethereum.Address
@@ -74,7 +71,7 @@ type DatastoreDependencies struct {
 }
 
 func (c *EventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
-	return eventAPIFactory(d.Context, api.Config{
+	return eventAPIFactory(api.Config{
 		EventStore: d.EventStore,
 		Address:    c.ListenAddr,
 		Logger:     d.Logger,

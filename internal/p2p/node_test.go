@@ -47,31 +47,28 @@ func TestNode_MessagePropagation(t *testing.T) {
 	defer ctxCancel()
 
 	n0, err := NewNode(
-		ctx,
 		PeerPrivKey(peers[0].PrivKey),
 		ListenAddrs(peers[0].ListenAddrs),
 		DirectPeers(peers[1].PeerAddrs),
 	)
 	require.NoError(t, err)
-	require.NoError(t, n0.Start())
+	require.NoError(t, n0.Start(ctx))
 
 	n1, err := NewNode(
-		ctx,
 		PeerPrivKey(peers[1].PrivKey),
 		ListenAddrs(peers[1].ListenAddrs),
 		DirectPeers(append([]multiaddr.Multiaddr{}, peers[0].PeerAddrs[0], peers[2].PeerAddrs[0])),
 	)
 	require.NoError(t, err)
-	require.NoError(t, n1.Start())
+	require.NoError(t, n1.Start(ctx))
 
 	n2, err := NewNode(
-		ctx,
 		PeerPrivKey(peers[2].PrivKey),
 		ListenAddrs(peers[2].ListenAddrs),
 		DirectPeers(peers[1].PeerAddrs),
 	)
 	require.NoError(t, err)
-	require.NoError(t, n2.Start())
+	require.NoError(t, n2.Start(ctx))
 
 	_, err = n0.Subscribe("test")
 	require.NoError(t, err)

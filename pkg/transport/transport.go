@@ -15,6 +15,8 @@
 
 package transport
 
+import "context"
+
 // ReceivedMessage contains a Message received from Transport with
 // an additional data.
 type ReceivedMessage struct {
@@ -45,7 +47,7 @@ type Transport interface {
 	// structure.
 	Messages(topic string) chan ReceivedMessage
 	// Start starts listening for messages.
-	Start() error
+	Start(ctx context.Context) error
 	// Wait waits until the context is canceled or until an error occurs.
 	Wait() chan error
 }

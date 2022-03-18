@@ -16,7 +16,6 @@
 package httpserver
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,7 +27,7 @@ func TestServer_WithoutMiddlewares(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	rw := httptest.NewRecorder()
 
-	srv := New(context.Background(), &http.Server{
+	srv := New(&http.Server{
 		Handler: http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("response"))
 		}),
@@ -42,7 +41,7 @@ func TestServer_WithMiddlewares(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	rw := httptest.NewRecorder()
 
-	srv := New(context.Background(), &http.Server{
+	srv := New(&http.Server{
 		Handler: http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("response"))
 		}),
@@ -71,7 +70,7 @@ func TestServer_UseMustPanicAfterServerHTTP(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	rw := httptest.NewRecorder()
 
-	srv := New(context.Background(), &http.Server{
+	srv := New(&http.Server{
 		Handler: http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {}),
 	})
 	srv.ServeHTTP(rw, r)

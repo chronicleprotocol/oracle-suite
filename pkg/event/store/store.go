@@ -54,12 +54,8 @@ type Storage interface {
 }
 
 // New returns a new instance of the EventStore struct.
-func New(ctx context.Context, cfg Config) (*EventStore, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func New(cfg Config) (*EventStore, error) {
 	return &EventStore{
-		ctx:       ctx,
 		storage:   cfg.Storage,
 		transport: cfg.Transport,
 		log:       cfg.Log.WithField("tag", LoggerTag),
@@ -67,8 +63,12 @@ func New(ctx context.Context, cfg Config) (*EventStore, error) {
 	}, nil
 }
 
-func (e *EventStore) Start() error {
+func (e *EventStore) Start(ctx context.Context) error {
 	e.log.Info("Starting")
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	e.ctx = ctx
 	go e.eventCollectorRoutine()
 	go e.contextCancelHandler()
 	return nil
@@ -110,7 +110,7 @@ func (e *EventStore) eventCollectorRoutine() {
 
 // contextCancelHandler handles context cancellation.
 func (e *EventStore) contextCancelHandler() {
-	defer func() { e.waitCh <- nil }()
+	defer func() { close(e.waitCh) }()
 	defer e.log.Info("Stopped")
 	<-e.ctx.Done()
 }

@@ -61,12 +61,8 @@ type Signer interface {
 }
 
 // New returns a new instance of the EventPublisher struct.
-func New(ctx context.Context, cfg Config) (*EventPublisher, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func New(cfg Config) (*EventPublisher, error) {
 	return &EventPublisher{
-		ctx:       ctx,
 		waitCh:    make(chan error),
 		transport: cfg.Transport,
 		listeners: cfg.Listeners,
@@ -75,8 +71,12 @@ func New(ctx context.Context, cfg Config) (*EventPublisher, error) {
 	}, nil
 }
 
-func (l *EventPublisher) Start() error {
+func (l *EventPublisher) Start(ctx context.Context) error {
 	l.log.Infof("Starting")
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	l.ctx = ctx
 	l.listenerLoop()
 	for _, lis := range l.listeners {
 		err := lis.Start(l.ctx)
@@ -158,7 +158,7 @@ func (l *EventPublisher) sign(event *messages.Event) bool {
 }
 
 func (l *EventPublisher) contextCancelHandler() {
-	defer func() { l.waitCh <- nil }()
+	defer func() { close(l.waitCh) }()
 	defer l.log.Info("Stopped")
 	<-l.ctx.Done()
 }

@@ -16,7 +16,6 @@
 package ghost
 
 import (
-	"context"
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -27,8 +26,8 @@ import (
 )
 
 //nolint
-var ghostFactory = func(ctx context.Context, cfg ghost.Config) (*ghost.Ghost, error) {
-	return ghost.NewGhost(ctx, cfg)
+var ghostFactory = func(cfg ghost.Config) (*ghost.Ghost, error) {
+	return ghost.NewGhost(cfg)
 }
 
 type Ghost struct {
@@ -37,7 +36,6 @@ type Ghost struct {
 }
 
 type Dependencies struct {
-	Context   context.Context
 	Gofer     gofer.Gofer
 	Signer    ethereum.Signer
 	Transport transport.Transport
@@ -53,5 +51,5 @@ func (c *Ghost) Configure(d Dependencies) (*ghost.Ghost, error) {
 		Interval:  time.Second * time.Duration(c.Interval),
 		Pairs:     c.Pairs,
 	}
-	return ghostFactory(d.Context, cfg)
+	return ghostFactory(cfg)
 }

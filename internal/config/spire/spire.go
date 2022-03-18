@@ -16,8 +16,6 @@
 package spire
 
 import (
-	"context"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
 	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/datastore/memory"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -27,17 +25,17 @@ import (
 )
 
 //nolint
-var spireAgentFactory = func(ctx context.Context, cfg spire.AgentConfig) (*spire.Agent, error) {
-	return spire.NewAgent(ctx, cfg)
+var spireAgentFactory = func(cfg spire.AgentConfig) (*spire.Agent, error) {
+	return spire.NewAgent(cfg)
 }
 
 //nolint
-var spireClientFactory = func(ctx context.Context, cfg spire.ClientConfig) (*spire.Client, error) {
-	return spire.NewClient(ctx, cfg)
+var spireClientFactory = func(cfg spire.ClientConfig) (*spire.Client, error) {
+	return spire.NewClient(cfg)
 }
 
-var datastoreFactory = func(ctx context.Context, cfg datastoreMemory.Config) (datastore.Datastore, error) {
-	return datastoreMemory.NewDatastore(ctx, cfg)
+var datastoreFactory = func(cfg datastoreMemory.Config) (datastore.Datastore, error) {
+	return datastoreMemory.NewDatastore(cfg)
 }
 
 type Spire struct {
@@ -51,7 +49,6 @@ type RPC struct {
 }
 
 type AgentDependencies struct {
-	Context   context.Context
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Datastore datastore.Datastore
@@ -60,12 +57,10 @@ type AgentDependencies struct {
 }
 
 type ClientDependencies struct {
-	Context context.Context
-	Signer  ethereum.Signer
+	Signer ethereum.Signer
 }
 
 type DatastoreDependencies struct {
-	Context   context.Context
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Feeds     []ethereum.Address
@@ -73,7 +68,7 @@ type DatastoreDependencies struct {
 }
 
 func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
-	agent, err := spireAgentFactory(d.Context, spire.AgentConfig{
+	agent, err := spireAgentFactory(spire.AgentConfig{
 		Datastore: d.Datastore,
 		Transport: d.Transport,
 		Signer:    d.Signer,
@@ -87,7 +82,7 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 }
 
 func (c *Spire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
-	return spireClientFactory(d.Context, spire.ClientConfig{
+	return spireClientFactory(spire.ClientConfig{
 		Signer:  d.Signer,
 		Address: c.RPC.Address,
 	})
@@ -103,9 +98,5 @@ func (c *Spire) ConfigureDatastore(d DatastoreDependencies) (datastore.Datastore
 	for _, name := range c.Pairs {
 		cfg.Pairs[name] = &datastoreMemory.Pair{Feeds: d.Feeds}
 	}
-	return datastoreFactory(d.Context, cfg)
+	return datastoreFactory(cfg)
 }
-
-const TransportLibP2P = "libp2p"
-const TransportLibSSB = "ssb"
-const DefaultTransport = TransportLibP2P

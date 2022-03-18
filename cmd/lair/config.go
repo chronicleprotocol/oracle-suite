@@ -22,10 +22,9 @@ import (
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventapi"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
-	eventAPI "github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -36,106 +35,47 @@ type Config struct {
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
 }
 
-type Dependencies struct {
-	Context context.Context
-	Logger  log.Logger
-}
-
-func (c *Config) Configure(d Dependencies) (transport.Transport, *store.EventStore, *eventAPI.EventAPI, error) {
-	fed, err := c.Feeds.Addresses()
+func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	tra, err := c.Transport.Configure(transportConfig.Dependencies{
-		Context: d.Context,
-		Signer:  geth.NewSigner(nil),
-		Feeds:   fed,
-		Logger:  d.Logger,
+	log := opts.Logger()
+	fed, err := opts.Config.Feeds.Addresses()
+	if err != nil {
+		return nil, err
+	}
+	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
+		Signer: geth.NewSigner(nil),
+		Feeds:  fed,
+		Logger: log,
 	},
 		map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)},
 	)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	sto, err := c.Lair.ConfigureStorage()
+	sto, err := opts.Config.Lair.ConfigureStorage()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	evs, err := store.New(d.Context, store.Config{
+	evs, err := store.New(store.Config{
 		Storage:   sto,
 		Transport: tra,
-		Log:       d.Logger,
-	})
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	api, err := c.Lair.Configure(eventAPIConfig.Dependencies{
-		Context:    d.Context,
-		EventStore: evs,
-		Transport:  tra,
-		Logger:     d.Logger,
-	})
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return tra, evs, api, nil
-}
-
-type Service struct {
-	ctxCancel  context.CancelFunc
-	Transport  transport.Transport
-	EventStore *store.EventStore
-	Lair       *eventAPI.EventAPI
-}
-
-func PrepareService(ctx context.Context, opts *options) (*Service, error) {
-	var err error
-	ctx, ctxCancel := context.WithCancel(ctx)
-	defer func() {
-		if err != nil {
-			ctxCancel()
-		}
-	}()
-
-	// Load config file:
-	err = config.ParseFile(&opts.Config, opts.ConfigFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	// Services:
-	tra, evs, lel, err := opts.Config.Configure(Dependencies{
-		Context: ctx,
-		Logger:  opts.Logger(),
+		Log:       log,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	return &Service{
-		ctxCancel:  ctxCancel,
-		Transport:  tra,
+	api, err := opts.Config.Lair.Configure(eventAPIConfig.Dependencies{
 		EventStore: evs,
-		Lair:       lel,
-	}, nil
-}
-
-func (s *Service) Start() error {
-	var err error
-	if err = s.Transport.Start(); err != nil {
-		return err
+		Transport:  tra,
+		Logger:     log,
+	})
+	if err != nil {
+		return nil, err
 	}
-	if err = s.EventStore.Start(); err != nil {
-		return err
-	}
-	if err = s.Lair.Start(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) CancelAndWait() {
-	s.ctxCancel()
-	<-s.Lair.Wait()
-	<-s.Transport.Wait()
+	sup := supervisor.New(ctx)
+	sup.Watch(tra, evs, api)
+	return sup, nil
 }

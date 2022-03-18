@@ -38,8 +38,10 @@ func (m MiddlewareFunc) Handle(h http.Handler) http.Handler {
 // HTTPServer allows using middlewares with http.Server and allow controlling
 // server lifecycle using context.
 type HTTPServer struct {
-	ctx    context.Context
-	waitCh chan error
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	serveCh   chan error
+	waitCh    chan error
 
 	ln  net.Listener
 	srv *http.Server
@@ -50,11 +52,11 @@ type HTTPServer struct {
 }
 
 // New creates a new HTTPServer instance.
-func New(ctx context.Context, srv *http.Server) *HTTPServer {
+func New(srv *http.Server) *HTTPServer {
 	s := &HTTPServer{
-		ctx:    ctx,
-		waitCh: make(chan error),
-		srv:    srv,
+		serveCh: make(chan error),
+		waitCh:  make(chan error),
+		srv:     srv,
 	}
 	s.handler = srv.Handler
 	srv.Handler = http.HandlerFunc(s.ServeHTTP)
@@ -88,7 +90,11 @@ func (s *HTTPServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 // Start starts HTTP server.
-func (s *HTTPServer) Start() error {
+func (s *HTTPServer) Start(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	s.ctx, s.ctxCancel = context.WithCancel(ctx)
 	addr := s.srv.Addr
 	if addr == "" {
 		addr = ":http"
@@ -98,7 +104,7 @@ func (s *HTTPServer) Start() error {
 		return err
 	}
 	s.ln = ln
-	go s.contextCancelHandler()
+	go s.shutdownHandler()
 	go s.serve()
 	return nil
 }
@@ -113,20 +119,20 @@ func (s *HTTPServer) Addr() net.Addr {
 	return s.ln.Addr()
 }
 
-// contextCancelHandler handles context cancellation.
 func (s *HTTPServer) serve() {
-	if err := s.srv.Serve(s.ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		s.waitCh <- err
-	}
+	s.serveCh <- s.srv.Serve(s.ln)
 }
 
-// contextCancelHandler handles context cancellation.
-func (s *HTTPServer) contextCancelHandler() {
+func (s *HTTPServer) shutdownHandler() {
+	defer func() { close(s.waitCh) }()
 	select {
-	case <-s.waitCh:
 	case <-s.ctx.Done():
 		ctx, ctxCancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer ctxCancel()
 		s.waitCh <- s.srv.Shutdown(ctx)
+	case err := <-s.serveCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.waitCh <- err
+		}
 	}
 }

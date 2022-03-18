@@ -69,12 +69,8 @@ type Pair struct {
 	Feeds []ethereum.Address
 }
 
-func NewDatastore(ctx context.Context, cfg Config) (*Datastore, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func NewDatastore(cfg Config) (*Datastore, error) {
 	return &Datastore{
-		ctx:        ctx,
 		waitCh:     make(chan error),
 		signer:     cfg.Signer,
 		transport:  cfg.Transport,
@@ -85,9 +81,12 @@ func NewDatastore(ctx context.Context, cfg Config) (*Datastore, error) {
 }
 
 // Start implements the datastore.Datastore interface.
-func (c *Datastore) Start() error {
+func (c *Datastore) Start(ctx context.Context) error {
 	c.log.Info("Starting")
-
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	c.ctx = ctx
 	go c.contextCancelHandler()
 	return c.collectorLoop()
 }
@@ -180,7 +179,7 @@ func (c *Datastore) isFeedAllowed(assetPair string, address ethereum.Address) bo
 }
 
 func (c *Datastore) contextCancelHandler() {
-	defer func() { c.waitCh <- nil }()
+	defer func() { close(c.waitCh) }()
 	defer c.log.Info("Stopped")
 	<-c.ctx.Done()
 }

@@ -41,7 +41,8 @@ func TestLocal_Broadcast(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
-	l := New(ctx, []byte("test"), 1, map[string]transport.Message{"foo": (*testMsg)(nil)})
+	l := New([]byte("test"), 1, map[string]transport.Message{"foo": (*testMsg)(nil)})
+	_ = l.Start(ctx)
 
 	// Valid message:
 	vm := &testMsg{Val: "bar"}
@@ -52,7 +53,8 @@ func TestLocal_Messages(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
-	l := New(ctx, []byte("test"), 1, map[string]transport.Message{"foo": (*testMsg)(nil)})
+	l := New([]byte("test"), 1, map[string]transport.Message{"foo": (*testMsg)(nil)})
+	_ = l.Start(ctx)
 
 	// Valid message:
 	assert.NoError(t, l.Broadcast("foo", &testMsg{Val: "bar"}))

@@ -24,6 +24,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"golang.org/x/time/rate"
 
+	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -145,18 +146,22 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 			}
 			return pubsub.ValidationAccept
 		})
-		go func() {
-			t := time.NewTicker(time.Minute)
-			defer t.Stop()
-			for {
-				select {
-				case <-n.ctx.Done():
-					return
-				case <-t.C:
-					relayRL.gc()
-				}
+		n.AddNodeEventHandler(sets.NodeEventHandlerFunc(func(event interface{}) {
+			if _, ok := event.(sets.NodeStartedEvent); ok {
+				go func() {
+					t := time.NewTicker(time.Minute)
+					defer t.Stop()
+					for {
+						select {
+						case <-n.ctx.Done():
+							return
+						case <-t.C:
+							relayRL.gc()
+						}
+					}
+				}()
 			}
-		}()
+		}))
 		return nil
 	}
 }

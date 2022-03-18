@@ -36,24 +36,24 @@ import (
 
 func TestEventAPI(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	loc := local.New(ctx, []byte("test"), 4, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	loc := local.New([]byte("test"), 4, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 	mem := memory.New(time.Minute)
-	evs, err := store.New(ctx, store.Config{
+	evs, err := store.New(store.Config{
 		Storage:   mem,
 		Transport: loc,
 		Log:       null.New(),
 	})
 	require.NoError(t, err)
-	api, err := New(ctx, Config{
+	api, err := New(Config{
 		EventStore: evs,
 		Address:    "127.0.0.1:0",
 		Logger:     null.New(),
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, loc.Start())
-	require.NoError(t, evs.Start())
-	require.NoError(t, api.Start())
+	require.NoError(t, loc.Start(ctx))
+	require.NoError(t, evs.Start(ctx))
+	require.NoError(t, api.Start(ctx))
 	defer func() {
 		cancelFunc()
 		require.NoError(t, <-loc.Wait())

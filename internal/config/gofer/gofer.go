@@ -16,7 +16,6 @@
 package gofer
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -95,35 +94,33 @@ type Source struct {
 	TTL    int    `json:"ttl"`
 }
 
-func (c *Gofer) ConfigureGofer(
-	ctx context.Context,
-	cli pkgEthereum.Client,
-	logger log.Logger,
-	noRPC bool) (gofer.Gofer, error) {
-
+func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC bool) (gofer.Gofer, error) {
 	if c.RPC.Address == "" || noRPC {
-		return c.configureGofer(ctx, cli, logger)
+		return c.configureGofer(cli, logger)
 	}
-	return c.configureRPCClient(ctx)
+	return c.configureRPCClient()
 }
 
 // ConfigureRPCAgent returns a new rpc.Agent instance.
-func (c *Gofer) ConfigureRPCAgent(ctx context.Context, cli pkgEthereum.Client, logger log.Logger) (*rpc.Agent, error) {
+func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, logger log.Logger) (*rpc.Agent, error) {
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load price models: %w", err)
 	}
-
+	var ns []nodes.Node
+	for _, n := range gra {
+		ns = append(ns, n)
+	}
 	originSet, err := c.buildOrigins(cli)
 	if err != nil {
 		return nil, err
 	}
-	fed := feeder.NewFeeder(ctx, originSet, logger)
-	gof, err := graph.NewAsyncGofer(ctx, gra, fed)
+	fed := feeder.NewFeeder(originSet, ns, logger)
+	gof, err := graph.NewAsyncGofer(gra, fed)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
 	}
-	srv, err := rpc.NewAgent(ctx, rpc.AgentConfig{
+	srv, err := rpc.NewAgent(rpc.AgentConfig{
 		Gofer:   gof,
 		Network: "tcp",
 		Address: c.RPC.Address,
@@ -136,24 +133,27 @@ func (c *Gofer) ConfigureRPCAgent(ctx context.Context, cli pkgEthereum.Client, l
 }
 
 // ConfigureGofer returns a new Gofer instance.
-func (c *Gofer) configureGofer(ctx context.Context, cli pkgEthereum.Client, logger log.Logger) (gofer.Gofer, error) {
+func (c *Gofer) configureGofer(cli pkgEthereum.Client, logger log.Logger) (gofer.Gofer, error) {
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load price models: %w", err)
 	}
-
+	var ns []nodes.Node
+	for _, n := range gra {
+		ns = append(ns, n)
+	}
 	originSet, err := c.buildOrigins(cli)
 	if err != nil {
 		return nil, err
 	}
-	fed := feeder.NewFeeder(ctx, originSet, logger)
+	fed := feeder.NewFeeder(originSet, ns, logger)
 	gof := graph.NewGofer(gra, fed)
 	return gof, nil
 }
 
 // configureRPCClient returns a new rpc.RPC instance.
-func (c *Gofer) configureRPCClient(ctx context.Context) (*rpc.Gofer, error) {
-	return rpc.NewGofer(ctx, "tcp", c.RPC.Address)
+func (c *Gofer) configureRPCClient() (*rpc.Gofer, error) {
+	return rpc.NewGofer("tcp", c.RPC.Address)
 }
 
 func (c *Gofer) buildOrigins(cli pkgEthereum.Client) (*origins.Set, error) {

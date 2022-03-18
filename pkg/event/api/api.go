@@ -64,17 +64,13 @@ type jsonSignature struct {
 }
 
 // New returns a new instance of the EventAPI struct.
-func New(ctx context.Context, cfg Config) (*EventAPI, error) {
-	if ctx == nil {
-		return nil, errors.New("context must not be nil")
-	}
+func New(cfg Config) (*EventAPI, error) {
 	api := &EventAPI{
-		ctx:    ctx,
 		waitCh: make(chan error),
 		es:     cfg.EventStore,
 		log:    cfg.Logger.WithField("tag", LoggerTag),
 	}
-	api.srv = httpserver.New(ctx, &http.Server{
+	api.srv = httpserver.New(&http.Server{
 		Addr:         cfg.Address,
 		Handler:      http.HandlerFunc(api.handler),
 		IdleTimeout:  defaultTimeout,
@@ -85,9 +81,13 @@ func New(ctx context.Context, cfg Config) (*EventAPI, error) {
 }
 
 // Start starts HTTP server.
-func (e *EventAPI) Start() error {
+func (e *EventAPI) Start(ctx context.Context) error {
 	e.log.Infof("Starting")
-	err := e.srv.Start()
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	e.ctx = ctx
+	err := e.srv.Start(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to start the HTTP server: %w", err)
 	}
