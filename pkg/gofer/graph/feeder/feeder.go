@@ -16,7 +16,6 @@
 package feeder
 
 import (
-	"context"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -67,7 +66,6 @@ type Feedable interface {
 
 // Feeder sets prices from origins to the Feedable nodes.
 type Feeder struct {
-	ctx    context.Context
 	waitCh chan error
 	set    *origins.Set
 	log    log.Logger
@@ -160,12 +158,6 @@ func (f *Feeder) feedNodes(ns []Feedable) Warnings {
 	}
 
 	return warns
-}
-
-func (f *Feeder) contextCancelHandler() {
-	defer func() { close(f.waitCh) }()
-	defer f.log.Info("Stopped")
-	<-f.ctx.Done()
 }
 
 func appendPairIfUnique(pairs []origins.Pair, pair origins.Pair) []origins.Pair {

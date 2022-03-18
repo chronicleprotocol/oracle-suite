@@ -49,7 +49,6 @@ type Agent struct {
 	api      *API
 	rpc      *rpc.Server
 	listener net.Listener
-	gofer    gofer.Gofer
 	network  string
 	address  string
 	log      log.Logger

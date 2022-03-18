@@ -58,20 +58,20 @@ func (m *mockHandler) Fetch(pairs []origins.Pair) []origins.FetchResult {
 	return fr
 }
 
-func originsSetMock(prices map[string][]origins.Price, delay time.Duration, updateTimestamp bool) *origins.Set {
+func originsSetMock(prices map[string][]origins.Price) *origins.Set {
 	handlers := map[string]origins.Handler{}
 	for origin, prices := range prices {
 		pricesMap := map[origins.Pair]origins.Price{}
 		for _, price := range prices {
 			pricesMap[price.Pair] = price
 		}
-		handlers[origin] = &mockHandler{mockedPrices: pricesMap, delay: delay, updateTimestamp: updateTimestamp}
+		handlers[origin] = &mockHandler{mockedPrices: pricesMap}
 	}
 	return origins.NewSet(handlers, 10)
 }
 
 func TestFeeder_Feed_EmptyGraph(t *testing.T) {
-	f := NewFeeder(originsSetMock(nil, 0, false), null.New())
+	f := NewFeeder(originsSetMock(nil), null.New())
 
 	// Feed method shouldn't panic
 	warns := f.Feed(nil, time.Now())
@@ -81,7 +81,7 @@ func TestFeeder_Feed_EmptyGraph(t *testing.T) {
 
 func TestFeeder_Feed_NoFeedableNodes(t *testing.T) {
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
-	f := NewFeeder(originsSetMock(nil, 0, false), null.New())
+	f := NewFeeder(originsSetMock(nil), null.New())
 
 	// Feed method shouldn't panic
 	warns := f.Feed([]nodes.Node{nodes.Node(g)}, time.Now())
@@ -101,7 +101,7 @@ func TestFeeder_Feed_OneOriginNode(t *testing.T) {
 				Timestamp: time.Unix(10000, 0),
 			},
 		},
-	}, 0, false)
+	})
 
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
 	o := nodes.NewOriginNode(nodes.OriginPair{
@@ -152,7 +152,7 @@ func TestFeeder_Feed_ManyOriginNodes(t *testing.T) {
 				Timestamp: time.Unix(30000, 0),
 			},
 		},
-	}, 0, false)
+	})
 
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
 	o1 := nodes.NewOriginNode(nodes.OriginPair{
@@ -235,7 +235,7 @@ func TestFeeder_Feed_NestedOriginNode(t *testing.T) {
 				Timestamp: time.Unix(10000, 0),
 			},
 		},
-	}, 0, false)
+	})
 
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
 	i := nodes.NewIndirectAggregatorNode(gofer.Pair{Base: "A", Quote: "B"})
@@ -271,7 +271,7 @@ func TestFeeder_Feed_BelowMinTTL(t *testing.T) {
 				Timestamp: time.Unix(10000, 0),
 			},
 		},
-	}, 0, false)
+	})
 
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
 	o := nodes.NewOriginNode(nodes.OriginPair{
@@ -318,7 +318,7 @@ func TestFeeder_Feed_BetweenTTLs(t *testing.T) {
 				Timestamp: time.Unix(10000, 0),
 			},
 		},
-	}, 0, false)
+	})
 
 	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
 	o := nodes.NewOriginNode(nodes.OriginPair{

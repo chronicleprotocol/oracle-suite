@@ -97,7 +97,6 @@ func (a *AsyncGofer) Start(ctx context.Context) error {
 
 	go a.contextCancelHandler()
 	return nil
-
 }
 
 // Wait waits until the context is canceled or until an error occurs.

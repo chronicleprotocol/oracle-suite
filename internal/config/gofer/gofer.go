@@ -137,10 +137,6 @@ func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC 
 		if err != nil {
 			return nil, fmt.Errorf("unable to load price models: %w", err)
 		}
-		var ns []nodes.Node
-		for _, n := range gra {
-			ns = append(ns, n)
-		}
 		originSet, err := c.buildOrigins(cli)
 		if err != nil {
 			return nil, err
