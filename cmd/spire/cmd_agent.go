@@ -32,7 +32,7 @@ func NewAgentCmd(opts *options) *cobra.Command {
 		Long:  ``,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			sup, err := PrepareAgentSupervisor(ctx, opts)
+			sup, err := PrepareAgentServices(ctx, opts)
 			if err != nil {
 				return err
 			}

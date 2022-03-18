@@ -36,7 +36,7 @@ type Config struct {
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
 }
 
-func PrepareAgentSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func PrepareAgentSupervisor(ctx context.Context, opts *options) (*supervisor.Sup
 	return sup, nil
 }
 
-func PrepareClientSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, *spire.Client, error) {
+func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supervisor, *spire.Client, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, nil, err

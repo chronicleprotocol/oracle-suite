@@ -23,7 +23,7 @@ import (
 	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
 	"github.com/chronicleprotocol/oracle-suite/internal/gofer/marshal"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
-	pkgGofer "github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 )
 
 type Config struct {
@@ -31,7 +31,11 @@ type Config struct {
 	Gofer    goferConfig.Gofer       `json:"gofer"`
 }
 
-func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supervisor, pkgGofer.Gofer, marshal.Marshaller, error) {
+func PrepareClientServices(
+	ctx context.Context,
+	opts *options,
+) (*supervisor.Supervisor, gofer.Gofer, marshal.Marshaller, error) {
+
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, nil, nil, err
@@ -50,7 +54,7 @@ func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supe
 		return nil, nil, nil, err
 	}
 	sup := supervisor.New(ctx)
-	if g, ok := gof.(pkgGofer.StartableGofer); ok {
+	if g, ok := gof.(gofer.StartableGofer); ok {
 		sup.Watch(g)
 	}
 	return sup, gof, mar, nil

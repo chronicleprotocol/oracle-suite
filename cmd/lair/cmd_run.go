@@ -33,7 +33,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Long:    `Start the agent`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			sup, err := PrepareSupervisor(ctx, opts)
+			sup, err := PrepareServices(ctx, opts)
 			if err != nil {
 				return err
 			}

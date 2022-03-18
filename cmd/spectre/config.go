@@ -35,7 +35,7 @@ type Config struct {
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
 }
 
-func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, err

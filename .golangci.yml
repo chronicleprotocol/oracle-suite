@@ -140,7 +140,7 @@ linters:
     - deadcode
     - depguard
     - dogsled
-    - dupl
+    #- dupl
     - errcheck
     - funlen
     - goconst

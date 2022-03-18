@@ -48,7 +48,7 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			sup, cli, err := PrepareClientSupervisor(ctx, opts)
+			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
 			}
