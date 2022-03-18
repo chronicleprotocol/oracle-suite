@@ -5,28 +5,49 @@ import (
 	"reflect"
 )
 
+// Service that could be managed by Supervisor.
 type Service interface {
+	// Start starts the service.
 	Start(ctx context.Context) error
+	// Wait returns a channel that is blocked while service is running.
+	// When the service is stopped, the channel will be closed. If an error
+	// occurs, an error will be sent to the channel before closing it.
 	Wait() chan error
 }
 
+// Supervisor manages long-running services that implement the Service
+// interface. If any of the managed services fail, all other services are
+// stopped. This ensures that all services are running or none.
 type Supervisor struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
+	started   bool
 	waitCh    chan error
 	services  []Service
 }
 
+// New returns a new instance of *Supervisor.
 func New(ctx context.Context) *Supervisor {
 	ctx, ctxCancel := context.WithCancel(ctx)
 	return &Supervisor{ctx: ctx, ctxCancel: ctxCancel, waitCh: make(chan error)}
 }
 
+// Watch add one or more services to a supervisor. Services must be added
+// before invoking the Start method, otherwise it panics.
 func (s *Supervisor) Watch(services ...Service) {
+	if s.started {
+		panic("supervisor was already started")
+	}
 	s.services = append(s.services, services...)
 }
 
+// Start starts all watched services. It can be invoked only once, otherwise
+// it panics.
 func (s *Supervisor) Start() error {
+	if s.started {
+		panic("supervisor was already started")
+	}
+	s.started = true
 	for _, srv := range s.services {
 		if err := srv.Start(s.ctx); err != nil {
 			s.ctxCancel()
@@ -37,6 +58,10 @@ func (s *Supervisor) Start() error {
 	return nil
 }
 
+// Wait returns a channel that is blocked until at least one service is
+// running. When all services are stopped, the channel will be closed.
+// If an error occurs in any of the services, it will be sent to the
+// channel before closing it.
 func (s *Supervisor) Wait() chan error {
 	return s.waitCh
 }
@@ -50,12 +75,15 @@ func (s *Supervisor) serviceWatcher() {
 		}
 		n, v, _ := reflect.Select(cases)
 		if !v.IsNil() {
-			if err != nil {
+			if err == nil {
 				err = v.Interface().(error)
 			}
 			s.ctxCancel()
 		}
 		s.services = append(s.services[:n], s.services[n+1:]...)
 	}
-	s.waitCh <- err
+	if err != nil {
+		s.waitCh <- err
+	}
+	close(s.waitCh)
 }
