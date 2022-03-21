@@ -24,14 +24,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/spf13/cobra"
+	refs "go.mindeco.de/ssb-refs"
 )
-
-type query struct {
-	Mnemonic string `json:"mnemonic"`
-	Path     string `json:"path"`
-	Password string `json:"password"`
-	Format   string `json:"format"`
-}
 
 func NewDeriveTf() *cobra.Command {
 	cmd := &cobra.Command{
@@ -63,14 +57,36 @@ func NewDeriveTf() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			addr := acc.Address.String()
+			if q.Format == "ssb" {
+				var ssb ssbSecret
+				if err := json.Unmarshal(b, &ssb); err != nil {
+					return err
+				}
+				addr = ssb.Public
+			}
 			fmt.Printf(
 				`{"output":"%s","path":"%s","addr":"%s"}`,
 				base64.StdEncoding.EncodeToString(b),
 				dp.String(),
-				acc.Address.String(),
+				addr,
 			)
 			return nil
 		},
 	}
 	return cmd
+}
+
+type query struct {
+	Mnemonic string `json:"mnemonic"`
+	Path     string `json:"path"`
+	Password string `json:"password"`
+	Format   string `json:"format"`
+}
+
+type ssbSecret struct {
+	Curve   string       `json:"curve"`
+	ID      refs.FeedRef `json:"id"`
+	Private string       `json:"private"`
+	Public  string       `json:"public"`
 }
