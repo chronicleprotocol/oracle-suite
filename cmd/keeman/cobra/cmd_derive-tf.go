@@ -16,12 +16,17 @@
 package cobra
 
 import (
+	"bytes"
+	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/peer"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/spf13/cobra"
 	refs "go.mindeco.de/ssb-refs"
@@ -58,12 +63,31 @@ func NewDeriveTf() *cobra.Command {
 				return err
 			}
 			addr := acc.Address.String()
-			if q.Format == "ssb" {
+			if q.Format == FormatSSB {
 				var ssb ssbSecret
 				if err := json.Unmarshal(b, &ssb); err != nil {
 					return err
 				}
-				addr = ssb.Public
+				addr = "@" + ssb.Public
+			} else if q.Format == FormatLibP2P {
+				seed := make([]byte, hex.DecodedLen(len(b)))
+				_, err := hex.Decode(seed, b)
+				if err != nil {
+					return err
+				}
+				if len(seed) != ed25519.SeedSize {
+					return fmt.Errorf("invalid privKeySeed value, 32 bytes expected")
+				}
+				seedReader := bytes.NewReader(seed)
+				_, pub, err := crypto.GenerateEd25519Key(seedReader)
+				if err != nil {
+					return err
+				}
+				id, err := peer.IDFromPublicKey(pub)
+				if err != nil {
+					return err
+				}
+				addr = id.String()
 			}
 			fmt.Printf(
 				`{"output":"%s","path":"%s","addr":"%s"}`,

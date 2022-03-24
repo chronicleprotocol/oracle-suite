@@ -164,74 +164,62 @@ const (
 	FormatSSBCaps  = "caps"
 	FormatBytes32  = "b32"
 	FormatPrivHex  = "privhex"
+	FormatLibP2P   = "libp2p"
 )
 
 func formattedBytes(format string, privateKey *ecdsa.PrivateKey, password string) ([]byte, error) {
 	switch format {
 	case FormatBytes32, FormatSSBSHS:
-		return seededB64(privateKey)
+		randBytes, err := seededRandBytesFunc(privateKey, 32)
+		if err != nil {
+			return nil, err
+		}
+		return b64Encode(randBytes()), nil
 	case FormatSSB:
-		return jsonSSB(privateKey)
+		o, err := ssb.NewSecret(crypto.FromECDSA(privateKey))
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(o)
 	case FormatSSBCaps:
-		return jsonCaps(privateKey)
+		o, err := ssb.NewCaps(crypto.FromECDSA(privateKey))
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(o)
 	case FormatKeystore:
-		return jsonKey(privateKey, password)
+		key, err := eth.NewKeyWithID(privateKey)
+		if err != nil {
+			return nil, err
+		}
+		return keystore.EncryptKey(
+			key,
+			password,
+			keystore.StandardScryptN,
+			keystore.StandardScryptP,
+		)
 	case FormatPrivHex:
-		return hexEncodeKey(privateKey), nil
+		return hexEncodeBytes(crypto.FromECDSA(privateKey)), nil
+	case FormatLibP2P:
+		randBytes, err := seededRandBytesFunc(privateKey, 32)
+		if err != nil {
+			return nil, err
+		}
+		return hexEncodeBytes(randBytes()), nil
 	}
 	return nil, fmt.Errorf("unknown format: %s", format)
 }
-
-func seededB64(privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	seed := crypto.FromECDSA(privateKey)
-	randBytes, err := rand.SeededRandBytesGen(seed, 32)
-	if err != nil {
-		return nil, err
-	}
-	return b64Encode(randBytes()), nil
-}
-
-func jsonSSB(privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	seed := crypto.FromECDSA(privateKey)
-	o, err := ssb.NewSecret(seed)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(o)
-}
-
-func jsonCaps(privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	seed := crypto.FromECDSA(privateKey)
-	o, err := ssb.NewCaps(seed)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(o)
-}
-
-func jsonKey(privateKey *ecdsa.PrivateKey, password string) ([]byte, error) {
-	key, err := eth.NewKeyWithID(privateKey)
-	if err != nil {
-		return nil, err
-	}
-	return keystore.EncryptKey(
-		key,
-		password,
-		keystore.StandardScryptN,
-		keystore.StandardScryptP,
-	)
-}
-
-func hexEncodeKey(privateKey *ecdsa.PrivateKey) []byte {
-	b := crypto.FromECDSA(privateKey)
+func hexEncodeBytes(b []byte) []byte {
 	buff := make([]byte, len(b)*2)
 	hex.Encode(buff, b)
 	return buff
 }
-
 func b64Encode(b []byte) []byte {
 	enc := base64.StdEncoding
 	buff := make([]byte, enc.EncodedLen(len(b)))
 	enc.Encode(buff, b)
 	return buff
+}
+func seededRandBytesFunc(privateKey *ecdsa.PrivateKey, len int) (func() []byte, error) {
+	return rand.SeededRandBytesGen(crypto.FromECDSA(privateKey), len)
 }
