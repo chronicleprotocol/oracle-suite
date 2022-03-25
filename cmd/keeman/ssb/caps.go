@@ -37,8 +37,8 @@ func (c Caps000) MarshalJSON() ([]byte, error) {
 		Sign   string `json:"sign,omitempty"`
 		Invite string `json:"invite,omitempty"`
 	}{
-		Shs:  base64.URLEncoding.EncodeToString(c.Shs),
-		Sign: base64.URLEncoding.EncodeToString(c.Sign),
+		Shs:  base64.StdEncoding.EncodeToString(c.Shs),
+		Sign: base64.StdEncoding.EncodeToString(c.Sign),
 	})
 }
 

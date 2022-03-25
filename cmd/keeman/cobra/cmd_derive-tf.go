@@ -68,7 +68,7 @@ func NewDeriveTf() *cobra.Command {
 				if err := json.Unmarshal(b, &ssb); err != nil {
 					return err
 				}
-				addr = "@" + ssb.Public
+				addr = ssb.ID.Ref()
 			} else if q.Format == FormatLibP2P {
 				seed := make([]byte, hex.DecodedLen(len(b)))
 				_, err := hex.Decode(seed, b)
