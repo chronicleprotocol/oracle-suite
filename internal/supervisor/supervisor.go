@@ -66,6 +66,7 @@ func (s *Supervisor) Start() error {
 	for _, srv := range s.services {
 		if err := srv.Start(s.ctx); err != nil {
 			s.ctxCancel()
+			close(s.waitCh)
 			return err
 		}
 	}
