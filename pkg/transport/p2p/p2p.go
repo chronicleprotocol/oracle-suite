@@ -153,7 +153,7 @@ func New(cfg Config) (*P2P, error) {
 
 	logger := cfg.Logger.WithField("tag", LoggerTag)
 	opts := []p2p.Options{
-		p2p.Timeout(connectionTimeout),
+		p2p.DialTimeout(connectionTimeout),
 		p2p.Logger(logger),
 		p2p.ConnectionLogger(),
 		p2p.PeerLogger(),
