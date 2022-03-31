@@ -61,6 +61,10 @@ const minEventsPerSecond = 0.1           // below that, score becomes negative
 const maxEventsPerSecond = 1             // it limits the maximum possible score only, not the number of events
 const maxInvalidMsgsPerHour float64 = 60 // per topic
 
+// Timeout has to be a little longer because signing messages using
+// the Ethereum wallet requires more time.
+const connectionTimeout = 120 * time.Second
+
 // defaultListenAddrs is the list of default multiaddresses on which node will
 // be listening on.
 var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
@@ -149,9 +153,7 @@ func New(cfg Config) (*P2P, error) {
 
 	logger := cfg.Logger.WithField("tag", LoggerTag)
 	opts := []p2p.Options{
-		// It's required to increase the timeout because signing messages using
-		// the Ethereum wallet may take more time.
-		p2p.Timeout(120 * time.Second),
+		p2p.Timeout(connectionTimeout),
 		p2p.Logger(logger),
 		p2p.ConnectionLogger(),
 		p2p.PeerLogger(),
