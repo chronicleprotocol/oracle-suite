@@ -37,8 +37,8 @@ func (c Caps000) MarshalJSON() ([]byte, error) {
 		Sign   string `json:"sign,omitempty"`
 		Invite string `json:"invite,omitempty"`
 	}{
-		Shs:  base64.URLEncoding.EncodeToString(c.Shs),
-		Sign: base64.URLEncoding.EncodeToString(c.Sign),
+		Shs:  base64.StdEncoding.EncodeToString(c.Shs),
+		Sign: base64.StdEncoding.EncodeToString(c.Sign),
 	})
 }
 
@@ -53,9 +53,20 @@ func NewCaps(seed []byte) (*Caps000, error) {
 	}, nil
 }
 
-func NewKeyPair(b []byte) (ssb.KeyPair, error) {
-	return ssb.NewKeyPair(
-		bytes.NewReader(b),
-		refs.RefAlgoFeedSSB1,
-	)
+type Secret struct{ ssb.KeyPair }
+
+func (s Secret) MarshalJSON() ([]byte, error) {
+	b := new(bytes.Buffer)
+	if err := ssb.EncodeKeyPairAsJSON(s.KeyPair, b); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+func NewSecret(b []byte) (*Secret, error) {
+	kp, err := ssb.NewKeyPair(bytes.NewReader(b), refs.RefAlgoFeedSSB1)
+	if err != nil {
+		return nil, err
+	}
+	return &Secret{KeyPair: kp}, nil
 }

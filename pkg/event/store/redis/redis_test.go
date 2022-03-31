@@ -29,6 +29,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+func TestMain(m *testing.M) {
+	rand.Seed(time.Now().Unix())
+	os.Exit(m.Run())
+}
+
 func TestRedis_Add(t *testing.T) {
 	ok, cfg := getConfig()
 	if !ok {
@@ -36,6 +41,7 @@ func TestRedis_Add(t *testing.T) {
 		return
 	}
 	typ := strconv.Itoa(rand.Int())
+	author := strconv.Itoa(rand.Int())
 	r, err := New(cfg)
 	require.NoError(t, err)
 	e1 := &messages.Event{
@@ -66,9 +72,9 @@ func TestRedis_Add(t *testing.T) {
 		Signatures:  map[string]messages.EventSignature{},
 	}
 
-	assert.NoError(t, r.Add(context.Background(), []byte("author1"), e1))
-	assert.NoError(t, r.Add(context.Background(), []byte("author2"), e2))
-	assert.NoError(t, r.Add(context.Background(), []byte("author3"), e3)) // different index
+	assert.NoError(t, r.Add(context.Background(), []byte(author+"1"), e1))
+	assert.NoError(t, r.Add(context.Background(), []byte(author+"2"), e2))
+	assert.NoError(t, r.Add(context.Background(), []byte(author+"3"), e3)) // different index
 
 	es, err := r.Get(context.Background(), typ, []byte("idx"))
 	assert.NoError(t, err)
@@ -82,6 +88,7 @@ func TestRedis_Add_replacePreviousEvent(t *testing.T) {
 		return
 	}
 	typ := strconv.Itoa(rand.Int())
+	author := strconv.Itoa(rand.Int())
 	r, err := New(cfg)
 	require.NoError(t, err)
 	e1 := &messages.Event{
@@ -103,19 +110,54 @@ func TestRedis_Add_replacePreviousEvent(t *testing.T) {
 		Signatures:  map[string]messages.EventSignature{},
 	}
 
-	assert.NoError(t, r.Add(context.Background(), []byte("author1"), e1))
+	assert.NoError(t, r.Add(context.Background(), []byte(author), e1))
 
 	// Replace if never
-	assert.NoError(t, r.Add(context.Background(), []byte("author1"), e2))
+	assert.NoError(t, r.Add(context.Background(), []byte(author), e2))
 	es, err := r.Get(context.Background(), typ, []byte("idx"))
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, eventsToByteSlices([]*messages.Event{e2}), eventsToByteSlices(es))
 
 	// Keep previous if older
-	assert.NoError(t, r.Add(context.Background(), []byte("author1"), e1))
+	assert.NoError(t, r.Add(context.Background(), []byte(author), e1))
 	es, err = r.Get(context.Background(), typ, []byte("idx"))
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, eventsToByteSlices([]*messages.Event{e2}), eventsToByteSlices(es))
+}
+
+func TestRedis_memoryLimit(t *testing.T) {
+	ok, cfg := getConfig()
+	cfg.MemoryLimit = 60 // 60 is enough for one message
+	if !ok {
+		t.Skip()
+		return
+	}
+	typ := strconv.Itoa(rand.Int())
+	author := strconv.Itoa(rand.Int())
+	r, err := New(cfg)
+	require.NoError(t, err)
+
+	e1 := &messages.Event{
+		Type:        typ,
+		ID:          []byte("test"),
+		Index:       []byte("idx1"),
+		MessageDate: time.Now(),
+		EventDate:   time.Now(),
+		Data:        map[string][]byte{"test": []byte("test")},
+		Signatures:  map[string]messages.EventSignature{},
+	}
+	e2 := &messages.Event{
+		Type:        typ,
+		ID:          []byte("test"),
+		Index:       []byte("idx2"),
+		MessageDate: time.Now(),
+		EventDate:   time.Now(),
+		Data:        map[string][]byte{"test": []byte("test")},
+		Signatures:  map[string]messages.EventSignature{},
+	}
+
+	assert.NoError(t, r.Add(context.Background(), []byte(author), e1))
+	assert.Error(t, r.Add(context.Background(), []byte(author), e2))
 }
 
 func getConfig() (bool, Config) {
@@ -126,10 +168,11 @@ func getConfig() (bool, Config) {
 		return false, Config{}
 	}
 	return true, Config{
-		TTL:      time.Minute,
-		Address:  addr,
-		Password: pass,
-		DB:       db,
+		MemoryLimit: 0,
+		TTL:         time.Minute,
+		Address:     addr,
+		Password:    pass,
+		DB:          db,
 	}
 }
 

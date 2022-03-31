@@ -51,10 +51,11 @@ type storageMemory struct {
 }
 
 type storageRedis struct {
-	TTL      int    `json:"ttl"`
-	Address  string `json:"address"`
-	Password string `json:"password"`
-	DB       int    `json:"db"`
+	TTL         int    `json:"ttl"`
+	Address     string `json:"address"`
+	Password    string `json:"password"`
+	DB          int    `json:"db"`
+	MemoryLimit int64  `json:"memoryLimit"`
 }
 
 type Dependencies struct {
@@ -92,10 +93,11 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 			ttl = c.Storage.Redis.TTL
 		}
 		r, err := redis.New(redis.Config{
-			TTL:      time.Duration(ttl) * time.Second,
-			Address:  c.Storage.Redis.Address,
-			Password: c.Storage.Redis.Password,
-			DB:       c.Storage.Redis.DB,
+			TTL:         time.Duration(ttl) * time.Second,
+			Address:     c.Storage.Redis.Address,
+			Password:    c.Storage.Redis.Password,
+			DB:          c.Storage.Redis.DB,
+			MemoryLimit: c.Storage.Redis.MemoryLimit,
 		})
 		if err != nil {
 			return nil, fmt.Errorf(`eventapi config: unable to connect to the Redis server: %w`, err)

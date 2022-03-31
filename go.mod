@@ -3,6 +3,7 @@ module github.com/chronicleprotocol/oracle-suite
 go 1.17
 
 require (
+	github.com/chronicleprotocol/infestor v0.2.3
 	github.com/ethereum/go-ethereum v1.10.13
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/google/uuid v1.3.0

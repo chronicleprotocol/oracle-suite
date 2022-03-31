@@ -3,3 +3,4 @@
 Dockerfile
 Dockerfile-*
 docker-compose.yaml
+vendor

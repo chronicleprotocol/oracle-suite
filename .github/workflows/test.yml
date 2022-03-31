@@ -9,6 +9,7 @@ on:
 
 jobs:
   test:
+    name: Code linting & Unit tests
     strategy:
       matrix:
         go-version: [1.16.x]
@@ -46,3 +47,23 @@ jobs:
           # skip-build-cache: true
       - name: Test
         run: make test
+  test-e2e:
+    name: E2E Tests
+    strategy:
+      matrix:
+        go-version: [ 1.16.x ]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Start Smocker instance for testing
+        run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
+      - name: Build E2E Tests in Docker
+        run: docker build -t gofer_e2e -f e2e/gofer/Dockerfile .
+      - name: Run E2E Test
+        run: docker run -i --rm --link smocker gofer_e2e
