@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/libp2p/go-libp2p"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
@@ -29,10 +28,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
-	"github.com/libp2p/go-libp2p-core/transport"
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	swarm "github.com/libp2p/go-libp2p-swarm"
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
@@ -44,14 +41,6 @@ var ErrConnectionClosed = errors.New("connection is closed")
 var ErrAlreadySubscribed = errors.New("topic is already subscribed")
 var ErrNotSubscribed = errors.New("topic is not subscribed")
 var ErrPubSubDisabled = errors.New("pubsub protocol is disabled")
-
-func init() {
-	// It's required to increase timeouts because signing messages using
-	// the Ethereum wallet may take more time than default timeout allows.
-	const timeout = 120 * time.Second
-	transport.DialTimeout = timeout
-	swarm.DialTimeoutLocal = timeout
-}
 
 // Node is a single node in the P2P network. It wraps the libp2p library to
 // provide an easier to use and use-case agnostic interface for the pubsub
@@ -312,8 +301,7 @@ func (n *Node) Subscription(topic string) (*Subscription, error) {
 
 // contextCancelHandler handles context cancellation.
 func (n *Node) contextCancelHandler() {
-	var err error
-	defer func() { n.waitCh <- err }()
+	defer func() { close(n.waitCh) }()
 	defer n.tsLog.get().Info("Stopped")
 	defer n.nodeEventHandler.Handle(sets.NodeStoppedEvent{})
 	<-n.ctx.Done()
@@ -325,7 +313,10 @@ func (n *Node) contextCancelHandler() {
 
 	n.subs = nil
 	n.closed = true
-	err = n.host.Close()
+	err := n.host.Close()
+	if err != nil {
+		n.waitCh <- err
+	}
 }
 
 // ListenAddrs returns all node's listen multiaddresses as a string list.

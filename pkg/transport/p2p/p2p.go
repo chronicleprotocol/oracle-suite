@@ -149,6 +149,9 @@ func New(cfg Config) (*P2P, error) {
 
 	logger := cfg.Logger.WithField("tag", LoggerTag)
 	opts := []p2p.Options{
+		// It's required to increase the timeout because signing messages using
+		// the Ethereum wallet may take more time.
+		p2p.Timeout(120 * time.Second),
 		p2p.Logger(logger),
 		p2p.ConnectionLogger(),
 		p2p.PeerLogger(),
