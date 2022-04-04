@@ -224,4 +224,4 @@ issues:
   # Default is false.
   new: true
   # Show only new issues created after git revision `REV`
-  new-from-rev: 8575515511b98d47c5d7368c50a699c873216b42
+  new-from-rev: ""
