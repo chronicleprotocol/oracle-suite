@@ -28,7 +28,9 @@ func (s *SmockerAPISuite) Setup() {
 	var err error
 
 	smockerHost, exist := os.LookupEnv("SMOCKER_HOST")
-	s.Require().True(exist, "SMOCKER_HOST env variable have to be set")
+	if !exist {
+		smockerHost = "http://localhost"
+	}
 
 	s.api = smocker.API{
 		Host: smockerHost,
@@ -91,6 +93,10 @@ func callGofer(params ...string) (string, int, error) {
 	cmd.Env = os.Environ()
 
 	out, err := cmd.Output()
+
+	if err != nil {
+		println(err.Error())
+	}
 
 	if werr, ok := err.(*exec.ExitError); ok {
 		if s := werr.Error(); s != "0" {

@@ -20,8 +20,8 @@ ENV CGO_ENABLED=0 \
 ENV SMOCKER_HOST="http://smocker"
 ENV SMOCKER="${SMOCKER_HOST}:8080"
 
-COPY . /app
+COPY ./e2e/gofer /app
 WORKDIR /app
-RUN go mod download
+RUN go mod vendor
 
-CMD ["go", "test", "-v", "-parallel", "1", "-cpu", "1", "./e2e/gofer"]
+CMD ["go", "test", "-v", "-parallel", "1", "-cpu", "1", "./"]

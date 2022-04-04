@@ -3,7 +3,6 @@ module github.com/chronicleprotocol/oracle-suite
 go 1.17
 
 require (
-	github.com/chronicleprotocol/infestor v0.2.3
 	github.com/ethereum/go-ethereum v1.10.13
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/google/uuid v1.3.0
@@ -15,7 +14,6 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0
 	github.com/libp2p/go-libp2p-peerstore v0.6.0
 	github.com/libp2p/go-libp2p-pubsub v0.6.1
-	github.com/libp2p/go-libp2p-swarm v0.10.2
 	github.com/miguelmota/go-ethereum-hdwallet v0.1.1
 	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/sirupsen/logrus v1.8.1
@@ -98,6 +96,7 @@ require (
 	github.com/libp2p/go-libp2p-quic-transport v0.16.1 // indirect
 	github.com/libp2p/go-libp2p-record v0.1.3 // indirect
 	github.com/libp2p/go-libp2p-resource-manager v0.1.5 // indirect
+	github.com/libp2p/go-libp2p-swarm v0.10.2 // indirect
 	github.com/libp2p/go-libp2p-tls v0.3.1 // indirect
 	github.com/libp2p/go-libp2p-transport-upgrader v0.7.1 // indirect
 	github.com/libp2p/go-libp2p-yamux v0.8.2 // indirect
