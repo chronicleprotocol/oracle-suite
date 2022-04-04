@@ -53,6 +53,7 @@ func TestNode_MessagePropagation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -61,6 +62,7 @@ func TestNode_MessagePropagation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	n2, err := NewNode(
 		PeerPrivKey(peers[2].PrivKey),
@@ -69,6 +71,7 @@ func TestNode_MessagePropagation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n2.Start(ctx))
+	time.Sleep(time.Second)
 
 	_, err = n0.Subscribe("test")
 	require.NoError(t, err)

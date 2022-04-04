@@ -41,6 +41,7 @@ func TestNode_PeerPrivKey(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n.Start(ctx))
+	time.Sleep(time.Second)
 
 	id, _ := peer.IDFromPrivateKey(sk)
 	assert.Equal(t, id, n.Host().ID())
@@ -59,6 +60,7 @@ func TestNode_MessagePrivKey(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n.Start(ctx))
+	time.Sleep(time.Second)
 
 	_, err = n.Subscribe("test")
 	require.NoError(t, err)
@@ -98,6 +100,7 @@ func TestNode_Discovery(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -106,6 +109,7 @@ func TestNode_Discovery(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	n2, err := NewNode(
 		PeerPrivKey(peers[2].PrivKey),
@@ -114,6 +118,7 @@ func TestNode_Discovery(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n2.Start(ctx))
+	time.Sleep(time.Second)
 
 	_, err = n0.Subscribe("test")
 	require.NoError(t, err)
@@ -162,6 +167,7 @@ func TestNode_Discovery_AddrNotLeaking(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -171,6 +177,7 @@ func TestNode_Discovery_AddrNotLeaking(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	n2, err := NewNode(
 		PeerPrivKey(peers[2].PrivKey),
@@ -179,6 +186,7 @@ func TestNode_Discovery_AddrNotLeaking(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n2.Start(ctx))
+	time.Sleep(time.Second)
 
 	_, err = n0.Subscribe("test")
 	require.NoError(t, err)
@@ -218,6 +226,7 @@ func TestNode_ConnectionLimit(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n.Start(ctx))
+	time.Sleep(time.Second)
 
 	for i := 2; i < len(peers); i++ {
 		n, err := NewNode(
@@ -227,6 +236,7 @@ func TestNode_ConnectionLimit(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.NoError(t, n.Start(ctx))
+		time.Sleep(time.Second)
 
 		require.NoError(t, n.Connect(peers[0].PeerAddrs[0]))
 	}
@@ -262,6 +272,7 @@ func TestNode_DirectPeers(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -270,6 +281,7 @@ func TestNode_DirectPeers(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	for i := 2; i < len(peers); i++ {
 		n, err := NewNode(

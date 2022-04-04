@@ -98,6 +98,7 @@ func TestNode_PeerScoring(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -105,6 +106,7 @@ func TestNode_PeerScoring(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	// Add validator to the n0 node which will reject all received messages
 	// from the second node:

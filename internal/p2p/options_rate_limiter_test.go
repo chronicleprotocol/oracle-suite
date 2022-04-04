@@ -50,6 +50,7 @@ func TestNode_RateLimiter_PeerLimit(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -57,6 +58,7 @@ func TestNode_RateLimiter_PeerLimit(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	require.NoError(t, n1.Connect(peers[0].PeerAddrs[0]))
 	_, err = n0.Subscribe("test")
@@ -111,6 +113,7 @@ func TestNode_RateLimiter_PeerBurst(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
+	time.Sleep(time.Second)
 
 	n1, err := NewNode(
 		PeerPrivKey(peers[1].PrivKey),
@@ -118,6 +121,7 @@ func TestNode_RateLimiter_PeerBurst(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, n1.Start(ctx))
+	time.Sleep(time.Second)
 
 	require.NoError(t, n1.Connect(peers[0].PeerAddrs[0]))
 	_, err = n0.Subscribe("test")
