@@ -90,8 +90,8 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			sup, cli, err := PrepareClientServices(ctx, opts)
 			defer ctxCancel()
+			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
 			}

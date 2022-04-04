@@ -35,8 +35,8 @@ func NewPricesCmd(opts *options) *cobra.Command {
 		Long:    `Return prices for given PAIRs.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			sup, gof, mar, err := PrepareClientServices(ctx, opts)
 			defer ctxCancel()
+			sup, gof, mar, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
 			}
@@ -64,6 +64,13 @@ func NewPricesCmd(opts *options) *cobra.Command {
 			for _, p := range prices {
 				if mErr := mar.Write(os.Stdout, p); mErr != nil {
 					_ = mar.Write(os.Stderr, mErr)
+				}
+			}
+			// If any pair has been returned with an error, then we should return a non-zero status code.
+			for _, p := range prices {
+				if p.Error != "" {
+					exitCode = 1
+					break
 				}
 			}
 			return
