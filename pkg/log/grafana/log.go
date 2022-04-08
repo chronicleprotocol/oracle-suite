@@ -32,8 +32,6 @@ import (
 
 const LoggerTag = "GRAFANA"
 
-var varRegexp = regexp.MustCompile(`\$\{[^}]+\}`)
-
 // Config contains a configuration values for grafana.Logger.
 type Config struct {
 	// Metrics is a list of metric definitions.
@@ -52,14 +50,6 @@ type Config struct {
 	Logger log.Logger
 }
 
-// Logger is a log.Logger implementation that can extract parameters from log
-// messages and send them to Grafana Cloud using the Graphite endpoint.
-type Logger struct {
-	*shared
-	level  log.Level
-	fields log.Fields
-}
-
 // Metric describes one Grafana metric.
 type Metric struct {
 	// Pattern is a regexp that must match the log message for which
@@ -74,6 +64,35 @@ type Metric struct {
 	// Tag is a list of metric tags. They can contain references to log fields
 	// in the format ${path}, where path is the dot-separated path to the field.
 	Tags map[string][]string
+}
+
+// New creates a new logger that can extract parameters from log messages and
+// send them to Grafana Cloud using the Graphite endpoint. It starts
+// a background goroutine that will be sending metrics to the Grafana Cloud
+// server as often as described in Config.Interval parameter. That goroutine
+// cannot be stopped.
+func New(level log.Level, cfg Config) log.Logger {
+	l := &logger{
+		shared: &shared{
+			metrics:          cfg.Metrics,
+			logger:           cfg.Logger.WithField("tag", LoggerTag),
+			interval:         cfg.Interval,
+			graphiteEndpoint: cfg.GraphiteEndpoint,
+			graphiteAPIKey:   cfg.GraphiteAPIKey,
+			httpClient:       cfg.HTTPClient,
+			metricPoints:     make(map[metricKey]metricValue, 0),
+		},
+		level:  level,
+		fields: log.Fields{},
+	}
+	go l.pushRoutine()
+	return l
+}
+
+type logger struct {
+	*shared
+	level  log.Level
+	fields log.Fields
 }
 
 type shared struct {
@@ -105,40 +124,19 @@ type metricJSON struct {
 	Tags     []string `json:"tags,omitempty"`
 }
 
-// New creates a new grafana.Logger instance. It starts a background goroutine
-// that will be sending metrics to the Grafana Cloud server as often as
-// described in Config.Interval parameter. That goroutine cannot be stopped.
-func New(level log.Level, cfg Config) log.Logger {
-	l := &Logger{
-		shared: &shared{
-			metrics:          cfg.Metrics,
-			logger:           cfg.Logger.WithField("tag", LoggerTag),
-			interval:         cfg.Interval,
-			graphiteEndpoint: cfg.GraphiteEndpoint,
-			graphiteAPIKey:   cfg.GraphiteAPIKey,
-			httpClient:       cfg.HTTPClient,
-			metricPoints:     make(map[metricKey]metricValue, 0),
-		},
-		level:  level,
-		fields: log.Fields{},
-	}
-	go l.pushRoutine()
-	return l
-}
-
 // Level implements the log.Logger interface.
-func (c *Logger) Level() log.Level {
+func (c *logger) Level() log.Level {
 	return c.level
 }
 
 // WithField implements the log.Logger interface.
-func (c *Logger) WithField(key string, value interface{}) log.Logger {
+func (c *logger) WithField(key string, value interface{}) log.Logger {
 	f := log.Fields{}
 	for k, v := range c.fields {
 		f[k] = v
 	}
 	f[key] = value
-	return &Logger{
+	return &logger{
 		shared: c.shared,
 		level:  c.level,
 		fields: f,
@@ -146,7 +144,7 @@ func (c *Logger) WithField(key string, value interface{}) log.Logger {
 }
 
 // WithFields implements the log.Logger interface.
-func (c *Logger) WithFields(fields log.Fields) log.Logger {
+func (c *logger) WithFields(fields log.Fields) log.Logger {
 	f := log.Fields{}
 	for k, v := range c.fields {
 		f[k] = v
@@ -154,7 +152,7 @@ func (c *Logger) WithFields(fields log.Fields) log.Logger {
 	for k, v := range fields {
 		f[k] = v
 	}
-	return &Logger{
+	return &logger{
 		shared: c.shared,
 		level:  c.level,
 		fields: f,
@@ -162,83 +160,85 @@ func (c *Logger) WithFields(fields log.Fields) log.Logger {
 }
 
 // WithError implements the log.Logger interface.
-func (c *Logger) WithError(err error) log.Logger {
+func (c *logger) WithError(err error) log.Logger {
 	return c.WithField("err", err.Error())
 }
 
 // Debugf implements the log.Logger interface.
-func (c *Logger) Debugf(format string, args ...interface{}) {
+func (c *logger) Debugf(format string, args ...interface{}) {
 	if c.level >= log.Debug {
 		c.collect(fmt.Sprintf(format, args...), c.fields)
 	}
 }
 
 // Infof implements the log.Logger interface.
-func (c *Logger) Infof(format string, args ...interface{}) {
+func (c *logger) Infof(format string, args ...interface{}) {
 	if c.level >= log.Info {
 		c.collect(fmt.Sprintf(format, args...), c.fields)
 	}
 }
 
 // Warnf implements the log.Logger interface.
-func (c *Logger) Warnf(format string, args ...interface{}) {
+func (c *logger) Warnf(format string, args ...interface{}) {
 	if c.level >= log.Warn {
 		c.collect(fmt.Sprintf(format, args...), c.fields)
 	}
 }
 
 // Errorf implements the log.Logger interface.
-func (c *Logger) Errorf(format string, args ...interface{}) {
+func (c *logger) Errorf(format string, args ...interface{}) {
 	if c.level >= log.Error {
 		c.collect(fmt.Sprintf(format, args...), c.fields)
 	}
 }
 
 // Panicf implements the log.Logger interface.
-func (c *Logger) Panicf(format string, args ...interface{}) {
+func (c *logger) Panicf(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	c.collect(msg, c.fields)
+	c.pushMetrics()
 	panic(msg)
 }
 
 // Debug implements the log.Logger interface.
-func (c *Logger) Debug(args ...interface{}) {
+func (c *logger) Debug(args ...interface{}) {
 	if c.level >= log.Debug {
 		c.collect(fmt.Sprint(args...), c.fields)
 	}
 }
 
 // Info implements the log.Logger interface.
-func (c *Logger) Info(args ...interface{}) {
+func (c *logger) Info(args ...interface{}) {
 	if c.level >= log.Info {
 		c.collect(fmt.Sprint(args...), c.fields)
 	}
 }
 
 // Warn implements the log.Logger interface.
-func (c *Logger) Warn(args ...interface{}) {
+func (c *logger) Warn(args ...interface{}) {
 	if c.level >= log.Warn {
 		c.collect(fmt.Sprint(args...), c.fields)
 	}
 }
 
 // Error implements the log.Logger interface.
-func (c *Logger) Error(args ...interface{}) {
+func (c *logger) Error(args ...interface{}) {
 	if c.level >= log.Error {
 		c.collect(fmt.Sprint(args...), c.fields)
 	}
 }
 
 // Panic implements the log.Logger interface.
-func (c *Logger) Panic(args ...interface{}) {
+func (c *logger) Panic(args ...interface{}) {
 	msg := fmt.Sprint(args...)
 	c.collect(msg, c.fields)
+	c.pushMetrics()
 	panic(msg)
 }
 
 // collect checks if a log matches any of predefined metrics and if so,
 // extracts a metric value from it.
-func (c *Logger) collect(msg string, fields log.Fields) {
+func (c *logger) collect(msg string, fields log.Fields) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, metric := range c.metrics {
@@ -251,7 +251,9 @@ func (c *Logger) collect(msg string, fields log.Fields) {
 				var ok bool
 				mv.value, ok = toFloat(byPath(reflect.ValueOf(fields), metric.Value))
 				if !ok {
-					c.logger.WithField("path", metric.Value).Warn("Invalid path")
+					c.logger.
+						WithField("path", metric.Value).
+						Warn("Invalid path")
 					continue
 				}
 			}
@@ -275,7 +277,8 @@ func (c *Logger) collect(msg string, fields log.Fields) {
 }
 
 // pushRoutine pushes metrics in interval defined in c.interval.
-func (c *Logger) pushRoutine() {
+func (c *logger) pushRoutine() {
+	defer c.pushMetrics()
 	ticker := time.NewTicker(time.Duration(c.interval) * time.Second)
 	for {
 		<-ticker.C
@@ -284,12 +287,15 @@ func (c *Logger) pushRoutine() {
 }
 
 // pushMetrics pushes metrics to the Grafana Cloud server.
-func (c *Logger) pushMetrics() {
+func (c *logger) pushMetrics() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(c.metricPoints) == 0 {
 		return
 	}
+	c.logger.
+		WithField("metrics", len(c.metricPoints)).
+		Info("Pushing metrics")
 	var metrics []metricJSON
 	for k, v := range c.metricPoints {
 		metrics = append(metrics, metricJSON{
@@ -308,22 +314,30 @@ func (c *Logger) pushMetrics() {
 	}
 	req, err := http.NewRequest("POST", c.graphiteEndpoint, bytes.NewReader(reqBody))
 	if err != nil {
-		c.logger.WithError(err).Warn("Invalid request")
+		c.logger.
+			WithError(err).
+			Warn("Invalid request")
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+c.graphiteAPIKey)
 	req.Header.Set("Content-Type", "application/json")
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		c.logger.WithError(err).Warn("Invalid request")
+		c.logger.
+			WithError(err).
+			Warn("Invalid request")
 		return
 	}
 	err = res.Body.Close()
 	if err != nil {
-		c.logger.WithError(err).Warn("Unable to close request body")
+		c.logger.
+			WithError(err).
+			Warn("Unable to close request body")
 		return
 	}
 }
+
+var varRegexp = regexp.MustCompile(`\$\{[^}]+\}`)
 
 // replaceVars replaces vars provided as ${field} with values from log fields.
 func replaceVars(s string, f log.Fields) string {

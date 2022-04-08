@@ -21,14 +21,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
-type Logger struct {
-	log logrus.FieldLogger
-	lvl log.Level
-}
-
-func New(logger logrus.FieldLogger) log.Logger {
+// New creates a new logger that uses Logrus for logging.
+func New(logrusLogger logrus.FieldLogger) log.Logger {
 	lvl := log.Debug
-	if l, ok := logger.(*logrus.Logger); ok {
+	if l, ok := logrusLogger.(*logrus.Logger); ok {
 		switch l.Level {
 		case logrus.PanicLevel:
 			lvl = log.Panic
@@ -46,65 +42,83 @@ func New(logger logrus.FieldLogger) log.Logger {
 			lvl = log.Debug
 		}
 	}
-	return &Logger{log: logger, lvl: lvl}
+	return &logger{log: logrusLogger, lvl: lvl}
 }
 
-func (l *Logger) Level() log.Level {
+type logger struct {
+	log logrus.FieldLogger
+	lvl log.Level
+}
+
+// Level implements new log.Logger interface.
+func (l *logger) Level() log.Level {
 	return l.lvl
 }
 
-func (l *Logger) WithField(key string, value interface{}) log.Logger {
-	return &Logger{log: l.log.WithField(key, value), lvl: l.lvl}
+// WithField implements new log.Logger interface.
+func (l *logger) WithField(key string, value interface{}) log.Logger {
+	return &logger{log: l.log.WithField(key, value), lvl: l.lvl}
 }
 
-func (l *Logger) WithFields(fields log.Fields) log.Logger {
-	return &Logger{log: l.log.WithFields(fields), lvl: l.lvl}
+// WithFields implements new log.Logger interface.
+func (l *logger) WithFields(fields log.Fields) log.Logger {
+	return &logger{log: l.log.WithFields(fields), lvl: l.lvl}
 }
 
-func (l *Logger) WithError(err error) log.Logger {
+// WithError implements new log.Logger interface.
+func (l *logger) WithError(err error) log.Logger {
 	if fErr, ok := err.(log.ErrorWithFields); ok {
-		return &Logger{log: l.log.WithFields(fErr.Fields()).WithError(err), lvl: l.lvl}
+		return &logger{log: l.log.WithFields(fErr.Fields()).WithError(err), lvl: l.lvl}
 	}
-
-	return &Logger{log: l.log.WithError(err), lvl: l.lvl}
+	return &logger{log: l.log.WithError(err), lvl: l.lvl}
 }
 
-func (l *Logger) Debugf(format string, args ...interface{}) {
+// Debugf implements new log.Logger interface.
+func (l *logger) Debugf(format string, args ...interface{}) {
 	l.log.Debugf(format, args...)
 }
 
-func (l *Logger) Infof(format string, args ...interface{}) {
+// Infof implements new log.Logger interface.
+func (l *logger) Infof(format string, args ...interface{}) {
 	l.log.Infof(format, args...)
 }
 
-func (l *Logger) Warnf(format string, args ...interface{}) {
+// Warnf implements new log.Logger interface.
+func (l *logger) Warnf(format string, args ...interface{}) {
 	l.log.Warnf(format, args...)
 }
 
-func (l *Logger) Errorf(format string, args ...interface{}) {
+// Errorf implements new log.Logger interface.
+func (l *logger) Errorf(format string, args ...interface{}) {
 	l.log.Errorf(format, args...)
 }
 
-func (l *Logger) Panicf(format string, args ...interface{}) {
+// Panicf implements new log.Logger interface.
+func (l *logger) Panicf(format string, args ...interface{}) {
 	l.log.Panicf(format, args...)
 }
 
-func (l *Logger) Debug(args ...interface{}) {
+// Debug implements new log.Logger interface.
+func (l *logger) Debug(args ...interface{}) {
 	l.log.Debug(args...)
 }
 
-func (l *Logger) Info(args ...interface{}) {
+// Info implements new log.Logger interface.
+func (l *logger) Info(args ...interface{}) {
 	l.log.Info(args...)
 }
 
-func (l *Logger) Warn(args ...interface{}) {
+// Warn implements new log.Logger interface.
+func (l *logger) Warn(args ...interface{}) {
 	l.log.Warn(args...)
 }
 
-func (l *Logger) Error(args ...interface{}) {
+// Error implements new log.Logger interface.
+func (l *logger) Error(args ...interface{}) {
 	l.log.Error(args...)
 }
 
-func (l *Logger) Panic(args ...interface{}) {
+// Panic implements new log.Logger interface.
+func (l *logger) Panic(args ...interface{}) {
 	l.log.Panic(args...)
 }
