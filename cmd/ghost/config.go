@@ -49,6 +49,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "ghost",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {

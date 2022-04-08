@@ -44,6 +44,7 @@ func PrepareClientServices(
 		return nil, nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "gofer",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {

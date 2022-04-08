@@ -36,7 +36,7 @@ const LoggerTag = "GRAFANA"
 type Config struct {
 	// Metrics is a list of metric definitions.
 	Metrics []Metric
-	// Interval describes how often logs should be sent to the Grafana Cloud
+	// Interval specifies how often logs should be sent to the Grafana Cloud
 	// server. Logs with the same name in that interval will be replaced with
 	// never ones.
 	Interval uint

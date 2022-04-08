@@ -26,6 +26,7 @@ import (
 )
 
 type Dependencies struct {
+	AppName    string
 	BaseLogger log.Logger
 }
 
@@ -49,7 +50,7 @@ type grafanaMetric struct {
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
-	logger := d.BaseLogger
+	logger := d.BaseLogger.WithField("x-appName", d.AppName)
 	if c.Grafana.Enable {
 		var m []grafana.Metric
 		for _, cm := range c.Grafana.Metrics {
