@@ -20,17 +20,13 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/sirupsen/logrus" //nolint:depguard
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/grafana"
-	logLogrus "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 )
 
 type Dependencies struct {
-	LogrusVerbosity logrus.Level
-	LogrusFormatter logrus.Formatter
+	BaseLogger log.Logger
 }
 
 type Logger struct {
@@ -53,33 +49,33 @@ type grafanaMetric struct {
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
-	var l log.Logger
-	lr := logrus.New()
-	lr.SetLevel(d.LogrusVerbosity)
-	lr.SetFormatter(d.LogrusFormatter)
-	l = logLogrus.New(lr)
+	logger := d.BaseLogger
 	if c.Grafana.Enable {
 		var m []grafana.Metric
 		for _, cm := range c.Grafana.Metrics {
-			r, err := regexp.Compile(cm.Pattern)
+			p, err := regexp.Compile(cm.Pattern)
 			if err != nil {
 				return nil, fmt.Errorf("logger config: unable to compile regexp: %s", cm.Pattern)
 			}
 			m = append(m, grafana.Metric{
-				Pattern: r,
+				Pattern: p,
 				Value:   cm.Value,
 				Name:    cm.Name,
 				Tags:    cm.Tags,
 			})
 		}
-		l = chain.New(l, grafana.New(l.Level(), grafana.Config{
+		interval := c.Grafana.Interval
+		if interval < 1 {
+			interval = 1
+		}
+		logger = chain.New(logger, grafana.New(logger.Level(), grafana.Config{
 			Metrics:          m,
-			Interval:         uint(c.Grafana.Interval),
+			Interval:         uint(interval),
 			GraphiteEndpoint: c.Grafana.Endpoint,
 			GraphiteAPIKey:   c.Grafana.APIKey,
 			HTTPClient:       http.DefaultClient,
-			Logger:           l,
+			Logger:           logger,
 		}))
 	}
-	return l, nil
+	return logger, nil
 }

@@ -45,8 +45,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
-		LogrusVerbosity: opts.Verbosity(),
-		LogrusFormatter: opts.Formatter(),
+		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
