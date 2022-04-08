@@ -22,6 +22,10 @@ l2_xdomain_messenger='0x4200000000000000000000000000000000000007'
 esm_min=10000000000000000000000                                                     # 10_000 * (10^18)
 line=10000000000000000000000000
 
+# TODO This was necessary to get images to run on github actions, at least when
+# building on MacOS/M1. Prefer to run arm64, but this arch is working atm...
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
 pd() {
     pushd "$1" > /dev/null
 }
@@ -39,7 +43,7 @@ get_accounts() {
 }
 
 json_to_env() {
-    for e in $(echo "$1" | jq -r 'to_entries|map("\"\(.key)=\(.value|tostring)\"")|.[]'); do 
+    for e in $(echo "$1" | jq -r 'to_entries|map("\"\(.key)=\(.value|tostring)\"")|.[]'); do
         echo "$e"
         eval "export $e"
     done
@@ -60,9 +64,9 @@ ethutil() {
           oracle-suite-dump-events \
           dump-events \
           http://ops-l2geth-1:8545 $@;;
-      *) echo "wumpwump";; 
+      *) echo "wumpwump";;
     esac
-    
+
 }
 
 eth_env_l1() {
@@ -88,8 +92,9 @@ l1_l2_init() {
     git clone https://github.com/ethereum-optimism/optimism.git $optimism_dir || true
     pd $optimism_dir/ops
     git pull origin develop
-    # TODO(jamesr) Since the switch to alpine a dep in the deployer image seems
-    # to cause a crash, at least in MacOS. Locking into this commit for now.
+    # TODO(jamesr) Since the Optimism team switched to alpine a dep in the
+    # deployer image seems to cause a crash, at least in MacOS. Locking into
+    # this commit for now.
     git reset --hard 032731b50f860c91e21d36beae9b6fd21bccaf5f
     make build
     pb
@@ -98,7 +103,23 @@ l1_l2_init() {
 start_l1_l2() {
     pd $optimism_dir/ops
     make up && scripts/wait-for-sequencer.sh && echo "System is ready to accept transactions"
-    pb
+
+    retries=10
+    for i in `seq $retries`; do
+        l1_xdomain_messenger=$(curl -s http://localhost:8080/addresses.json | jq -r .OVM_L1CrossDomainMessenger)
+        if [ -z "$l1_xdomain_messenger" ]; then
+            echo "OVM_L1CrossDomainMessenger not found yet, waiting on deployer..."
+            echo "Sleeping 30 sec ($i/$retries)."
+            sleep 30
+        else
+            echovar l1_xdomain_messenger
+            pb
+            return
+        fi
+    done
+    echo "Timed out... :/"
+    echo "Check deployer logs, never able to get OVM_L1CrossDomainMessenger value."
+    exit 1
 }
 
 pause_proxy_init_l1() {
@@ -173,14 +194,14 @@ dss_init_l1() {
 
     j=$(cat<<ENDJSON
 {
-   "vat_address": "$vat_address", 
-   "dai_address": "$dai_address", 
-   "flap_address": "$flap_address", 
-   "flop_address": "$flop_address", 
-   "vow_address": "$vow_address", 
-   "join_address": "$join_address", 
-   "end_address": "$end_address", 
-   "pause_address": "$pause_address", 
+   "vat_address": "$vat_address",
+   "dai_address": "$dai_address",
+   "flap_address": "$flap_address",
+   "flop_address": "$flop_address",
+   "vow_address": "$vow_address",
+   "join_address": "$join_address",
+   "end_address": "$end_address",
+   "pause_address": "$pause_address",
    "esm_address": "$esm_address"
 }
 ENDJSON
@@ -195,8 +216,10 @@ dss_wormhole_init_l1() {
     git clone https://github.com/makerdao/dss-wormhole.git $dss_wormhole_dir || true
     pd $dss_wormhole_dir
     git pull origin master
+
     # TODO shouldn't have to manually run this... what's up nix?
     nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA solc-static-versions.solc_0_8_13
+
     dapp update
     make all
 
@@ -223,10 +246,10 @@ dss_wormhole_init_l1() {
 
     j=$(cat<<ENDJSON
 {
-   "whjoin_address": "$whjoin_address", 
-   "whfee_address": "$whfee_address", 
-   "whauth_address": "$whauth_address", 
-   "whrouter_address": "$whrouter_address", 
+   "whjoin_address": "$whjoin_address",
+   "whfee_address": "$whfee_address",
+   "whauth_address": "$whauth_address",
+   "whrouter_address": "$whrouter_address",
    "whrelay_address": "$whrelay_address"
 }
 ENDJSON
@@ -245,11 +268,15 @@ optimism_spells() {
     git pull origin master
     git reset --hard origin/master
     pb
-    
+
     rm -fr src
     mv wormhole-integration-tests/contracts/deploy src
     rm -fr wormhole-integration-tests
-    DAPP_BUILD_OPTIMIZE=0 DAPP_BUILD_OPTIMIZE_RUNS=0 dapp --use solc:0.8.9 build
+
+    # TODO shouldn't have to manually run this... what's up nix?
+    nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA solc-static-versions.solc_0_8_13
+
+    DAPP_BUILD_OPTIMIZE=0 DAPP_BUILD_OPTIMIZE_RUNS=0 dapp --use solc:0.8.13 build
 
     eth_env_l2
     res=$(set -x; dapp create L2AddWormholeDomainSpell $l2_dai_address $l2_wormhole_gateway_address $master_domain)
@@ -271,7 +298,7 @@ optimism_spells() {
             $dai_address \
             $l1_governance_address \
             $l2_domain_spell
-    ) 
+    )
     l1_domain_spell=$(echo "$res" | tail -n 1)
     echovar l1_domain_spell
     (set -x; seth send $whrouter_address 'rely(address)' $l1_domain_spell)
@@ -288,7 +315,7 @@ optimism_bridge_init() {
     echo 'Build and deploy Optimism bridge...'
 
     pd $optimism_bridge_dir/
-    
+
     # TODO(jamesr) Built locally from https://github.com/makerdao/optimism-dai-bridge.git,
     # which doesn't build without heavy coercion on MacOS. When code is stable,
     # pull from git, build, etc.
@@ -381,7 +408,7 @@ optimism_bridge_init() {
 {
     "l1_dai_address": "$dai_address",
     "l1_escrow_address": "$l1_escrow_address",
-    "l1_governance_address": "$l1_governance_address", 
+    "l1_governance_address": "$l1_governance_address",
     "l1_token_bridge_address": "$l1_token_bridge_address",
     "l1_wormhole_gateway_address": "$l1_wormhole_gateway_address",
     "l2_dai_address": "$l2_dai_address",
@@ -398,13 +425,13 @@ ENDJSON
 post_deploy_setup() {
     # Mint some DAI on the chains
     eth_env_l1
-    for account in $(get_accounts); do 
+    for account in $(get_accounts); do
         echo "$account (l1)"
         (set -x; seth send $dai_address 'mint(address,uint256)' $account $esm_min)
     done
 
     eth_env_l2
-    for account in $(get_accounts); do 
+    for account in $(get_accounts); do
         echo "$account (l2)"
         (set -x; seth send $l2_dai_address 'mint(address,uint256)' $account $esm_min)
     done
@@ -413,19 +440,21 @@ post_deploy_setup() {
 ethutil_init
 l1_l2_init
 start_l1_l2
-l1_xdomain_messenger=$(curl -s http://localhost:8080/addresses.json | jq -r .OVM_L1CrossDomainMessenger)
 
 res=$(dss_init_l1)
 dss_json=$(echo "$res" | tail -n 1)
 json_to_env "$dss_json"
+echo "$dss_json" | jq . | tee $tmp_dir/dss.json
 
 res=$(dss_wormhole_init_l1)
 dsswh_json=$(echo "$res" | tail -n 1)
 json_to_env "$dsswh_json"
+echo "$dsswh_json" | jq . | tee $tmp_dir/dss-wormhole.json
 
 res=$(optimism_bridge_init)
 opt_json=$(echo "$res" | tail -n 1)
 json_to_env "$opt_json"
+echo "$opt_json" | jq . | tee $tmp_dir/optimism.json
 
 post_deploy_setup
 
@@ -435,9 +464,6 @@ post_deploy_setup
     seth send $l2_wormhole_gateway_address 'initiateWormhole(bytes32,address,uint128)' \
     $master_domain $ETH_FROM 500
 )
-ethutil dump-events-l2 /artifacts/L2DaiWormholeGateway.abi $l2_wormhole_gateway_address jq .
+ethutil dump-events-l2 /artifacts/L2DaiWormholeGateway.abi $l2_wormhole_gateway_address | jq .
 
 mkdir -p $tmp_dir || true
-echo "$dss_json" | jq . | tee $tmp_dir/dss.json
-echo "$dsswh_json" | jq . | tee $tmp_dir/dss-wormhole.json
-echo "$opt_json" | jq . | tee $tmp_dir/optimism.json

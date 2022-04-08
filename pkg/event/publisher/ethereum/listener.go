@@ -17,6 +17,7 @@ package ethereum
 
 import (
 	"context"
+	"math"
 	"math/big"
 	"sync"
 	"time"
@@ -183,7 +184,7 @@ func (l *ethClientLogListener) nextBlockNumberRange(ctx context.Context) (uint64
 		return 0, 0, err
 	}
 	from := l.lastBlockNumber + 1
-	to := curr - l.blocksBehind
+	to := uint64(math.Max(0, float64(curr-l.blocksBehind)))
 	if from > to {
 		from = to
 	}
