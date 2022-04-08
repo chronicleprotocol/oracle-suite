@@ -22,6 +22,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	spireConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spire"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
@@ -35,6 +36,7 @@ type Config struct {
 	Ethereum  ethereumConfig.Ethereum   `json:"ethereum"`
 	Spire     spireConfig.Spire         `json:"spire"`
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
+	Logger    loggerConfig.Logger       `json:"logger"`
 }
 
 func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
@@ -42,7 +44,13 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log := opts.Logger()
+	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		LogrusVerbosity: opts.Verbosity(),
+		LogrusFormatter: opts.Formatter(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)

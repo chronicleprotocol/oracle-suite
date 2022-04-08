@@ -22,6 +22,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
 	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/internal/gofer/marshal"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
@@ -30,6 +31,7 @@ import (
 type Config struct {
 	Ethereum ethereumConfig.Ethereum `json:"ethereum"`
 	Gofer    goferConfig.Gofer       `json:"gofer"`
+	Logger   loggerConfig.Logger     `json:"logger"`
 }
 
 func PrepareClientServices(
@@ -41,7 +43,13 @@ func PrepareClientServices(
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log := opts.Logger()
+	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		LogrusVerbosity: opts.Verbosity(),
+		LogrusFormatter: opts.Formatter(),
+	})
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)

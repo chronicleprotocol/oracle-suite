@@ -22,6 +22,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventapi"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
@@ -34,6 +35,7 @@ type Config struct {
 	Lair      eventAPIConfig.EventAPI   `json:"lair"`
 	Transport transportConfig.Transport `json:"transport"`
 	Feeds     feedsConfig.Feeds         `json:"feeds"`
+	Logger    loggerConfig.Logger       `json:"logger"`
 }
 
 func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
@@ -41,7 +43,13 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log := opts.Logger()
+	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		LogrusVerbosity: opts.Verbosity(),
+		LogrusFormatter: opts.Formatter(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
 	fed, err := opts.Config.Feeds.Addresses()
 	if err != nil {
 		return nil, fmt.Errorf(`feeds config error: %w`, err)

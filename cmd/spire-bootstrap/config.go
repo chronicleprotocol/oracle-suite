@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p"
@@ -28,6 +29,7 @@ import (
 
 type Config struct {
 	Transport transportConfig.Transport `json:"transport"`
+	Logger    loggerConfig.Logger       `json:"logger"`
 }
 
 func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
@@ -35,7 +37,13 @@ func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervis
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log := opts.Logger()
+	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		LogrusVerbosity: opts.Verbosity(),
+		LogrusFormatter: opts.Formatter(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
 	tra, err := opts.Config.Transport.ConfigureP2PBoostrap(transportConfig.BootstrapDependencies{
 		Logger: log,
 	})
