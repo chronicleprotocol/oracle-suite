@@ -58,7 +58,7 @@ type Metric struct {
 }
 
 type shared struct {
-	mu               sync.Mutex
+	mu               sync.Mutex //nolint:structcheck // false-positive
 	logger           log.Logger
 	metrics          []Metric
 	interval         uint
@@ -275,9 +275,14 @@ func (c *Logger) pushMetrics() {
 	}
 	req.Header.Set("Authorization", "Bearer "+c.graphiteAPIKey)
 	req.Header.Set("Content-Type", "application/json")
-	_, err = c.httpClient.Do(req)
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.WithError(err).Warn("Invalid request")
+		return
+	}
+	err = res.Body.Close()
+	if err != nil {
+		c.logger.WithError(err).Warn("Unable to close request body")
 		return
 	}
 }

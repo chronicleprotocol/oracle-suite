@@ -92,7 +92,7 @@ func (c *Logger) Errorf(format string, args ...interface{}) {
 func (c *Logger) Panicf(format string, args ...interface{}) {
 	for _, l := range c.loggers {
 		func() {
-			defer func() { recover() }()
+			defer func() { recover() }() //nolint:errcheck
 			l.Panicf(format, args...)
 		}()
 	}
@@ -126,7 +126,7 @@ func (c *Logger) Error(args ...interface{}) {
 func (c *Logger) Panic(args ...interface{}) {
 	for _, l := range c.loggers {
 		func() {
-			defer func() { recover() }()
+			defer func() { recover() }() //nolint:errcheck
 			l.Panic(args...)
 		}()
 	}
