@@ -19,7 +19,9 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"runtime"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/grafana"
@@ -43,26 +45,38 @@ type grafanaLogger struct {
 }
 
 type grafanaMetric struct {
-	Pattern string              `json:"pattern"`
-	Value   string              `json:"value"`
-	Name    string              `json:"name"`
-	Tags    map[string][]string `json:"tags"`
+	MatchMessage string              `json:"matchMessage"`
+	MatchFields  map[string]string   `json:"matchFields"`
+	Value        string              `json:"value"`
+	Name         string              `json:"name"`
+	Tags         map[string][]string `json:"tags"`
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
-	logger := d.BaseLogger.WithField("x-appName", d.AppName)
+	logger := d.BaseLogger
 	if c.Grafana.Enable {
 		var m []grafana.Metric
 		for _, cm := range c.Grafana.Metrics {
-			p, err := regexp.Compile(cm.Pattern)
+			// Compile a regular expression for a message:
+			mrx, err := regexp.Compile(cm.MatchMessage)
 			if err != nil {
-				return nil, fmt.Errorf("logger config: unable to compile regexp: %s", cm.Pattern)
+				return nil, fmt.Errorf("logger config: unable to compile regexp: %s", cm.MatchMessage)
+			}
+			// Compile regular expressions for log fields:
+			frx := map[string]*regexp.Regexp{}
+			for f, p := range cm.MatchFields {
+				rx, err := regexp.Compile(p)
+				if err != nil {
+					return nil, fmt.Errorf("logger config: unable to compile regexp: %s", p)
+				}
+				frx[f] = rx
 			}
 			m = append(m, grafana.Metric{
-				Pattern: p,
-				Value:   cm.Value,
-				Name:    cm.Name,
-				Tags:    cm.Tags,
+				MatchMessage: mrx,
+				MatchFields:  frx,
+				Value:        cm.Value,
+				Name:         cm.Name,
+				Tags:         cm.Tags,
 			})
 		}
 		interval := c.Grafana.Interval
@@ -78,5 +92,13 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 			Logger:           logger,
 		}))
 	}
+	logger = logger.
+		WithFields(log.Fields{
+			"x-appName":    d.AppName,
+			"x-appVersion": suite.Version,
+			"x-goVersion":  runtime.Version(),
+			"x-goOS":       runtime.GOOS,
+			"x-goArch":     runtime.GOARCH,
+		})
 	return logger, nil
 }

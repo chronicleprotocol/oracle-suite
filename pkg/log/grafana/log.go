@@ -52,9 +52,11 @@ type Config struct {
 
 // Metric describes one Grafana metric.
 type Metric struct {
-	// Pattern is a regexp that must match the log message for which
-	// metrics will be extracted.
-	Pattern *regexp.Regexp
+	// MatchMessage is a regexp that must match the log message.
+	MatchMessage *regexp.Regexp
+	// MatchFields is a list of regexp's that must match the values of the
+	// fields defined in the map keys.
+	MatchFields map[string]*regexp.Regexp
 	// Value is the dot-separated path of the field with the metric value.
 	// If empty, the value 1 will be used as the metric value.
 	Value string
@@ -241,38 +243,40 @@ func (c *logger) Panic(args ...interface{}) {
 func (c *logger) collect(msg string, fields log.Fields) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	rfields := reflect.ValueOf(fields)
 	for _, metric := range c.metrics {
-		if metric.Pattern.MatchString(msg) {
-			var mk metricKey
-			var mv metricValue
-			mk.time = roundTime(time.Now().Unix(), c.interval)
-			mv.value = 1
-			if len(metric.Value) > 0 {
-				var ok bool
-				mv.value, ok = toFloat(byPath(reflect.ValueOf(fields), metric.Value))
-				if !ok {
-					c.logger.
-						WithField("path", metric.Value).
-						Warn("Invalid path")
-					continue
-				}
-			}
-			mk.name = replaceVars(metric.Name, c.fields)
-			for t, vs := range metric.Tags {
-				for _, v := range vs {
-					mv.tags = append(mv.tags, t+"="+replaceVars(v, c.fields))
-				}
-			}
-			c.metricPoints[mk] = mv
-			c.logger.
-				WithFields(log.Fields{
-					"timestamp": mk.time,
-					"name":      mk.name,
-					"value":     mv.value,
-					"tags":      mv.tags,
-				}).
-				Debug("New metric point")
+		if !match(metric, msg, rfields) {
+			continue
 		}
+		var mk metricKey
+		var mv metricValue
+		mk.time = roundTime(time.Now().Unix(), c.interval)
+		mv.value = 1
+		if len(metric.Value) > 0 {
+			var ok bool
+			mv.value, ok = toFloat(byPath(rfields, metric.Value))
+			if !ok {
+				c.logger.
+					WithField("path", metric.Value).
+					Warn("Invalid path")
+				continue
+			}
+		}
+		mk.name = replaceVars(metric.Name, rfields)
+		for t, vs := range metric.Tags {
+			for _, v := range vs {
+				mv.tags = append(mv.tags, t+"="+replaceVars(v, rfields))
+			}
+		}
+		c.metricPoints[mk] = mv
+		c.logger.
+			WithFields(log.Fields{
+				"timestamp": mk.time,
+				"name":      mk.name,
+				"value":     mv.value,
+				"tags":      mv.tags,
+			}).
+			Debug("New metric point")
 	}
 }
 
@@ -337,13 +341,25 @@ func (c *logger) pushMetrics() {
 	}
 }
 
+// match checks if log message and log fields matches metric definition.
+func match(metric Metric, msg string, fields reflect.Value) bool {
+	for path, rx := range metric.MatchFields {
+		field, ok := toString(byPath(fields, path))
+		if !ok || rx.MatchString(field) {
+			return false
+		}
+	}
+	return metric.MatchMessage.MatchString(msg)
+}
+
+// varRegexp matches vars in format: ${foo}
 var varRegexp = regexp.MustCompile(`\$\{[^}]+\}`)
 
 // replaceVars replaces vars provided as ${field} with values from log fields.
-func replaceVars(s string, f log.Fields) string {
+func replaceVars(s string, fields reflect.Value) string {
 	return varRegexp.ReplaceAllStringFunc(s, func(s string) string {
 		path := s[2 : len(s)-1]
-		name, ok := toString(byPath(reflect.ValueOf(f), path))
+		name, ok := toString(byPath(fields, path))
 		if !ok {
 			return ""
 		}
@@ -351,38 +367,38 @@ func replaceVars(s string, f log.Fields) string {
 	})
 }
 
-func byPath(v reflect.Value, path string) reflect.Value {
-	if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
-		return byPath(v.Elem(), path)
+func byPath(value reflect.Value, path string) reflect.Value {
+	if value.Kind() == reflect.Interface || value.Kind() == reflect.Ptr {
+		return byPath(value.Elem(), path)
 	}
 	if len(path) == 0 {
-		return v
+		return value
 	}
-	switch v.Kind() {
+	switch value.Kind() {
 	case reflect.Slice:
 		elem, path := splitPath(path)
 		i, err := strconv.Atoi(elem)
 		if err != nil {
 			return reflect.Value{}
 		}
-		f := v.Index(i)
+		f := value.Index(i)
 		if !f.IsValid() {
 			return reflect.Value{}
 		}
 		return byPath(f, path)
 	case reflect.Map:
 		elem, path := splitPath(path)
-		if v.Type().Key().Kind() != reflect.String {
+		if value.Type().Key().Kind() != reflect.String {
 			return reflect.Value{}
 		}
-		f := v.MapIndex(reflect.ValueOf(elem))
+		f := value.MapIndex(reflect.ValueOf(elem))
 		if !f.IsValid() {
 			return reflect.Value{}
 		}
 		return byPath(f, path)
 	case reflect.Struct:
 		elem, path := splitPath(path)
-		f := v.FieldByName(elem)
+		f := value.FieldByName(elem)
 		if !f.IsValid() {
 			return reflect.Value{}
 		}
