@@ -20,9 +20,7 @@ make wormhole-e2e
 
 from *gitroot* to run the full suite of tests.
 
-**NOTE(2022 April)** The above `make init` relies on repos that are in a very early stage of development and in a pretty high state of flux. As a result, building from source is likely to be frail until the dependent repos settle down. In order to get some stability for E2E tests, snapshots of the result of `make init` have been taken and are in a free account in Dockerhub for the Oracles CU:
-
-[https://hub.docker.com/r/makerocu/e2e-wormhole/tags](https://hub.docker.com/r/makerocu/e2e-wormhole/tags)
+**NOTE(2022 April)** The above `make init` relies on repos that are in a very early stage of development and in a pretty high state of flux. As a result, building from source is likely to be frail until the dependent repos settle down. In order to get some stability for E2E tests, snapshots of the result of `make init` have been taken and loaded into [ghcr.io/chronicleprotocal](https://github.com/orgs/chronicleprotocol/packages/container/package/e2e-wormhole).
 
 The `docker-compose.yml` file that E2E tests rely on will pull these images rather than try and build from source via `make init`.
 

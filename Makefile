@@ -124,6 +124,10 @@ wormhole-e2e-lair:
 	./$(WORMHOLE_DIR)/start-lair.sh
 .PHONY: wormhole-e2e-spire
 
+wormhole-e2e-initiate:
+	./$(WORMHOLE_DIR)/initiate-wormhole.sh $$(cat $(WORMHOLE_DIR)/aux/optimism.json  | jq -r .l2_wormhole_gateway_address)
+.PHONY: wormhole-e2e-initiate
+
 VERSION_TAG_CURRENT := $(shell git tag --list 'v*' --points-at HEAD | sort --version-sort | tr \~ - | tail -1)
 VERSION_TAG_LATEST := $(shell git tag --list 'v*' | tr - \~ | sort --version-sort | tr \~ - | tail -1)
 ifeq ($(VERSION_TAG_CURRENT),$(VERSION_TAG_LATEST))

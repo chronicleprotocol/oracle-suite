@@ -111,6 +111,11 @@ func TestEventAPI(t *testing.T) {
 	res, err = http.Get(fmt.Sprintf("http://%s?type=event2&index=0x%x", api.srv.Addr().String(), "idx1"))
 	assert.NoError(t, err)
 	assert.JSONEq(t, `[{"timestamp":4,"data":{"data_key":"76616c"},"signatures":{"sig_key":{"signer":"76616c","signature":"76616c"}}}]`, read(res))
+
+	// Test for empty response
+	res, err = http.Get(fmt.Sprintf("http://%s?type=event2&index=0xdeadbeef", api.srv.Addr().String()))
+	assert.NoError(t, err)
+	assert.JSONEq(t, `[]`, read(res))
 }
 
 func read(res *http.Response) string {
