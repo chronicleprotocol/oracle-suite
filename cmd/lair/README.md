@@ -115,23 +115,42 @@ is `config.json` in the current working directory. You can change the config fil
           broadcast to other peers. This option must be used together with `directPeersAddrs`.
 - `feeds` (`[]string`) - List of hex-encoded addresses of other Oracles. Event messages from Oracles outside that list
   will be ignored.
+- `logger` - Optional logger configuration.
+    - `grafana` - Configuration of Grafana logger. Grafana logger can extract values from log messages and send them to
+      Grafana Cloud.
+        - `enable` (`string`) - Enable Grafana metrics.
+        - `interval` (`int`) - Specifies how often, in seconds, logs should be sent to the Grafana Cloud server. Logs
+          with the same name in that interval will be replaced with never ones.
+        - `endpoint` (`string`) - Graphite server endpoint.
+        - `apiKey` (`string`) - Graphite API key.
+        - `[]metrics` - List of metric definitions
+            - `matchMessage` (`string`) - Regular expression that must match a log message.
+            - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `${path}`, where
+              path is the dot-separated path to the field.
+            - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
+              format `${path}`, where path is the dot-separated path to the field.
+            - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
+              used as the metric value.
 - `lair` - Lair configuration.
-    - `listenAddr` (`string`) - Listen address for the HTTP server provided as the combination of IP address and port
-      number.
-    - `storage` - Configure the data storage mechanism used by Lair.
-        - `type` (`string`) - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (
-          default: `memory`).
-        - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
-            - `ttl` (`integer`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
-              about one week)
-            - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
-              number, e.g. `0.0.0.0:8080`.
-            - `password` (`string`) - Redis server password.
-            - `db` (`int`) - Redis server database number.
-            - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
-        - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
-            - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds - about
-              one week)
+    - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be used as
+      the metric value.
+        - `listenAddr` (`string`) - Listen address for the HTTP server provided as the combination of IP address and
+          port number.
+        - `storage` - Configure the data storage mechanism used by Lair.
+            - `type` (`string`) - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (
+              default: `memory`).
+            - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
+                - `ttl` (`integer`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds
+                  about one week)
+                - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
+                  number, e.g. `0.0.0.0:8080`.
+                - `password` (`string`) - Redis server password.
+                - `db` (`int`) - Redis server database number.
+                - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
+            - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
+                - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
+                  about one week)
 
 ## API
 

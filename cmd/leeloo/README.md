@@ -140,9 +140,26 @@ is `config.json` in the current working directory. You can change the config fil
     - `from` (`string`) - The Ethereum wallet address.
     - `keystore` (`string`) - The keystore path.
     - `password` (`string`) - The path to the password file. If empty, the password is not used.
+- `logger` - Optional logger configuration.
+    - `grafana` - Configuration of Grafana logger. Grafana logger can extract values from log messages and send them to
+      Grafana Cloud.
+        - `enable` (`string`) - Enable Grafana metrics.
+        - `interval` (`int`) - Specifies how often, in seconds, logs should be sent to the Grafana Cloud server. Logs
+          with the same name in that interval will be replaced with never ones.
+        - `endpoint` (`string`) - Graphite server endpoint.
+        - `apiKey` (`string`) - Graphite API key.
+        - `[]metrics` - List of metric definitions
+            - `matchMessage` (`string`) - Regular expression that must match a log message.
+            - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `${path}`, where
+              path is the dot-separated path to the field.
+            - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
+              format `${path}`, where path is the dot-separated path to the field.
+            - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
+              used as the metric value.
 - `leeloo` - Leeloo configuration.
     - `listeners` - Event listeners configuration.
-        - `wormhole` - Configuration of the "wormhole" event listener. It listens for `WormhholeGUID` events on
+        - `[]wormhole` - Configuration of the "wormhole" event listener. It listens for `WormhholeGUID` events on
           Ethereum-compatible blockchains.
             - `rpc` (`string|[]string`) - List of RPC server addresses. If more than one is used, rpc-splitter is used.
               It is recommended to use at least three addresses from different providers.
