@@ -102,6 +102,9 @@ func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supe
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})
+	if err != nil {
+		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
 		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)

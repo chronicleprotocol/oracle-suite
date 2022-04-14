@@ -99,12 +99,9 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 		}))
 	}
 
-	var logger log.Logger
-	switch len(loggers) {
-	case 1:
+	logger := chain.New(loggers...)
+	if len(loggers) == 1 {
 		logger = loggers[0]
-	default:
-		logger = chain.New(loggers...)
 	}
 
 	logger = logger.
