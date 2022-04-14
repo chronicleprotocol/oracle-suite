@@ -16,6 +16,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -26,6 +27,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/grafana"
 )
+
+var grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) log.Logger {
+	return grafana.New(context.Background(), lvl, cfg)
+}
 
 type Dependencies struct {
 	AppName    string
@@ -53,7 +58,8 @@ type grafanaMetric struct {
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
-	logger := d.BaseLogger
+	loggers := []log.Logger{d.BaseLogger}
+
 	if c.Grafana.Enable {
 		var m []grafana.Metric
 		for _, cm := range c.Grafana.Metrics {
@@ -83,15 +89,24 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 		if interval < 1 {
 			interval = 1
 		}
-		logger = chain.New(logger, grafana.New(logger.Level(), grafana.Config{
+		loggers = append(loggers, grafanaLoggerFactory(d.BaseLogger.Level(), grafana.Config{
 			Metrics:          m,
 			Interval:         uint(interval),
 			GraphiteEndpoint: c.Grafana.Endpoint,
 			GraphiteAPIKey:   c.Grafana.APIKey,
 			HTTPClient:       http.DefaultClient,
-			Logger:           logger,
+			Logger:           d.BaseLogger,
 		}))
 	}
+
+	var logger log.Logger
+	switch len(loggers) {
+	case 1:
+		logger = loggers[0]
+	default:
+		logger = chain.New(loggers...)
+	}
+
 	logger = logger.
 		WithFields(log.Fields{
 			"x-appName":    d.AppName,
@@ -100,5 +115,6 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 			"x-goOS":       runtime.GOOS,
 			"x-goArch":     runtime.GOARCH,
 		})
+
 	return logger, nil
 }

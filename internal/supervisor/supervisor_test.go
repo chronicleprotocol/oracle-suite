@@ -24,6 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 type service struct {
@@ -63,7 +65,7 @@ func (s *service) Started() bool {
 
 func TestSupervisor_CancelContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	s := New(ctx)
+	s := New(ctx, null.New())
 
 	s1 := &service{waitCh: make(chan error)}
 	s2 := &service{waitCh: make(chan error)}
@@ -95,7 +97,7 @@ func TestSupervisor_CancelContext(t *testing.T) {
 func TestSupervisor_FailToStart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	s := New(ctx)
+	s := New(ctx, null.New())
 
 	s1 := &service{waitCh: make(chan error)}
 	s2 := &service{waitCh: make(chan error)}
@@ -114,7 +116,7 @@ func TestSupervisor_FailToStart(t *testing.T) {
 func TestSupervisor_OneFail(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	s := New(ctx)
+	s := New(ctx, null.New())
 
 	s1 := &service{waitCh: make(chan error)}
 	s2 := &service{waitCh: make(chan error)}

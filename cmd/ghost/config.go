@@ -94,7 +94,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`ghost config error: %w`, err)
 	}
-	sup := supervisor.New(ctx)
+	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, gho)
 	if g, ok := gof.(gofer.StartableGofer); ok {
 		sup.Watch(g)

@@ -76,7 +76,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`leeloo config error: %w`, err)
 	}
-	sup := supervisor.New(ctx)
+	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, lee)
 	return sup, nil
 }

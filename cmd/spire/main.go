@@ -16,7 +16,6 @@
 package main
 
 import (
-	_ "embed"
 	"os"
 
 	suite "github.com/chronicleprotocol/oracle-suite"

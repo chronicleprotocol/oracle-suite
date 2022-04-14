@@ -18,7 +18,11 @@ package supervisor
 import (
 	"context"
 	"reflect"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
+
+const LoggerTag = "SUPERVISOR"
 
 // Service that could be managed by Supervisor.
 type Service interface {
@@ -39,19 +43,25 @@ type Supervisor struct {
 	started   bool
 	waitCh    chan error
 	services  []Service
+	log       log.Logger
 }
 
 // New returns a new instance of *Supervisor.
-func New(ctx context.Context) *Supervisor {
+func New(ctx context.Context, logger log.Logger) *Supervisor {
 	ctx, ctxCancel := context.WithCancel(ctx)
-	return &Supervisor{ctx: ctx, ctxCancel: ctxCancel, waitCh: make(chan error)}
+	return &Supervisor{
+		ctx:       ctx,
+		ctxCancel: ctxCancel,
+		waitCh:    make(chan error),
+		log:       logger.WithField("tag", LoggerTag),
+	}
 }
 
 // Watch add one or more services to a supervisor. Services must be added
 // before invoking the Start method, otherwise it panics.
 func (s *Supervisor) Watch(services ...Service) {
 	if s.started {
-		panic("supervisor was already started")
+		s.log.Panic("Supervisor was already started")
 	}
 	s.services = append(s.services, services...)
 }
@@ -60,17 +70,20 @@ func (s *Supervisor) Watch(services ...Service) {
 // it panics.
 func (s *Supervisor) Start() error {
 	if s.started {
-		panic("supervisor was already started")
+		s.log.Panic("Supervisor was already started")
 	}
 	s.started = true
 	for _, srv := range s.services {
+		s.log.
+			WithField("service", serviceName(srv)).
+			Debug("Starting service")
 		if err := srv.Start(s.ctx); err != nil {
 			s.ctxCancel()
 			close(s.waitCh)
 			return err
 		}
 	}
-	go s.serviceWatcher()
+	go s.serviceMonitor()
 	return nil
 }
 
@@ -82,7 +95,7 @@ func (s *Supervisor) Wait() chan error {
 	return s.waitCh
 }
 
-func (s *Supervisor) serviceWatcher() {
+func (s *Supervisor) serviceMonitor() {
 	var err error
 	for len(s.services) > 0 {
 		cases := make([]reflect.SelectCase, len(s.services))
@@ -91,10 +104,18 @@ func (s *Supervisor) serviceWatcher() {
 		}
 		n, v, _ := reflect.Select(cases)
 		if !v.IsNil() {
+			s.log.
+				WithError(v.Interface().(error)).
+				WithField("service", serviceName(s.services[n])).
+				Error("Service crashed")
 			if err == nil {
 				err = v.Interface().(error)
 			}
 			s.ctxCancel()
+		} else {
+			s.log.
+				WithField("service", serviceName(s.services[n])).
+				Debug("Service stopped")
 		}
 		s.services = append(s.services[:n], s.services[n+1:]...)
 	}
@@ -102,4 +123,8 @@ func (s *Supervisor) serviceWatcher() {
 		s.waitCh <- err
 	}
 	close(s.waitCh)
+}
+
+func serviceName(s interface{}) string {
+	return reflect.Indirect(reflect.ValueOf(s)).Type().String()
 }

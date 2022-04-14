@@ -88,7 +88,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	if err != nil {
 		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
-	sup := supervisor.New(ctx)
+	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, dat, age)
 	return sup, nil
 }
@@ -98,6 +98,10 @@ func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supe
 	if err != nil {
 		return nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
+	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "spire",
+		BaseLogger: opts.Logger(),
+	})
 	sig, err := opts.Config.Ethereum.ConfigureSigner()
 	if err != nil {
 		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
@@ -108,7 +112,7 @@ func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supe
 	if err != nil {
 		return nil, nil, fmt.Errorf(`spire config error: %w`, err)
 	}
-	sup := supervisor.New(ctx)
+	sup := supervisor.New(ctx, log)
 	sup.Watch(cli)
 	return sup, cli, nil
 }

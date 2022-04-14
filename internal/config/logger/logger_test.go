@@ -14,3 +14,64 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package logger
+
+import (
+	"net/http"
+	"reflect"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/grafana"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+)
+
+func TestLogger_Configure(t *testing.T) {
+	prevGrafanaLoggerFactory := grafanaLoggerFactory
+	defer func() { grafanaLoggerFactory = prevGrafanaLoggerFactory }()
+
+	config := Logger{
+		grafanaLogger{
+			Enable:   true,
+			Interval: 60,
+			Endpoint: "https://example.com",
+			APIKey:   "test",
+			Metrics: []grafanaMetric{
+				{
+					MatchMessage: "message",
+					MatchFields: map[string]string{
+						"field": "value",
+					},
+					Value: "value",
+					Name:  "name",
+					Tags: map[string][]string{
+						"tag": {"a", "b"},
+					},
+				},
+			},
+		},
+	}
+
+	grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) log.Logger {
+		assert.Equal(t, log.Panic, lvl)
+		assert.Equal(t, uint(60), cfg.Interval)
+		assert.Equal(t, http.DefaultClient, cfg.HTTPClient)
+		assert.Equal(t, "https://example.com", cfg.GraphiteEndpoint)
+		assert.Equal(t, "test", cfg.GraphiteAPIKey)
+		assert.Equal(t, "message", cfg.Metrics[0].MatchMessage.String())
+		assert.Equal(t, "value", cfg.Metrics[0].MatchFields["field"].String())
+		assert.Equal(t, "value", cfg.Metrics[0].Value)
+		assert.Equal(t, []string{"a", "b"}, cfg.Metrics[0].Tags["tag"])
+		return cfg.Logger
+	}
+
+	l, err := config.Configure(Dependencies{
+		AppName:    "app",
+		BaseLogger: null.New(),
+	})
+
+	assert.NotNil(t, l)
+	assert.Equal(t, "*chain.logger", reflect.TypeOf(l).String())
+	assert.NoError(t, err)
+}

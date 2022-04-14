@@ -17,6 +17,7 @@ package grafana
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -71,11 +72,11 @@ type Metric struct {
 // New creates a new logger that can extract parameters from log messages and
 // send them to Grafana Cloud using the Graphite endpoint. It starts
 // a background goroutine that will be sending metrics to the Grafana Cloud
-// server as often as described in Config.Interval parameter. That goroutine
-// cannot be stopped.
-func New(level log.Level, cfg Config) log.Logger {
+// server as often as described in Config.Interval parameter.
+func New(ctx context.Context, level log.Level, cfg Config) log.Logger {
 	l := &logger{
 		shared: &shared{
+			ctx:              ctx,
 			metrics:          cfg.Metrics,
 			logger:           cfg.Logger.WithField("tag", LoggerTag),
 			interval:         cfg.Interval,
@@ -99,6 +100,7 @@ type logger struct {
 
 type shared struct {
 	mu               sync.Mutex //nolint:structcheck // false-positive
+	ctx              context.Context
 	logger           log.Logger
 	metrics          []Metric
 	interval         uint
@@ -198,7 +200,7 @@ func (c *logger) Errorf(format string, args ...interface{}) {
 func (c *logger) Panicf(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	c.collect(msg, c.fields)
-	c.pushMetrics()
+	c.pushMetrics() // force push metrics before app crash
 	panic(msg)
 }
 
@@ -234,7 +236,7 @@ func (c *logger) Error(args ...interface{}) {
 func (c *logger) Panic(args ...interface{}) {
 	msg := fmt.Sprint(args...)
 	c.collect(msg, c.fields)
-	c.pushMetrics()
+	c.pushMetrics() // force push metrics before app crash
 	panic(msg)
 }
 
@@ -248,12 +250,12 @@ func (c *logger) collect(msg string, fields log.Fields) {
 		if !match(metric, msg, rfields) {
 			continue
 		}
+		var ok bool
 		var mk metricKey
 		var mv metricValue
 		mk.time = roundTime(time.Now().Unix(), c.interval)
 		mv.value = 1
 		if len(metric.Value) > 0 {
-			var ok bool
 			mv.value, ok = toFloat(byPath(rfields, metric.Value))
 			if !ok {
 				c.logger.
@@ -262,12 +264,28 @@ func (c *logger) collect(msg string, fields log.Fields) {
 				continue
 			}
 		}
-		mk.name = replaceVars(metric.Name, rfields)
+		mk.name, ok = replaceVars(metric.Name, rfields)
+		if !ok {
+			c.logger.
+				WithField("path", metric.Name).
+				Warn("Invalid path in the name field")
+			continue
+		}
 		for t, vs := range metric.Tags {
 			for _, v := range vs {
-				mv.tags = append(mv.tags, t+"="+replaceVars(v, rfields))
+				rt, ok := replaceVars(v, rfields)
+				if !ok {
+					c.logger.
+						WithField("path", v).
+						Warn("Invalid path in the tag definition")
+					continue
+				}
+				mv.tags = append(mv.tags, t+"="+rt)
 			}
 		}
+		// Note: it is worth considering adding an ability to sum values for
+		// some metrics. It will allow to count more precisely events that
+		// happens more than once during defined interval.
 		c.metricPoints[mk] = mv
 		c.logger.
 			WithFields(log.Fields{
@@ -285,21 +303,23 @@ func (c *logger) pushRoutine() {
 	defer c.pushMetrics()
 	ticker := time.NewTicker(time.Duration(c.interval) * time.Second)
 	for {
-		<-ticker.C
-		c.pushMetrics()
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-ticker.C:
+			c.pushMetrics()
+		}
 	}
 }
 
 // pushMetrics pushes metrics to the Grafana Cloud server.
 func (c *logger) pushMetrics() {
+	var once sync.Once
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	defer once.Do(c.mu.Unlock)
 	if len(c.metricPoints) == 0 {
 		return
 	}
-	c.logger.
-		WithField("metrics", len(c.metricPoints)).
-		Info("Pushing metrics")
 	var metrics []metricJSON
 	for k, v := range c.metricPoints {
 		metrics = append(metrics, metricJSON{
@@ -311,11 +331,20 @@ func (c *logger) pushMetrics() {
 		})
 		delete(c.metricPoints, k)
 	}
+	// After this line, the mutex must be unlocked, otherwise calling
+	// the logger will cause the code to block until the request to
+	// Grafana is complete.
+	once.Do(c.mu.Unlock)
 	reqBody, err := json.Marshal(metrics)
 	if err != nil {
-		c.logger.WithError(err).Warn("Unable to marshall metric points")
+		c.logger.
+			WithError(err).
+			Warn("Unable to marshall metric points")
 		return
 	}
+	c.logger.
+		WithField("metrics", len(c.metricPoints)).
+		Info("Pushing metrics")
 	req, err := http.NewRequest("POST", c.graphiteEndpoint, bytes.NewReader(reqBody))
 	if err != nil {
 		c.logger.
@@ -345,26 +374,28 @@ func (c *logger) pushMetrics() {
 func match(metric Metric, msg string, fields reflect.Value) bool {
 	for path, rx := range metric.MatchFields {
 		field, ok := toString(byPath(fields, path))
-		if !ok || rx.MatchString(field) {
+		if !ok || !rx.MatchString(field) {
 			return false
 		}
 	}
-	return metric.MatchMessage.MatchString(msg)
+	return metric.MatchMessage == nil || metric.MatchMessage.MatchString(msg)
 }
 
 // varRegexp matches vars in format: ${foo}
 var varRegexp = regexp.MustCompile(`\$\{[^}]+\}`)
 
 // replaceVars replaces vars provided as ${field} with values from log fields.
-func replaceVars(s string, fields reflect.Value) string {
+func replaceVars(s string, fields reflect.Value) (string, bool) {
+	valid := true
 	return varRegexp.ReplaceAllStringFunc(s, func(s string) string {
 		path := s[2 : len(s)-1]
 		name, ok := toString(byPath(fields, path))
 		if !ok {
+			valid = false
 			return ""
 		}
 		return name
-	})
+	}), valid
 }
 
 func byPath(value reflect.Value, path string) reflect.Value {
@@ -423,6 +454,10 @@ func toFloat(value reflect.Value) (float64, bool) {
 	if !value.IsValid() {
 		return 0, false
 	}
+	switch t := value.Interface().(type) {
+	case time.Duration:
+		return t.Seconds(), true
+	}
 	switch value.Type().Kind() {
 	case reflect.String:
 		f, err := strconv.ParseFloat(value.String(), 64)
@@ -440,16 +475,6 @@ func toFloat(value reflect.Value) (float64, bool) {
 func toString(value reflect.Value) (string, bool) {
 	if !value.IsValid() {
 		return "", false
-	}
-	switch value.Type().Kind() {
-	case reflect.String:
-		return value.String(), true
-	case reflect.Float32, reflect.Float64:
-		return fmt.Sprint(value.Float()), true
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return fmt.Sprint(value.Int()), true
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return fmt.Sprint(value.Uint()), true
 	}
 	return fmt.Sprint(value.Interface()), true
 }
