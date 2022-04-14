@@ -454,8 +454,7 @@ func toFloat(value reflect.Value) (float64, bool) {
 	if !value.IsValid() {
 		return 0, false
 	}
-	switch t := value.Interface().(type) {
-	case time.Duration:
+	if t, ok := value.Interface().(time.Duration); ok {
 		return t.Seconds(), true
 	}
 	switch value.Type().Kind() {
