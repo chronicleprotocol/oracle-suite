@@ -1,6 +1,7 @@
 package formatter
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -34,6 +35,8 @@ func format(s interface{}) interface{} {
 		return ts.String()
 	case json.Marshaler:
 		return toJSON(s)
+	case []byte:
+		return hex.EncodeToString(ts)
 	case error:
 		return ts.Error()
 	default:
