@@ -4,21 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 )
 
-// MarshallerFormatter formatter can marshal field values to string or JSON.
-// Unlike default logrus implementation, it can handle nested types that
-// support fmt.Stringer or json.Marshaler interfaces.
-type MarshallerFormatter struct {
-	Formatter logrus.Formatter
+// FieldSerializerFormatter will serialize the log field values to basic types.
+// Other types will be serialized to JSON.
+type FieldSerializerFormatter struct {
+	Formatter         logrus.Formatter
+	UseJSONRawMessage bool // If true, then json.RawMessage type will be used for fields serialized to JSON.
 }
 
-func (f *MarshallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
+func (f *FieldSerializerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	data := logrus.Fields{}
 	for k, v := range e.Data {
 		data[k] = format(v)
+		if v, ok := data[k].(json.RawMessage); ok && !f.UseJSONRawMessage {
+			data[k] = string(v)
+		}
 	}
 	e.Data = data
 	return f.Formatter.Format(e)
@@ -49,23 +53,27 @@ func format(s interface{}) interface{} {
 			}
 			return toJSON(m)
 		case reflect.Map:
-			m := map[interface{}]interface{}{}
+			m := map[string]interface{}{}
 			for _, k := range v.MapKeys() {
-				m[k] = format(v.MapIndex(k).Interface())
+				m[fmt.Sprint(format(k))] = format(v.MapIndex(k).Interface())
 			}
 			return toJSON(m)
 		case reflect.Ptr, reflect.Interface:
 			return format(v.Elem().Interface())
+		case reflect.Bool, reflect.Float32, reflect.Float64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return s
 		default:
 			return fmt.Sprint(s)
 		}
 	}
 }
 
-func toJSON(s interface{}) string {
+func toJSON(s interface{}) json.RawMessage {
 	j, err := json.Marshal(s)
 	if err != nil {
-		return err.Error()
+		return json.RawMessage(strconv.Quote(err.Error()))
 	}
-	return string(j)
+	return j
 }
