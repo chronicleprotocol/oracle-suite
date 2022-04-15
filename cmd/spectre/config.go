@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -26,6 +27,7 @@ import (
 	spectreConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spectre"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -91,6 +93,6 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra, dat, spe)
+	sup.Watch(tra, dat, spe, sysmon.New(time.Minute, log))
 	return sup, nil
 }

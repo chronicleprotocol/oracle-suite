@@ -90,19 +90,26 @@ func (s *Supervisor) Start() error {
 // Wait returns a channel that is blocked until at least one service is
 // running. When all services are stopped, the channel will be closed.
 // If an error occurs in any of the services, it will be sent to the
-// channel before closing it.
+// channel before closing it. If multiple service crash, only the first
+// error is returned.
 func (s *Supervisor) Wait() chan error {
 	return s.waitCh
 }
 
 func (s *Supervisor) serviceMonitor() {
 	var err error
+	// In this loop, a select is created (using reflection) that waits until
+	// at least one service has completed its work. This is reported by
+	// closing the channel returned by the Wait() or returning an error from
+	// the same channel (see the Service interface). The service is then
+	// removed from the s.service list and the loop is executed again until
+	// no service remains.
 	for len(s.services) > 0 {
-		cases := make([]reflect.SelectCase, len(s.services))
+		c := make([]reflect.SelectCase, len(s.services))
 		for i, srv := range s.services {
-			cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(srv.Wait())}
+			c[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(srv.Wait())}
 		}
-		n, v, _ := reflect.Select(cases)
+		n, v, _ := reflect.Select(c)
 		if !v.IsNil() {
 			s.log.
 				WithError(v.Interface().(error)).

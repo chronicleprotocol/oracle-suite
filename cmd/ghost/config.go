@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -28,6 +29,7 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -95,7 +97,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`ghost config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra, gho)
+	sup.Watch(tra, gho, sysmon.New(time.Minute, log))
 	if g, ok := gof.(gofer.StartableGofer); ok {
 		sup.Watch(g)
 	}

@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/internal/config/eventapi"
@@ -25,6 +26,7 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -85,6 +87,6 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra, evs, api)
+	sup.Watch(tra, evs, api, sysmon.New(time.Minute, log))
 	return sup, nil
 }

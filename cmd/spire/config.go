@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -26,6 +27,7 @@ import (
 	spireConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spire"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -89,7 +91,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra, dat, age)
+	sup.Watch(tra, dat, age, sysmon.New(time.Minute, log))
 	return sup, nil
 }
 

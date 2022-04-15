@@ -16,9 +16,7 @@
 package log
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 )
 
@@ -64,6 +62,11 @@ func (l Level) String() string {
 	return "unknown"
 }
 
+// IsLevel reports whether current logger shows logs for the given log level.
+func IsLevel(logger Logger, level Level) bool {
+	return logger.Level() >= level
+}
+
 type Fields = map[string]interface{}
 
 type ErrorWithFields interface {
@@ -89,31 +92,4 @@ type Logger interface {
 	Warn(args ...interface{})
 	Error(args ...interface{})
 	Panic(args ...interface{})
-}
-
-func Format(s ...interface{}) []string {
-	r := make([]string, len(s))
-	for i, s := range s {
-		switch ts := s.(type) {
-		case error:
-			r[i] = ts.Error()
-		default:
-			rtype := reflect.TypeOf(s)
-			switch rtype.Kind() {
-			case reflect.Struct, reflect.Interface, reflect.Map, reflect.Slice, reflect.Array:
-				j, err := json.Marshal(s)
-				if err != nil {
-					r[i] = err.Error()
-				} else {
-					r[i] = string(j)
-				}
-			case reflect.Ptr:
-				rvalue := reflect.ValueOf(s)
-				r[i] = Format(rvalue.Elem().Interface())[0]
-			default:
-				r[i] = fmt.Sprint(s)
-			}
-		}
-	}
-	return r
 }

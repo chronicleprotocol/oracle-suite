@@ -794,5 +794,32 @@
         }
       }
     }
+  },
+  "logger": {
+    "grafana": {
+      "enable": false,
+      "interval": 60,
+      "endpoint": "https://graphite-us-central1.grafana.net/metrics",
+      "apiKey": "API_KEY",
+      "metrics": [
+        {
+          "matchMessage": "Event received",
+          "matchFields": {
+            "x-appName": "lair"
+          },
+          "name": "${x-appName}.${x-hostID}.event_received",
+          "tags": {
+            "sys": ["oracle"],
+            "service": ["${x-appName}"],
+            "metric": ["event_received"],
+            "hostID": ["${x-hostID}"],
+            "eventID": ["${id}"],
+            "eventType": ["${type}"],
+            "eventIndex": ["${index}"],
+            "eventFrom": ["${from}"]
+          }
+        }
+      ]
+    }
   }
 }

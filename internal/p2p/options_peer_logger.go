@@ -39,10 +39,10 @@ func PeerLogger() Options {
 					WithFields(log.Fields{
 						"peerID":          event.Peer.String(),
 						"topic":           topic,
-						"listenAddrs":     log.Format(addrs),
+						"listenAddrs":     addrs,
 						"userAgent":       ua,
 						"protocolVersion": pv,
-						"protocols":       log.Format(pp),
+						"protocols":       pp,
 					}).
 					Info("Connected to a peer")
 			case pubsub.PeerLeave:
@@ -50,7 +50,7 @@ func PeerLogger() Options {
 					WithFields(log.Fields{
 						"peerID":      event.Peer.String(),
 						"topic":       topic,
-						"listenAddrs": log.Format(addrs),
+						"listenAddrs": addrs,
 					}).
 					Info("Disconnected from a peer")
 			}

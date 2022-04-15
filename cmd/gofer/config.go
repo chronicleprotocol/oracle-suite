@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -25,6 +26,7 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/internal/gofer/marshal"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
 )
 
@@ -88,6 +90,6 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(gof, age)
+	sup.Watch(gof, age, sysmon.New(time.Minute, log))
 	return sup, nil
 }

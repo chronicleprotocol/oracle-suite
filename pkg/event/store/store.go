@@ -17,6 +17,7 @@ package store
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -94,12 +95,24 @@ func (e *EventStore) eventCollectorRoutine() {
 				e.log.WithError(msg.Error).Error("Unable to read events from the transport layer")
 				continue
 			}
-			evtMsg, ok := msg.Message.(*messages.Event)
+			event, ok := msg.Message.(*messages.Event)
 			if !ok {
 				e.log.Error("Unexpected value returned from the transport layer")
 				continue
 			}
-			err := e.storage.Add(e.ctx, msg.Author, evtMsg)
+			e.log.
+				WithFields(log.Fields{
+					"id":          hex.EncodeToString(event.ID),
+					"type":        event.Type,
+					"index":       hex.EncodeToString(event.Index),
+					"eventDate":   event.EventDate,
+					"messageDate": event.MessageDate,
+					"data":        event.Data,
+					"signatures":  event.Signatures,
+					"from":        hex.EncodeToString(msg.Author),
+				}).
+				Info("Event received")
+			err := e.storage.Add(e.ctx, msg.Author, event)
 			if err != nil {
 				e.log.WithError(msg.Error).Error("Unable to store the event")
 				continue

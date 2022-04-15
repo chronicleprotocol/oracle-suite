@@ -114,9 +114,15 @@ func (l *EventPublisher) broadcast(event *messages.Event) {
 		return
 	}
 	l.log.
-		WithField("id", hex.EncodeToString(event.ID)).
-		WithField("type", event.Type).
-		WithField("index", hex.EncodeToString(event.Index)).
+		WithFields(log.Fields{
+			"id":          hex.EncodeToString(event.ID),
+			"type":        event.Type,
+			"index":       hex.EncodeToString(event.Index),
+			"eventDate":   event.EventDate,
+			"messageDate": event.MessageDate,
+			"data":        event.Data,
+			"signatures":  event.Signatures,
+		}).
 		Info("Event broadcast")
 	err := l.transport.Broadcast(messages.EventMessageName, event)
 	if err != nil {
@@ -124,7 +130,6 @@ func (l *EventPublisher) broadcast(event *messages.Event) {
 			WithError(err).
 			WithField("id", hex.EncodeToString(event.ID)).
 			WithField("type", event.Type).
-			WithField("index", hex.EncodeToString(event.Index)).
 			Error("Unable to broadcast the event")
 	}
 }
@@ -141,7 +146,6 @@ func (l *EventPublisher) sign(event *messages.Event) bool {
 				WithError(err).
 				WithField("id", hex.EncodeToString(event.ID)).
 				WithField("type", event.Type).
-				WithField("index", hex.EncodeToString(event.Index)).
 				Error("Unable to sign the event")
 			continue
 		}
@@ -151,7 +155,6 @@ func (l *EventPublisher) sign(event *messages.Event) bool {
 		l.log.
 			WithField("id", hex.EncodeToString(event.ID)).
 			WithField("type", event.Type).
-			WithField("index", hex.EncodeToString(event.Index)).
 			Warn("There are no signers that supports the event")
 	}
 	return signed

@@ -22,7 +22,6 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/p2p/sets"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 // PeerScoring configures peer scoring parameters used in a pubsub system.
@@ -39,7 +38,7 @@ func PeerScoring(
 				for id, ps := range m {
 					n.tsLog.get().
 						WithField("peerID", id).
-						WithField("score", log.Format(ps)).
+						WithField("score", ps).
 						Debug("Peer score")
 				}
 			}, time.Minute),
@@ -63,7 +62,7 @@ func PeerScoring(
 				if sp := topicScoreParams(e.Topic); sp != nil {
 					n.tsLog.get().
 						WithField("topic", e.Topic).
-						WithField("params", log.Format(sp)).
+						WithField("params", sp).
 						Info("Topic score params")
 					err = sub.topic.SetScoreParams(sp)
 					if err != nil {

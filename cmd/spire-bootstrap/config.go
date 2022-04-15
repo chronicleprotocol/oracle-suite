@@ -19,11 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/config"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p"
 )
 
@@ -53,6 +55,6 @@ func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervis
 		return nil, errors.New("spire-bootstrap works only with the libp2p transport")
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra)
+	sup.Watch(tra, sysmon.New(time.Minute, log))
 	return sup, nil
 }
