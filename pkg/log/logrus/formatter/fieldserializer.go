@@ -31,14 +31,16 @@ func (f *FieldSerializerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 
 func format(s interface{}) interface{} {
 	switch ts := s.(type) {
-	case fmt.Stringer:
-		return ts.String()
-	case json.Marshaler:
-		return toJSON(s)
+	case float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, bool, string:
+		return s
 	case []byte:
 		return hex.EncodeToString(ts)
 	case error:
 		return ts.Error()
+	case fmt.Stringer:
+		return ts.String()
+	case json.Marshaler:
+		return toJSON(s)
 	default:
 		v := reflect.ValueOf(s)
 		t := v.Type()
@@ -63,10 +65,6 @@ func format(s interface{}) interface{} {
 			return toJSON(m)
 		case reflect.Ptr, reflect.Interface:
 			return format(v.Elem().Interface())
-		case reflect.Bool, reflect.Float32, reflect.Float64,
-			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return s
 		default:
 			return fmt.Sprint(s)
 		}
