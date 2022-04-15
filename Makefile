@@ -80,6 +80,50 @@ run-test: $(TEST_BUILD_TARGET)
 	$(TEST_BUILD_TARGET) -test.v -gofer.test-api-calls
 .PHONY: run-test
 
+WORMHOLE_DIR=e2e/wormhole
+wormhole-e2e-up:
+	@echo "Starting local testchain from snapshot."
+	(cd $(WORMHOLE_DIR) && docker-compose up -d)
+	@echo "Waiting for infra to start up fully..." && sleep 60 && docker ps -a && docker logs l2geth && docker logs deployer && echo "Ready."
+	$(WORMHOLE_DIR)/aux/scripts/wait-for-env.sh
+.PHONY: wormhole-e2e-up
+
+wormhole-e2e-down:
+	@echo "Taking down local testchain"
+	(cd $(WORMHOLE_DIR) && docker-compose down)
+.PHONY: wormhole-e2e-down
+
+wormhole-e2e:
+	$(WORMHOLE_DIR)/e2e.sh
+.PHONY: wormhole-e2e
+
+# This specialized target will do everything in one shot, from bringing
+# up/tearing down infra, building binaries, running E2E.
+wormhole-e2e-one-shot: wormhole-e2e-down
+	make wormhole-e2e-up
+	make wormhole-e2e
+	make wormhole-e2e-down
+	make wormhole-e2e-clean
+.PHONY: wormhole-e2e-one-shot
+
+wormhole-e2e-clean:
+	(cd $(WORMHOLE_DIR) && make clean)
+.PHONY: wormhole-e2e-clean
+
+wormhole-e2e-init-testchain:
+	@echo "Building/running a local testchain from source..."
+	@echo "Run this target once, just to set stuff up (takes a long time)."
+	(cd $(WORMHOLE_DIR) && make init)
+.PHONY: wormhole-e2e-init-testchain
+
+wormhole-e2e-leeloo:
+	./$(WORMHOLE_DIR)/start-leeloo.sh
+.PHONY: wormhole-e2e-leeloo
+
+wormhole-e2e-lair:
+	./$(WORMHOLE_DIR)/start-lair.sh
+.PHONY: wormhole-e2e-spire
+
 VERSION_TAG_CURRENT := $(shell git tag --list 'v*' --points-at HEAD | sort --version-sort | tr \~ - | tail -1)
 VERSION_TAG_LATEST := $(shell git tag --list 'v*' | tr - \~ | sort --version-sort | tr \~ - | tail -1)
 ifeq ($(VERSION_TAG_CURRENT),$(VERSION_TAG_LATEST))

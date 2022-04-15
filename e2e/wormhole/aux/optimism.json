@@ -1,0 +1,11 @@
+{
+  "l1_dai_address": "0xb19b36b1456E65E3A6D514D3F715f204BD59f431",
+  "l1_escrow_address": "0xc6b8fbf96cf7bbe45576417ec2163acecfa88ecc",
+  "l1_governance_address": "0xd04ff4a75edd737a73e92b2f2274cb887d96e110",
+  "l1_token_bridge_address": "0x29a79095352a718b3d7fe84e1f14e9f34a35598e",
+  "l1_wormhole_gateway_address": "0x6379ebd504941f50d5bfde9348b37593bd29c835",
+  "l2_dai_address": "0xa15bb66138824a1c7167f5e85b957d04dd34e468",
+  "l2_governance_address": "0x700b6a60ce7eaaea56f065753d8dcb9653dbad35",
+  "l2_token_bridge_address": "0xb19b36b1456e65e3a6d514d3f715f204bd59f431",
+  "l2_wormhole_gateway_address": "0x8ce361602b935680e8dec218b820ff5056beb7af"
+}
