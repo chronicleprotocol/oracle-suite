@@ -24,13 +24,13 @@ import (
 )
 
 // Default retry amount
-const defaultRetry = 5
+const defaultRetry = 3
 
 // Default delay between retries
 const defaultDelayBetweenRetries = 1 * time.Second
 
 // Default timeout for HTTP Request
-const defaultTimeoutInSeconds = 15
+const defaultTimeoutInSeconds = 5
 
 // HTTPRequest default HTTP Request structure
 type HTTPRequest struct {
