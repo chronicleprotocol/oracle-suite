@@ -49,3 +49,57 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ghcr.io/chronicleprotocol/oracle-suite:${{ steps.prep.outputs.version }}
+
+      - name: Docker image for Gofer
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile.gofer
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/gofer:${{ steps.prep.outputs.version }}
+
+      - name: Docker image for Spire
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile.spire
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/spire:${{ steps.prep.outputs.version }}
+          
+      - name: Docker image for Ghost
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile.ghost
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/ghost:${{ steps.prep.outputs.version }}
+
+      - name: Docker image for Spectre
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile.spectre
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/spectre:${{ steps.prep.outputs.version }}
+
+      - name: Docker image for LeeLoo
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile.leeloo
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/leeloo:${{ steps.prep.outputs.version }}
+
+      - name: Docker image for Lair
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: ./Dockerfile.lair
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/chronicleprotocol/lair:${{ steps.prep.outputs.version }}
