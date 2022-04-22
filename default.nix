@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { }, buildGoModule ? pkgs.buildGo116Module }:
+{ pkgs ? import <nixpkgs> { }, buildGoModule ? pkgs.buildGo117Module }:
 let
   rev = pkgs.stdenv.mkDerivation {
     name = "rev";
@@ -14,7 +14,7 @@ in buildGoModule {
   pname = "oracle-suite";
   version = pkgs.lib.fileContents ./version;
   src = ./.;
-  vendorSha256 = "9NNnkFCGFU/6pmBahnKU3Ck8vnPmvmQRGZNmCimY7CQ=";
+  vendorSha256 = "sTsBenZ9KZpjPq0LLoYmkg3WwPpL/Kg747V+e7aLdPM=";
   subPackages = [ "cmd/..." ];
   postConfigure = "export CGO_ENABLED=0";
   postInstall = "cp ./config.json $out";
