@@ -51,7 +51,7 @@ If you have Node and the proper dependencies installed, you can check L2 wormhol
 
 
 ```
-node e2e/wormhole/aux/ethutil/dump-events/main.js \
+node e2e/wormhole/auxiliary/ethutil/dump-events/main.js \
 	http://localhost:8545 \
 	./e2e/wormhole/optimism-dai-bridge-artifacts/out/L2DaiWormholeGateway.abi \
 	$L2DaiWormholeGateway_ADDRESS | jq .

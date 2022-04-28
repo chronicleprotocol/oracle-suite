@@ -61,7 +61,7 @@ endit() {
 }
 
 echo "Initiating the wormhole..."
-$wd/initiate-wormhole.sh $(cat $wd/aux/optimism.json | jq -r .l2_wormhole_gateway_address);
+$wd/initiate-wormhole.sh $(cat $wd/auxiliary/optimism.json | jq -r .l2_wormhole_gateway_address);
 slep 60
 
 idx="0x$(cat $tmp_dir/leeloo.log | jq -r '. | select( has("type") == true ) | select(.type | test("wormhole")) | .index' | tail -n 1)"

@@ -50,10 +50,10 @@ json_to_env() {
 }
 
 ethutil_init() {
-    docker build -f $wd/aux/ethutil/compute-contract-address/Dockerfile \
-        $wd/aux/ethutil/compute-contract-address -t oracle-suite-compute-address
-    docker build -f $wd/aux/ethutil/dump-events/Dockerfile \
-        $wd/aux/ethutil/dump-events -t oracle-suite-dump-events
+    docker build -f $wd/auxiliary/ethutil/compute-contract-address/Dockerfile \
+        $wd/auxiliary/ethutil/compute-contract-address -t oracle-suite-compute-address
+    docker build -f $wd/auxiliary/ethutil/dump-events/Dockerfile \
+        $wd/auxiliary/ethutil/dump-events -t oracle-suite-dump-events
 }
 
 ethutil() {
