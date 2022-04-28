@@ -85,7 +85,7 @@ wormhole-e2e-up:
 	@echo "Starting local testchain from snapshot."
 	(cd $(WORMHOLE_DIR) && docker-compose up -d)
 	@echo "Waiting for infra to start up fully..." && sleep 60 && docker ps -a && docker logs l2geth && docker logs deployer && echo "Ready."
-	$(WORMHOLE_DIR)/aux/scripts/wait-for-env.sh
+	$(WORMHOLE_DIR)/auxiliary/scripts/wait-for-env.sh
 .PHONY: wormhole-e2e-up
 
 wormhole-e2e-down:
@@ -125,7 +125,7 @@ wormhole-e2e-lair:
 .PHONY: wormhole-e2e-spire
 
 wormhole-e2e-initiate:
-	./$(WORMHOLE_DIR)/initiate-wormhole.sh $$(cat $(WORMHOLE_DIR)/aux/optimism.json  | jq -r .l2_wormhole_gateway_address)
+	./$(WORMHOLE_DIR)/initiate-wormhole.sh $$(cat $(WORMHOLE_DIR)/auxiliary/optimism.json  | jq -r .l2_wormhole_gateway_address)
 .PHONY: wormhole-e2e-initiate
 
 VERSION_TAG_CURRENT := $(shell git tag --list 'v*' --points-at HEAD | sort --version-sort | tr \~ - | tail -1)
