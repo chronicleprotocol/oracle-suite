@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { }, buildGoModule ? pkgs.buildGo117Module }:
+{ pkgs ? import <nixpkgs> { }, buildGoModule ? pkgs.buildGoModule }:
 let
   rev = pkgs.stdenv.mkDerivation {
     name = "rev";
