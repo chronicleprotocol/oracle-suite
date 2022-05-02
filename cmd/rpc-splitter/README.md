@@ -83,10 +83,10 @@ Flags:
   -l, --listen string                                  listen address (default "127.0.0.1:8545")
       --log.format text|json                           log format (default text)
   -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default warning)
+  -t, --timeout int                                    Set request timeout (in seconds) for all RPC calls (default 10)
       --version                                        version for rpc-splitter
 
 Use "rpc-splitter [command] --help" for more information about a command.
-
 ```
 
 ## License

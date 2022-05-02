@@ -33,8 +33,10 @@ type Transport struct {
 }
 
 // NewTransport returns a new instance of Transport.
-func NewTransport(endpoints []string, vhost string, transport http.RoundTripper, log log.Logger) (*Transport, error) {
-	rpc, err := NewHandler(endpoints, log)
+func NewTransport(endpoints []string, requestTimeoutSec int,
+	vhost string, transport http.RoundTripper, log log.Logger) (*Transport, error) {
+
+	rpc, err := NewHandler(endpoints, requestTimeoutSec, log)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@
 package rpcsplitter
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -24,6 +25,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	gethRPC "github.com/ethereum/go-ethereum/rpc"
 
@@ -43,16 +45,17 @@ const LoggerTag = "RPCSPLITTER"
 const maxBlocksBehind = 3
 
 type rpcCaller interface {
-	Call(result interface{}, method string, args ...interface{}) error
+	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 }
 
 // handler is an RPC proxy server. It merges multiple RPC endpoints into one.
 type handler struct {
-	rpc *gethRPC.Server // rpc is an RPC server.
-	cli []rpcClient     // cli is a list of RPC clients.
-	eth *rpcETHAPI      // eth implements procedures with the "eth_" prefix.
-	net *rpcNETAPI      // net implements procedures with the "net_" prefix.
-	log log.Logger
+	rpc     *gethRPC.Server // rpc is an RPC server.
+	cli     []rpcClient     // cli is a list of RPC clients.
+	timeout int             // timeout for all endpoints in cli.
+	eth     *rpcETHAPI      // eth implements procedures with the "eth_" prefix.
+	net     *rpcNETAPI      // net implements procedures with the "net_" prefix.
+	log     log.Logger
 }
 
 type rpcClient struct {
@@ -68,7 +71,7 @@ type rpcNETAPI struct {
 	handler *handler
 }
 
-func NewHandler(endpoints []string, log log.Logger) (http.Handler, error) {
+func NewHandler(endpoints []string, requestTimeoutSec int, log log.Logger) (http.Handler, error) {
 	var clients []rpcClient
 	for _, e := range endpoints {
 		c, err := gethRPC.Dial(e)
@@ -80,14 +83,15 @@ func NewHandler(endpoints []string, log log.Logger) (http.Handler, error) {
 			endpoint:  e,
 		})
 	}
-	return newHandlerWithClients(clients, log)
+	return newHandlerWithClients(clients, requestTimeoutSec, log)
 }
 
-func newHandlerWithClients(clients []rpcClient, log log.Logger) (http.Handler, error) {
+func newHandlerWithClients(clients []rpcClient, requestTimeoutSec int, log log.Logger) (http.Handler, error) {
 	h := &handler{
-		rpc: gethRPC.NewServer(),
-		cli: make([]rpcClient, len(clients)),
-		log: log.WithField("tag", LoggerTag),
+		rpc:     gethRPC.NewServer(),
+		cli:     make([]rpcClient, len(clients)),
+		log:     log.WithField("tag", LoggerTag),
+		timeout: requestTimeoutSec,
 	}
 	eth := &rpcETHAPI{handler: h}
 	net := &rpcNETAPI{handler: h}
@@ -409,6 +413,7 @@ func (h *handler) call(typ interface{}, method string, params ...interface{}) (r
 	ch := make(chan interface{}, len(h.cli))
 	wg := &sync.WaitGroup{}
 	wg.Add(len(h.cli))
+	start := time.Now()
 	for _, cli := range h.cli {
 		cli := cli
 		go func() {
@@ -419,6 +424,8 @@ func (h *handler) call(typ interface{}, method string, params ...interface{}) (r
 
 	// Wait for responses.
 	wg.Wait()
+	h.log.WithField("duration", time.Since(start)).Info("Time taken for all endpoints")
+
 	for len(ch) > 0 {
 		res = append(res, <-ch)
 	}
@@ -454,7 +461,9 @@ func (h *handler) callOne(cli rpcClient, typ interface{}, method string, params 
 	// typ is a nil pointer, and it is shared by multiple goroutines, so it
 	// cannot be used directly with cli.Call.
 	val = reflect.New(reflect.TypeOf(typ).Elem()).Interface()
-	err = cli.Call(val, method, params...)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(h.timeout))
+	defer cancel()
+	err = cli.CallContext(ctx, val, method, params...)
 	out = val
 	return
 }
