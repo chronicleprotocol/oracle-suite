@@ -82,21 +82,21 @@ func New(cfg Config) (*Redis, error) {
 func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	var added bool
+	var isNew bool
 	var err error
 	err = retry(func() error {
-		added, err = r.add(ctx, author, evt)
+		isNew, err = r.add(ctx, author, evt)
 		return err
 	})
-	return added, err
+	return isNew, err
 }
 
 // Get implements the store.Storage interface.
 func (r *Redis) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	var err error
 	var evts []*messages.Event
+	var err error
 	err = retry(func() error {
 		evts, err = r.get(ctx, typ, idx)
 		return err
@@ -117,7 +117,7 @@ func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (bo
 	if r.memLimit > 0 && int64(len(val)) > mem {
 		return false, ErrMemoryLimitExceed
 	}
-	var added bool
+	var isNew bool
 	err = r.client.Watch(ctx, func(tx *redis.Tx) error {
 		prevVal, err := r.client.Get(ctx, key).Result()
 		switch err {
@@ -144,13 +144,13 @@ func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (bo
 			}
 			tx.Set(ctx, key, val, 0)
 			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
-			added = true
+			isNew = true
 		default:
 			return err
 		}
 		return nil
 	}, key)
-	return added, err
+	return isNew, err
 }
 
 func (r *Redis) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
