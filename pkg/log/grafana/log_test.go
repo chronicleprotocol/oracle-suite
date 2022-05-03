@@ -168,6 +168,34 @@ func TestLogger(t *testing.T) {
 				l.Info("foo")
 			},
 		},
+		// Use lower value:
+		{
+			metrics: []Metric{
+				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Value: "val", OnDuplicate: Min},
+			},
+			want: []want{
+				{name: "a", value: 1},
+			},
+			logs: func(l log.Logger) {
+				l.WithField("val", 2).Info("foo")
+				l.WithField("val", 1).Info("foo")
+				l.WithField("val", 2).Info("foo")
+			},
+		},
+		// Use higher value:
+		{
+			metrics: []Metric{
+				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Value: "val", OnDuplicate: Max},
+			},
+			want: []want{
+				{name: "a", value: 2},
+			},
+			logs: func(l log.Logger) {
+				l.WithField("val", 1).Info("foo")
+				l.WithField("val", 2).Info("foo")
+				l.WithField("val", 1).Info("foo")
+			},
+		},
 		// Ignore duplicated logs:
 		{
 			metrics: []Metric{

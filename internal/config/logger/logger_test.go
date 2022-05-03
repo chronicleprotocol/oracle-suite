@@ -56,10 +56,18 @@ func TestLogger_Configure(t *testing.T) {
 				},
 				{
 					Name:        "name3",
+					OnDuplicate: "min",
+				},
+				{
+					Name:        "name4",
+					OnDuplicate: "max",
+				},
+				{
+					Name:        "name5",
 					OnDuplicate: "replace",
 				},
 				{
-					Name:        "name2",
+					Name:        "name6",
 					OnDuplicate: "",
 				},
 			},
@@ -78,8 +86,10 @@ func TestLogger_Configure(t *testing.T) {
 		assert.Equal(t, []string{"a", "b"}, cfg.Metrics[0].Tags["tag"])
 		assert.Equal(t, grafana.Sum, cfg.Metrics[0].OnDuplicate)
 		assert.Equal(t, grafana.Sub, cfg.Metrics[1].OnDuplicate)
-		assert.Equal(t, grafana.Replace, cfg.Metrics[2].OnDuplicate)
-		assert.Equal(t, grafana.Replace, cfg.Metrics[3].OnDuplicate)
+		assert.Equal(t, grafana.Min, cfg.Metrics[2].OnDuplicate)
+		assert.Equal(t, grafana.Max, cfg.Metrics[3].OnDuplicate)
+		assert.Equal(t, grafana.Replace, cfg.Metrics[4].OnDuplicate)
+		assert.Equal(t, grafana.Replace, cfg.Metrics[5].OnDuplicate)
 		return cfg.Logger
 	}
 

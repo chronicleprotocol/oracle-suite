@@ -95,6 +95,10 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 				gm.OnDuplicate = grafana.Sum
 			case "sub":
 				gm.OnDuplicate = grafana.Sub
+			case "min":
+				gm.OnDuplicate = grafana.Min
+			case "max":
+				gm.OnDuplicate = grafana.Max
 			case "replace", "":
 				gm.OnDuplicate = grafana.Replace
 			default:

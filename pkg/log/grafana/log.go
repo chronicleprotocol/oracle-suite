@@ -118,10 +118,12 @@ type shared struct {
 type OnDuplicate int
 
 const (
-	Replace OnDuplicate = iota // Replace current value.
+	Replace OnDuplicate = iota // Replace the current value.
 	Ignore                     // Use previous value.
-	Sum                        // Add to current value.
-	Sub                        // Subtract from current value.
+	Sum                        // Add to the current value.
+	Sub                        // Subtract from the current value.
+	Max                        // Use higher value.
+	Min                        // Use lower value.
 )
 
 type metricKey struct {
@@ -312,6 +314,14 @@ func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
 	case exists && m.OnDuplicate == Sub:
 		mv.value -= cv.value
 		c.metricPoints[mk] = mv
+	case exists && m.OnDuplicate == Min:
+		if mv.value < cv.value {
+			c.metricPoints[mk] = mv
+		}
+	case exists && m.OnDuplicate == Max:
+		if mv.value > cv.value {
+			c.metricPoints[mk] = mv
+		}
 	case exists && m.OnDuplicate == Ignore:
 	default:
 		c.metricPoints[mk] = mv
