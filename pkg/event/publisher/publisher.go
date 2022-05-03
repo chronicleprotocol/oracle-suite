@@ -17,7 +17,6 @@ package publisher
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -72,10 +71,13 @@ func New(cfg Config) (*EventPublisher, error) {
 }
 
 func (l *EventPublisher) Start(ctx context.Context) error {
-	l.log.Infof("Starting")
+	if l.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	l.log.Infof("Starting")
 	l.ctx = ctx
 	l.listenerLoop()
 	for _, lis := range l.listeners {
@@ -109,43 +111,50 @@ func (l *EventPublisher) listenerLoop() {
 	}
 }
 
-func (l *EventPublisher) broadcast(event *messages.Event) {
-	if !l.sign(event) {
+func (l *EventPublisher) broadcast(evt *messages.Event) {
+	if !l.sign(evt) {
 		return
 	}
 	l.log.
 		WithFields(log.Fields{
-			"id":          hex.EncodeToString(event.ID),
-			"type":        event.Type,
-			"index":       hex.EncodeToString(event.Index),
-			"eventDate":   event.EventDate,
-			"messageDate": event.MessageDate,
-			"data":        event.Data,
-			"signatures":  event.Signatures,
+			"id":          evt.ID,
+			"type":        evt.Type,
+			"index":       evt.Index,
+			"eventDate":   evt.EventDate,
+			"messageDate": evt.MessageDate,
+			"data":        evt.Data,
+			"signatures":  evt.Signatures,
+			"from":        l.transport.ID(),
 		}).
-		Info("Event broadcast")
-	err := l.transport.Broadcast(messages.EventMessageName, event)
+		Info("Event published")
+	err := l.transport.Broadcast(messages.EventMessageName, evt)
 	if err != nil {
 		l.log.
 			WithError(err).
-			WithField("id", hex.EncodeToString(event.ID)).
-			WithField("type", event.Type).
-			Error("Unable to broadcast the event")
+			WithFields(log.Fields{
+				"id":   evt.ID,
+				"type": evt.Type,
+				"from": l.transport.ID(),
+			}).
+			Error("Unable to publish the event")
 	}
 }
 
-func (l *EventPublisher) sign(event *messages.Event) bool {
+func (l *EventPublisher) sign(evt *messages.Event) bool {
 	var signed bool
 	for _, s := range l.signers {
-		ok, err := s.Sign(event)
+		ok, err := s.Sign(evt)
 		if !ok {
 			continue
 		}
 		if err != nil {
 			l.log.
 				WithError(err).
-				WithField("id", hex.EncodeToString(event.ID)).
-				WithField("type", event.Type).
+				WithFields(log.Fields{
+					"id":   evt.ID,
+					"type": evt.Type,
+					"from": l.transport.ID(),
+				}).
 				Error("Unable to sign the event")
 			continue
 		}
@@ -153,8 +162,11 @@ func (l *EventPublisher) sign(event *messages.Event) bool {
 	}
 	if !signed {
 		l.log.
-			WithField("id", hex.EncodeToString(event.ID)).
-			WithField("type", event.Type).
+			WithFields(log.Fields{
+				"id":   evt.ID,
+				"type": evt.Type,
+				"from": l.transport.ID(),
+			}).
 			Warn("There are no signers that supports the event")
 	}
 	return signed

@@ -157,6 +157,11 @@ is `config.json` in the current working directory. You can change the config fil
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
+            - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
+              values are:
+                - `sum` - Add values.
+                - `sub` - Subtract values.
+                - `replace` (default) - Replace value with the never one.
 - `leeloo` - Leeloo configuration.
     - `listeners` - Event listeners configuration.
         - `[]wormhole` - Configuration of the "wormhole" event listener. It listens for `WormhholeGUID` events on

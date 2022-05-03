@@ -109,18 +109,20 @@ func NewNode(opts ...Options) (*Node, error) {
 }
 
 func (n *Node) Start(ctx context.Context) error {
-	n.tsLog.get().Info("Starting")
-	var err error
-
+	if n.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	n.tsLog.get().Info("Starting")
 	n.ctx = ctx
 
 	n.nodeEventHandler.Handle(sets.NodeStartingEvent{})
 
 	go n.contextCancelHandler()
 
+	var err error
 	n.host, err = libp2p.New(append([]libp2p.Option{
 		libp2p.EnableNATService(),
 		libp2p.DisableRelay(),

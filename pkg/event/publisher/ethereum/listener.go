@@ -144,10 +144,12 @@ func (l *ethClientLogListener) nextLogs(ctx context.Context) ([]types.Log, error
 		if err = retry(func() error {
 			if l.log.Level() >= log.Debug {
 				l.log.
-					WithField("from", from).
-					WithField("to", to).
-					WithField("address", addr.String()).
-					WithField("topics", l.topics).
+					WithFields(log.Fields{
+						"from":    from,
+						"to":      to,
+						"address": addr.String(),
+						"topics":  l.topics,
+					}).
 					Debug("Fetching Ethereum logs")
 			}
 			logs, err = l.client.FilterLogs(ctx, geth.FilterQuery{
