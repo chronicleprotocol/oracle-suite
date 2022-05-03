@@ -18,7 +18,6 @@ package grafana
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -30,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/internal/serializer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -504,17 +504,7 @@ func toString(value reflect.Value) (string, bool) {
 	if !value.IsValid() {
 		return "", false
 	}
-	switch t := value.Interface().(type) {
-	case string:
-		return t, true
-	case []byte:
-		return hex.EncodeToString(t), true
-	case fmt.Stringer:
-		return t.String(), true
-	case error:
-		return t.Error(), true
-	}
-	return fmt.Sprint(value.Interface()), true
+	return fmt.Sprint(serializer.Serialize(value.Interface())), true
 }
 
 func roundTime(time int64, interval uint) int64 {
