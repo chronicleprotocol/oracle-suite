@@ -128,7 +128,7 @@ type Config struct {
 
 // New returns a new instance of a transport, implemented with
 // the libp2p library.
-// nolint: gocyclo
+// nolint:gocyclo,funlen
 func New(cfg Config) (*P2P, error) {
 	var err error
 
@@ -136,7 +136,7 @@ func New(cfg Config) (*P2P, error) {
 		cfg.ListenAddrs = defaultListenAddrs
 	}
 	if cfg.PeerPrivKey == nil {
-		cfg.PeerPrivKey, _, err = crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader)
+		cfg.PeerPrivKey, _, err = crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader) //nolint:gomnd
 		if err != nil {
 			return nil, fmt.Errorf("P2P transport error, unable to generate a random private key: %w", err)
 		}

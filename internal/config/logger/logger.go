@@ -131,7 +131,7 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 			"x-goVersion":  runtime.Version(),
 			"x-goOS":       runtime.GOOS,
 			"x-goArch":     runtime.GOARCH,
-			"x-instanceID": fmt.Sprintf("%08x", rand.Uint64()),
+			"x-instanceID": fmt.Sprintf("%08x", rand.Uint64()), //nolint:gosec
 		})
 
 	return logger, nil
