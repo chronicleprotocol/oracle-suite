@@ -64,7 +64,7 @@ echo "Initiating the wormhole..."
 $wd/initiate-wormhole.sh $(cat $wd/auxiliary/optimism.json | jq -r .l2_wormhole_gateway_address);
 slep 60
 
-idx="0x$(cat $tmp_dir/leeloo.log | jq -r '. | select( has("type") == true ) | select(.type | test("wormhole")) | .index' | tail -n 1)"
+idx="$(cat $tmp_dir/leeloo.log | jq -r '. | select( has("type") == true ) | select(.type | test("wormhole")) | .index' | tail -n 1)"
 echo "Querying lair for attestation for $idx..."
 if [ -z "$LAIR_HOST" ]; then
     lair_host='http://0.0.0.0:8208'

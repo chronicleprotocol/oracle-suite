@@ -5,7 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/serializer"
+	"github.com/chronicleprotocol/oracle-suite/internal/dump"
 )
 
 // FieldSerializerFormatter will serialize the log field values to basic types.
@@ -18,7 +18,7 @@ type FieldSerializerFormatter struct {
 func (f *FieldSerializerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	data := logrus.Fields{}
 	for k, v := range e.Data {
-		data[k] = serializer.Serialize(v)
+		data[k] = dump.Dump(v)
 		if v, ok := data[k].(json.RawMessage); ok && !f.UseJSONRawMessage {
 			data[k] = string(v)
 		}

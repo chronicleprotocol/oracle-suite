@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/serializer"
+	"github.com/chronicleprotocol/oracle-suite/internal/dump"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -118,10 +118,10 @@ type shared struct {
 type OnDuplicate int
 
 const (
-	Replace OnDuplicate = iota
-	Ignore
-	Sum
-	Sub
+	Replace OnDuplicate = iota // Replace current value.
+	Ignore                     // Use previous value.
+	Sum                        // Add to current value.
+	Sub                        // Subtract from current value.
 )
 
 type metricKey struct {
@@ -504,7 +504,7 @@ func toString(value reflect.Value) (string, bool) {
 	if !value.IsValid() {
 		return "", false
 	}
-	return fmt.Sprint(serializer.Serialize(value.Interface())), true
+	return fmt.Sprint(dump.Dump(value.Interface())), true
 }
 
 func roundTime(time int64, interval uint) int64 {

@@ -1,4 +1,4 @@
-package serializer
+package dump
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func TestSerialize(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n), func(t *testing.T) {
-			assert.Equal(t, tt.want, Serialize(tt.arg))
+			assert.Equal(t, tt.want, Dump(tt.arg))
 		})
 	}
 }
