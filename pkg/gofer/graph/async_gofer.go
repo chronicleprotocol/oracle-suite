@@ -58,42 +58,57 @@ func NewAsyncGofer(
 
 // Start starts asynchronous price updater.
 func (a *AsyncGofer) Start(ctx context.Context) error {
-	a.log.Infof("Starting")
-
+	if a.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	a.log.Infof("Starting")
 	a.ctx = ctx
 
-	gcdTTL := getGCDTTL(a.nodes)
-	if gcdTTL < time.Second {
-		gcdTTL = time.Second
+	// To ensure that broken origins do not affect the fetching of prices from
+	// other origins, all nodes are grouped by origin, and a separate goroutine
+	// is created for each of them. In this way, problems with one origin should
+	// not delay the fetching of prices from other origins.
+	originNodes := map[string][]nodes.Node{}
+	for _, graph := range a.graphs {
+		nodes.Walk(func(node nodes.Node) {
+			if fn, ok := node.(feeder.Feedable); ok {
+				origin := fn.OriginPair().Origin
+				originNodes[origin] = append(originNodes[origin], fn)
+			}
+		}, graph)
 	}
-	a.log.WithField("interval", gcdTTL.String()).Infof("Update interval (GCD of all TTLs)")
-
-	feed := func() {
-		// We have to add gcdTTL to the current time because we want
-		// to find all nodes that will expire before the next tick.
-		t := time.Now().Add(gcdTTL)
-		warns := a.feeder.Feed(a.nodes, t)
-		if len(warns.List) > 0 {
-			a.log.WithError(warns.ToError()).Warn("Unable to feed some nodes")
+	for _, ns := range originNodes {
+		ns := ns
+		ttl := gcdTTL(ns)
+		if ttl < time.Second {
+			ttl = time.Second
 		}
-	}
-
-	ticker := time.NewTicker(gcdTTL)
-	go func() {
-		feed()
-		for {
-			select {
-			case <-a.ctx.Done():
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				feed()
+		feed := func() {
+			// We have to add ttl to the current time because we want
+			// to find all nodes that will expire before the next tick.
+			t := time.Now().Add(ttl)
+			warns := a.feeder.Feed(ns, t)
+			if len(warns.List) > 0 {
+				a.log.WithError(warns.ToError()).Warn("Unable to feed some nodes")
 			}
 		}
-	}()
+		go func() {
+			ticker := time.NewTicker(ttl)
+			feed()
+			for {
+				select {
+				case <-a.ctx.Done():
+					ticker.Stop()
+					return
+				case <-ticker.C:
+					feed()
+				}
+			}
+		}()
+	}
 
 	go a.contextCancelHandler()
 	return nil
@@ -110,8 +125,8 @@ func (a *AsyncGofer) contextCancelHandler() {
 	<-a.ctx.Done()
 }
 
-// getGCDTTL returns the greatest common divisor of nodes minTTLs.
-func getGCDTTL(ns []nodes.Node) time.Duration {
+// gcdTTL returns the greatest common divisor of nodes minTTLs.
+func gcdTTL(ns []nodes.Node) time.Duration {
 	ttl := time.Duration(0)
 	nodes.Walk(func(n nodes.Node) {
 		if f, ok := n.(feeder.Feedable); ok {

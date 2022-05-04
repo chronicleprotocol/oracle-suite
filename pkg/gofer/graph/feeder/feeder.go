@@ -43,6 +43,7 @@ func (w Warnings) ToError() error {
 }
 
 type Feedable interface {
+	nodes.Node
 	// OriginPair returns the origin and pair which are acceptable for
 	// this Node.
 	OriginPair() nodes.OriginPair
@@ -206,25 +207,4 @@ func mapOriginResult(origin string, fr origins.FetchResult) nodes.OriginPrice {
 		Origin: origin,
 		Error:  fr.Error,
 	}
-}
-
-// getGCDTTL returns the greatest common divisor of nodes minTTLs.
-func getGCDTTL(ns []nodes.Node) time.Duration {
-	ttl := time.Duration(0)
-	nodes.Walk(func(n nodes.Node) {
-		if f, ok := n.(Feedable); ok {
-			if ttl == 0 {
-				ttl = f.MinTTL()
-			}
-			a := ttl
-			b := f.MinTTL()
-			for b != 0 {
-				t := b
-				b = a % b
-				a = t
-			}
-			ttl = a
-		}
-	}, ns...)
-	return ttl
 }
