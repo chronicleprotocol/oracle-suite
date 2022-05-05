@@ -249,7 +249,7 @@ func init() {
 		"b": &testExchange{},
 		"x": &testExchange{},
 		"y": &testExchange{},
-	}, 10), null.New())
+	}), null.New())
 }
 
 func TestGofer_Models_SinglePair(t *testing.T) {

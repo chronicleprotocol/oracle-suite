@@ -15,9 +15,6 @@
 
 package query
 
-// max amount of tasks in worker pool queue
-const maxTasksQueue = 10
-
 // WorkerPool interface for any Query Engine worker pools
 type WorkerPool interface {
 	Query(req *HTTPRequest) *HTTPResponse
@@ -39,7 +36,7 @@ type asyncHTTPRequest struct {
 func NewHTTPWorkerPool(workerCount int) *HTTPWorkerPool {
 	wp := &HTTPWorkerPool{
 		workerCount: workerCount,
-		input:       make(chan *asyncHTTPRequest, maxTasksQueue),
+		input:       make(chan *asyncHTTPRequest, workerCount),
 	}
 
 	for w := 0; w < wp.workerCount; w++ {

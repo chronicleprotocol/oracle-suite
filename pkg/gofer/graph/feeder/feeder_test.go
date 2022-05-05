@@ -67,7 +67,7 @@ func originsSetMock(prices map[string][]origins.Price) *origins.Set {
 		}
 		handlers[origin] = &mockHandler{mockedPrices: pricesMap}
 	}
-	return origins.NewSet(handlers, 10)
+	return origins.NewSet(handlers)
 }
 
 func TestFeeder_Feed_EmptyGraph(t *testing.T) {
