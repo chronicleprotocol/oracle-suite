@@ -28,7 +28,7 @@ import (
 
 func TestTransport(t *testing.T) {
 	rpcMock := &mockClient{t: t}
-	rpcHandler, _ := newHandlerWithClients([]rpcClient{{rpcCaller: rpcMock}}, null.New())
+	rpcHandler, _ := newHandlerWithClients([]rpcClient{{rpcCaller: rpcMock}}, 10, null.New())
 	roundTripper, _ := newTransport(rpcHandler, "rpcsplitter-vhost", nil)
 	httpClient := http.Client{Transport: roundTripper}
 	msg := jsonMarshal(t, rpcReq{

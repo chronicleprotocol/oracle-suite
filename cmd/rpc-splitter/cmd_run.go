@@ -40,8 +40,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			log := opts.Logger()
-
-			handler, err := rpcsplitter.NewHandler(opts.EthRPCURLs, log)
+			handler, err := rpcsplitter.NewHandler(opts.EthRPCURLs, opts.RequestTimeoutSec, log)
 			if err != nil {
 				return err
 			}

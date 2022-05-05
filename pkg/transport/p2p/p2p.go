@@ -17,12 +17,13 @@ package p2p
 
 import (
 	"context"
-	"errors"
+	"crypto/rand"
 	"fmt"
 	"time"
 
 	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 
@@ -72,6 +73,7 @@ var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
 // P2P is the wrapper for the Node that implements the transport.Transport
 // interface.
 type P2P struct {
+	id     peer.ID
 	node   *p2p.Node
 	mode   Mode
 	topics map[string]transport.Message
@@ -126,12 +128,21 @@ type Config struct {
 
 // New returns a new instance of a transport, implemented with
 // the libp2p library.
-// nolint: gocyclo
+// nolint:gocyclo,funlen
 func New(cfg Config) (*P2P, error) {
 	var err error
 
 	if len(cfg.ListenAddrs) == 0 {
 		cfg.ListenAddrs = defaultListenAddrs
+	}
+	if cfg.PeerPrivKey == nil {
+		cfg.PeerPrivKey, _, err = crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader) //nolint:gomnd
+		if err != nil {
+			return nil, fmt.Errorf("P2P transport error, unable to generate a random private key: %w", err)
+		}
+	}
+	if cfg.MessagePrivKey == nil {
+		cfg.MessagePrivKey = cfg.PeerPrivKey
 	}
 
 	listenAddrs, err := strsToMaddrs(cfg.ListenAddrs)
@@ -217,14 +228,22 @@ func New(cfg Config) (*P2P, error) {
 		return nil, fmt.Errorf("P2P transport error, unable to initialize node: %w", err)
 	}
 
-	return &P2P{node: n, mode: cfg.Mode, topics: cfg.Topics, msgCh: map[string]chan transport.ReceivedMessage{}}, nil
+	id, err := peer.IDFromPrivateKey(cfg.MessagePrivKey)
+	if err != nil {
+		return nil, fmt.Errorf("P2P transport error, unable to get public ID from private key: %w", err)
+	}
+
+	return &P2P{
+		id:     id,
+		node:   n,
+		mode:   cfg.Mode,
+		topics: cfg.Topics,
+		msgCh:  map[string]chan transport.ReceivedMessage{},
+	}, nil
 }
 
 // Start implements the transport.Transport interface.
 func (p *P2P) Start(ctx context.Context) error {
-	if ctx == nil {
-		return errors.New("context must not be nil")
-	}
 	err := p.node.Start(ctx)
 	if err != nil {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
@@ -244,6 +263,11 @@ func (p *P2P) Start(ctx context.Context) error {
 // Wait implements the transport.Transport interface.
 func (p *P2P) Wait() chan error {
 	return p.node.Wait()
+}
+
+// ID implements the transport.Transport interface.
+func (p *P2P) ID() []byte {
+	return ethkey.PeerIDToAddress(p.id).Bytes()
 }
 
 // Broadcast implements the transport.Transport interface.

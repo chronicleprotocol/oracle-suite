@@ -17,6 +17,7 @@ package rpcsplitter
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -70,7 +71,7 @@ func (c *mockClient) mockCall(result interface{}, method string, params ...inter
 	})
 }
 
-func (c *mockClient) Call(result interface{}, method string, params ...interface{}) error {
+func (c *mockClient) CallContext(ctx context.Context, result interface{}, method string, params ...interface{}) error {
 	if c.currCall >= len(c.calls) {
 		require.Fail(c.t, "unexpected call")
 	}
@@ -130,7 +131,7 @@ func (t *handlerTester) expectedError(msg string) *handlerTester {
 
 func (t *handlerTester) test() {
 	// Prepare handler.
-	h, err := newHandlerWithClients(t.clients, null.New())
+	h, err := newHandlerWithClients(t.clients, 10, null.New())
 	require.NoError(t.t, err)
 
 	// Prepare request.

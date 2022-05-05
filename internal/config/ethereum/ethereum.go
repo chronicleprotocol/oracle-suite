@@ -32,6 +32,7 @@ import (
 )
 
 const splitterVirtualHost = "makerdao-splitter"
+const splitterDefaultTimeoutSec = 9 // This is lower than the "upper level" default of 10s, i.e. within Gofer
 
 var ethClientFactory = func(endpoints []string) (geth.EthClient, error) {
 	switch len(endpoints) {
@@ -40,8 +41,9 @@ var ethClientFactory = func(endpoints []string) (geth.EthClient, error) {
 	case 1:
 		return ethclient.Dial(endpoints[0])
 	default:
+		// TODO(jamesr): get splitter timeout from config, not hard coded
 		// TODO: pass logger
-		splitter, err := rpcsplitter.NewTransport(endpoints, splitterVirtualHost, nil, null.New())
+		splitter, err := rpcsplitter.NewTransport(endpoints, splitterDefaultTimeoutSec, splitterVirtualHost, nil, null.New())
 		if err != nil {
 			return nil, err
 		}

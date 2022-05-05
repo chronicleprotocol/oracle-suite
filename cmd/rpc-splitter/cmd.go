@@ -23,9 +23,10 @@ import (
 )
 
 type options struct {
-	Listen     string
-	EnableCORS bool
-	EthRPCURLs []string
+	Listen            string
+	EnableCORS        bool
+	RequestTimeoutSec int
+	EthRPCURLs        []string
 	flag.LoggerFlag
 }
 
@@ -53,6 +54,12 @@ func NewRootCommand(opts *options) *cobra.Command {
 		"c",
 		false,
 		"enables CORS requests for all origins",
+	)
+	rootCmd.PersistentFlags().IntVarP(
+		&opts.RequestTimeoutSec,
+		"timeout", "t",
+		10,
+		"Set request timeout (in seconds) for all RPC endpoints",
 	)
 	rootCmd.PersistentFlags().StringSliceVar(
 		&opts.EthRPCURLs,

@@ -18,9 +18,11 @@ package logger
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"runtime"
+	"strings"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -55,42 +57,64 @@ type grafanaMetric struct {
 	Value        string              `json:"value"`
 	Name         string              `json:"name"`
 	Tags         map[string][]string `json:"tags"`
+	OnDuplicate  string              `json:"onDuplicate"`
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
+	var err error
 	loggers := []log.Logger{d.BaseLogger}
 
 	if c.Grafana.Enable {
-		var m []grafana.Metric
+		var ms []grafana.Metric
 		for _, cm := range c.Grafana.Metrics {
-			// Compile a regular expression for a message:
-			mrx, err := regexp.Compile(cm.MatchMessage)
+			gm := grafana.Metric{
+				Value: cm.Value,
+				Name:  cm.Name,
+				Tags:  cm.Tags,
+			}
+
+			// Compile the regular expression for a message:
+			gm.MatchMessage, err = regexp.Compile(cm.MatchMessage)
 			if err != nil {
 				return nil, fmt.Errorf("logger config: unable to compile regexp: %s", cm.MatchMessage)
 			}
+
 			// Compile regular expressions for log fields:
-			frx := map[string]*regexp.Regexp{}
+			gm.MatchFields = map[string]*regexp.Regexp{}
 			for f, p := range cm.MatchFields {
 				rx, err := regexp.Compile(p)
 				if err != nil {
 					return nil, fmt.Errorf("logger config: unable to compile regexp: %s", p)
 				}
-				frx[f] = rx
+				gm.MatchFields[f] = rx
 			}
-			m = append(m, grafana.Metric{
-				MatchMessage: mrx,
-				MatchFields:  frx,
-				Value:        cm.Value,
-				Name:         cm.Name,
-				Tags:         cm.Tags,
-			})
+
+			// On duplicate:
+			switch strings.ToLower(cm.OnDuplicate) {
+			case "sum":
+				gm.OnDuplicate = grafana.Sum
+			case "sub":
+				gm.OnDuplicate = grafana.Sub
+			case "min":
+				gm.OnDuplicate = grafana.Min
+			case "max":
+				gm.OnDuplicate = grafana.Max
+			case "replace", "":
+				gm.OnDuplicate = grafana.Replace
+			default:
+				return nil, fmt.Errorf("logger config: unknown onDuplicate value: %s", cm.OnDuplicate)
+			}
+
+			ms = append(ms, gm)
 		}
+
 		interval := c.Grafana.Interval
 		if interval < 1 {
 			interval = 1
 		}
+
 		loggers = append(loggers, grafanaLoggerFactory(d.BaseLogger.Level(), grafana.Config{
-			Metrics:          m,
+			Metrics:          ms,
 			Interval:         uint(interval),
 			GraphiteEndpoint: c.Grafana.Endpoint,
 			GraphiteAPIKey:   c.Grafana.APIKey,
@@ -111,6 +135,7 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 			"x-goVersion":  runtime.Version(),
 			"x-goOS":       runtime.GOOS,
 			"x-goArch":     runtime.GOARCH,
+			"x-instanceID": fmt.Sprintf("%08x", rand.Uint64()), //nolint:gosec
 		})
 
 	return logger, nil

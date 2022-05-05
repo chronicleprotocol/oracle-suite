@@ -132,6 +132,13 @@ is `config.json` in the current working directory. You can change the config fil
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
+            - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
+              options are:
+                - `sum` - Add values.
+                - `sub` - Subtract values.
+                - `max` - Use higher value.
+                - `min` - Use lower value.
+                - `replace` (default) - Replace the value with a newer one.
 - `lair` - Lair configuration.
     - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be used as
       the metric value.

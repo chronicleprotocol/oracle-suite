@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/httpserver"
+	"github.com/chronicleprotocol/oracle-suite/internal/httpserver/middleware"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -77,6 +78,7 @@ func New(cfg Config) (*EventAPI, error) {
 		ReadTimeout:  defaultTimeout,
 		WriteTimeout: defaultTimeout,
 	})
+	api.srv.Use(&middleware.Logger{Log: api.log})
 	return api, nil
 }
 

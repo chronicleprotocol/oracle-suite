@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -28,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/internal/dump"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -67,6 +69,9 @@ type Metric struct {
 	// Tag is a list of metric tags. They can contain references to log fields
 	// in the format ${path}, where path is the dot-separated path to the field.
 	Tags map[string][]string
+	// OnDuplicate specifies how duplicated values in the same interval should
+	// be handled.
+	OnDuplicate OnDuplicate
 }
 
 // New creates a new logger that can extract parameters from log messages and
@@ -109,6 +114,17 @@ type shared struct {
 	httpClient       *http.Client
 	metricPoints     map[metricKey]metricValue
 }
+
+type OnDuplicate int
+
+const (
+	Replace OnDuplicate = iota // Replace the current value.
+	Ignore                     // Use previous value.
+	Sum                        // Add to the current value.
+	Sub                        // Subtract from the current value.
+	Max                        // Use higher value.
+	Min                        // Use lower value.
+)
 
 type metricKey struct {
 	name string
@@ -283,19 +299,41 @@ func (c *logger) collect(msg string, fields log.Fields) {
 				mv.tags = append(mv.tags, t+"="+rt)
 			}
 		}
-		// Note: it is worth considering adding an ability to sum values for
-		// some metrics. It will allow to count more precisely events that
-		// happens more than once during defined interval.
-		c.metricPoints[mk] = mv
-		c.logger.
-			WithFields(log.Fields{
-				"timestamp": mk.time,
-				"name":      mk.name,
-				"value":     mv.value,
-				"tags":      mv.tags,
-			}).
-			Debug("New metric point")
+		c.addMetricPoint(metric, mk, mv)
 	}
+}
+
+func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
+	cv, exists := c.metricPoints[mk]
+	switch {
+	case exists && m.OnDuplicate == Replace:
+		c.metricPoints[mk] = mv
+	case exists && m.OnDuplicate == Sum:
+		mv.value += cv.value
+		c.metricPoints[mk] = mv
+	case exists && m.OnDuplicate == Sub:
+		mv.value -= cv.value
+		c.metricPoints[mk] = mv
+	case exists && m.OnDuplicate == Min:
+		if mv.value < cv.value {
+			c.metricPoints[mk] = mv
+		}
+	case exists && m.OnDuplicate == Max:
+		if mv.value > cv.value {
+			c.metricPoints[mk] = mv
+		}
+	case exists && m.OnDuplicate == Ignore:
+	default:
+		c.metricPoints[mk] = mv
+	}
+	c.logger.
+		WithFields(log.Fields{
+			"timestamp": mk.time,
+			"name":      mk.name,
+			"value":     mv.value,
+			"tags":      mv.tags,
+		}).
+		Debug("New metric point")
 }
 
 // pushRoutine pushes metrics in interval defined in c.interval.
@@ -343,7 +381,7 @@ func (c *logger) pushMetrics() {
 		return
 	}
 	c.logger.
-		WithField("metrics", len(c.metricPoints)).
+		WithField("metrics", len(metrics)).
 		Info("Pushing metrics")
 	req, err := http.NewRequest("POST", c.graphiteEndpoint, bytes.NewReader(reqBody))
 	if err != nil {
@@ -361,6 +399,7 @@ func (c *logger) pushMetrics() {
 			Warn("Invalid request")
 		return
 	}
+	_, _ = io.ReadAll(res.Body)
 	err = res.Body.Close()
 	if err != nil {
 		c.logger.
@@ -475,7 +514,7 @@ func toString(value reflect.Value) (string, bool) {
 	if !value.IsValid() {
 		return "", false
 	}
-	return fmt.Sprint(value.Interface()), true
+	return fmt.Sprint(dump.Dump(value.Interface())), true
 }
 
 func roundTime(time int64, interval uint) int64 {

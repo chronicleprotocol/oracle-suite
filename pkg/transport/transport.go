@@ -40,6 +40,8 @@ type Message interface {
 // Transport is the interface for different implementations of a
 // publish–subscribe messaging solutions for the Oracle network.
 type Transport interface {
+	// ID returns an identity used to sign messages.
+	ID() []byte
 	// Broadcast sends a message with a given topic.
 	Broadcast(topic string, message Message) error
 	// Messages returns a channel that will deliver incoming messages.

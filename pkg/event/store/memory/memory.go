@@ -48,7 +48,7 @@ func New(ttl time.Duration) *Memory {
 }
 
 // Add implements the store.Storage interface.
-func (m *Memory) Add(_ context.Context, author []byte, evt *messages.Event) error {
+func (m *Memory) Add(_ context.Context, author []byte, evt *messages.Event) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	hi := hashIndex(evt.Type, evt.Index)
@@ -61,7 +61,7 @@ func (m *Memory) Add(_ context.Context, author []byte, evt *messages.Event) erro
 		m.index[hi][hu] = evt
 		m.gc()
 	}
-	return nil
+	return !ok, nil
 }
 
 // Get implements the store.Storage interface.
