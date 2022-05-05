@@ -35,7 +35,7 @@ import (
 )
 
 const defaultTTL = 60 * time.Second
-const maxTTL = 300 * time.Second
+const maxTTL = 240 * time.Second
 
 type ErrCyclicReference struct {
 	Pair gofer.Pair
