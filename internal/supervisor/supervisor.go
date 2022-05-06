@@ -105,26 +105,33 @@ func (s *Supervisor) serviceMonitor() {
 	// removed from the s.service list and the loop is executed again until
 	// no service remains.
 	for len(s.services) > 0 {
+		// Wait for first stopped service:
 		c := make([]reflect.SelectCase, len(s.services))
 		for i, srv := range s.services {
 			c[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(srv.Wait())}
 		}
 		n, v, _ := reflect.Select(c)
+
+		// Remove stopped service from the service list:
+		name := serviceName(s.services[n])
+		s.services = append(s.services[:n], s.services[n+1:]...)
+
+		// If service failed, cancel the context to stop the others:
 		if !v.IsNil() {
 			s.log.
 				WithError(v.Interface().(error)).
-				WithField("service", serviceName(s.services[n])).
+				WithField("service", name).
 				Error("Service crashed")
 			if err == nil {
-				err = v.Interface().(error)
+				err = v.Interface().(error) // TODO(mdobak): consider using multierror
 			}
 			s.ctxCancel()
-		} else {
-			s.log.
-				WithField("service", serviceName(s.services[n])).
-				Debug("Service stopped")
+			continue
 		}
-		s.services = append(s.services[:n], s.services[n+1:]...)
+
+		s.log.
+			WithField("service", name).
+			Debug("Service stopped")
 	}
 	if err != nil {
 		s.waitCh <- err

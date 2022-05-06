@@ -11,6 +11,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/callback"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 func TestSysmon(t *testing.T) {
@@ -41,4 +42,21 @@ func TestSysmon(t *testing.T) {
 	// Wait() channel should return nil after cancelling the context
 	ctxCancel()
 	require.NoError(t, <-s.Wait())
+}
+
+func TestSysmon_RunWithDebugLevelOnly(t *testing.T) {
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
+	l := null.New()
+
+	s := New(time.Second, l)
+	require.NoError(t, s.Start(ctx))
+
+	select {
+	case n := <-s.Wait():
+		require.Nil(t, n)
+	case <-time.NewTimer(time.Second).C:
+		require.Fail(t, "sysmon should not start with verbosity lover other than debug")
+	}
 }

@@ -49,8 +49,8 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		Short: "",
 		Long:  ``,
-		RunE: func(_ *cobra.Command, args []string) error {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		RunE: func(_ *cobra.Command, args []string) (err error) {
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
@@ -58,6 +58,12 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 			if err = sup.Start(); err != nil {
 				return err
 			}
+			defer func() {
+				ctxCancel()
+				if sErr := <-sup.Wait(); err == nil { // Ignore sErr if another error has already occurred.
+					err = sErr
+				}
+			}()
 			p, err := cli.PullPrice(args[0], args[1])
 			if err != nil {
 				return err
@@ -70,7 +76,7 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 				return err
 			}
 			fmt.Printf("%s\n", string(bts))
-			return <-sup.Wait()
+			return
 		},
 	}
 }
@@ -90,7 +96,6 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			defer ctxCancel()
 			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
@@ -98,7 +103,12 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 			if err = sup.Start(); err != nil {
 				return err
 			}
-			defer func() { err = <-sup.Wait() }()
+			defer func() {
+				ctxCancel()
+				if sErr := <-sup.Wait(); err == nil { // Ignore sErr if another error has already occurred.
+					err = sErr
+				}
+			}()
 			p, err := cli.PullPrices(pullPricesOpts.FilterPair, pullPricesOpts.FilterFrom)
 			if err != nil {
 				return err

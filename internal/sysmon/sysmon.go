@@ -35,6 +35,7 @@ func (s *Sysmon) Start(ctx context.Context) error {
 	if !log.IsLevel(s.log, log.Debug) {
 		// Sysmon shows logs only for the debug level, if current logger uses
 		// a lower log level, there is no point of starting the service.
+		close(s.waitCh)
 		return nil
 	}
 	if s.ctx != nil {

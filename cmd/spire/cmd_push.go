@@ -48,7 +48,6 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			defer ctxCancel()
 			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
@@ -56,7 +55,12 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 			if err = sup.Start(); err != nil {
 				return err
 			}
-			defer func() { err = <-sup.Wait() }()
+			defer func() {
+				ctxCancel()
+				if sErr := <-sup.Wait(); err == nil { // Ignore sErr if another error has already occurred.
+					err = sErr
+				}
+			}()
 			in := os.Stdin
 			if len(args) == 1 {
 				in, err = os.Open(args[0])
