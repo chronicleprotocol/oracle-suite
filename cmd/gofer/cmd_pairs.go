@@ -35,7 +35,6 @@ func NewPairsCmd(opts *options) *cobra.Command {
 		Long:    `List all supported asset pairs.`,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			defer ctxCancel()
 			sup, gof, mar, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
@@ -43,7 +42,6 @@ func NewPairsCmd(opts *options) *cobra.Command {
 			if err = sup.Start(); err != nil {
 				return err
 			}
-			defer func() { err = <-sup.Wait() }()
 			defer func() {
 				if err != nil {
 					exitCode = 1
@@ -52,6 +50,12 @@ func NewPairsCmd(opts *options) *cobra.Command {
 				_ = mar.Flush()
 				// Set err to nil because error was already handled by marshaller.
 				err = nil
+			}()
+			defer func() {
+				ctxCancel()
+				if sErr := <-sup.Wait(); err == nil { // Ignore sErr if another error has already occurred.
+					err = sErr
+				}
 			}()
 			pairs, err := gofer.NewPairs(args...)
 			if err != nil {
