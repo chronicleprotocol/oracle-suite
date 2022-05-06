@@ -57,6 +57,6 @@ func TestSysmon_RunWithDebugLevelOnly(t *testing.T) {
 	case n := <-s.Wait():
 		require.Nil(t, n)
 	case <-time.NewTimer(time.Second).C:
-		require.Fail(t, "sysmon should not start with verbosity lower other than debug")
+		require.Fail(t, "sysmon should not start with verbosity other than debug")
 	}
 }
