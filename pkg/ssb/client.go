@@ -24,6 +24,7 @@ import (
 
 	"go.cryptoscope.co/muxrpc/v2"
 	"go.cryptoscope.co/ssb/message"
+	"go.cryptoscope.co/ssb/plugins/legacyinvites"
 	refs "go.mindeco.de/ssb-refs"
 )
 
@@ -31,6 +32,9 @@ const methodPublish = "publish"
 const methodWhoAmI = "whoami"
 const methodCreateLogStream = "createLogStream"
 const methodCreateUserStream = "createUserStream"
+const methodInvite = "invite"
+const methodCreate = "create"
+const methodAccept = "accept"
 
 type Client struct {
 	ctx context.Context
@@ -45,6 +49,22 @@ type Endpoint interface {
 func (c *Client) WhoAmI() ([]byte, error) {
 	var ret []byte
 	return ret, c.rpc.Async(c.ctx, &ret, muxrpc.TypeBinary, muxrpc.Method{methodWhoAmI})
+}
+
+func (c *Client) InviteCreate(n uint) ([]byte, error) {
+	var ret []byte
+	var args legacyinvites.CreateArguments
+	args.Uses = n
+	return ret, c.rpc.Async(c.ctx, &ret, muxrpc.TypeBinary, muxrpc.Method{methodInvite, methodCreate}, args)
+}
+
+func (c *Client) InviteAccept(invite string) ([]byte, error) {
+	var ret []byte
+	var args = struct {
+		Invite string `json:"invite"`
+	}{invite}
+
+	return ret, c.rpc.Async(c.ctx, &ret, muxrpc.TypeBinary, muxrpc.Method{methodInvite, methodAccept}, args)
 }
 
 func (c *Client) Transmit(v interface{}) ([]byte, error) {

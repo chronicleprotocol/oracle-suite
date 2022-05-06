@@ -63,6 +63,8 @@ func main() {
 		cobra.Pull(opts),
 		cobra.Log(opts),
 		cobra.Whoami(opts),
+		cobra.InviteCreate(opts),
+		cobra.InviteAccept(opts),
 	)
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)

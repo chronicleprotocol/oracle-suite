@@ -87,7 +87,7 @@ func (opts *Options) SSBConfig() (*ssb.Config, error) {
 func Root() (*Options, *cobra.Command) {
 	return &Options{}, &cobra.Command{
 		Version:            suite.Version,
-		Use:                "ssb",
+		Use:                "ssb-rpc-client",
 		DisableAutoGenTag:  true,
 		DisableSuggestions: true,
 		SilenceUsage:       true,
