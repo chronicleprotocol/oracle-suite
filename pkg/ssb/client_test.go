@@ -17,6 +17,7 @@ package ssb
 
 import (
 	"context"
+	"go.cryptoscope.co/ssb/plugins/legacyinvites"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -224,4 +225,55 @@ func TestClient_LogStream(t *testing.T) {
 
 	assert.Equal(t, 1, rpc.SourceCallCount())
 	assert.Equal(t, 0, rpc.AsyncCallCount())
+}
+
+func TestClient_InviteCreate(t *testing.T) {
+	rpc := &muxrpc.FakeEndpoint{
+		AsyncStub: func(ctx context.Context, ret interface{}, enc muxrpc.RequestEncoding, met muxrpc.Method, args ...interface{}) error {
+			assert.NotNil(t, ctx)
+			assert.Equal(t, muxrpc.TypeBinary, enc)
+			assert.Equal(t, "invite.create", met.String())
+			assert.Len(t, args, 1)
+			assert.IsType(t, legacyinvites.CreateArguments{}, args[0])
+			*ret.(*[]byte) = []byte("SomeToken")
+			return nil
+		},
+	}
+	c := &Client{
+		ctx: context.Background(),
+		rpc: rpc,
+	}
+
+	b, err := c.InviteCreate(10)
+
+	require.NoError(t, err)
+	assert.Equal(t, []byte("SomeToken"), b)
+
+	assert.Equal(t, 1, rpc.AsyncCallCount())
+	assert.Equal(t, 0, rpc.SourceCallCount())
+}
+
+func TestClient_InviteAccept(t *testing.T) {
+	rpc := &muxrpc.FakeEndpoint{
+		AsyncStub: func(ctx context.Context, ret interface{}, enc muxrpc.RequestEncoding, met muxrpc.Method, args ...interface{}) error {
+			assert.NotNil(t, ctx)
+			assert.Equal(t, muxrpc.TypeBinary, enc)
+			assert.Equal(t, "invite.accept", met.String())
+			assert.Len(t, args, 1)
+			*ret.(*[]byte) = []byte("OK")
+			return nil
+		},
+	}
+	c := &Client{
+		ctx: context.Background(),
+		rpc: rpc,
+	}
+
+	b, err := c.InviteAccept("TokenToAccept")
+
+	require.NoError(t, err)
+	assert.Equal(t, []byte("OK"), b)
+
+	assert.Equal(t, 1, rpc.AsyncCallCount())
+	assert.Equal(t, 0, rpc.SourceCallCount())
 }
