@@ -111,7 +111,6 @@ type bitfinexTicker struct {
 	Error               error
 }
 
-//nolint:funlen,gocyclo
 func (*Bitfinex) parseTicker(tt []interface{}) bitfinexTicker {
 	var t bitfinexTicker
 	crc := make(map[int]bool)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -37,7 +38,7 @@ func TestLogger(t *testing.T) {
 		want    []want
 		logs    func(l log.Logger)
 	}{
-		// MetchMessage test:
+		// MatchMessage test:
 		{
 			metrics: []Metric{{MatchMessage: regexp.MustCompile("foo"), Name: "test"}},
 			want: []want{
@@ -207,6 +208,18 @@ func TestLogger(t *testing.T) {
 			logs: func(l log.Logger) {
 				l.WithField("val", 1).Info("foo")
 				l.WithField("val", 2).Info("foo")
+			},
+		},
+		// Scale value by 10^2:
+		{
+			metrics: []Metric{
+				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Value: "val", ScalingFunc: func(v float64) float64 { return v / math.Pow(10, 2) }},
+			},
+			want: []want{
+				{name: "a", value: 0.01},
+			},
+			logs: func(l log.Logger) {
+				l.WithField("val", 1).Info("foo")
 			},
 		},
 		// Ignore metrics that uses invalid path in a name:

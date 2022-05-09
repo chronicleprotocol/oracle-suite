@@ -69,7 +69,7 @@ func parseParamsContracts(params json.RawMessage) (origins.ContractAddresses, er
 	return res.Contracts, nil
 }
 
-//nolint:funlen,gocyclo
+//nolint:gocyclo,funlen
 func NewHandler(
 	origin string,
 	wp query.WorkerPool,

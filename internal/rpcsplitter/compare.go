@@ -38,7 +38,7 @@ type comparable interface {
 // implemented.
 //
 // This function DOES NOT work with recursive data structures!
-//nolint:funlen,gocyclo
+//nolint:gocyclo
 func compare(a, b interface{}) bool {
 	if a == nil && b == nil {
 		return true

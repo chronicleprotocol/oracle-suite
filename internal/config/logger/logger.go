@@ -18,10 +18,12 @@ package logger
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
@@ -55,6 +57,7 @@ type grafanaMetric struct {
 	MatchMessage string              `json:"matchMessage"`
 	MatchFields  map[string]string   `json:"matchFields"`
 	Value        string              `json:"value"`
+	ValueScale   string              `json:"valueScale"`
 	Name         string              `json:"name"`
 	Tags         map[string][]string `json:"tags"`
 	OnDuplicate  string              `json:"onDuplicate"`
@@ -105,6 +108,10 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 				return nil, fmt.Errorf("logger config: unknown onDuplicate value: %s", cm.OnDuplicate)
 			}
 
+			if gm.ScalingFunc, err = configureScalingFunc(cm.ValueScale); err != nil {
+				return nil, fmt.Errorf("logger config: %w", err)
+			}
+
 			ms = append(ms, gm)
 		}
 
@@ -139,4 +146,20 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 		})
 
 	return logger, nil
+}
+
+func configureScalingFunc(scale string) (func(v float64) float64, error) {
+	if scale == "" {
+		return nil, nil
+	}
+
+	if strings.HasPrefix(scale, "e") {
+		decimals, err := strconv.ParseFloat(scale[1:], 64)
+		if err != nil {
+			return nil, fmt.Errorf("unparsable scale: %s: %w", scale, err)
+		}
+		return func(v float64) float64 { return v / math.Pow(10, decimals) }, nil
+	}
+
+	return nil, fmt.Errorf("unknown valueScale: %s", scale)
 }

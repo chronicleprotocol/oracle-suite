@@ -72,6 +72,8 @@ type Metric struct {
 	// OnDuplicate specifies how duplicated values in the same interval should
 	// be handled.
 	OnDuplicate OnDuplicate
+	// ScalingFunc defines the function applied to the value before setting it.
+	ScalingFunc func(float64) float64
 }
 
 // New creates a new logger that can extract parameters from log messages and
@@ -304,6 +306,9 @@ func (c *logger) collect(msg string, fields log.Fields) {
 }
 
 func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
+	if m.ScalingFunc != nil {
+		mv.value = m.ScalingFunc(mv.value)
+	}
 	cv, exists := c.metricPoints[mk]
 	switch {
 	case exists && m.OnDuplicate == Replace:

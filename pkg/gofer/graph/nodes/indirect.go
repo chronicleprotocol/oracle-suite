@@ -204,7 +204,6 @@ func (n *IndirectAggregatorNode) Price() AggregatorPrice {
 // is important because prices are calculated from first to last.
 //
 // TODO: Decide what to do with division by zero during calculating Bid/Ask prices.
-//nolint:gocyclo,funlen
 func crossRate(t []PairPrice) (PairPrice, error) {
 	var err error
 
