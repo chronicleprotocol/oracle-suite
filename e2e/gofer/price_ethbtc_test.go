@@ -1,7 +1,6 @@
 package gofere2e
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -109,8 +108,7 @@ func (s *PriceETHBTCE2ESuite) TestPrice3Correct3Invalid() {
 
 	s.Require().NoError(err)
 
-	out, code, err := callGofer("-c", s.ConfigPath, "--norpc", "price", "ETH/BTC")
-	fmt.Println(out)
+	_, code, err := callGofer("-c", s.ConfigPath, "--norpc", "price", "ETH/BTC")
 	s.Require().Error(err)
 	s.Require().Equal(1, code)
 }
