@@ -144,10 +144,8 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 }
 
 func scalingFunc(scale float64) func(v float64) float64 {
-	if scale == 0 {
+	if scale == 0 || scale == 1 {
 		return nil
 	}
-	return func(v float64) float64 {
-		return v * scale
-	}
+	return func(v float64) float64 { return v / scale }
 }
