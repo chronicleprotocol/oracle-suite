@@ -132,6 +132,8 @@ is `config.json` in the current working directory. You can change the config fil
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
+            - `valueScale` (`float`) - Scales the value by the specified number. If it is zero, scaling is not applied (
+              default: 0).
             - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
               options are:
                 - `sum` - Add values.

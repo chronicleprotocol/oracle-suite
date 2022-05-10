@@ -213,7 +213,7 @@ func TestLogger(t *testing.T) {
 		// Scale value by 10^2:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Value: "val", ScalingFunc: func(v float64) float64 { return v / math.Pow(10, 2) }},
+				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Value: "val", TransformFunc: func(v float64) float64 { return v / math.Pow(10, 2) }},
 			},
 			want: []want{
 				{name: "a", value: 0.01},

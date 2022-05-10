@@ -187,6 +187,8 @@ func renderNode(typ string, params []param, err error) []byte {
 // child nodes.
 // The nodes arguments is a initial list of nodes to render.
 // The level is used internally and needs to be always 0.
+//
+//nolint:gocyclo
 func renderTree(printer func(interface{}) ([]byte, []interface{}), nodes []interface{}, level int) []byte {
 	const (
 		first  = "┌──"

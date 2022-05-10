@@ -72,15 +72,15 @@ func TestLogger_Configure(t *testing.T) {
 				},
 				{
 					Name:       "name7",
-					ValueScale: "",
+					ValueScale: 0,
 				},
 				{
 					Name:       "name8",
-					ValueScale: "e2",
+					ValueScale: 1e2,
 				},
 				{
 					Name:       "name9",
-					ValueScale: "e-2",
+					ValueScale: 1e-2,
 				},
 			},
 		},
@@ -103,13 +103,13 @@ func TestLogger_Configure(t *testing.T) {
 		assert.Equal(t, grafana.Replace, cfg.Metrics[4].OnDuplicate)
 		assert.Equal(t, grafana.Replace, cfg.Metrics[5].OnDuplicate)
 
-		assert.Nil(t, cfg.Metrics[6].ScalingFunc)
+		assert.Nil(t, cfg.Metrics[6].TransformFunc)
 
-		assert.NotNil(t, cfg.Metrics[7].ScalingFunc)
-		assert.Equal(t, 0.01, cfg.Metrics[7].ScalingFunc(1))
+		assert.NotNil(t, cfg.Metrics[7].TransformFunc)
+		assert.Equal(t, 100.0, cfg.Metrics[7].TransformFunc(1))
 
-		assert.NotNil(t, cfg.Metrics[8].ScalingFunc)
-		assert.Equal(t, 100.0, cfg.Metrics[8].ScalingFunc(1))
+		assert.NotNil(t, cfg.Metrics[8].TransformFunc)
+		assert.Equal(t, 0.01, cfg.Metrics[8].TransformFunc(1))
 
 		return cfg.Logger
 	}
