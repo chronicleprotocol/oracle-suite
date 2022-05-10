@@ -71,20 +71,20 @@ func TestLogger_Configure(t *testing.T) {
 					OnDuplicate: "",
 				},
 				{
-					Name:       "name7",
-					ValueScale: 0,
+					Name:        "name7",
+					ScaleFactor: 0,
 				},
 				{
-					Name:       "name8",
-					ValueScale: 1,
+					Name:        "name8",
+					ScaleFactor: 1,
 				},
 				{
-					Name:       "name9",
-					ValueScale: 1e2,
+					Name:        "name9",
+					ScaleFactor: 1e-2,
 				},
 				{
-					Name:       "name10",
-					ValueScale: 1e-2,
+					Name:        "name10",
+					ScaleFactor: 1e2,
 				},
 			},
 		},

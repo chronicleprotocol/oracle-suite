@@ -55,7 +55,7 @@ type grafanaMetric struct {
 	MatchMessage string              `json:"matchMessage"`
 	MatchFields  map[string]string   `json:"matchFields"`
 	Value        string              `json:"value"`
-	ValueScale   float64             `json:"valueScale"`
+	ScaleFactor  float64             `json:"scaleFactor"`
 	Name         string              `json:"name"`
 	Tags         map[string][]string `json:"tags"`
 	OnDuplicate  string              `json:"onDuplicate"`
@@ -72,7 +72,7 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 				Value:         cm.Value,
 				Name:          cm.Name,
 				Tags:          cm.Tags,
-				TransformFunc: scalingFunc(cm.ValueScale),
+				TransformFunc: scalingFunc(cm.ScaleFactor),
 			}
 
 			// Compile the regular expression for a message:
@@ -143,9 +143,9 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 	return logger, nil
 }
 
-func scalingFunc(scale float64) func(v float64) float64 {
-	if scale == 0 || scale == 1 {
+func scalingFunc(sf float64) func(v float64) float64 {
+	if sf == 0 || sf == 1 {
 		return nil
 	}
-	return func(v float64) float64 { return v / scale }
+	return func(v float64) float64 { return v * sf }
 }
