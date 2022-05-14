@@ -70,7 +70,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	var sig []publisher.Signer
 	clis := ethClients{}
 	for _, w := range c.Listeners.Wormhole {
-		cli, err := clis.configure(w.RPC)
+		cli, err := clis.configure(w.RPC, d.Logger)
 		if err != nil {
 			return nil, fmt.Errorf("eventpublisher config: %w", err)
 		}
@@ -117,7 +117,7 @@ type ethClients map[string]geth.EthClient
 
 // configure returns an Ethereum client for given RPC endpoints.
 // Returned client will be reused if provided RPCs are the same.
-func (m ethClients) configure(rpc interface{}) (geth.EthClient, error) {
+func (m ethClients) configure(rpc interface{}, logger log.Logger) (geth.EthClient, error) {
 	key, err := json.Marshal(rpc)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (m ethClients) configure(rpc interface{}) (geth.EthClient, error) {
 		return c, nil
 	}
 	e := &ethereumConfig.Ethereum{RPC: rpc}
-	c, err := e.ConfigureRPCClient()
+	c, err := e.ConfigureRPCClient(logger)
 	if err != nil {
 		return nil, err
 	}

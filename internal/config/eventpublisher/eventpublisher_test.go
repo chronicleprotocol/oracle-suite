@@ -66,11 +66,11 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 func Test_ethClients_configure(t *testing.T) {
 	c := &ethClients{}
 
-	c1, err := c.configure("https://example.com/foo")
+	c1, err := c.configure("https://example.com/foo", null.New())
 	require.NoError(t, err)
-	c2, err := c.configure("https://example.com/foo")
+	c2, err := c.configure("https://example.com/foo", null.New())
 	require.NoError(t, err)
-	c3, err := c.configure("https://example.com/bar")
+	c3, err := c.configure("https://example.com/bar", null.New())
 	require.NoError(t, err)
 
 	assert.Same(t, c1, c2)

@@ -18,10 +18,7 @@ package rpcsplitter
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var blockWithHashesResp = json.RawMessage(`
@@ -264,16 +261,18 @@ var getLogs2Resp = json.RawMessage(`
 `)
 
 func Test_RPC_BlockNumber(t *testing.T) {
-	t.Run("median-in-range", func(t *testing.T) {
+	t.Run("in-range", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_blockNumber").
+			setRequirements(2, 2).
 			mockClientCall(0, `0x4`, "eth_blockNumber").
 			mockClientCall(1, `0x5`, "eth_blockNumber").
 			mockClientCall(2, `0x6`, "eth_blockNumber").
 			expectedResult(`0x4`).
 			test()
 	})
-	t.Run("median-outside-range", func(t *testing.T) {
+	t.Run("outside-range", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_blockNumber").
+			setRequirements(2, 1).
 			mockClientCall(0, `0x1`, "eth_blockNumber").
 			mockClientCall(1, `0x5`, "eth_blockNumber").
 			mockClientCall(2, `0x6`, "eth_blockNumber").
@@ -282,6 +281,7 @@ func Test_RPC_BlockNumber(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_blockNumber").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x3`, "eth_blockNumber").
 			mockClientCall(1, `0x4`, "eth_blockNumber").
 			mockClientCall(2, errors.New("error#1"), "eth_blockNumber").
@@ -290,6 +290,7 @@ func Test_RPC_BlockNumber(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_blockNumber").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x3`, "eth_blockNumber").
 			mockClientCall(1, errors.New("error#1"), "eth_blockNumber").
 			mockClientCall(2, errors.New("error#2"), "eth_blockNumber").
@@ -303,6 +304,7 @@ func Test_RPC_GetBlockByHash(t *testing.T) {
 	blockHash := newHash("0xc0f4906fea23cf6f3cce98cb44e8e1449e455b28d684dfa9ff65426495584de6")
 	t.Run("with-hashes", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByHash", blockHash, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
 			mockClientCall(1, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
 			mockClientCall(2, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
@@ -311,6 +313,7 @@ func Test_RPC_GetBlockByHash(t *testing.T) {
 	})
 	t.Run("with-objects", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByHash", blockHash, true).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithObjectsResp, "eth_getBlockByHash", blockHash, true).
 			mockClientCall(1, blockWithObjectsResp, "eth_getBlockByHash", blockHash, true).
 			mockClientCall(2, blockWithObjectsResp, "eth_getBlockByHash", blockHash, true).
@@ -319,6 +322,7 @@ func Test_RPC_GetBlockByHash(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByHash", blockHash, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
 			mockClientCall(1, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
 			mockClientCall(2, errors.New("error#1"), "eth_getBlockByHash", blockHash, false).
@@ -327,6 +331,7 @@ func Test_RPC_GetBlockByHash(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByHash", blockHash, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
 			mockClientCall(1, errors.New("error#1"), "eth_getBlockByHash", blockHash, false).
 			mockClientCall(2, errors.New("error#2"), "eth_getBlockByHash", blockHash, false).
@@ -336,6 +341,7 @@ func Test_RPC_GetBlockByHash(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getBlockByHash", blockHash, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByHash", blockHash, false).
 			mockClientCall(1, blockWithObjectsResp, "eth_getBlockByHash", blockHash, false).
 			expectedError("").
@@ -347,6 +353,7 @@ func Test_RPC_GetBlockByNumber(t *testing.T) {
 	blockNumber := newNumber("0x1e8480")
 	t.Run("with-hashes", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByNumber", blockNumber, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(1, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(2, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
@@ -355,6 +362,7 @@ func Test_RPC_GetBlockByNumber(t *testing.T) {
 	})
 	t.Run("with-objects", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByNumber", blockNumber, true).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithObjectsResp, "eth_getBlockByNumber", blockNumber, true).
 			mockClientCall(1, blockWithObjectsResp, "eth_getBlockByNumber", blockNumber, true).
 			mockClientCall(2, blockWithObjectsResp, "eth_getBlockByNumber", blockNumber, true).
@@ -363,6 +371,7 @@ func Test_RPC_GetBlockByNumber(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByNumber", blockNumber, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(1, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(2, errors.New("error#1"), "eth_getBlockByNumber", blockNumber, false).
@@ -371,6 +380,7 @@ func Test_RPC_GetBlockByNumber(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockByNumber", blockNumber, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(1, errors.New("error#1"), "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(2, errors.New("error#2"), "eth_getBlockByNumber", blockNumber, false).
@@ -380,6 +390,7 @@ func Test_RPC_GetBlockByNumber(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getBlockByNumber", blockNumber, false).
+			setRequirements(2, 10).
 			mockClientCall(0, blockWithHashesResp, "eth_getBlockByNumber", blockNumber, false).
 			mockClientCall(1, blockWithObjectsResp, "eth_getBlockByNumber", blockNumber, false).
 			expectedError("").
@@ -391,6 +402,7 @@ func Test_RPC_GetTransactionByHash(t *testing.T) {
 	txHash := newHash("0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionByHash", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transaction1Resp, "eth_getTransactionByHash", txHash).
 			mockClientCall(1, transaction1Resp, "eth_getTransactionByHash", txHash).
 			mockClientCall(2, transaction1Resp, "eth_getTransactionByHash", txHash).
@@ -399,6 +411,7 @@ func Test_RPC_GetTransactionByHash(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionByHash", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transaction1Resp, "eth_getTransactionByHash", txHash).
 			mockClientCall(1, transaction1Resp, "eth_getTransactionByHash", txHash).
 			mockClientCall(2, errors.New("error#1"), "eth_getTransactionByHash", txHash).
@@ -407,6 +420,7 @@ func Test_RPC_GetTransactionByHash(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionByHash", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transaction1Resp, "eth_getTransactionByHash", txHash).
 			mockClientCall(1, errors.New("error#1"), "eth_getTransactionByHash", txHash).
 			mockClientCall(2, errors.New("error#2"), "eth_getTransactionByHash", txHash).
@@ -416,6 +430,7 @@ func Test_RPC_GetTransactionByHash(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getTransactionByHash", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transaction1Resp, "eth_getTransactionByHash", txHash).
 			mockClientCall(1, transaction2Resp, "eth_getTransactionByHash", txHash).
 			expectedError("").
@@ -428,6 +443,7 @@ func Test_RPC_GetTransactionCount(t *testing.T) {
 	blockNumber := newNumber("0x10")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionCount", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			mockClientCall(1, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			mockClientCall(2, `0x5`, "eth_getTransactionCount", address, blockNumber).
@@ -436,6 +452,7 @@ func Test_RPC_GetTransactionCount(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionCount", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			mockClientCall(1, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			mockClientCall(2, errors.New("error#1"), "eth_getTransactionCount", address, blockNumber).
@@ -444,6 +461,7 @@ func Test_RPC_GetTransactionCount(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionCount", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			mockClientCall(1, errors.New("error#1"), "eth_getTransactionCount", address, blockNumber).
 			mockClientCall(2, errors.New("error#2"), "eth_getTransactionCount", address, blockNumber).
@@ -453,6 +471,7 @@ func Test_RPC_GetTransactionCount(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getTransactionCount", address, newBlockID("latest")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			expectedResult(`0x5`).
@@ -460,6 +479,7 @@ func Test_RPC_GetTransactionCount(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getTransactionCount", address, newBlockID("pending")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, `0x5`, "eth_getTransactionCount", address, blockNumber).
 			expectedResult(`0x5`).
@@ -467,6 +487,7 @@ func Test_RPC_GetTransactionCount(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getTransactionCount", address, newBlockID("earliest")).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
@@ -476,6 +497,7 @@ func Test_RPC_GetTransactionReceipt(t *testing.T) {
 	txHash := newHash("0xab059a62e22e230fe0f56d8555340a29b2e9532360368f810595453f6fdd213b")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionReceipt", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transactionReceipt1Resp, "eth_getTransactionReceipt", txHash).
 			mockClientCall(1, transactionReceipt1Resp, "eth_getTransactionReceipt", txHash).
 			mockClientCall(2, transactionReceipt1Resp, "eth_getTransactionReceipt", txHash).
@@ -484,6 +506,7 @@ func Test_RPC_GetTransactionReceipt(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionReceipt", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transactionReceipt1Resp, "eth_getTransactionReceipt", txHash).
 			mockClientCall(1, transactionReceipt1Resp, "eth_getTransactionReceipt", txHash).
 			mockClientCall(2, errors.New("error#1"), "eth_getTransactionReceipt", txHash).
@@ -492,6 +515,7 @@ func Test_RPC_GetTransactionReceipt(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionReceipt", txHash).
+			setRequirements(2, 10).
 			mockClientCall(0, transactionReceipt1Resp, "eth_getTransactionReceipt", txHash).
 			mockClientCall(1, errors.New("error#1"), "eth_getTransactionReceipt", txHash).
 			mockClientCall(2, errors.New("error#2"), "eth_getTransactionReceipt", txHash).
@@ -504,6 +528,7 @@ func Test_RPC_GetTransactionReceipt(t *testing.T) {
 func Test_RPC_GetBlockTransactionCountByHash(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockTransactionCountByHash").
+			setRequirements(2, 10).
 			expectedError("the method eth_getBlockTransactionCountByHash does not exist").
 			test()
 	})
@@ -512,6 +537,7 @@ func Test_RPC_GetBlockTransactionCountByHash(t *testing.T) {
 func Test_RPC_GetBlockTransactionCountByNumber(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBlockTransactionCountByNumber").
+			setRequirements(2, 10).
 			expectedError("the method eth_getBlockTransactionCountByNumber does not exist").
 			test()
 	})
@@ -520,6 +546,7 @@ func Test_RPC_GetBlockTransactionCountByNumber(t *testing.T) {
 func Test_RPC_GetTransactionByBlockHashAndIndex(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionByBlockHashAndIndex").
+			setRequirements(2, 10).
 			expectedError("the method eth_getTransactionByBlockHashAndIndex does not exist").
 			test()
 	})
@@ -528,6 +555,7 @@ func Test_RPC_GetTransactionByBlockHashAndIndex(t *testing.T) {
 func Test_RPC_GetTransactionByBlockNumberAndIndex(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getTransactionByBlockNumberAndIndex").
+			setRequirements(2, 10).
 			expectedError("the method eth_getTransactionByBlockNumberAndIndex does not exist").
 			test()
 	})
@@ -539,6 +567,7 @@ func Test_RPC_SendRawTransaction(t *testing.T) {
 	txHash2 := newHash("0xc55e2b90168af6972193c1f86fa4d7d7b31a29c156665d15b9cd48618b5177ef")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_sendRawTransaction", txData).
+			setRequirements(2, 10).
 			mockClientCall(0, txHash1, "eth_sendRawTransaction", txData).
 			mockClientCall(1, txHash1, "eth_sendRawTransaction", txData).
 			mockClientCall(2, txHash1, "eth_sendRawTransaction", txData).
@@ -547,6 +576,7 @@ func Test_RPC_SendRawTransaction(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_sendRawTransaction", txData).
+			setRequirements(2, 10).
 			mockClientCall(0, txHash1, "eth_sendRawTransaction", txData).
 			mockClientCall(1, txHash1, "eth_sendRawTransaction", txData).
 			mockClientCall(2, errors.New("error#1"), "eth_sendRawTransaction", txData).
@@ -555,6 +585,7 @@ func Test_RPC_SendRawTransaction(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_sendRawTransaction", txData).
+			setRequirements(2, 10).
 			mockClientCall(0, txHash1, "eth_sendRawTransaction", txData).
 			mockClientCall(1, errors.New("error#1"), "eth_sendRawTransaction", txData).
 			mockClientCall(2, errors.New("error#2"), "eth_sendRawTransaction", txData).
@@ -564,6 +595,7 @@ func Test_RPC_SendRawTransaction(t *testing.T) {
 	})
 	t.Run("all-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_sendRawTransaction", txData).
+			setRequirements(2, 10).
 			mockClientCall(0, errors.New("error#1"), "eth_sendRawTransaction", txData).
 			mockClientCall(1, errors.New("error#2"), "eth_sendRawTransaction", txData).
 			mockClientCall(2, errors.New("error#3"), "eth_sendRawTransaction", txData).
@@ -574,6 +606,7 @@ func Test_RPC_SendRawTransaction(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_sendRawTransaction", txData).
+			setRequirements(2, 10).
 			mockClientCall(0, txHash1, "eth_sendRawTransaction", txData).
 			mockClientCall(1, txHash2, "eth_sendRawTransaction", txData).
 			expectedError("").
@@ -587,6 +620,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	blockNumber := newNumber("0x10")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBalance", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, balance, "eth_getBalance", address, blockNumber).
 			mockClientCall(1, balance, "eth_getBalance", address, blockNumber).
 			mockClientCall(2, balance, "eth_getBalance", address, blockNumber).
@@ -595,6 +629,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBalance", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, balance, "eth_getBalance", address, blockNumber).
 			mockClientCall(1, balance, "eth_getBalance", address, blockNumber).
 			mockClientCall(2, errors.New("error#1"), "eth_getBalance", address, blockNumber).
@@ -603,6 +638,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getBalance", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, balance, "eth_getBalance", address, blockNumber).
 			mockClientCall(1, errors.New("error#1"), "eth_getBalance", address, blockNumber).
 			mockClientCall(2, errors.New("error#2"), "eth_getBalance", address, blockNumber).
@@ -612,6 +648,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getBalance", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, newNumber("0x100000000000"), "eth_getBalance", address, blockNumber).
 			mockClientCall(1, newNumber("0x100000000001"), "eth_getBalance", address, blockNumber).
 			expectedError("").
@@ -619,6 +656,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getBalance", address, newBlockID("latest")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, balance, "eth_getBalance", address, blockNumber).
 			expectedResult(balance).
@@ -626,6 +664,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getBalance", address, newBlockID("pending")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, balance, "eth_getBalance", address, blockNumber).
 			expectedResult(balance).
@@ -633,6 +672,7 @@ func Test_RPC_GetBalance(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getBalance", address, newBlockID("earliest")).
+			setRequirements(2, 10).
 			expectedError("").
 			test()
 	})
@@ -645,6 +685,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	blockNumber := newNumber("0x10")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getCode", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, code1, "eth_getCode", address, blockNumber).
 			mockClientCall(1, code1, "eth_getCode", address, blockNumber).
 			mockClientCall(2, code1, "eth_getCode", address, blockNumber).
@@ -653,6 +694,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getCode", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, code1, "eth_getCode", address, blockNumber).
 			mockClientCall(1, code1, "eth_getCode", address, blockNumber).
 			mockClientCall(2, errors.New("error#1"), "eth_getCode", address, blockNumber).
@@ -661,6 +703,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getCode", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, code1, "eth_getCode", address, blockNumber).
 			mockClientCall(1, errors.New("error#1"), "eth_getCode", address, blockNumber).
 			mockClientCall(2, errors.New("error#2"), "eth_getCode", address, blockNumber).
@@ -670,6 +713,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getCode", address, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, code1, "eth_getCode", address, blockNumber).
 			mockClientCall(1, code2, "eth_getCode", address, blockNumber).
 			expectedError("").
@@ -677,6 +721,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getCode", address, newBlockID("latest")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, code1, "eth_getCode", address, blockNumber).
 			expectedResult(code1).
@@ -684,6 +729,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getCode", address, newBlockID("pending")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, code1, "eth_getCode", address, blockNumber).
 			expectedResult(code1).
@@ -691,6 +737,7 @@ func Test_RPC_GetCode(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getBalance", address, newBlockID("earliest")).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
@@ -704,6 +751,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	storageHash2 := newHash("0x0000000000000000000000000000000000000000000000000000000000000200")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getStorageAt", address, position, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(1, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(2, storageHash1, "eth_getStorageAt", address, position, blockNumber).
@@ -712,6 +760,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getStorageAt", address, position, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(1, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(2, errors.New("error#1"), "eth_getStorageAt", address, position, blockNumber).
@@ -720,6 +769,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getStorageAt", address, position, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(1, errors.New("error#1"), "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(2, errors.New("error#2"), "eth_getStorageAt", address, position, blockNumber).
@@ -729,6 +779,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getStorageAt", address, position, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			mockClientCall(1, storageHash2, "eth_getStorageAt", address, position, blockNumber).
 			expectedError("").
@@ -736,6 +787,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getStorageAt", address, position, newBlockID("latest")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			expectedResult(storageHash1).
@@ -743,6 +795,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getStorageAt", address, position, newBlockID("pending")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, storageHash1, "eth_getStorageAt", address, position, blockNumber).
 			expectedResult(storageHash1).
@@ -750,6 +803,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getBalance", address, position, newBlockID("earliest")).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
@@ -758,6 +812,7 @@ func Test_RPC_GetStorageAt(t *testing.T) {
 func Test_RPC_Accounts(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_accounts").
+			setRequirements(1, 10).
 			expectedError("the method eth_accounts does not exist").
 			test()
 	})
@@ -766,6 +821,7 @@ func Test_RPC_Accounts(t *testing.T) {
 func Test_RPC_GetProof(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getProof").
+			setRequirements(1, 10).
 			expectedError("the method eth_getProof does not exist").
 			test()
 	})
@@ -787,6 +843,7 @@ func Test_RPC_Call(t *testing.T) {
 	callRes2 := newBytes("0x02")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_call", call, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, callRes1, "eth_call", call, blockNumber).
 			mockClientCall(1, callRes1, "eth_call", call, blockNumber).
 			mockClientCall(2, callRes1, "eth_call", call, blockNumber).
@@ -795,6 +852,7 @@ func Test_RPC_Call(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_call", call, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, callRes1, "eth_call", call, blockNumber).
 			mockClientCall(1, callRes1, "eth_call", call, blockNumber).
 			mockClientCall(2, errors.New("error#1"), "eth_call", call, blockNumber).
@@ -803,6 +861,7 @@ func Test_RPC_Call(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_call", call, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, callRes1, "eth_call", call, blockNumber).
 			mockClientCall(1, errors.New("error#1"), "eth_call", call, blockNumber).
 			mockClientCall(2, errors.New("error#2"), "eth_call", call, blockNumber).
@@ -812,6 +871,7 @@ func Test_RPC_Call(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_call", call, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, callRes1, "eth_call", call, blockNumber).
 			mockClientCall(1, callRes2, "eth_call", call, blockNumber).
 			expectedError("").
@@ -819,6 +879,7 @@ func Test_RPC_Call(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_call", call, newBlockID("latest")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, callRes1, "eth_call", call, blockNumber).
 			expectedResult(callRes1).
@@ -826,6 +887,7 @@ func Test_RPC_Call(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_call", call, newBlockID("pending")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, callRes1, "eth_call", call, blockNumber).
 			expectedResult(callRes1).
@@ -833,6 +895,7 @@ func Test_RPC_Call(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_call", call, newBlockID("earliest")).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
@@ -872,6 +935,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 	}
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getLogs", filter).
+			setRequirements(2, 10).
 			mockClientCall(0, getLogs1Resp, "eth_getLogs", filter).
 			mockClientCall(1, getLogs1Resp, "eth_getLogs", filter).
 			mockClientCall(2, getLogs1Resp, "eth_getLogs", filter).
@@ -880,6 +944,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getLogs", filter).
+			setRequirements(2, 10).
 			mockClientCall(0, getLogs1Resp, "eth_getLogs", filter).
 			mockClientCall(1, getLogs1Resp, "eth_getLogs", filter).
 			mockClientCall(2, errors.New("error#1"), "eth_getLogs", filter).
@@ -888,6 +953,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_getLogs", filter).
+			setRequirements(2, 10).
 			mockClientCall(0, getLogs1Resp, "eth_getLogs", filter).
 			mockClientCall(1, errors.New("error#1"), "eth_getLogs", filter).
 			mockClientCall(2, errors.New("error#2"), "eth_getLogs", filter).
@@ -897,6 +963,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_getLogs", filter).
+			setRequirements(2, 10).
 			mockClientCall(0, getLogs1Resp, "eth_getLogs", filter).
 			mockClientCall(1, getLogs2Resp, "eth_getLogs", filter).
 			expectedError("").
@@ -907,6 +974,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 		f.FromBlock = newBlockID("0x5")
 		f.ToBlock = newBlockID("0x6")
 		prepareHandlerTest(t, 1, "eth_getLogs", filterLatest).
+			setRequirements(1, 10).
 			mockClientCall(0, newBlockID("0x5"), "eth_blockNumber").
 			mockClientCall(0, newBlockID("0x6"), "eth_blockNumber").
 			mockClientCall(0, getLogs1Resp, "eth_getLogs", f).
@@ -918,6 +986,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 		f.FromBlock = newBlockID("0x5")
 		f.ToBlock = newBlockID("0x6")
 		prepareHandlerTest(t, 1, "eth_getLogs", filterPending).
+			setRequirements(1, 10).
 			mockClientCall(0, newBlockID("0x5"), "eth_blockNumber").
 			mockClientCall(0, newBlockID("0x6"), "eth_blockNumber").
 			mockClientCall(0, getLogs1Resp, "eth_getLogs", f).
@@ -926,6 +995,7 @@ func Test_RPC_GetLogs(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getLogs", filterEarliest).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
@@ -934,30 +1004,52 @@ func Test_RPC_GetLogs(t *testing.T) {
 func Test_RPC_ProtocolVersion(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_protocolVersion").
+			setRequirements(2, 10).
 			expectedError("the method eth_protocolVersion does not exist").
 			test()
 	})
 }
 
 func Test_RPC_GasPrice(t *testing.T) {
-	t.Run("simple", func(t *testing.T) {
+	t.Run("four-responses", func(t *testing.T) {
+		prepareHandlerTest(t, 4, "eth_gasPrice").
+			setRequirements(3, 10).
+			mockClientCall(0, `0x1`, "eth_gasPrice").
+			mockClientCall(1, `0x5`, "eth_gasPrice").
+			mockClientCall(2, `0x7`, "eth_gasPrice").
+			mockClientCall(3, `0x8`, "eth_gasPrice").
+			expectedResult(`0x6`).
+			test()
+	})
+	t.Run("three-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_gasPrice").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_gasPrice").
 			mockClientCall(1, `0x5`, "eth_gasPrice").
 			mockClientCall(2, `0x6`, "eth_gasPrice").
 			expectedResult(`0x5`).
 			test()
 	})
+	t.Run("two-responses", func(t *testing.T) {
+		prepareHandlerTest(t, 2, "eth_gasPrice").
+			setRequirements(2, 10).
+			mockClientCall(0, `0x4`, "eth_gasPrice").
+			mockClientCall(1, `0x2`, "eth_gasPrice").
+			expectedResult(`0x2`).
+			test()
+	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_gasPrice").
-			mockClientCall(0, `0x3`, "eth_gasPrice").
+			setRequirements(2, 10).
+			mockClientCall(0, `0x2`, "eth_gasPrice").
 			mockClientCall(1, `0x4`, "eth_gasPrice").
 			mockClientCall(2, errors.New("error#1"), "eth_gasPrice").
-			expectedResult(`0x3`).
+			expectedResult(`0x2`).
 			test()
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_gasPrice").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x3`, "eth_gasPrice").
 			mockClientCall(1, errors.New("error#1"), "eth_gasPrice").
 			mockClientCall(2, errors.New("error#2"), "eth_gasPrice").
@@ -979,24 +1071,45 @@ func Test_RPC_EstimateGas(t *testing.T) {
 		}
 	`)
 	blockNumber := newNumber("0x10")
-	t.Run("simple", func(t *testing.T) {
+	t.Run("four-responses", func(t *testing.T) {
+		prepareHandlerTest(t, 4, "eth_estimateGas", call, blockNumber).
+			setRequirements(3, 10).
+			mockClientCall(0, `0x1`, "eth_estimateGas", call, blockNumber).
+			mockClientCall(1, `0x5`, "eth_estimateGas", call, blockNumber).
+			mockClientCall(2, `0x7`, "eth_estimateGas", call, blockNumber).
+			mockClientCall(3, `0x8`, "eth_estimateGas", call, blockNumber).
+			expectedResult(`0x6`).
+			test()
+	})
+	t.Run("three-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_estimateGas", call, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_estimateGas", call, blockNumber).
 			mockClientCall(1, `0x5`, "eth_estimateGas", call, blockNumber).
 			mockClientCall(2, `0x6`, "eth_estimateGas", call, blockNumber).
 			expectedResult(`0x5`).
 			test()
 	})
+	t.Run("two-responses", func(t *testing.T) {
+		prepareHandlerTest(t, 2, "eth_estimateGas", call, blockNumber).
+			setRequirements(2, 10).
+			mockClientCall(0, `0x2`, "eth_estimateGas", call, blockNumber).
+			mockClientCall(1, `0x4`, "eth_estimateGas", call, blockNumber).
+			expectedResult(`0x2`).
+			test()
+	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_estimateGas", call, blockNumber).
-			mockClientCall(0, `0x3`, "eth_estimateGas", call, blockNumber).
+			setRequirements(2, 10).
+			mockClientCall(0, `0x2`, "eth_estimateGas", call, blockNumber).
 			mockClientCall(1, `0x4`, "eth_estimateGas", call, blockNumber).
 			mockClientCall(2, errors.New("error#1"), "eth_estimateGas", call, blockNumber).
-			expectedResult(`0x3`).
+			expectedResult(`0x2`).
 			test()
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_estimateGas", call, blockNumber).
+			setRequirements(2, 10).
 			mockClientCall(0, `0x3`, "eth_estimateGas", call, blockNumber).
 			mockClientCall(1, errors.New("error#1"), "eth_estimateGas", call, blockNumber).
 			mockClientCall(2, errors.New("error#2"), "eth_estimateGas", call, blockNumber).
@@ -1006,6 +1119,7 @@ func Test_RPC_EstimateGas(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_estimateGas", call, newBlockID("latest")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, `0x4`, "eth_estimateGas", call, blockNumber).
 			expectedResult(`0x4`).
@@ -1013,6 +1127,7 @@ func Test_RPC_EstimateGas(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_estimateGas", call, newBlockID("pending")).
+			setRequirements(1, 10).
 			mockClientCall(0, blockNumber, "eth_blockNumber").
 			mockClientCall(0, `0x4`, "eth_estimateGas", call, blockNumber).
 			expectedResult(`0x4`).
@@ -1020,6 +1135,7 @@ func Test_RPC_EstimateGas(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_estimateGas", call, newBlockID("earliest")).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
@@ -1031,6 +1147,7 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	percentiles := newJSON("[25, 75]")
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_feeHistory", blockCount, newestBlock, percentiles).
+			setRequirements(2, 10).
 			mockClientCall(0, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(1, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(2, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
@@ -1039,6 +1156,7 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_feeHistory", blockCount, newestBlock, percentiles).
+			setRequirements(2, 10).
 			mockClientCall(0, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(1, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(2, errors.New("error#1"), "eth_feeHistory", blockCount, newestBlock, percentiles).
@@ -1047,6 +1165,7 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_feeHistory", blockCount, newestBlock, percentiles).
+			setRequirements(2, 10).
 			mockClientCall(0, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(1, errors.New("error#1"), "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(2, errors.New("error#2"), "eth_feeHistory", blockCount, newestBlock, percentiles).
@@ -1056,6 +1175,7 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_feeHistory", blockCount, newestBlock, percentiles).
+			setRequirements(2, 10).
 			mockClientCall(0, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			mockClientCall(1, feeHistory2Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			expectedError("").
@@ -1063,6 +1183,7 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	})
 	t.Run("latest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_feeHistory", blockCount, newBlockID("latest"), percentiles).
+			setRequirements(1, 10).
 			mockClientCall(0, newestBlock, "eth_blockNumber").
 			mockClientCall(0, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			expectedResult(feeHistory1Resp).
@@ -1070,6 +1191,7 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	})
 	t.Run("pending-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_feeHistory", blockCount, newBlockID("pending"), percentiles).
+			setRequirements(1, 10).
 			mockClientCall(0, newestBlock, "eth_blockNumber").
 			mockClientCall(0, feeHistory1Resp, "eth_feeHistory", blockCount, newestBlock, percentiles).
 			expectedResult(feeHistory1Resp).
@@ -1077,30 +1199,52 @@ func Test_RPC_FeeHistory(t *testing.T) {
 	})
 	t.Run("earliest-block", func(t *testing.T) {
 		prepareHandlerTest(t, 1, "eth_getBalance", blockCount, newBlockID("earliest"), percentiles).
+			setRequirements(1, 10).
 			expectedError("").
 			test()
 	})
 }
 
 func Test_RPC_MaxPriorityFeePerGas(t *testing.T) {
-	t.Run("simple", func(t *testing.T) {
+	t.Run("four-responses", func(t *testing.T) {
+		prepareHandlerTest(t, 4, "eth_maxPriorityFeePerGas").
+			setRequirements(3, 10).
+			mockClientCall(0, `0x1`, "eth_maxPriorityFeePerGas").
+			mockClientCall(1, `0x5`, "eth_maxPriorityFeePerGas").
+			mockClientCall(2, `0x7`, "eth_maxPriorityFeePerGas").
+			mockClientCall(3, `0x8`, "eth_maxPriorityFeePerGas").
+			expectedResult(`0x6`).
+			test()
+	})
+	t.Run("three-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_maxPriorityFeePerGas").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_maxPriorityFeePerGas").
 			mockClientCall(1, `0x5`, "eth_maxPriorityFeePerGas").
 			mockClientCall(2, `0x6`, "eth_maxPriorityFeePerGas").
 			expectedResult(`0x5`).
 			test()
 	})
+	t.Run("two-responses", func(t *testing.T) {
+		prepareHandlerTest(t, 2, "eth_maxPriorityFeePerGas").
+			setRequirements(2, 10).
+			mockClientCall(0, `0x2`, "eth_maxPriorityFeePerGas").
+			mockClientCall(1, `0x4`, "eth_maxPriorityFeePerGas").
+			expectedResult(`0x2`).
+			test()
+	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_maxPriorityFeePerGas").
-			mockClientCall(0, `0x3`, "eth_maxPriorityFeePerGas").
+			setRequirements(2, 10).
+			mockClientCall(0, `0x2`, "eth_maxPriorityFeePerGas").
 			mockClientCall(1, `0x4`, "eth_maxPriorityFeePerGas").
 			mockClientCall(2, errors.New("error#1"), "eth_maxPriorityFeePerGas").
-			expectedResult(`0x3`).
+			expectedResult(`0x2`).
 			test()
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_maxPriorityFeePerGas").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x3`, "eth_maxPriorityFeePerGas").
 			mockClientCall(1, errors.New("error#1"), "eth_maxPriorityFeePerGas").
 			mockClientCall(2, errors.New("error#2"), "eth_maxPriorityFeePerGas").
@@ -1113,6 +1257,7 @@ func Test_RPC_MaxPriorityFeePerGas(t *testing.T) {
 func Test_RPC_ChainId(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_chainId").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_chainId").
 			mockClientCall(1, `0x1`, "eth_chainId").
 			mockClientCall(2, `0x1`, "eth_chainId").
@@ -1121,6 +1266,7 @@ func Test_RPC_ChainId(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_chainId").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_chainId").
 			mockClientCall(1, `0x1`, "eth_chainId").
 			mockClientCall(2, errors.New("error#1"), "eth_chainId").
@@ -1129,6 +1275,7 @@ func Test_RPC_ChainId(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "eth_chainId").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_chainId").
 			mockClientCall(1, errors.New("error#1"), "eth_chainId").
 			mockClientCall(2, errors.New("error#2"), "eth_chainId").
@@ -1138,6 +1285,7 @@ func Test_RPC_ChainId(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "eth_chainId").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "eth_chainId").
 			mockClientCall(1, `0x2`, "eth_chainId").
 			expectedError("").
@@ -1148,6 +1296,7 @@ func Test_RPC_ChainId(t *testing.T) {
 func Test_RPC_Version(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "net_version").
+			setRequirements(2, 10).
 			mockClientCall(0, 1, "net_version").
 			mockClientCall(1, 1, "net_version").
 			mockClientCall(2, 1, "net_version").
@@ -1156,6 +1305,7 @@ func Test_RPC_Version(t *testing.T) {
 	})
 	t.Run("one-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "net_version").
+			setRequirements(2, 10).
 			mockClientCall(0, 1, "net_version").
 			mockClientCall(1, 1, "net_version").
 			mockClientCall(2, errors.New("error#1"), "net_version").
@@ -1164,6 +1314,7 @@ func Test_RPC_Version(t *testing.T) {
 	})
 	t.Run("two-failed", func(t *testing.T) {
 		prepareHandlerTest(t, 3, "net_version").
+			setRequirements(2, 10).
 			mockClientCall(0, 1, "net_version").
 			mockClientCall(1, errors.New("error#1"), "net_version").
 			mockClientCall(2, errors.New("error#2"), "net_version").
@@ -1173,6 +1324,7 @@ func Test_RPC_Version(t *testing.T) {
 	})
 	t.Run("different-responses", func(t *testing.T) {
 		prepareHandlerTest(t, 2, "net_version").
+			setRequirements(2, 10).
 			mockClientCall(0, `0x1`, "net_version").
 			mockClientCall(1, `0x2`, "net_version").
 			expectedError("").
@@ -1180,6 +1332,7 @@ func Test_RPC_Version(t *testing.T) {
 	})
 }
 
+/*
 func Test_useMostCommon(t *testing.T) {
 	tests := []struct {
 		in      []interface{}
@@ -1355,7 +1508,7 @@ func Test_useMedian(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			got, err := useMedian(tt.in, tt.minReq)
+			got, err := useMedianConsensusFunc(tt.in, tt.minReq)
 			if tt.wantErr {
 				assert.Error(t, err)
 				for _, i := range tt.in {
@@ -1448,7 +1601,7 @@ func Test_useMedianDist(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			got, err := useMedianDist(tt.in, tt.minReq, tt.dist)
+			got, err := useMedianDistConsensusFunc(tt.in, tt.minReq, tt.dist)
 			if tt.wantErr {
 				assert.Error(t, err)
 				for _, i := range tt.in {
@@ -1463,3 +1616,5 @@ func Test_useMedianDist(t *testing.T) {
 		})
 	}
 }
+
+*/

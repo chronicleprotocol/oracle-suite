@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -28,22 +29,28 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/internal/rpcsplitter"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 const splitterVirtualHost = "makerdao-splitter"
-const splitterDefaultTimeoutSec = 9 // This is lower than the "upper level" default of 10s, i.e. within Gofer
+const splitterDefaultTimeoutSec = 10
 
-var ethClientFactory = func(endpoints []string) (geth.EthClient, error) {
+var ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (geth.EthClient, error) {
+	// In theory, we don't need to use RPC-Splitter for a single endpoint, but
+	// to make the application behavior consistent we use it.
 	switch len(endpoints) {
 	case 0:
 		return nil, errors.New("missing address to a RPC client in the configuration file")
-	case 1:
-		return ethclient.Dial(endpoints[0])
 	default:
-		// TODO(jamesr): get splitter timeout from config, not hard coded
-		// TODO: pass logger
-		splitter, err := rpcsplitter.NewTransport(endpoints, splitterDefaultTimeoutSec, splitterVirtualHost, nil, null.New())
+		splitter, err := rpcsplitter.NewTransport(
+			splitterVirtualHost,
+			nil,
+			rpcsplitter.WithEndpoints(endpoints),
+			rpcsplitter.WithTotalTimeout(timeout),
+			rpcsplitter.WithGracefulTimeout(gracefulTimeout),
+			rpcsplitter.WithRequirements(minimumRequiredResponses(len(endpoints)), maxBlocksBehind),
+			rpcsplitter.WithLogger(logger),
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -59,10 +66,13 @@ var ethClientFactory = func(endpoints []string) (geth.EthClient, error) {
 }
 
 type Ethereum struct {
-	From     string      `json:"from"`
-	Keystore string      `json:"keystore"`
-	Password string      `json:"password"`
-	RPC      interface{} `json:"rpc"`
+	From            string      `json:"from"`
+	Keystore        string      `json:"keystore"`
+	Password        string      `json:"password"`
+	RPC             interface{} `json:"rpc"`
+	Timeout         int         `json:"timeout"`
+	GracefulTimeout int         `json:"gracefulTimeout"`
+	MaxBlocksBehind int         `json:"maxBlocksBehind"`
 }
 
 func (c *Ethereum) ConfigureSigner() (ethereum.Signer, error) {
@@ -73,7 +83,7 @@ func (c *Ethereum) ConfigureSigner() (ethereum.Signer, error) {
 	return geth.NewSigner(account), nil
 }
 
-func (c *Ethereum) ConfigureRPCClient() (geth.EthClient, error) {
+func (c *Ethereum) ConfigureRPCClient(logger log.Logger) (geth.EthClient, error) {
 	var endpoints []string
 	switch v := c.RPC.(type) {
 	case string:
@@ -88,11 +98,38 @@ func (c *Ethereum) ConfigureRPCClient() (geth.EthClient, error) {
 	if len(endpoints) == 0 {
 		return nil, errors.New("value of the RPC key must be string or array of strings")
 	}
-	return ethClientFactory(endpoints)
+	timeout := c.Timeout
+	if c.Timeout == 0 {
+		timeout = 10
+	}
+	if c.Timeout < 1 {
+		timeout = 1
+	}
+	gracefulTimeout := c.GracefulTimeout
+	if c.GracefulTimeout == 0 {
+		gracefulTimeout = 1
+	}
+	if c.GracefulTimeout < 1 {
+		gracefulTimeout = 1
+	}
+	maxBlocksBehind := c.MaxBlocksBehind
+	if c.MaxBlocksBehind == 0 {
+		maxBlocksBehind = 10
+	}
+	if c.MaxBlocksBehind < 0 {
+		maxBlocksBehind = 0
+	}
+	return ethClientFactory(
+		endpoints,
+		time.Second*time.Duration(timeout),
+		time.Second*time.Duration(gracefulTimeout),
+		maxBlocksBehind,
+		logger,
+	)
 }
 
-func (c *Ethereum) ConfigureEthereumClient(signer ethereum.Signer) (*geth.Client, error) {
-	client, err := c.ConfigureRPCClient()
+func (c *Ethereum) ConfigureEthereumClient(signer ethereum.Signer, logger log.Logger) (*geth.Client, error) {
+	client, err := c.ConfigureRPCClient(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -123,4 +160,11 @@ func (c *Ethereum) readAccountPassphrase(path string) (string, error) {
 		return "", fmt.Errorf("failed to read Ethereum password file: %w", err)
 	}
 	return strings.TrimSuffix(string(passphrase), "\n"), nil
+}
+
+func minimumRequiredResponses(endpoints int) int {
+	if endpoints < 2 {
+		return endpoints
+	}
+	return endpoints - 1
 }

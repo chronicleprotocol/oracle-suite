@@ -61,7 +61,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil) // signer may be empty here
+	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log) // signer may be empty here
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}

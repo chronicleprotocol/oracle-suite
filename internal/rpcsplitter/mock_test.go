@@ -27,8 +27,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 type rpcReq struct {
@@ -89,30 +87,39 @@ func (c *mockClient) CallContext(ctx context.Context, result interface{}, method
 
 	// Message is marshalled and unmarshalled to verify, if marshalling is
 	// implemented correctly.
-	return json.Unmarshal(jsonMarshal(c.t, call.result), &result)
+	return json.Unmarshal(jsonMarshal(c.t, call.result), result)
 }
 
 type handlerTester struct {
 	t *testing.T
 
-	clients   []rpcClient
-	expResult interface{}
-	expMethod string
-	expParams []interface{}
-	expErrors []string
+	clients         []caller
+	minResponses    int
+	maxBlocksBehind int
+	expResult       interface{}
+	expMethod       string
+	expParams       []interface{}
+	expErrors       []string
 }
 
 func prepareHandlerTest(t *testing.T, clients int, method string, params ...interface{}) *handlerTester {
-	var cli []rpcClient
+	var callers []caller
 	for i := 0; i < clients; i++ {
-		cli = append(cli, rpcClient{rpcCaller: &mockClient{t: t}, endpoint: fmt.Sprintf("#%d", i)})
+		callers = append(callers, &mockClient{t: t})
 	}
-	return &handlerTester{t: t, clients: cli, expMethod: method, expParams: params}
+	return &handlerTester{t: t, clients: callers, expMethod: method, expParams: params}
 }
 
 // mockClientCall mocks call on n client.
 func (t *handlerTester) mockClientCall(n int, response interface{}, method string, params ...interface{}) *handlerTester {
-	t.clients[n].rpcCaller.(*mockClient).mockCall(response, method, params...)
+	t.clients[n].(*mockClient).mockCall(response, method, params...)
+	return t
+}
+
+// setRequirements is an equivalent of WithRequirements option.
+func (t *handlerTester) setRequirements(minResponses, maxBlocksBehind int) *handlerTester {
+	t.minResponses = minResponses
+	t.maxBlocksBehind = maxBlocksBehind
 	return t
 }
 
@@ -130,8 +137,12 @@ func (t *handlerTester) expectedError(msg string) *handlerTester {
 }
 
 func (t *handlerTester) test() {
-	// Prepare handler.
-	h, err := newHandlerWithClients(t.clients, 10, null.New())
+	// Prepare server.
+	callers := map[string]caller{}
+	for n, c := range t.clients {
+		callers[fmt.Sprintf("%d", n)] = c
+	}
+	h, err := NewServer(withCallers(callers), WithRequirements(t.minResponses, t.maxBlocksBehind))
 	require.NoError(t.t, err)
 
 	// Prepare request.
