@@ -486,7 +486,14 @@ func (s *server) taggedBlockToNumber(ctx context.Context, blockID blockIDType) (
 //
 // The typ argument must be an empty pointer with a type to which the results
 // will be converted.
-func (s *server) call(ctx context.Context, resolver resolver, result interface{}, method string, args ...interface{}) error {
+func (s *server) call(
+	ctx context.Context,
+	resolver resolver,
+	result interface{},
+	method string,
+	args ...interface{},
+) error {
+
 	if reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return fmt.Errorf("call result parameter must be pointer")
 	}

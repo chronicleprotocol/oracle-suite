@@ -33,9 +33,15 @@ import (
 )
 
 const splitterVirtualHost = "makerdao-splitter"
-const splitterDefaultTimeoutSec = 10
 
-var ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (geth.EthClient, error) {
+var ethClientFactory = func(
+	endpoints []string,
+	timeout,
+	gracefulTimeout time.Duration,
+	maxBlocksBehind int,
+	logger log.Logger,
+) (geth.EthClient, error) {
+
 	// In theory, we don't need to use RPC-Splitter for a single endpoint, but
 	// to make the application behavior consistent we use it.
 	switch len(endpoints) {

@@ -6,8 +6,8 @@ import (
 	"sort"
 )
 
-var notEnoughResponsesErr = errors.New("not enough responses from RPC servers")
-var differentResponsesErr = errors.New("RPC servers returned different responses")
+var errNotEnoughResponses = errors.New("not enough responses from RPC servers")
+var errDifferentResponses = errors.New("RPC servers returned different responses")
 
 type resolver interface {
 	resolve([]interface{}) (interface{}, error)
@@ -19,7 +19,7 @@ type defaultResolver struct {
 
 func (c *defaultResolver) resolve(crs []interface{}) (interface{}, error) {
 	if len(crs) < c.minResponses {
-		return nil, addError(notEnoughResponsesErr, collectErrors(crs)...)
+		return nil, addError(errNotEnoughResponses, collectErrors(crs)...)
 	}
 	if len(crs) == 1 {
 		return crs[0], nil
@@ -54,7 +54,7 @@ func (c *defaultResolver) resolve(crs []interface{}) (interface{}, error) {
 	}
 	// Check if there are enough occurrences of the most common item.
 	if maxOccurs < c.minResponses {
-		return nil, addError(differentResponsesErr, collectErrors(crs)...)
+		return nil, addError(errDifferentResponses, collectErrors(crs)...)
 	}
 	// Find the item with the maximum number of occurrences.
 	var res interface{}
@@ -64,7 +64,7 @@ func (c *defaultResolver) resolve(crs []interface{}) (interface{}, error) {
 				// If res is not nil it means, that there are multiple items
 				// that occurred maxOccurs times. In this case, we cannot
 				// determine which one should be chosen.
-				return nil, addError(notEnoughResponsesErr, collectErrors(crs)...)
+				return nil, addError(errNotEnoughResponses, collectErrors(crs)...)
 			}
 			res = cr
 		}
@@ -79,7 +79,7 @@ type gasValueResolver struct {
 func (c *gasValueResolver) resolve(crs []interface{}) (interface{}, error) {
 	ns := filterByNumberType(crs)
 	if len(ns) < c.minResponses {
-		return nil, addError(notEnoughResponsesErr, collectErrors(crs)...)
+		return nil, addError(errNotEnoughResponses, collectErrors(crs)...)
 	}
 	if len(ns) == 1 {
 		return crs[0], nil
@@ -113,7 +113,7 @@ type blockNumberResolver struct {
 func (c *blockNumberResolver) resolve(crs []interface{}) (interface{}, error) {
 	ns := filterByNumberType(crs)
 	if len(ns) < c.minResponses {
-		return nil, addError(notEnoughResponsesErr, collectErrors(crs)...)
+		return nil, addError(errNotEnoughResponses, collectErrors(crs)...)
 	}
 	if len(ns) == 1 {
 		return ns[0], nil
