@@ -80,6 +80,9 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		AppName:    "gofer",
 		BaseLogger: opts.Logger(),
 	})
+	if err != nil {
+		return nil, fmt.Errorf(`config error: %w`, err)
+	}
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log)
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
