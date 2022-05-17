@@ -31,7 +31,7 @@ type Transport struct {
 }
 
 // NewTransport returns a new instance of Transport.
-func NewTransport(vhost string, transport http.RoundTripper, opts ...Options) (*Transport, error) {
+func NewTransport(vhost string, transport http.RoundTripper, opts ...Option) (*Transport, error) {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}

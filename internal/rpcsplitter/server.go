@@ -45,10 +45,15 @@ type server struct {
 	net *rpcNETAPI      // net implements procedures with the "net_" prefix.
 	log log.Logger
 
-	callers         map[string]caller
+	// List of endpoint callers.
+	callers map[string]caller
+	// Total timeout for all endpoints.
+	totalTimeout time.Duration
+	// Timeout for slower endpoints, when it exceeds, request will be canceled
+	// if there is enough responses.
 	gracefulTimeout time.Duration
-	totalTimeout    time.Duration // timeout for all endpoints in cli.
 
+	// Resolvers used to convert multiple responses into a single response:
 	defaultResolver     *defaultResolver
 	gasValueResolver    *gasValueResolver
 	blockNumberResolver *blockNumberResolver
@@ -62,7 +67,7 @@ type rpcNETAPI struct {
 	handler *server
 }
 
-func NewServer(opts ...Options) (http.Handler, error) {
+func NewServer(opts ...Option) (http.Handler, error) {
 	h := &server{
 		rpc:     gethRPC.NewServer(),
 		callers: map[string]caller{},
@@ -518,6 +523,7 @@ func (s *server) call(
 					s.log.
 						WithField("name", n).
 						WithField("method", method).
+						WithField("args", args).
 						WithField("duration", time.Since(t)).
 						WithError(err).
 						Error("Call error")
@@ -526,16 +532,20 @@ func (s *server) call(
 					s.log.
 						WithField("name", n).
 						WithField("method", method).
+						WithField("args", args).
 						WithField("duration", time.Since(t)).
 						Info("Call")
 					ch <- res
 				}
 			}()
 			res = reflect.New(rt).Interface()
-			err = c.CallContext(ctx, res, method, removeTrailingNilParams(args)...)
+			err = c.CallContext(ctx, res, method, removeTrailingNilArgs(args)...)
 		}()
 	}
-	// Wait for responses.
+	// Wait for response. The following code will wait for the above requests
+	// to complete, but if gracefulTimeout exceeds and there are enough
+	// responses to return a valid response, then the context will be canceled
+	// and the response returned.
 	t := time.NewTimer(s.gracefulTimeout)
 	defer t.Stop()
 	var rs []interface{}
@@ -563,10 +573,10 @@ func (s *server) call(
 	}
 }
 
-// removeTrailingNilParams removes trailing nil parameters from the params
+// removeTrailingNilArgs removes trailing nil parameters from the params
 // slice. Some RPC servers do not like null parameters and will return a
 // "bad request" error if they occur.
-func removeTrailingNilParams(params []interface{}) []interface{} {
+func removeTrailingNilArgs(params []interface{}) []interface{} {
 	for i := len(params) - 1; i >= 0; i-- {
 		if isNil(params[i]) {
 			continue
