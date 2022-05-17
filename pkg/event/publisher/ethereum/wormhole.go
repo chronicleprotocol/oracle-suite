@@ -32,6 +32,7 @@ import (
 )
 
 const WormholeEventType = "wormhole"
+const LoggerTag = "WORMHOLE_LISTENER"
 
 // wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
@@ -65,6 +66,7 @@ type WormholeListenerConfig struct {
 
 // NewWormholeListener returns a new instance of the WormholeListener struct.
 func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
+	logger := cfg.Logger.WithField("tag", LoggerTag)
 	return &WormholeListener{
 		msgCh: make(chan *messages.Event, 1),
 		listener: newEthClientLogListener(
@@ -74,9 +76,9 @@ func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
 			cfg.Interval,
 			uint64(cfg.BlocksBehind),
 			uint64(cfg.MaxBlocks),
-			cfg.Logger,
+			logger,
 		),
-		log: cfg.Logger,
+		log: logger,
 	}
 }
 

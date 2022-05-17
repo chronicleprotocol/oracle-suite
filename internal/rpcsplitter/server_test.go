@@ -922,7 +922,7 @@ func Test_RPC_Call(t *testing.T) {
 }
 
 func Test_RPC_GetLogs(t *testing.T) {
-	address := newAddress("0xc94770007dda54cF92009BFF0dE90c06F603a09f")
+	address := newAddresses("0xc94770007dda54cF92009BFF0dE90c06F603a09f")
 	blockHash := newHash("0xab059a62e22e230fe0f56d8555340a29b2e9532360368f810595453f6fdd213b")
 	topics := []hashType{newHash("0xc0f4906fea23cf6f3cce98cb44e8e1449e455b28d684dfa9ff65426495584de6")}
 	filter := &logFilterType{
