@@ -62,7 +62,7 @@ func (s *Sysmon) Wait() chan error {
 func (s *Sysmon) monitorRoutine() {
 	var m runtime.MemStats
 	var stat unix.Statfs_t
-	var spaceAvail, spaceFree uint64
+	var spaceAvail uint64
 	wd, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -76,10 +76,8 @@ func (s *Sysmon) monitorRoutine() {
 		case <-t.C:
 			if unix.Statfs(wd, &stat) == nil {
 				spaceAvail = stat.Bavail * uint64(stat.Bsize)
-				spaceFree = stat.Bfree * uint64(stat.Bsize)
 			} else {
 				spaceAvail = 0
-				spaceFree = 0
 			}
 			runtime.ReadMemStats(&m)
 			s.log.
@@ -92,7 +90,6 @@ func (s *Sysmon) monitorRoutine() {
 					"runtimeNumCPU":       runtime.NumCPU(),
 					"runtimeNumGoroutine": runtime.NumGoroutine(),
 					"spaceAvail":          spaceAvail,
-					"spaceFree":           spaceFree,
 				}).
 				Debug("Status")
 		}
