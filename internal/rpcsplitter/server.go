@@ -464,22 +464,25 @@ func (r *rpcNETAPI) Version() (interface{}, error) {
 // taggedBlockToNumber returns a block number for tagged blocks. This is
 // necessary because different RPC endpoints may convert tags to different
 // block numbers.
-func (s *server) taggedBlockToNumber(ctx context.Context, blockID blockIDType) (numberType, error) {
+func (s *server) taggedBlockToNumber(ctx context.Context, blockID blockIDType) (blockIDType, error) {
+	if len(s.callers) == 1 {
+		return blockID, nil
+	}
 	if !blockID.IsTag() {
-		return numberType(blockID), nil
+		return blockID, nil
 	}
 	if blockID.IsEarliest() {
 		// The earliest block will be completely different on different
 		// endpoints. It is impossible to reliably support it.
-		return numberType{}, errors.New("earliest tag is not supported")
+		return blockIDType{}, errors.New("earliest tag is not supported")
 	}
 	// The latest and pending blocks are handled in the same way.
 	res := &numberType{}
 	err := s.call(ctx, s.blockNumberResolver, res, "eth_blockNumber")
 	if err != nil {
-		return numberType{}, err
+		return blockIDType{}, err
 	}
-	return *res, nil
+	return blockIDType(*res), nil
 }
 
 // call executes RPC on all endpoints and returns a slice with all results.
