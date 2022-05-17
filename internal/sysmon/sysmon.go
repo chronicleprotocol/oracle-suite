@@ -3,8 +3,11 @@ package sysmon
 import (
 	"context"
 	"errors"
+	"os"
 	"runtime"
 	"time"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
@@ -58,6 +61,12 @@ func (s *Sysmon) Wait() chan error {
 
 func (s *Sysmon) monitorRoutine() {
 	var m runtime.MemStats
+	var stat unix.Statfs_t
+	var spaceAvail, spaceFree uint64
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 	t := time.NewTicker(s.interval)
 	defer t.Stop()
 	for {
@@ -65,6 +74,13 @@ func (s *Sysmon) monitorRoutine() {
 		case <-s.ctx.Done():
 			return
 		case <-t.C:
+			if unix.Statfs(wd, &stat) == nil {
+				spaceAvail = stat.Bavail * uint64(stat.Bsize)
+				spaceFree = stat.Bfree * uint64(stat.Bsize)
+			} else {
+				spaceAvail = 0
+				spaceFree = 0
+			}
 			runtime.ReadMemStats(&m)
 			s.log.
 				WithFields(log.Fields{
@@ -75,6 +91,8 @@ func (s *Sysmon) monitorRoutine() {
 					"memNumGC":            m.NumGC,
 					"runtimeNumCPU":       runtime.NumCPU(),
 					"runtimeNumGoroutine": runtime.NumGoroutine(),
+					"spaceAvail":          spaceAvail,
+					"spaceFree":           spaceFree,
 				}).
 				Debug("Status")
 		}

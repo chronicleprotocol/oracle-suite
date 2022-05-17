@@ -55,8 +55,7 @@ func linesFromFile(filename string) ([]string, error) {
 		return nil, err
 	}
 	defer func() { err = fileClose() }()
-	lines, err := txt.ReadNonEmptyLines(file, 0, false)
-	return lines, err
+	return txt.ReadNonEmptyLines(file, 0, false)
 }
 
 func selectLine(lines []string, lineIdx int) (string, error) {
@@ -68,19 +67,23 @@ func selectLine(lines []string, lineIdx int) (string, error) {
 
 func inputFileOrStdin(inputFilePath string) (*os.File, func() error, error) {
 	if inputFilePath != "" {
-		file, err := os.Open(inputFilePath)
+		f, err := os.Open(inputFilePath)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("unable to open file: %w", err)
 		}
-		return file, file.Close, nil
-	} else if fi, err := os.Stdin.Stat(); err != nil {
-		return nil, nil, err
-	} else if fi.Size() <= 0 && fi.Mode()&os.ModeNamedPipe == 0 {
-		return nil, nil, errors.New("no input file provided and stdin is empty")
+		return f, f.Close, nil
 	}
-	return os.Stdin, func() error { return nil }, nil
+	stdin, err := NonEmptyStdIn()
+	return stdin, func() error { return nil }, err
 }
-
+func NonEmptyStdIn() (*os.File, error) {
+	if fi, err := os.Stdin.Stat(); err != nil {
+		return nil, fmt.Errorf("unable to stat stdin: %w", err)
+	} else if fi.Size() <= 0 && fi.Mode()&os.ModeNamedPipe == 0 {
+		return nil, errors.New("stdin is empty")
+	}
+	return os.Stdin, nil
+}
 func printLine(l string) {
 	split := strings.Split(l, " ")
 	fmt.Println(len(split), split[0])
