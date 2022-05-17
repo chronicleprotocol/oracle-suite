@@ -314,6 +314,14 @@ func (b *hashType) Compare(v interface{}) bool {
 // hashesType marshals/unmarshals as hash.
 type hashesType []hashType
 
+func newHashes(hashes ...string) hashesType {
+	h := hashesType{}
+	for _, hash := range hashes {
+		h = append(h, newHash(hash))
+	}
+	return h
+}
+
 // MarshalJSON implements json.Marshaler.
 func (b hashesType) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]hashType(b))
