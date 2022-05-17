@@ -336,14 +336,14 @@ func (r *rpcETHAPI) GetLogs(logFilter logFilterType) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		*logFilter.FromBlock = blockIDType(blockNumber)
+		*logFilter.FromBlock = blockNumber
 	}
 	if logFilter.ToBlock != nil {
 		blockNumber, err := r.handler.taggedBlockToNumber(ctx, *logFilter.ToBlock)
 		if err != nil {
 			return nil, err
 		}
-		*logFilter.ToBlock = blockIDType(blockNumber)
+		*logFilter.ToBlock = blockNumber
 	}
 	res := &[]logType{}
 	err := r.handler.call(ctx, r.handler.defaultResolver, res, "eth_getLogs", logFilter)
