@@ -3,7 +3,7 @@ module gofere2e
 go 1.17
 
 require (
-	github.com/chronicleprotocol/infestor v0.2.4
+	github.com/chronicleprotocol/infestor v0.2.5
 	github.com/stretchr/testify v1.7.1
 )
 

@@ -17,7 +17,7 @@
     "from": "",
     "keystore": "",
     "password": "",
-    "rpc": "http://smocker:8080"
+    "rpc": "http://127.0.0.1:8545"
   },
   "gofer": {
     "rpc": {
