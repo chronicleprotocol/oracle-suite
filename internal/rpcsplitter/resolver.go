@@ -30,79 +30,60 @@ type resolver interface {
 	resolve([]interface{}) (interface{}, error)
 }
 
-// defaultResolver compares responses with each other and returns
-// the most common one.
+// defaultResolver compares responses with each other and returns the most
+// common one. If there are multiple responses with the same number of
+// occurrences but greater than minResponses, an error is returned.
 type defaultResolver struct {
 	minResponses int // specifies minimum number of occurrences of the most common response
 }
 
 // resolve implements resolver interface.
-func (c *defaultResolver) resolve(resps []interface{}) (interface{}, error) {
+func (r *defaultResolver) resolve(resps []interface{}) (interface{}, error) {
+	if len(resps) < r.minResponses {
+		return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
+	}
 	if len(resps) == 1 {
 		return resps[0], nil
 	}
-	// Count the number of occurrences of each item by comparing each item
-	// in the slice with every other item. The result is stored in a map,
-	// where the key is the item itself and the value is the number of
-	// occurrences.
-	occurs := map[interface{}]int{}
-	maxOccurs := 0
+	mostCommonResp := resps[0]
+	mostCommonCounter := 0
+	multiple := false
 	for _, a := range resps {
-		// Check if similar item exists already in the occurs map.
-		f := false
-		for b := range occurs {
-			if compare(a, b) {
-				f = true
-				break
-			}
-		}
-		if f {
-			continue
-		}
-		// Count occurrences.
+		counter := 0
 		for _, b := range resps {
 			if compare(a, b) {
-				occurs[a]++
-				if occurs[a] > maxOccurs {
-					maxOccurs = occurs[a]
-				}
+				counter++
 			}
 		}
+		if counter > mostCommonCounter {
+			multiple = false
+			mostCommonResp = a
+			mostCommonCounter = counter
+		}
+		if counter == mostCommonCounter {
+			multiple = true
+		}
 	}
-	// Check if there are enough occurrences of the most common item.
-	if maxOccurs < c.minResponses {
+	if multiple || mostCommonCounter < r.minResponses {
 		return nil, addError(errDifferentResponses, collectErrors(resps)...)
 	}
-	// Find the item with the maximum number of occurrences.
-	var res interface{}
-	for cr, o := range occurs {
-		if o == maxOccurs {
-			if res != nil {
-				// If res is not nil it means, that there are multiple items
-				// that occurred maxOccurs times. In this case, we cannot
-				// determine which one should be chosen.
-				return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
-			}
-			res = cr
-		}
-	}
-	return res, nil
+	return mostCommonResp, nil
 }
 
 // gasValueResolver is designed to handle responses from methods returning a
 // gas value. The way how the response is calculated depends on the number of
 // responses:
-// One response: returns value as is.
-// Two responses: returns the lowest one.
-// Three responses: returns the median value.
+// * one response: returns value as is
+// * two responses: returns the lowest one
+// * three or more responses: returns the median value
 type gasValueResolver struct {
 	minResponses int // specifies minimum number of valid responses
 }
 
 // resolve implements resolver interface.
-func (c *gasValueResolver) resolve(resps []interface{}) (interface{}, error) {
+func (r *gasValueResolver) resolve(resps []interface{}) (interface{}, error) {
 	ns := filterByNumberType(resps)
-	if len(ns) < c.minResponses {
+	if len(ns) < r.minResponses {
 		return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
 	}
 	if len(ns) == 1 {
@@ -144,14 +125,15 @@ type blockNumberResolver struct {
 }
 
 // resolve implements resolver interface.
-func (c *blockNumberResolver) resolve(resps []interface{}) (interface{}, error) {
+func (r *blockNumberResolver) resolve(resps []interface{}) (interface{}, error) {
 	ns := filterByNumberType(resps)
-	if len(ns) < c.minResponses {
+	if len(ns) < r.minResponses {
 		return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
 	}
 	if len(ns) == 1 {
 		return ns[0], nil
 	}
+	// Find the highest block number in the given responses:
 	high := ns[0].Big()
 	for _, n := range ns {
 		nb := n.Big()
@@ -159,10 +141,11 @@ func (c *blockNumberResolver) resolve(resps []interface{}) (interface{}, error) 
 			high = nb
 		}
 	}
+	// Find the lowest block number that is higher or equal to high-maxBlocksBehind:
 	block := high
 	for _, n := range ns {
 		nb := n.Big()
-		if new(big.Int).Sub(high, nb).Cmp(big.NewInt(int64(c.maxBlocksBehind))) <= 0 && nb.Cmp(block) < 0 {
+		if new(big.Int).Sub(high, nb).Cmp(big.NewInt(int64(r.maxBlocksBehind))) <= 0 && nb.Cmp(block) < 0 {
 			block = nb
 		}
 	}
