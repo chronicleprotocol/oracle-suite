@@ -49,6 +49,9 @@ func (r *defaultResolver) resolve(resps []interface{}) (interface{}, error) {
 	mostCommonCounter := 0
 	multiple := false
 	for _, a := range resps {
+		if _, ok := a.(error); ok {
+			continue
+		}
 		counter := 0
 		for _, b := range resps {
 			if compare(a, b) {
@@ -60,7 +63,7 @@ func (r *defaultResolver) resolve(resps []interface{}) (interface{}, error) {
 			mostCommonResp = a
 			mostCommonCounter = counter
 		}
-		if counter == mostCommonCounter {
+		if counter == mostCommonCounter && !compare(mostCommonResp, a) {
 			multiple = true
 		}
 	}

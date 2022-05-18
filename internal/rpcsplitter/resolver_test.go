@@ -47,6 +47,11 @@ func Test_defaultResolver_resolve(t *testing.T) {
 			want:         newJSON(`"a"`),
 		},
 		{
+			resps:        []interface{}{newJSON(`"b"`), newJSON(`"a"`), newJSON(`"a"`)},
+			minResponses: 2,
+			want:         newJSON(`"a"`),
+		},
+		{
 			resps:        []interface{}{newJSON(`"a"`), errors.New("err")},
 			minResponses: 1,
 			want:         newJSON(`"a"`),
@@ -57,7 +62,7 @@ func Test_defaultResolver_resolve(t *testing.T) {
 			want:         newJSON(`"a"`),
 		},
 		{
-			resps:        []interface{}{newJSON(`"a"`), newJSON(`"a"`), newJSON(`"b"`)},
+			resps:        []interface{}{newJSON(`"a"`), newJSON(`"a"`), errors.New("err")},
 			minResponses: 3,
 			wantErr:      true,
 		},
@@ -81,7 +86,7 @@ func Test_defaultResolver_resolve(t *testing.T) {
 		t.Run(fmt.Sprintf("case-%d", n), func(t *testing.T) {
 			r := defaultResolver{minResponses: tt.minResponses}
 			v, err := r.resolve(tt.resps)
-			if err != nil {
+			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
@@ -147,7 +152,7 @@ func Test_gasValueResolver_resolve(t *testing.T) {
 		t.Run(fmt.Sprintf("case-%d", n), func(t *testing.T) {
 			r := gasValueResolver{minResponses: tt.minResponses}
 			v, err := r.resolve(tt.resps)
-			if err != nil {
+			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
@@ -205,7 +210,7 @@ func Test_blockNumberResolver_resolve(t *testing.T) {
 		t.Run(fmt.Sprintf("case-%d", n), func(t *testing.T) {
 			r := blockNumberResolver{minResponses: tt.minResponses, maxBlocksBehind: tt.maxBlocksBehind}
 			v, err := r.resolve(tt.resps)
-			if err != nil {
+			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
