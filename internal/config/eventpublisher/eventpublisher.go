@@ -43,11 +43,11 @@ type listeners struct {
 }
 
 type wormholeListener struct {
-	RPC          interface{} `json:"rpc"`
-	Interval     int64       `json:"interval"`
-	BlocksBehind []int       `json:"blocksBehind"`
-	MaxBlocks    int         `json:"maxBlocks"`
-	Addresses    []string    `json:"addresses"`
+	Ethereum     ethereumConfig.Ethereum `json:"ethereum"`
+	Interval     int64                   `json:"interval"`
+	BlocksBehind []int                   `json:"blocksBehind"`
+	MaxBlocks    int                     `json:"maxBlocks"`
+	Addresses    []string                `json:"addresses"`
 }
 
 type Dependencies struct {
@@ -70,7 +70,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	var sig []publisher.Signer
 	clis := ethClients{}
 	for _, w := range c.Listeners.Wormhole {
-		cli, err := clis.configure(w.RPC, d.Logger)
+		cli, err := clis.configure(w.Ethereum, d.Logger)
 		if err != nil {
 			return nil, fmt.Errorf("eventpublisher config: %w", err)
 		}
@@ -115,18 +115,18 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 
 type ethClients map[string]geth.EthClient
 
-// configure returns an Ethereum client for given RPC endpoints.
-// Returned client will be reused if provided RPCs are the same.
-func (m ethClients) configure(rpc interface{}, logger log.Logger) (geth.EthClient, error) {
-	key, err := json.Marshal(rpc)
+// configure returns an Ethereum client for given configuration.
+// It will return the same instance of the client for the same
+// configuration.
+func (m ethClients) configure(ethereum ethereumConfig.Ethereum, logger log.Logger) (geth.EthClient, error) {
+	key, err := json.Marshal(ethereum)
 	if err != nil {
 		return nil, err
 	}
 	if c, ok := m[string(key)]; ok {
 		return c, nil
 	}
-	e := &ethereumConfig.Ethereum{RPC: rpc}
-	c, err := e.ConfigureRPCClient(logger)
+	c, err := ethereum.ConfigureRPCClient(logger)
 	if err != nil {
 		return nil, err
 	}

@@ -490,10 +490,10 @@ func (s *server) taggedBlockToNumber(ctx context.Context, blockID blockIDType) (
 	return blockIDType(*res), nil
 }
 
-// call executes RPC on all endpoints and returns a slice with all results.
+// call executes RPC on all endpoints with the given arguments. If the context is
+// canceled before the call has successfully returned, call returns immediately.
 //
-// The typ argument must be an empty pointer with a type to which the results
-// will be converted.
+// The result must be a pointer with a proper type.
 func (s *server) call(
 	ctx context.Context,
 	resolver resolver,

@@ -19,11 +19,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,16 +56,25 @@ type mockClient struct {
 }
 
 type expectedCall struct {
-	result interface{}
+	result func() interface{}
 	method string
 	params []interface{}
 }
 
-// expectedCall adds expected call. If a result implements an error interface,
+// mockCall adds expected call. If a result implements an error interface,
 // then it will be returned as an error.
 func (c *mockClient) mockCall(result interface{}, method string, params ...interface{}) {
 	c.calls = append(c.calls, expectedCall{
-		result: result,
+		result: func() interface{} { return result },
+		method: method,
+		params: params,
+	})
+}
+
+// mockSlowCall works just like mockCall but adds a delay to the response.
+func (c *mockClient) mockSlowCall(delay time.Duration, result interface{}, method string, params ...interface{}) {
+	c.calls = append(c.calls, expectedCall{
+		result: func() interface{} { time.Sleep(delay); return result },
 		method: method,
 		params: params,
 	})
@@ -80,20 +91,31 @@ func (c *mockClient) CallContext(ctx context.Context, result interface{}, method
 	assert.Equal(c.t, call.method, method)
 	assert.True(c.t, compare(call.params, params))
 
+	// Wait for the result:
+	var callResult interface{}
+	callResultCh := make(chan interface{}, 0)
+	go func() { callResultCh <- call.result() }()
+	select {
+	case callResult = <-callResultCh:
+	case <-ctx.Done():
+		callResult = errors.New("context cancelled")
+	}
+
 	// Error results are treated differently, as described in mockCall.
-	if err, ok := call.result.(error); ok {
+	if err, ok := callResult.(error); ok {
 		return err
 	}
 
 	// Message is marshalled and unmarshalled to verify, if marshalling is
 	// implemented correctly.
-	return json.Unmarshal(jsonMarshal(c.t, call.result), result)
+	return json.Unmarshal(jsonMarshal(c.t, callResult), result)
 }
 
 type handlerTester struct {
 	t *testing.T
 
 	clients         []caller
+	options         []Option
 	minResponses    int
 	maxBlocksBehind int
 	expResult       interface{}
@@ -116,10 +138,21 @@ func (t *handlerTester) mockClientCall(n int, response interface{}, method strin
 	return t
 }
 
+// mockClientSlowCall mocks call with a delay on n client.
+func (t *handlerTester) mockClientSlowCall(delay time.Duration, n int, response interface{}, method string, params ...interface{}) *handlerTester {
+	t.clients[n].(*mockClient).mockSlowCall(delay, response, method, params...)
+	return t
+}
+
+// setRequirements is an equivalent of WithRequirements option.
+func (t *handlerTester) setOptions(opts ...Option) *handlerTester {
+	t.options = append(t.options, opts...)
+	return t
+}
+
 // setRequirements is an equivalent of WithRequirements option.
 func (t *handlerTester) setRequirements(minResponses, maxBlocksBehind int) *handlerTester {
-	t.minResponses = minResponses
-	t.maxBlocksBehind = maxBlocksBehind
+	t.setOptions(WithRequirements(minResponses, maxBlocksBehind))
 	return t
 }
 
@@ -142,7 +175,7 @@ func (t *handlerTester) test() {
 	for n, c := range t.clients {
 		callers[fmt.Sprintf("%d", n)] = c
 	}
-	h, err := NewServer(withCallers(callers), WithRequirements(t.minResponses, t.maxBlocksBehind))
+	h, err := NewServer(append([]Option{withCallers(callers)}, t.options...)...)
 	require.NoError(t.t, err)
 
 	// Prepare request.

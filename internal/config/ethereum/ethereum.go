@@ -33,6 +33,8 @@ import (
 )
 
 const splitterVirtualHost = "makerdao-splitter"
+const defaultTotalTimeout = 10
+const defaultGracefulTimeout = 1
 
 var ethClientFactory = func(
 	endpoints []string,
@@ -102,28 +104,25 @@ func (c *Ethereum) ConfigureRPCClient(logger log.Logger) (geth.EthClient, error)
 		}
 	}
 	if len(endpoints) == 0 {
-		return nil, errors.New("value of the RPC key must be string or array of strings")
+		return nil, errors.New("ethereum config: value of the RPC key must be string or array of strings")
 	}
 	timeout := c.Timeout
-	if c.Timeout == 0 {
-		timeout = 10
+	if timeout == 0 {
+		timeout = defaultTotalTimeout
 	}
-	if c.Timeout < 1 {
-		timeout = 1
+	if timeout < 1 {
+		return nil, errors.New("ethereum config: timeout cannot be less than 1 (or 0 to use the default value)")
 	}
 	gracefulTimeout := c.GracefulTimeout
-	if c.GracefulTimeout == 0 {
-		gracefulTimeout = 1
+	if gracefulTimeout == 0 {
+		gracefulTimeout = defaultGracefulTimeout
 	}
-	if c.GracefulTimeout < 1 {
-		gracefulTimeout = 1
+	if gracefulTimeout < 1 {
+		return nil, errors.New("ethereum config: gracefulTimeout cannot be less than 1 (or 0 to use the default value)")
 	}
 	maxBlocksBehind := c.MaxBlocksBehind
-	if c.MaxBlocksBehind == 0 {
-		maxBlocksBehind = 10
-	}
 	if c.MaxBlocksBehind < 0 {
-		maxBlocksBehind = 0
+		return nil, errors.New("ethereum config: maxBlocksBehind cannot be less than 0")
 	}
 	return ethClientFactory(
 		endpoints,
