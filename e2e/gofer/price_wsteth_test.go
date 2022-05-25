@@ -23,6 +23,8 @@ func (s *PriceWSTETHE2ESuite) TestPrice() {
 		Add(origin.NewExchange("wsteth").WithSymbol("WSTETH/ETH").WithPrice(1)).
 		Add(origin.NewExchange("balancerV2").WithSymbol("STETH/ETH").WithPrice(1)).
 		Add(origin.NewExchange("curve").WithSymbol("STETH/ETH").WithPrice(1)).
+		Add(origin.NewExchange("curve").WithSymbol("STETH/ETH").WithPrice(1)).
+		Add(origin.NewExchange("ethrpc")).
 		Deploy(s.api)
 
 	s.Require().NoError(err)

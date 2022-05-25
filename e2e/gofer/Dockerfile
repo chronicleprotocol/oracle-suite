@@ -8,10 +8,11 @@ ENV CGO_ENABLED=0 \
 RUN rm -rf dist \
     && mkdir dist \
     && go mod vendor \
-    && go build -o dist/gofer ./cmd/gofer
+    && go build -o dist/gofer ./cmd/gofer \
+    && go build -o dist/rpc-splitter ./cmd/rpc-splitter
 
 FROM golang:1-alpine
-RUN apk --no-cache add ca-certificates git
+RUN apk --no-cache add ca-certificates git bash
 COPY --from=builder /go/src/gofer/dist/ /usr/local/bin/
 
 ENV CGO_ENABLED=0 \
@@ -24,4 +25,4 @@ COPY ./e2e/gofer /app
 WORKDIR /app
 RUN go mod vendor
 
-CMD ["go", "test", "-v", "-parallel", "1", "-cpu", "1", "./"]
+CMD ["./scripts/test.sh"]
