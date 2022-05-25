@@ -93,7 +93,7 @@ func (c *mockClient) CallContext(ctx context.Context, result interface{}, method
 
 	// Wait for the result:
 	var callResult interface{}
-	callResultCh := make(chan interface{}, 0)
+	callResultCh := make(chan interface{})
 	go func() { callResultCh <- call.result() }()
 	select {
 	case callResult = <-callResultCh:
@@ -114,14 +114,12 @@ func (c *mockClient) CallContext(ctx context.Context, result interface{}, method
 type handlerTester struct {
 	t *testing.T
 
-	clients         []caller
-	options         []Option
-	minResponses    int
-	maxBlocksBehind int
-	expResult       interface{}
-	expMethod       string
-	expParams       []interface{}
-	expErrors       []string
+	clients   []caller
+	options   []Option
+	expResult interface{}
+	expMethod string
+	expParams []interface{}
+	expErrors []string
 }
 
 func prepareHandlerTest(t *testing.T, clients int, method string, params ...interface{}) *handlerTester {
@@ -139,6 +137,7 @@ func (t *handlerTester) mockClientCall(n int, response interface{}, method strin
 }
 
 // mockClientSlowCall mocks call with a delay on n client.
+//nolint:unparam
 func (t *handlerTester) mockClientSlowCall(delay time.Duration, n int, response interface{}, method string, params ...interface{}) *handlerTester {
 	t.clients[n].(*mockClient).mockSlowCall(delay, response, method, params...)
 	return t
@@ -147,12 +146,6 @@ func (t *handlerTester) mockClientSlowCall(delay time.Duration, n int, response 
 // setRequirements is an equivalent of WithRequirements option.
 func (t *handlerTester) setOptions(opts ...Option) *handlerTester {
 	t.options = append(t.options, opts...)
-	return t
-}
-
-// setRequirements is an equivalent of WithRequirements option.
-func (t *handlerTester) setRequirements(minResponses, maxBlocksBehind int) *handlerTester {
-	t.setOptions(WithRequirements(minResponses, maxBlocksBehind))
 	return t
 }
 
