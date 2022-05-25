@@ -23,9 +23,11 @@
     "listeners": {
       "wormhole": [
         {
-          "rpc": [
-            "http://127.0.0.1:8545"
-          ],
+          "ethereum": {
+            "rpc": [
+              "http://127.0.0.1:8545"
+            ]
+          },
           "interval": 10,
           "blocksBehind": [
               1,
