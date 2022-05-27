@@ -16,6 +16,7 @@
 package eventpublisher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -132,7 +133,7 @@ func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, l
 func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) error {
 	for _, w := range c.Listeners.WormholeStarknet {
 		for _, blocksBehind := range w.BlocksBehind {
-			client, err := starknetClient.NewClient(w.RPC)
+			client, err := starknetClient.NewClient(context.Background(), w.RPC)
 			if err != nil {
 				return err
 			}
