@@ -19,6 +19,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -42,7 +43,7 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 		Interval:     1,
 		BlocksBehind: []int{10, 60},
 		MaxBlocks:    10,
-		Addresses:    []string{"0x07a35a1d4b751a818d93aa38e615c0df23064881"},
+		Addresses:    []common.Address{common.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
 	}}}}
 
 	eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublisher, error) {

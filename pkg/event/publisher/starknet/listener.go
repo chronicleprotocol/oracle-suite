@@ -52,7 +52,15 @@ type eventListener struct {
 	log             log.Logger    // Logger.
 }
 
-func newEventListener(client Client, addresses []*starknet.Felt, interval time.Duration, blocksBehind, maxBlocks uint64, logger log.Logger) *eventListener {
+func newEventListener(
+	client Client,
+	addresses []*starknet.Felt,
+	interval time.Duration,
+	blocksBehind,
+	maxBlocks uint64,
+	logger log.Logger,
+) *eventListener {
+
 	return &eventListener{
 		client:       client,
 		addresses:    addresses,
