@@ -21,10 +21,12 @@ import (
 	"time"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
+	starknetClient "github.com/chronicleprotocol/oracle-suite/internal/starknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	publisherEthereum "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/starknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
@@ -39,15 +41,24 @@ type EventPublisher struct {
 }
 
 type listeners struct {
-	Wormhole []wormholeListener `json:"wormhole"`
+	Wormhole         []wormholeListener         `json:"wormhole"`
+	WormholeStarknet []wormholeStarknetListener `json:"wormholeStarknet"`
 }
 
 type wormholeListener struct {
-	RPC          interface{} `json:"rpc"`
-	Interval     int64       `json:"interval"`
-	BlocksBehind []int       `json:"blocksBehind"`
-	MaxBlocks    int         `json:"maxBlocks"`
-	Addresses    []string    `json:"addresses"`
+	RPC          interface{}        `json:"rpc"`
+	Interval     int64              `json:"interval"`
+	BlocksBehind []int              `json:"blocksBehind"`
+	MaxBlocks    int                `json:"maxBlocks"`
+	Addresses    []ethereum.Address `json:"addresses"`
+}
+
+type wormholeStarknetListener struct {
+	RPC          string                 `json:"rpc"`
+	Interval     int64                  `json:"interval"`
+	BlocksBehind []int                  `json:"blocksBehind"`
+	MaxBlocks    int                    `json:"maxBlocks"`
+	Addresses    []*starknetClient.Felt `json:"addresses"`
 }
 
 type Dependencies struct {
@@ -67,39 +78,13 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
 	var lis []publisher.Listener
-	var sig []publisher.Signer
-	clis := ethClients{}
-	for _, w := range c.Listeners.Wormhole {
-		cli, err := clis.configure(w.RPC)
-		if err != nil {
-			return nil, fmt.Errorf("eventpublisher config: %w", err)
-		}
-		var addrs []ethereum.Address
-		for _, addr := range w.Addresses {
-			addrs = append(addrs, ethereum.HexToAddress(addr))
-		}
-		interval := w.Interval
-		if interval < 1 {
-			interval = 1
-		}
-		if len(w.BlocksBehind) < 1 {
-			return nil, fmt.Errorf("eventpublisher config: blocksBehind must contains at least one element")
-		}
-		if w.MaxBlocks <= 0 {
-			return nil, fmt.Errorf("eventpublisher config: maxBlocks must greather than 0")
-		}
-		for _, blocksBehind := range w.BlocksBehind {
-			lis = append(lis, publisherEthereum.NewWormholeListener(publisherEthereum.WormholeListenerConfig{
-				Client:       cli,
-				Addresses:    addrs,
-				Interval:     time.Second * time.Duration(interval),
-				BlocksBehind: blocksBehind,
-				MaxBlocks:    w.MaxBlocks,
-				Logger:       d.Logger,
-			}))
-		}
-		sig = append(sig, publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.WormholeEventType}))
+	if err := c.configureWormholeListeners(&lis, d.Logger); err != nil {
+		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
+	if err := c.configureWormholeStarknetListeners(&lis, d.Logger); err != nil {
+		return nil, fmt.Errorf("eventpublisher config: %w", err)
+	}
+	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.WormholeEventType})}
 	cfg := publisher.Config{
 		Listeners: lis,
 		Signers:   sig,
@@ -111,6 +96,57 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
 	return ep, nil
+}
+
+func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, logger log.Logger) error {
+	clis := ethClients{}
+	for _, w := range c.Listeners.Wormhole {
+		cli, err := clis.configure(w.RPC)
+		if err != nil {
+			return err
+		}
+		interval := w.Interval
+		if interval < 1 {
+			interval = 1
+		}
+		if len(w.BlocksBehind) < 1 {
+			return fmt.Errorf("blocksBehind must contains at least one element")
+		}
+		if w.MaxBlocks <= 0 {
+			return fmt.Errorf("maxBlocks must greather than 0")
+		}
+		for _, blocksBehind := range w.BlocksBehind {
+			*lis = append(*lis, publisherEthereum.NewWormholeListener(publisherEthereum.WormholeListenerConfig{
+				Client:       cli,
+				Addresses:    w.Addresses,
+				Interval:     time.Second * time.Duration(interval),
+				BlocksBehind: blocksBehind,
+				MaxBlocks:    w.MaxBlocks,
+				Logger:       logger,
+			}))
+		}
+	}
+	return nil
+}
+
+func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) error {
+	for _, w := range c.Listeners.WormholeStarknet {
+		for _, blocksBehind := range w.BlocksBehind {
+			client, err := starknetClient.NewClient(w.RPC)
+			if err != nil {
+				return err
+			}
+			*lis = append(*lis, starknet.NewWormholeListener(starknet.WormholeListenerConfig{
+				Client:       client,
+				Addresses:    w.Addresses,
+				Interval:     time.Second * time.Duration(w.Interval),
+				BlocksBehind: blocksBehind,
+				MaxBlocks:    w.MaxBlocks,
+				Logger:       logger,
+			}))
+		}
+	}
+	return nil
 }
 
 type ethClients map[string]geth.EthClient
