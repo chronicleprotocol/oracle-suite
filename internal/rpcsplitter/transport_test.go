@@ -22,14 +22,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 func TestTransport(t *testing.T) {
 	rpcMock := &mockClient{t: t}
-	rpcHandler, _ := newHandlerWithClients([]rpcClient{{rpcCaller: rpcMock}}, 10, null.New())
-	roundTripper, _ := newTransport(rpcHandler, "rpcsplitter-vhost", nil)
+	roundTripper, err := NewTransport(
+		"rpcsplitter-vhost",
+		nil,
+		withCallers(map[string]caller{"caller": rpcMock}),
+		WithRequirements(1, 1),
+	)
+	if err != nil {
+		panic(err)
+	}
 	httpClient := http.Client{Transport: roundTripper}
 	msg := jsonMarshal(t, rpcReq{
 		ID:      1,

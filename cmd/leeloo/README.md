@@ -89,11 +89,16 @@ is `config.json` in the current working directory. You can change the config fil
     "listeners": {
       "wormhole": [
         {
-          "rpc": [
-            "https://ethereum.provider-1.example/rpc",
-            "https://ethereum.provider-2.example/rpc",
-            "https://ethereum.provider-3.example/rpc"
-          ],
+          "ethereum": {
+            "rpc": [
+              "https://ethereum.provider-1.example/rpc",
+              "https://ethereum.provider-2.example/rpc",
+              "https://ethereum.provider-3.example/rpc"
+            ],
+            "timeout": 10,
+            "gracefulTimeout": 1,
+            "gracefulTimeout": 35
+          },
           "interval": 60,
           "blocksBehind": [
             30,
@@ -157,8 +162,8 @@ is `config.json` in the current working directory. You can change the config fil
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
-            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not applied (
-              default: 0).
+            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not
+              applied (default: 0).
             - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
               options are:
                 - `sum` - Add values.
@@ -170,8 +175,16 @@ is `config.json` in the current working directory. You can change the config fil
     - `listeners` - Event listeners configuration.
         - `[]wormhole` - Configuration of the "wormhole" event listener. It listens for `WormhholeGUID` events on
           Ethereum-compatible blockchains.
-            - `rpc` (`string|[]string`) - List of RPC server addresses. If more than one is used, rpc-splitter is used.
-              It is recommended to use at least three addresses from different providers.
+            - `ethereum` - Etheeum client configuration.
+                - `rpc` (`string|[]string`) - List of RPC server addresses. If more than one is used, rpc-splitter is
+                  used.
+                  It is recommended to use at least three addresses from different providers.
+                - `timeout` (`int`) - total timeout in seconds (default: 10).
+                - `gracefulTimeout` (`int`) - timeout to graceful finish requests to slower RPC nodes, it is used only
+                  when it is possible to return a correct response using responses from the remaining RPC nodes (
+                  default: 1).
+                - `gracefulTimeout` (`int`) - if multiple RPC nodes are used, determines how far one node can be behind
+                  the last known block (default: 0).
             - `blocksBehind` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
               events should be retrieved.
             - `maxBlocks` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This

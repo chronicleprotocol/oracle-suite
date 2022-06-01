@@ -23,10 +23,12 @@ import (
 )
 
 type options struct {
-	Listen            string
-	EnableCORS        bool
-	RequestTimeoutSec int
-	EthRPCURLs        []string
+	Listen             string
+	EnableCORS         bool
+	GracefulTimeoutSec int
+	TotalTimeoutSec    int
+	MaxBlocksBehind    int
+	EthRPCURLs         []string
 	flag.LoggerFlag
 }
 
@@ -56,16 +58,28 @@ func NewRootCommand(opts *options) *cobra.Command {
 		"enables CORS requests for all origins",
 	)
 	rootCmd.PersistentFlags().IntVarP(
-		&opts.RequestTimeoutSec,
+		&opts.GracefulTimeoutSec,
+		"graceful-timeout", "g",
+		1,
+		"set timeout to graceful finish requests to slower RPC nodes",
+	)
+	rootCmd.PersistentFlags().IntVarP(
+		&opts.TotalTimeoutSec,
 		"timeout", "t",
 		10,
-		"Set request timeout (in seconds) for all RPC endpoints",
+		"set request timeout in seconds",
+	)
+	rootCmd.PersistentFlags().IntVarP(
+		&opts.TotalTimeoutSec,
+		"max-blocks-behind", "b",
+		10,
+		"determines how far one node can be behind the last known block",
 	)
 	rootCmd.PersistentFlags().StringSliceVar(
 		&opts.EthRPCURLs,
 		"eth-rpc",
 		[]string{},
-		"list of ethereum nodes",
+		"list of ethereum RPC nodes",
 	)
 	err := rootCmd.MarkPersistentFlagRequired("eth-rpc")
 	if err != nil {

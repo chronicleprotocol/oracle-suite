@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
 	starknetClient "github.com/chronicleprotocol/oracle-suite/internal/starknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -47,11 +49,11 @@ type listeners struct {
 }
 
 type wormholeListener struct {
-	RPC          interface{}        `json:"rpc"`
-	Interval     int64              `json:"interval"`
-	BlocksBehind []int              `json:"blocksBehind"`
-	MaxBlocks    int                `json:"maxBlocks"`
-	Addresses    []ethereum.Address `json:"addresses"`
+	Ethereum     ethereumConfig.Ethereum `json:"ethereum"`
+	Interval     int64                   `json:"interval"`
+	BlocksBehind []int                   `json:"blocksBehind"`
+	MaxBlocks    int                     `json:"maxBlocks"`
+	Addresses    []common.Address        `json:"addresses"`
 }
 
 type wormholeStarknetListener struct {
@@ -102,7 +104,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, logger log.Logger) error {
 	clis := ethClients{}
 	for _, w := range c.Listeners.Wormhole {
-		cli, err := clis.configure(w.RPC)
+		cli, err := clis.configure(w.Ethereum, logger)
 		if err != nil {
 			return err
 		}
@@ -148,18 +150,18 @@ func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Lis
 
 type ethClients map[string]geth.EthClient
 
-// configure returns an Ethereum client for given RPC endpoints.
-// Returned client will be reused if provided RPCs are the same.
-func (m ethClients) configure(rpc interface{}) (geth.EthClient, error) {
-	key, err := json.Marshal(rpc)
+// configure returns an Ethereum client for given configuration.
+// It will return the same instance of the client for the same
+// configuration.
+func (m ethClients) configure(ethereum ethereumConfig.Ethereum, logger log.Logger) (geth.EthClient, error) {
+	key, err := json.Marshal(ethereum)
 	if err != nil {
 		return nil, err
 	}
 	if c, ok := m[string(key)]; ok {
 		return c, nil
 	}
-	e := &ethereumConfig.Ethereum{RPC: rpc}
-	c, err := e.ConfigureRPCClient()
+	c, err := ethereum.ConfigureRPCClient(logger)
 	if err != nil {
 		return nil, err
 	}

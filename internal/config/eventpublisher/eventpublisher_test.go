@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -39,7 +40,7 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 	log := null.New()
 
 	config := EventPublisher{Listeners: listeners{Wormhole: []wormholeListener{{
-		RPC:          "https://example.com/",
+		Ethereum:     ethereumConfig.Ethereum{RPC: "https://example.com/"},
 		Interval:     1,
 		BlocksBehind: []int{10, 60},
 		MaxBlocks:    10,
@@ -67,11 +68,11 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 func Test_ethClients_configure(t *testing.T) {
 	c := &ethClients{}
 
-	c1, err := c.configure("https://example.com/foo")
+	c1, err := c.configure(ethereumConfig.Ethereum{RPC: "https://example.com/"}, null.New())
 	require.NoError(t, err)
-	c2, err := c.configure("https://example.com/foo")
+	c2, err := c.configure(ethereumConfig.Ethereum{RPC: "https://example.com/"}, null.New())
 	require.NoError(t, err)
-	c3, err := c.configure("https://example.com/bar")
+	c3, err := c.configure(ethereumConfig.Ethereum{RPC: "https://example.com/", MaxBlocksBehind: 10}, null.New())
 	require.NoError(t, err)
 
 	assert.Same(t, c1, c2)

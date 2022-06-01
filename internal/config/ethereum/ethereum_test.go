@@ -18,12 +18,15 @@ package ethereum
 import (
 	"encoding/hex"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 func TestEthereum_ConfigureSigner_WithoutPassword(t *testing.T) {
@@ -71,7 +74,7 @@ func TestEthereum_ConfigureSigner_WithPassword(t *testing.T) {
 func TestEthereum_ConfigureEthereumClient(t *testing.T) {
 	prevEthClientFactory := ethClientFactory
 	defer func() { ethClientFactory = prevEthClientFactory }()
-	ethClientFactory = func(endpoints []string) (geth.EthClient, error) {
+	ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (geth.EthClient, error) {
 		assert.Equal(t, "1.2.3.4:1234", endpoints[0])
 		return &mocks.EthClient{}, nil
 	}
@@ -86,7 +89,7 @@ func TestEthereum_ConfigureEthereumClient(t *testing.T) {
 	signer, err := config.ConfigureSigner()
 	require.NoError(t, err)
 
-	client, err := config.ConfigureEthereumClient(signer)
+	client, err := config.ConfigureEthereumClient(signer, null.New())
 	require.NoError(t, err)
 	assert.NotNil(t, client)
 }
@@ -94,7 +97,7 @@ func TestEthereum_ConfigureEthereumClient(t *testing.T) {
 func TestEthereum_ConfigureEthereumClientWithMultipleEndpoints(t *testing.T) {
 	prevEthClientFactory := ethClientFactory
 	defer func() { ethClientFactory = prevEthClientFactory }()
-	ethClientFactory = func(endpoints []string) (geth.EthClient, error) {
+	ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (geth.EthClient, error) {
 		assert.Equal(t, "1.2.3.4:1234", endpoints[0])
 		assert.Equal(t, "5.6.7.8:1234", endpoints[1])
 		return &mocks.EthClient{}, nil
@@ -110,7 +113,7 @@ func TestEthereum_ConfigureEthereumClientWithMultipleEndpoints(t *testing.T) {
 	signer, err := config.ConfigureSigner()
 	require.NoError(t, err)
 
-	client, err := config.ConfigureEthereumClient(signer)
+	client, err := config.ConfigureEthereumClient(signer, null.New())
 	require.NoError(t, err)
 	assert.NotNil(t, client)
 }

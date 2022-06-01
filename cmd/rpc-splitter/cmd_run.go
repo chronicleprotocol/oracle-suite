@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -40,14 +41,20 @@ func NewRunCmd(opts *options) *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			log := opts.Logger()
-			handler, err := rpcsplitter.NewHandler(opts.EthRPCURLs, opts.RequestTimeoutSec, log)
+			var server, err = rpcsplitter.NewServer(
+				rpcsplitter.WithEndpoints(opts.EthRPCURLs),
+				rpcsplitter.WithTotalTimeout(time.Duration(opts.TotalTimeoutSec)*time.Second),
+				rpcsplitter.WithGracefulTimeout(time.Duration(opts.GracefulTimeoutSec)*time.Second),
+				rpcsplitter.WithRequirements(minimumRequiredResponses(len(opts.EthRPCURLs)), opts.MaxBlocksBehind),
+				rpcsplitter.WithLogger(opts.Logger()),
+			)
 			if err != nil {
 				return err
 			}
 
 			srv := httpserver.New(&http.Server{
 				Addr:    opts.Listen,
-				Handler: handler,
+				Handler: server,
 			})
 
 			srv.Use(&middleware.Recover{
@@ -81,4 +88,11 @@ func NewRunCmd(opts *options) *cobra.Command {
 			return <-srv.Wait()
 		},
 	}
+}
+
+func minimumRequiredResponses(endpoints int) int {
+	if endpoints < 2 {
+		return endpoints
+	}
+	return endpoints - 1
 }

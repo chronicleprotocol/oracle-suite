@@ -52,7 +52,7 @@ func PrepareClientServices(
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil)
+	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
@@ -83,7 +83,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	if err != nil {
 		return nil, fmt.Errorf(`logger config error: %w`, err)
 	}
-	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil)
+	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log)
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}

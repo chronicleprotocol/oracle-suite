@@ -248,6 +248,31 @@ func (b *addressType) Compare(v interface{}) bool {
 	return false
 }
 
+// addressesType marshals/unmarshals as a list of Ethereum addresses.
+type addressesType []addressType
+
+func newAddresses(address ...string) addressesType {
+	a := addressesType{}
+	for _, addr := range address {
+		a = append(a, newAddress(addr))
+	}
+	return a
+}
+
+// MarshalJSON implements json.Marshaler.
+func (b addressesType) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]addressType(b))
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *addressesType) UnmarshalJSON(input []byte) error {
+	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
+		*b = addressesType{{}}
+		return json.Unmarshal(input, &((*b)[0]))
+	}
+	return json.Unmarshal(input, (*[]addressType)(b))
+}
+
 // addressType marshals/unmarshals as hash.
 type hashType [hashLength]byte
 
@@ -284,6 +309,31 @@ func (b *hashType) Compare(v interface{}) bool {
 		return *b == *v
 	}
 	return false
+}
+
+// hashesType marshals/unmarshals as hash.
+type hashesType []hashType
+
+func newHashes(hashes ...string) hashesType {
+	h := hashesType{}
+	for _, hash := range hashes {
+		h = append(h, newHash(hash))
+	}
+	return h
+}
+
+// MarshalJSON implements json.Marshaler.
+func (b hashesType) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]hashType(b))
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *hashesType) UnmarshalJSON(input []byte) error {
+	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
+		*b = hashesType{{}}
+		return json.Unmarshal(input, &((*b)[0]))
+	}
+	return json.Unmarshal(input, (*[]hashType)(b))
 }
 
 type blockType struct {
@@ -371,11 +421,11 @@ type feeHistoryType struct {
 }
 
 type logFilterType struct {
-	Address   *addressType `json:"address"`
-	FromBlock *blockIDType `json:"fromBlock"`
-	ToBlock   *blockIDType `json:"toBlock"`
-	Topics    []hashType   `json:"topics"`
-	BlockHash *hashType    `json:"blockhash"`
+	Address   *addressesType `json:"address"`
+	FromBlock *blockIDType   `json:"fromBlock"`
+	ToBlock   *blockIDType   `json:"toBlock"`
+	Topics    []hashesType   `json:"topics"`
+	BlockHash *hashType      `json:"blockhash"`
 }
 
 func bigIntToHex(u *big.Int) []byte {

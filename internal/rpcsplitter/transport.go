@@ -20,37 +20,29 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 // Transport implements the http.RoundTripper interface. It creates a virtual
 // host with RPC Splitter.
 type Transport struct {
 	transport http.RoundTripper
-	handler   http.Handler
+	server    http.Handler
 	vhost     string
 }
 
 // NewTransport returns a new instance of Transport.
-func NewTransport(endpoints []string, requestTimeoutSec int,
-	vhost string, transport http.RoundTripper, log log.Logger) (*Transport, error) {
-
-	rpc, err := NewHandler(endpoints, requestTimeoutSec, log)
-	if err != nil {
-		return nil, err
-	}
-	return newTransport(rpc, vhost, transport)
-}
-
-func newTransport(handler http.Handler, vhost string, transport http.RoundTripper) (*Transport, error) {
+func NewTransport(vhost string, transport http.RoundTripper, opts ...Option) (*Transport, error) {
 	if transport == nil {
 		transport = http.DefaultTransport
+	}
+	rpcServer, err := NewServer(opts...)
+	if err != nil {
+		return nil, err
 	}
 	return &Transport{
 		transport: transport,
 		vhost:     vhost,
-		handler:   handler,
+		server:    rpcServer,
 	}, nil
 }
 
@@ -60,7 +52,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return t.transport.RoundTrip(req)
 	}
 	rec := newRecorder()
-	t.handler.ServeHTTP(rec, req)
+	t.server.ServeHTTP(rec, req)
 	return t.buildResponse(rec), nil
 }
 

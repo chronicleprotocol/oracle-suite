@@ -19,16 +19,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 type rpcReq struct {
@@ -56,16 +56,25 @@ type mockClient struct {
 }
 
 type expectedCall struct {
-	result interface{}
+	result func() interface{}
 	method string
 	params []interface{}
 }
 
-// expectedCall adds expected call. If a result implements an error interface,
+// mockCall adds expected call. If a result implements an error interface,
 // then it will be returned as an error.
 func (c *mockClient) mockCall(result interface{}, method string, params ...interface{}) {
 	c.calls = append(c.calls, expectedCall{
-		result: result,
+		result: func() interface{} { return result },
+		method: method,
+		params: params,
+	})
+}
+
+// mockSlowCall works just like mockCall but adds a delay to the response.
+func (c *mockClient) mockSlowCall(delay time.Duration, result interface{}, method string, params ...interface{}) {
+	c.calls = append(c.calls, expectedCall{
+		result: func() interface{} { time.Sleep(delay); return result },
 		method: method,
 		params: params,
 	})
@@ -82,20 +91,31 @@ func (c *mockClient) CallContext(ctx context.Context, result interface{}, method
 	assert.Equal(c.t, call.method, method)
 	assert.True(c.t, compare(call.params, params))
 
+	// Wait for the result:
+	var callResult interface{}
+	callResultCh := make(chan interface{})
+	go func() { callResultCh <- call.result() }()
+	select {
+	case callResult = <-callResultCh:
+	case <-ctx.Done():
+		callResult = errors.New("context cancelled")
+	}
+
 	// Error results are treated differently, as described in mockCall.
-	if err, ok := call.result.(error); ok {
+	if err, ok := callResult.(error); ok {
 		return err
 	}
 
 	// Message is marshalled and unmarshalled to verify, if marshalling is
 	// implemented correctly.
-	return json.Unmarshal(jsonMarshal(c.t, call.result), &result)
+	return json.Unmarshal(jsonMarshal(c.t, callResult), result)
 }
 
 type handlerTester struct {
 	t *testing.T
 
-	clients   []rpcClient
+	clients   []caller
+	options   []Option
 	expResult interface{}
 	expMethod string
 	expParams []interface{}
@@ -103,16 +123,29 @@ type handlerTester struct {
 }
 
 func prepareHandlerTest(t *testing.T, clients int, method string, params ...interface{}) *handlerTester {
-	var cli []rpcClient
+	var callers []caller
 	for i := 0; i < clients; i++ {
-		cli = append(cli, rpcClient{rpcCaller: &mockClient{t: t}, endpoint: fmt.Sprintf("#%d", i)})
+		callers = append(callers, &mockClient{t: t})
 	}
-	return &handlerTester{t: t, clients: cli, expMethod: method, expParams: params}
+	return &handlerTester{t: t, clients: callers, expMethod: method, expParams: params}
 }
 
 // mockClientCall mocks call on n client.
 func (t *handlerTester) mockClientCall(n int, response interface{}, method string, params ...interface{}) *handlerTester {
-	t.clients[n].rpcCaller.(*mockClient).mockCall(response, method, params...)
+	t.clients[n].(*mockClient).mockCall(response, method, params...)
+	return t
+}
+
+// mockClientSlowCall mocks call with a delay on n client.
+//nolint:unparam
+func (t *handlerTester) mockClientSlowCall(delay time.Duration, n int, response interface{}, method string, params ...interface{}) *handlerTester {
+	t.clients[n].(*mockClient).mockSlowCall(delay, response, method, params...)
+	return t
+}
+
+// setRequirements is an equivalent of WithRequirements option.
+func (t *handlerTester) setOptions(opts ...Option) *handlerTester {
+	t.options = append(t.options, opts...)
 	return t
 }
 
@@ -130,8 +163,12 @@ func (t *handlerTester) expectedError(msg string) *handlerTester {
 }
 
 func (t *handlerTester) test() {
-	// Prepare handler.
-	h, err := newHandlerWithClients(t.clients, 10, null.New())
+	// Prepare server.
+	callers := map[string]caller{}
+	for n, c := range t.clients {
+		callers[fmt.Sprintf("%d", n)] = c
+	}
+	h, err := NewServer(append([]Option{withCallers(callers)}, t.options...)...)
 	require.NoError(t.t, err)
 
 	// Prepare request.
