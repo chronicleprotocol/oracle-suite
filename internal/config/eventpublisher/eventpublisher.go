@@ -16,9 +16,9 @@
 package eventpublisher
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
@@ -133,12 +133,8 @@ func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, l
 func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) error {
 	for _, w := range c.Listeners.WormholeStarknet {
 		for _, blocksBehind := range w.BlocksBehind {
-			client, err := starknetClient.NewClient(context.Background(), w.RPC)
-			if err != nil {
-				return err
-			}
 			*lis = append(*lis, starknet.NewWormholeListener(starknet.WormholeListenerConfig{
-				Client:       client,
+				Client:       starknetClient.NewSequencer(w.RPC, http.Client{}),
 				Addresses:    w.Addresses,
 				Interval:     time.Second * time.Duration(w.Interval),
 				BlocksBehind: blocksBehind,
