@@ -34,20 +34,17 @@ import (
 
 const testResponse = `
 {
-  "block_hash": "0x477c7df1ffe6f73df5760dc566b3d250ac2030566dee729af6e5a1acc41fed2",
-  "parent_hash": "0x38ac438303497fb08ccfa4edbfece5a6aaf7e0b86b51e90306e04d028bb1d7a",
-  "block_number": 2427,
-  "status": "ACCEPTED_ON_L2",
-  "sequencer": "0x21f4b90b0377c82bf330b7b5295820769e72d79d8acd0effa0ebde6e9988bc5",
-  "new_root": "0x69d5c24991aac56beabd37a0598a561cd3b0becd419c38f7ab2cd496d889d2f",
-  "old_root": "0x5f83732887317cf0262b726924af6c42181207dc02fe5ae7ec3acd5a51aab62",
-  "accepted_time": 1653611681,
-  "gas_price": "0x8d6e3b615",
+  "block_hash": "0x74ff65a69e077e69663539f8a277d3c81965f7eb9a61d039b437e66290f38ea",
+  "parent_block_hash": "0x26af2e23367fd4f46198bf469d5dbbe33b29919710b1fa08b65599f79672ecb",
+  "block_number": 191504,
+  "state_root": "00ee28831898c577fd55991e693865e3c280e3e5051b569bca0c25ccf212310e",
+  "status": "ACCEPTED_ON_L1",
+  "gas_price": "0x59682f07",
   "transactions": [
     {
-      "txn_hash": "0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202",
       "contract_address": "0x1068104d5f1be3d69101835c6bf302172744102f8ab0c01f85741fe586a6af8",
       "entry_point_selector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad",
+      "entry_point_type": "EXTERNAL",
       "calldata": [
         "0x1",
         "0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24",
@@ -61,10 +58,22 @@ const testResponse = `
         "0x8aa7c51a6d380f4d9e273add4298d913416031ec",
         "0x9"
       ],
-      "status": "ACCEPTED_ON_L2",
-      "status_data": "",
-      "messages_sent": [],
-      "l1_origin_message": {},
+      "signature": [
+        "0x5909ccfd8a2515f8fbbaf0c0e95dab4faf2ed1224d72762c40917311024162f",
+        "0x2db1c64ee5c348859e613c4b24029612c82e2c40ed9b07103cc8ef7701bb410"
+      ],
+      "transaction_hash": "0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202",
+      "max_fee": "0x0",
+      "type": "INVOKE_FUNCTION"
+    }
+  ],
+  "timestamp": 1652698140,
+  "sequencer_address": "0x46a89ae102987331d369645031b49c27738ed096f2789c24449966da4c6de6b",
+  "transaction_receipts": [
+    {
+      "transaction_index": 8,
+      "transaction_hash": "0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202",
+      "l2_to_l1_messages": [],
       "events": [
         {
           "from_address": "0x52713f43368f9f8ca407174f7bf44f68b6cba77f1fa386d320c0bb096145675",
@@ -103,7 +112,20 @@ const testResponse = `
             "0x0"
           ]
         }
-      ]
+      ],
+      "execution_resources": {
+        "n_steps": 1615,
+        "builtin_instance_counter": {
+          "pedersen_builtin": 8,
+          "range_check_builtin": 41,
+          "ecdsa_builtin": 1,
+          "output_builtin": 0,
+          "bitwise_builtin": 0,
+          "ec_op_builtin": 0
+        },
+        "n_memory_holes": 91
+      },
+      "actual_fee": "0x0"
     }
   ]
 }
@@ -111,7 +133,7 @@ const testResponse = `
 
 func Test_wormholeListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	cli := &mocks.Client{}
+	cli := &mocks.Sequencer{}
 
 	w := NewWormholeListener(WormholeListenerConfig{
 		Client:       cli,
@@ -129,12 +151,13 @@ func Test_wormholeListener(t *testing.T) {
 		panic(err)
 	}
 
-	cli.On("BlockNumber", ctx).Return(uint64(42), nil).Once()
 	cli.On("GetBlockByNumber", ctx, mock.Anything, mock.Anything).Return(block, nil).Once().Run(func(args mock.Arguments) {
-		bn := args.Get(1).(uint64)
-		sc := args.Get(2).(starknet.Scope)
-		assert.Equal(t, uint64(42), bn)
-		assert.Equal(t, starknet.ScopeFullTXNAndReceipts, sc)
+		bn := args.Get(1).(*uint64)
+		assert.Equal(t, (*uint64)(nil), bn)
+	})
+	cli.On("GetBlockByNumber", ctx, mock.Anything, mock.Anything).Return(block, nil).Once().Run(func(args mock.Arguments) {
+		bn := args.Get(1).(*uint64)
+		assert.Equal(t, uint64(191504), *bn)
 	})
 
 	require.NoError(t, w.Start(ctx))

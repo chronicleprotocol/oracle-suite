@@ -41,8 +41,8 @@ type WormholeListener struct {
 
 // WormholeListenerConfig contains a configuration options for NewWormholeListener.
 type WormholeListenerConfig struct {
-	// Client is an instance of Ethereum RPC client.
-	Client Client
+	// Client is an instance of Ethereum RPC sequencer.
+	Client Sequencer
 	// Addresses is a list of contracts from which events will be fetched.
 	Addresses []*starknet.Felt
 	// Interval specifies how often listener should check for new events.
@@ -112,7 +112,7 @@ func eventToMessage(evt *event) (*messages.Event, error) {
 	hash := crypto.Keccak256Hash(guid)
 	data := map[string][]byte{
 		"hash":  hash.Bytes(), // Hash to be used to calculate a signature.
-		"event": guid,         // Event data.
+		"event": guid,         // NodeEvent data.
 	}
 	return &messages.Event{
 		Type:        WormholeStarknetEventType,

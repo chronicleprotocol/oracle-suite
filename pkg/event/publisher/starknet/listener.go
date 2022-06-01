@@ -26,9 +26,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
-type Client interface {
-	BlockNumber(ctx context.Context) (uint64, error)
-	GetBlockByNumber(ctx context.Context, blockNumber uint64, scope starknet.Scope) (*starknet.Block, error)
+type Sequencer interface {
+	GetBlockByNumber(ctx context.Context, blockNumber *uint64) (*starknet.Block, error)
 }
 
 type event struct {
@@ -42,9 +41,9 @@ type event struct {
 type eventListener struct {
 	mu sync.Mutex
 
-	client          Client
+	sequencer       Sequencer
 	addresses       []*starknet.Felt
-	interval        time.Duration // Time interval between pulling logs from Ethereum client.
+	interval        time.Duration // Time interval between pulling logs from Ethereum sequencer.
 	lastBlockNumber uint64        // Last block from which logs were pulled.
 	blocksBehind    uint64        // Number of blocks behind the latest one.
 	maxBlocks       uint64        // Maximum number of blocks from which logs can be fetched.
@@ -53,7 +52,7 @@ type eventListener struct {
 }
 
 func newEventListener(
-	client Client,
+	sequencer Sequencer,
 	addresses []*starknet.Felt,
 	interval time.Duration,
 	blocksBehind,
@@ -62,7 +61,7 @@ func newEventListener(
 ) *eventListener {
 
 	return &eventListener{
-		client:       client,
+		sequencer:    sequencer,
 		addresses:    addresses,
 		interval:     interval,
 		blocksBehind: blocksBehind,
@@ -84,12 +83,12 @@ func (l *eventListener) Events() chan *event {
 // nextBlockNumberRange returns the next block range from which logs should
 // be fetched.
 func (l *eventListener) nextBlockNumberRange(ctx context.Context) (uint64, uint64, error) {
-	curr, err := l.client.BlockNumber(ctx)
+	block, err := l.sequencer.GetBlockByNumber(ctx, nil)
 	if err != nil {
 		return 0, 0, err
 	}
 	from := l.lastBlockNumber + 1
-	to := uint64(math.Max(0, float64(curr-l.blocksBehind)))
+	to := uint64(math.Max(0, float64(block.BlockNumber-l.blocksBehind)))
 	if from > to {
 		from = to
 	}
@@ -123,12 +122,12 @@ func (l *eventListener) nextTransactions(ctx context.Context) ([]*event, error) 
 				WithField("blockNumber", n).
 				Debug("Fetching Starknet block")
 		}
-		block, err := l.client.GetBlockByNumber(ctx, n, starknet.ScopeFullTXNAndReceipts)
+		block, err := l.sequencer.GetBlockByNumber(ctx, &n)
 		if err != nil {
 			l.log.WithError(err).Error("Unable to fetch Starknet block")
 			continue
 		}
-		for _, tx := range block.Transactions {
+		for _, tx := range block.TransactionReceipts {
 			for _, evt := range tx.Events {
 				include := false
 				for _, addr := range l.addresses {
@@ -139,9 +138,9 @@ func (l *eventListener) nextTransactions(ctx context.Context) ([]*event, error) 
 				}
 				if include {
 					all = append(all, &event{
-						txnHash:     tx.TxnHash,
+						txnHash:     tx.TransactionHash,
 						fromAddress: evt.FromAddress,
-						time:        time.Unix(block.AcceptedTime, 0),
+						time:        time.Unix(block.Timestamp, 0),
 						keys:        evt.Keys,
 						data:        evt.Data,
 					})
