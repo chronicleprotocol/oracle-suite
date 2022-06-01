@@ -84,9 +84,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	if err := c.configureWormholeListeners(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
-	if err := c.configureWormholeStarknetListeners(&lis, d.Logger); err != nil {
-		return nil, fmt.Errorf("eventpublisher config: %w", err)
-	}
+	c.configureWormholeStarknetListeners(&lis, d.Logger)
 	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.WormholeEventType})}
 	cfg := publisher.Config{
 		Listeners: lis,
@@ -132,7 +130,7 @@ func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, l
 	return nil
 }
 
-func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) error {
+func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) {
 	for _, w := range c.Listeners.WormholeStarknet {
 		for _, blocksBehind := range w.BlocksBehind {
 			*lis = append(*lis, starknet.NewWormholeListener(starknet.WormholeListenerConfig{
@@ -145,7 +143,6 @@ func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Lis
 			}))
 		}
 	}
-	return nil
 }
 
 type ethClients map[string]geth.EthClient
