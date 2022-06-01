@@ -23,8 +23,12 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
+	"github.com/chronicleprotocol/oracle-suite/internal/util/retry"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
+
+const retryAttempts = 3               // The maximum number of attempts to call EthClient in case of an error.
+const retryInterval = 5 * time.Second // The delay between retry attempts.
 
 type Sequencer interface {
 	GetBlockByNumber(ctx context.Context, blockNumber *uint64) (*starknet.Block, error)
@@ -83,7 +87,15 @@ func (l *eventListener) Events() chan *event {
 // nextBlockNumberRange returns the next block range from which logs should
 // be fetched.
 func (l *eventListener) nextBlockNumberRange(ctx context.Context) (uint64, uint64, error) {
-	block, err := l.sequencer.GetBlockByNumber(ctx, nil)
+	var block *starknet.Block
+	err := retry.Retry(ctx, func() error {
+		var err error
+		block, err = l.sequencer.GetBlockByNumber(ctx, nil)
+		return err
+	}, retryAttempts, retryInterval)
+	if err != nil {
+		return 0, 0, err
+	}
 	if err != nil {
 		return 0, 0, err
 	}
@@ -122,7 +134,12 @@ func (l *eventListener) nextTransactions(ctx context.Context) ([]*event, error) 
 				WithField("blockNumber", n).
 				Debug("Fetching Starknet block")
 		}
-		block, err := l.sequencer.GetBlockByNumber(ctx, &n)
+		var block *starknet.Block
+		err = retry.Retry(ctx, func() error {
+			var err error
+			block, err = l.sequencer.GetBlockByNumber(ctx, &n)
+			return err
+		}, retryAttempts, retryInterval)
 		if err != nil {
 			l.log.WithError(err).Error("Unable to fetch Starknet block")
 			continue
