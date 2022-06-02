@@ -21,7 +21,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Linting code
         uses: golangci/golangci-lint-action@v3
         with:

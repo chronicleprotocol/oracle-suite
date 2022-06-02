@@ -1,3 +1,7 @@
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+
 builds:
   - main: ./cmd/gofer
     id: "gofer"
@@ -11,21 +15,21 @@ builds:
     binary: spire
     goos:
       - linux
-      - darwin
+      # - darwin
 
   - main: ./cmd/leeloo
     id: "leeloo"
     binary: leeloo
     goos:
       - linux
-      - darwin
+      # - darwin
 
   - main: ./cmd/lair
     id: "lair"
     binary: lair
     goos:
       - linux
-      - darwin
+      # - darwin
 
   - main: ./cmd/ssb-rpc-client
     id: "ssb-rpc-client"
