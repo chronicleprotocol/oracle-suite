@@ -32,7 +32,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
-const testResponse = `
+const testBlockResponse = `
 {
   "block_hash": "0x74ff65a69e077e69663539f8a277d3c81965f7eb9a61d039b437e66290f38ea",
   "parent_block_hash": "0x26af2e23367fd4f46198bf469d5dbbe33b29919710b1fa08b65599f79672ecb",
@@ -146,7 +146,7 @@ func Test_wormholeListener(t *testing.T) {
 
 	txHash := starknet.HexToFelt("57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202")
 	block := &starknet.Block{}
-	err := json.Unmarshal([]byte(testResponse), block)
+	err := json.Unmarshal([]byte(testBlockResponse), block)
 	if err != nil {
 		panic(err)
 	}

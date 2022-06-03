@@ -145,25 +145,29 @@ func (l *acceptedBlockListener) acceptedBlockEvents(ctx context.Context) (evts [
 func (l *acceptedBlockListener) listenerRoutine(ctx context.Context) {
 	t := time.NewTicker(l.interval)
 	defer t.Stop()
+
+	fetch := func() {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+
+		// Fetch events and send them to the channel.
+		evts, err := l.acceptedBlockEvents(ctx)
+		if err != nil {
+			l.log.WithError(err).Error("Unable to fetch events")
+			return
+		}
+		for _, evt := range evts {
+			l.eventsCh <- evt
+		}
+	}
+
 	for {
+		fetch()
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			func() {
-				l.mu.Lock()
-				defer l.mu.Unlock()
-
-				// Fetch events and send them to the channel.
-				evts, err := l.acceptedBlockEvents(ctx)
-				if err != nil {
-					l.log.WithError(err).Error("Unable to fetch events")
-					return
-				}
-				for _, evt := range evts {
-					l.eventsCh <- evt
-				}
-			}()
+			fetch()
 		}
 	}
 }
@@ -214,26 +218,30 @@ func (l *pendingBlockListener) pendingBlockEvents(ctx context.Context) (evts []*
 func (l *pendingBlockListener) listenerRoutine(ctx context.Context) {
 	t := time.NewTicker(l.interval)
 	defer t.Stop()
+
+	fetch := func() {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+
+		// Fetch events and send them to the channel.
+		l.log.Info("Fetching pending Starknet block")
+		evts, err := l.pendingBlockEvents(ctx)
+		if err != nil {
+			l.log.WithError(err).Error("Unable to fetch events")
+			return
+		}
+		for _, evt := range evts {
+			l.eventsCh <- evt
+		}
+	}
+
 	for {
+		fetch()
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			func() {
-				l.mu.Lock()
-				defer l.mu.Unlock()
-
-				// Fetch events and send them to the channel.
-				l.log.Info("Fetching pending Starknet block")
-				evts, err := l.pendingBlockEvents(ctx)
-				if err != nil {
-					l.log.WithError(err).Error("Unable to fetch events")
-					return
-				}
-				for _, evt := range evts {
-					l.eventsCh <- evt
-				}
-			}()
+			fetch()
 		}
 	}
 }
