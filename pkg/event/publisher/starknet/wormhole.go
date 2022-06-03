@@ -106,6 +106,7 @@ func (l *WormholeListener) listenerRoutine(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			close(l.messageCh)
+			close(l.eventsCh)
 			return
 		case evt := <-l.eventsCh:
 			msg, err := eventToMessage(evt)

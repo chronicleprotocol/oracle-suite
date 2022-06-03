@@ -148,9 +148,6 @@ func (l *acceptedBlockListener) listenerRoutine(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			l.mu.Lock()
-			close(l.eventsCh)
-			l.mu.Unlock()
 			return
 		case <-t.C:
 			func() {
@@ -220,9 +217,6 @@ func (l *pendingBlockListener) listenerRoutine(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			l.mu.Lock()
-			close(l.eventsCh)
-			l.mu.Unlock()
 			return
 		case <-t.C:
 			func() {
