@@ -129,8 +129,8 @@ func (l *acceptedBlockListener) acceptedBlockEvents(ctx context.Context) (evts [
 			// Handle events from the block.
 			for _, tx := range block.TransactionReceipts {
 				for _, evt := range tx.Events {
-					if isEventFromAddress(&evt, l.addresses) {
-						evts = append(evts, mapEvent(block, &tx, &evt))
+					if isEventFromAddress(evt, l.addresses) {
+						evts = append(evts, mapEvent(block, tx, evt))
 					}
 				}
 			}
@@ -205,8 +205,8 @@ func (l *pendingBlockListener) pendingBlockEvents(ctx context.Context) (evts []*
 	// Handle events from the block.
 	for _, tx := range block.TransactionReceipts {
 		for _, evt := range tx.Events {
-			if isEventFromAddress(&evt, l.addresses) {
-				evts = append(evts, mapEvent(block, &tx, &evt))
+			if isEventFromAddress(evt, l.addresses) {
+				evts = append(evts, mapEvent(block, tx, evt))
 			}
 		}
 	}
