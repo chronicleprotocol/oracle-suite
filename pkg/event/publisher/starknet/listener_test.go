@@ -17,12 +17,12 @@ func Test_acceptedBlockListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	seq := &mocks.Sequencer{}
-	ch := make(chan *event)
+	ch := make(chan *event, 10)
 
 	lis := acceptedBlockListener{
 		sequencer:    seq,
 		addresses:    []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
-		interval:     250 * time.Millisecond,
+		interval:     10 * time.Second,
 		maxBlocks:    3,
 		blocksBehind: []uint64{10},
 		eventsCh:     ch,
@@ -41,22 +41,22 @@ func Test_acceptedBlockListener(t *testing.T) {
 	seq.On("GetBlockByNumber", ctx, uint64(191492)).Return(block, nil).Once()
 	seq.On("GetBlockByNumber", ctx, uint64(191493)).Return(block, nil).Once()
 	seq.On("GetBlockByNumber", ctx, uint64(191494)).Return(block, nil).Once()
+	lis.fetchEvents(ctx)
+	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, ch, 3)
 
-	// Start listener and collect events:
-	lis.start(ctx)
-	var evts []*event
-	for len(evts) < 1 {
-		evts = append(evts, <-lis.events())
-		time.Sleep(time.Millisecond * 10)
-	}
-	assert.Len(t, evts, 1)
+	// During the second interval, there is no new blocks.
+	seq.On("GetLatestBlock", ctx).Return(block, nil).Once()
+	lis.fetchEvents(ctx)
+	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, ch, 3)
 }
 
 func Test_pendingBlockListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	seq := &mocks.Sequencer{}
-	ch := make(chan *event)
+	ch := make(chan *event, 10)
 
 	lis := pendingBlockListener{
 		sequencer: seq,
@@ -72,14 +72,15 @@ func Test_pendingBlockListener(t *testing.T) {
 		panic(err)
 	}
 
+	// First interval.
 	seq.On("GetPendingBlock", ctx).Return(block, nil).Once()
+	lis.fetchEvents(ctx)
+	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, ch, 1)
 
-	// Start listener and collect events:
-	lis.start(ctx)
-	var evts []*event
-	for len(evts) < 1 {
-		evts = append(evts, <-lis.events())
-		time.Sleep(time.Millisecond * 10)
-	}
-	assert.Len(t, evts, 1)
+	// Second interval.
+	seq.On("GetPendingBlock", ctx).Return(block, nil).Once()
+	lis.fetchEvents(ctx)
+	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, ch, 2)
 }

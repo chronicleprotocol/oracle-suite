@@ -94,6 +94,11 @@ func (l *acceptedBlockListener) nextBlockRange(ctx context.Context) (uint64, uin
 	from := l.lastBlockNumber + 1
 	to := block.BlockNumber
 
+	// No new blocks since the last check.
+	if from > to {
+		from = to
+	}
+
 	// Cap the number of blocks to fetch.
 	if to-from > l.maxBlocks {
 		from = to - l.maxBlocks + 1
@@ -102,16 +107,16 @@ func (l *acceptedBlockListener) nextBlockRange(ctx context.Context) (uint64, uin
 	return from, to, nil
 }
 
-// acceptedBlockEvents fetches events from the blockchain.
-func (l *acceptedBlockListener) acceptedBlockEvents(ctx context.Context) (evts []*event, err error) {
+// fetchEvents fetches events from the blockchain.
+func (l *acceptedBlockListener) fetchEvents(ctx context.Context) {
 	from, to, err := l.nextBlockRange(ctx)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	// There is no new blocks to fetch.
 	if from == l.lastBlockNumber {
-		return nil, nil
+		return
 	}
 
 	for blockNumber := from; blockNumber <= to; blockNumber++ {
@@ -130,7 +135,7 @@ func (l *acceptedBlockListener) acceptedBlockEvents(ctx context.Context) (evts [
 			for _, tx := range block.TransactionReceipts {
 				for _, evt := range tx.Events {
 					if isEventFromAddress(evt, l.addresses) {
-						evts = append(evts, mapEvent(block, tx, evt))
+						l.eventsCh <- mapEvent(block, tx, evt)
 					}
 				}
 			}
@@ -138,36 +143,18 @@ func (l *acceptedBlockListener) acceptedBlockEvents(ctx context.Context) (evts [
 	}
 
 	l.lastBlockNumber = to
-
-	return evts, nil
 }
 
 func (l *acceptedBlockListener) listenerRoutine(ctx context.Context) {
 	t := time.NewTicker(l.interval)
 	defer t.Stop()
 
-	fetch := func() {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-
-		// Fetch events and send them to the channel.
-		evts, err := l.acceptedBlockEvents(ctx)
-		if err != nil {
-			l.log.WithError(err).Error("Unable to fetch events")
-			return
-		}
-		for _, evt := range evts {
-			l.eventsCh <- evt
-		}
-	}
-
 	for {
-		fetch()
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			fetch()
+			l.fetchEvents(ctx)
 		}
 	}
 }
@@ -194,54 +181,34 @@ func (l *pendingBlockListener) events() chan *event {
 	return l.eventsCh
 }
 
-// pendingBlockEvents fetches events from the blockchain.
-func (l *pendingBlockListener) pendingBlockEvents(ctx context.Context) (evts []*event, err error) {
+// fetchEvents fetches events from the blockchain.
+func (l *pendingBlockListener) fetchEvents(ctx context.Context) {
 	// Fetch a block.
 	block, err := getPendingBlock(ctx, l.sequencer)
 	if err != nil {
 		l.log.WithError(err).Error("Unable to fetch Starknet block")
-		return nil, err
+		return
 	}
 
 	// Handle events from the block.
 	for _, tx := range block.TransactionReceipts {
 		for _, evt := range tx.Events {
 			if isEventFromAddress(evt, l.addresses) {
-				evts = append(evts, mapEvent(block, tx, evt))
+				l.eventsCh <- mapEvent(block, tx, evt)
 			}
 		}
 	}
-
-	return evts, nil
 }
 
 func (l *pendingBlockListener) listenerRoutine(ctx context.Context) {
 	t := time.NewTicker(l.interval)
 	defer t.Stop()
-
-	fetch := func() {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-
-		// Fetch events and send them to the channel.
-		l.log.Info("Fetching pending Starknet block")
-		evts, err := l.pendingBlockEvents(ctx)
-		if err != nil {
-			l.log.WithError(err).Error("Unable to fetch events")
-			return
-		}
-		for _, evt := range evts {
-			l.eventsCh <- evt
-		}
-	}
-
 	for {
-		fetch()
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			fetch()
+			l.fetchEvents(ctx)
 		}
 	}
 }
