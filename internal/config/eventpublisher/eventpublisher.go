@@ -132,16 +132,14 @@ func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, l
 
 func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) {
 	for _, w := range c.Listeners.WormholeStarknet {
-		for _, blocksBehind := range w.BlocksBehind {
-			*lis = append(*lis, starknet.NewWormholeListener(starknet.WormholeListenerConfig{
-				Client:       starknetClient.NewSequencer(w.RPC, http.Client{}),
-				Addresses:    w.Addresses,
-				Interval:     time.Second * time.Duration(w.Interval),
-				BlocksBehind: blocksBehind,
-				MaxBlocks:    w.MaxBlocks,
-				Logger:       logger,
-			}))
-		}
+		*lis = append(*lis, starknet.NewWormholeListener(starknet.WormholeListenerConfig{
+			Sequencer:    starknetClient.NewSequencer(w.RPC, http.Client{}),
+			Addresses:    w.Addresses,
+			Interval:     time.Second * time.Duration(w.Interval),
+			BlocksBehind: w.BlocksBehind,
+			MaxBlocks:    w.MaxBlocks,
+			Logger:       logger,
+		}))
 	}
 }
 

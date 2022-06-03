@@ -18,7 +18,6 @@ package starknet
 import (
 	"bytes"
 	"context"
-	"math"
 	"sync"
 	"time"
 
@@ -31,136 +30,108 @@ const retryAttempts = 3               // The maximum number of attempts to call 
 const retryInterval = 5 * time.Second // The delay between retry attempts.
 
 type Sequencer interface {
-	GetBlockByNumber(ctx context.Context, blockNumber *uint64) (*starknet.Block, error)
+	GetPendingBlock(ctx context.Context) (*starknet.Block, error)
+	GetLatestBlock(ctx context.Context) (*starknet.Block, error)
+	GetBlockByNumber(ctx context.Context, blockNumber uint64) (*starknet.Block, error)
 }
 
+// eventListeners listens for events on the blockchain.
+type eventListener interface {
+	start(ctx context.Context)
+	events() chan *event
+}
+
+// event represents a starkware event from a transaction recipient.
 type event struct {
 	txnHash     *starknet.Felt
 	fromAddress *starknet.Felt
-	time        time.Time
 	keys        []*starknet.Felt
 	data        []*starknet.Felt
+	time        time.Time
 }
 
-type eventListener struct {
+// acceptedBlockListener periodically fetches events from accepted blocks.
+// It fetches events from blocks that are as far behind the most recent
+// block as specified in blocksBehind.
+type acceptedBlockListener struct {
 	mu sync.Mutex
 
-	sequencer       Sequencer
-	addresses       []*starknet.Felt
-	interval        time.Duration // Time interval between pulling logs from Ethereum sequencer.
-	lastBlockNumber uint64        // Last block from which logs were pulled.
-	blocksBehind    uint64        // Number of blocks behind the latest one.
-	maxBlocks       uint64        // Maximum number of blocks from which logs can be fetched.
-	outCh           chan *event   // Channel to which events are sent.
-	log             log.Logger    // Logger.
+	// Configuration:
+	sequencer    Sequencer
+	addresses    []*starknet.Felt // The addresses of contract from which event should be handled.
+	interval     time.Duration    // Time interval between pulling events from Sequencer.
+	maxBlocks    uint64           // Maximum number of blocks from which logs can be fetched.
+	blocksBehind []uint64         // Number of blocks behind the latest one.
+	eventsCh     chan *event      // Channel to which events are sent.
+	log          log.Logger       // Logger.
+
+	// State:
+	lastBlockNumber uint64 // Last block from which events were pulled.
 }
 
-func newEventListener(
-	sequencer Sequencer,
-	addresses []*starknet.Felt,
-	interval time.Duration,
-	blocksBehind,
-	maxBlocks uint64,
-	logger log.Logger,
-) *eventListener {
-
-	return &eventListener{
-		sequencer:    sequencer,
-		addresses:    addresses,
-		interval:     interval,
-		blocksBehind: blocksBehind,
-		maxBlocks:    maxBlocks,
-		outCh:        make(chan *event),
-		log:          logger,
+// start implements the eventListener interface.
+func (l *acceptedBlockListener) start(ctx context.Context) {
+	if len(l.blocksBehind) == 0 {
+		// If blocksBehind is empty, then there is nothing to do.
+		return
 	}
-}
-
-// Start implements the logListener interface.
-func (l *eventListener) Start(ctx context.Context) {
 	go l.listenerRoutine(ctx)
 }
 
-func (l *eventListener) Events() chan *event {
-	return l.outCh
+// events implements the eventListener interface.
+func (l *acceptedBlockListener) events() chan *event {
+	return l.eventsCh
 }
 
-// nextBlockNumberRange returns the next block range from which logs should
-// be fetched.
-func (l *eventListener) nextBlockNumberRange(ctx context.Context) (uint64, uint64, error) {
-	var block *starknet.Block
-	err := retry.Retry(ctx, func() error {
-		var err error
-		block, err = l.sequencer.GetBlockByNumber(ctx, nil)
-		return err
-	}, retryAttempts, retryInterval)
+// nextBlockRange returns the next block range from which events should be
+// fetched. It does not consider the blockBehind parameter.
+func (l *acceptedBlockListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
+	block, err := getLatestBlock(ctx, l.sequencer)
 	if err != nil {
 		return 0, 0, err
 	}
-	if err != nil {
-		return 0, 0, err
-	}
+
 	from := l.lastBlockNumber + 1
-	to := uint64(math.Max(0, float64(block.BlockNumber-l.blocksBehind)))
-	if from > to {
-		from = to
-	}
+	to := block.BlockNumber
+
+	// Cap the number of blocks to fetch.
 	if to-from > l.maxBlocks {
 		from = to - l.maxBlocks + 1
 	}
+
 	return from, to, nil
 }
 
-// nextTransactions returns a logs from a range returned by the nextBlockNumberRange
-// method and updates lastBlockNumber variable.
-func (l *eventListener) nextTransactions(ctx context.Context) ([]*event, error) {
-	// Find the next block number range.
-	from, to, err := l.nextBlockNumberRange(ctx)
+// acceptedBlockEvents fetches events from the blockchain.
+func (l *acceptedBlockListener) acceptedBlockEvents(ctx context.Context) (evts []*event, err error) {
+	from, to, err := l.nextBlockRange(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// If the "from" var is equal to the last block number, it means that there
-	// were no new block since the last invoke of this method, so there are no
-	// new logs.
+	// There is no new blocks to fetch.
 	if from == l.lastBlockNumber {
 		return nil, nil
 	}
 
-	// Fetch transactions from a block.
-	var all []*event
-	for n := from; n <= to; n++ {
-		if l.log.Level() >= log.Debug {
-			l.log.
-				WithField("blockNumber", n).
-				Debug("Fetching Starknet block")
-		}
-		var block *starknet.Block
-		err = retry.Retry(ctx, func() error {
-			var err error
-			block, err = l.sequencer.GetBlockByNumber(ctx, &n)
-			return err
-		}, retryAttempts, retryInterval)
-		if err != nil {
-			l.log.WithError(err).Error("Unable to fetch Starknet block")
-			continue
-		}
-		for _, tx := range block.TransactionReceipts {
-			for _, evt := range tx.Events {
-				include := false
-				for _, addr := range l.addresses {
-					if bytes.Equal(evt.FromAddress.Bytes(), addr.Bytes()) {
-						include = true
-						break
+	for blockNumber := from; blockNumber <= to; blockNumber++ {
+		for _, blocksBehind := range l.blocksBehind {
+			blockNumber := blockNumber - blocksBehind
+
+			// Fetch a block.
+			l.log.WithField("blockNumber", blockNumber).Info("Fetching Starknet block")
+			block, err := getBlockByNumber(ctx, l.sequencer, blockNumber)
+			if err != nil {
+				l.log.WithError(err).Error("Unable to fetch Starknet block")
+				continue
+			}
+
+			// Handle events from the block.
+			for _, tx := range block.TransactionReceipts {
+				for _, evt := range tx.Events {
+					if isEventFromAddress(&evt, l.addresses) {
+						evts = append(evts, mapEvent(block, &tx, &evt))
 					}
-				}
-				if include {
-					all = append(all, &event{
-						txnHash:     tx.TransactionHash,
-						fromAddress: evt.FromAddress,
-						time:        time.Unix(block.Timestamp, 0),
-						keys:        evt.Keys,
-						data:        evt.Data,
-					})
 				}
 			}
 		}
@@ -168,32 +139,168 @@ func (l *eventListener) nextTransactions(ctx context.Context) ([]*event, error) 
 
 	l.lastBlockNumber = to
 
-	return all, nil
+	return evts, nil
 }
 
-func (l *eventListener) listenerRoutine(ctx context.Context) {
+func (l *acceptedBlockListener) listenerRoutine(ctx context.Context) {
 	t := time.NewTicker(l.interval)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			l.mu.Lock()
-			close(l.outCh)
+			close(l.eventsCh)
 			l.mu.Unlock()
 			return
 		case <-t.C:
 			func() {
 				l.mu.Lock()
 				defer l.mu.Unlock()
-				txns, err := l.nextTransactions(ctx)
+
+				// Fetch events and send them to the channel.
+				evts, err := l.acceptedBlockEvents(ctx)
 				if err != nil {
 					l.log.WithError(err).Error("Unable to fetch events")
 					return
 				}
-				for _, tx := range txns {
-					l.outCh <- tx
+				for _, evt := range evts {
+					l.eventsCh <- evt
 				}
 			}()
 		}
 	}
+}
+
+// pendingBlockListener periodically fetches events from the pending block.
+type pendingBlockListener struct {
+	mu sync.Mutex
+
+	// Configuration:
+	sequencer Sequencer
+	addresses []*starknet.Felt // The addresses of contract from which event should be handled.
+	interval  time.Duration    // Time interval between pulling events from Sequencer.
+	eventsCh  chan *event      // Channel to which events are sent.
+	log       log.Logger       // Logger.
+}
+
+// start implements the eventListener interface.
+func (l *pendingBlockListener) start(ctx context.Context) {
+	go l.listenerRoutine(ctx)
+}
+
+// events implements the eventListener interface.
+func (l *pendingBlockListener) events() chan *event {
+	return l.eventsCh
+}
+
+// pendingBlockEvents fetches events from the blockchain.
+func (l *pendingBlockListener) pendingBlockEvents(ctx context.Context) (evts []*event, err error) {
+	// Fetch a block.
+	block, err := getPendingBlock(ctx, l.sequencer)
+	if err != nil {
+		l.log.WithError(err).Error("Unable to fetch Starknet block")
+		return nil, err
+	}
+
+	// Handle events from the block.
+	for _, tx := range block.TransactionReceipts {
+		for _, evt := range tx.Events {
+			if isEventFromAddress(&evt, l.addresses) {
+				evts = append(evts, mapEvent(block, &tx, &evt))
+			}
+		}
+	}
+
+	return evts, nil
+}
+
+func (l *pendingBlockListener) listenerRoutine(ctx context.Context) {
+	t := time.NewTicker(l.interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			l.mu.Lock()
+			close(l.eventsCh)
+			l.mu.Unlock()
+			return
+		case <-t.C:
+			func() {
+				l.mu.Lock()
+				defer l.mu.Unlock()
+
+				// Fetch events and send them to the channel.
+				l.log.Info("Fetching pending Starknet block")
+				evts, err := l.pendingBlockEvents(ctx)
+				if err != nil {
+					l.log.WithError(err).Error("Unable to fetch events")
+					return
+				}
+				for _, evt := range evts {
+					l.eventsCh <- evt
+				}
+			}()
+		}
+	}
+}
+
+func isEventFromAddress(evt *starknet.Event, addrs []*starknet.Felt) bool {
+	for _, addr := range addrs {
+		if bytes.Equal(evt.FromAddress.Bytes(), addr.Bytes()) {
+			return true
+		}
+	}
+	return false
+}
+
+func mapEvent(block *starknet.Block, tx *starknet.TransactionReceipt, evt *starknet.Event) *event {
+	return &event{
+		txnHash:     tx.TransactionHash,
+		fromAddress: evt.FromAddress,
+		time:        time.Unix(block.Timestamp, 0),
+		keys:        evt.Keys,
+		data:        evt.Data,
+	}
+}
+
+func getBlockByNumber(ctx context.Context, seq Sequencer, num uint64) (block *starknet.Block, err error) {
+	err = retry.Retry(
+		ctx,
+		func() error {
+			var err error
+			block, err = seq.GetBlockByNumber(ctx, num)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
+	)
+	return block, err
+}
+
+func getLatestBlock(ctx context.Context, seq Sequencer) (block *starknet.Block, err error) {
+	err = retry.Retry(
+		ctx,
+		func() error {
+			var err error
+			block, err = seq.GetLatestBlock(ctx)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
+	)
+	return block, err
+}
+
+func getPendingBlock(ctx context.Context, seq Sequencer) (block *starknet.Block, err error) {
+	err = retry.Retry(
+		ctx,
+		func() error {
+			var err error
+			block, err = seq.GetPendingBlock(ctx)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
+	)
+	return block, err
 }

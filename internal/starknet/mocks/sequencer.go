@@ -27,7 +27,17 @@ type Sequencer struct {
 	mock.Mock
 }
 
-func (c *Sequencer) GetBlockByNumber(ctx context.Context, blockNumber *uint64) (*starknet.Block, error) {
+func (c *Sequencer) GetPendingBlock(ctx context.Context) (*starknet.Block, error) {
+	args := c.Called(ctx)
+	return args.Get(0).(*starknet.Block), args.Error(1)
+}
+
+func (c *Sequencer) GetLatestBlock(ctx context.Context) (*starknet.Block, error) {
+	args := c.Called(ctx)
+	return args.Get(0).(*starknet.Block), args.Error(1)
+}
+
+func (c *Sequencer) GetBlockByNumber(ctx context.Context, blockNumber uint64) (*starknet.Block, error) {
 	args := c.Called(ctx, blockNumber)
 	return args.Get(0).(*starknet.Block), args.Error(1)
 }

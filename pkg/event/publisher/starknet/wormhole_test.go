@@ -136,10 +136,10 @@ func Test_wormholeListener(t *testing.T) {
 	cli := &mocks.Sequencer{}
 
 	w := NewWormholeListener(WormholeListenerConfig{
-		Client:       cli,
+		Sequencer:    cli,
 		Addresses:    []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
 		Interval:     time.Millisecond * 100,
-		BlocksBehind: 0,
+		BlocksBehind: []int{},
 		MaxBlocks:    1,
 		Logger:       null.New(),
 	})
@@ -151,18 +151,11 @@ func Test_wormholeListener(t *testing.T) {
 		panic(err)
 	}
 
-	cli.On("GetBlockByNumber", ctx, mock.Anything, mock.Anything).Return(block, nil).Once().Run(func(args mock.Arguments) {
-		bn := args.Get(1).(*uint64)
-		assert.Equal(t, (*uint64)(nil), bn)
-	})
-	cli.On("GetBlockByNumber", ctx, mock.Anything, mock.Anything).Return(block, nil).Once().Run(func(args mock.Arguments) {
-		bn := args.Get(1).(*uint64)
-		assert.Equal(t, uint64(191504), *bn)
-	})
+	cli.On("GetPendingBlock", ctx, mock.Anything, mock.Anything).Return(block, nil).Once()
 
 	require.NoError(t, w.Start(ctx))
 	for {
-		if len(cli.Calls) >= 2 { // 2 is the number of mocked calls above.
+		if len(cli.Calls) >= 1 { // 2 is the number of mocked calls above.
 			cancelFunc()
 			break
 		}

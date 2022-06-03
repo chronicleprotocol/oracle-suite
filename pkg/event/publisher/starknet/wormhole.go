@@ -31,18 +31,10 @@ import (
 
 const WormholeStarknetEventType = "wormhole_starknet"
 
-// WormholeListener listens to particular logs on Ethereum compatible blockchain and
-// converts them into event messages.
-type WormholeListener struct {
-	msgCh    chan *messages.Event // List of channels to which messages will be sent.
-	listener *eventListener
-	log      log.Logger
-}
-
 // WormholeListenerConfig contains a configuration options for NewWormholeListener.
 type WormholeListenerConfig struct {
-	// Client is an instance of Ethereum RPC sequencer.
-	Client Sequencer
+	// Sequencer is an instance of Ethereum RPC sequencer.
+	Sequencer Sequencer
 	// Addresses is a list of contracts from which events will be fetched.
 	Addresses []*starknet.Felt
 	// Interval specifies how often listener should check for new events.
@@ -50,7 +42,7 @@ type WormholeListenerConfig struct {
 	// BlocksBehind specifies the distance between the newest block on the
 	// blockchain and the newest block from which logs are to be taken. This
 	// parameter can be used to ensure sufficient block confirmations.
-	BlocksBehind int
+	BlocksBehind []int
 	// MaxBlocks specifies how from many blocks logs can be fetched at once.
 	MaxBlocks int
 	// Logger is an instance of a logger. Logger is used mostly to report
@@ -58,52 +50,75 @@ type WormholeListenerConfig struct {
 	Logger log.Logger
 }
 
+// WormholeListener listens to particular logs on Ethereum compatible blockchain and
+// converts them into event messages.
+type WormholeListener struct {
+	listeners []eventListener
+	messageCh chan *messages.Event
+	eventsCh  chan *event
+	log       log.Logger
+}
+
+// NewWormholeListener creates a new instance of WormholeListener.
 func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
+	eventsCh := make(chan *event)
 	return &WormholeListener{
-		msgCh: make(chan *messages.Event, 1),
-		listener: newEventListener(
-			cfg.Client,
-			cfg.Addresses,
-			cfg.Interval,
-			uint64(cfg.BlocksBehind),
-			uint64(cfg.MaxBlocks),
-			cfg.Logger,
-		),
-		log: cfg.Logger,
+		listeners: []eventListener{
+			&acceptedBlockListener{
+				sequencer:    cfg.Sequencer,
+				addresses:    cfg.Addresses,
+				interval:     cfg.Interval,
+				blocksBehind: intToUint64(cfg.BlocksBehind),
+				maxBlocks:    uint64(cfg.MaxBlocks),
+				eventsCh:     eventsCh,
+				log:          cfg.Logger,
+			},
+			&pendingBlockListener{
+				sequencer: cfg.Sequencer,
+				addresses: cfg.Addresses,
+				interval:  cfg.Interval,
+				eventsCh:  eventsCh,
+				log:       cfg.Logger,
+			},
+		},
+		messageCh: make(chan *messages.Event, 1),
+		eventsCh:  eventsCh,
+		log:       cfg.Logger,
 	}
 }
 
 // Events implements the publisher.Listener interface.
 func (l *WormholeListener) Events() chan *messages.Event {
-	return l.msgCh
+	return l.messageCh
 }
 
 // Start implements the publisher.Listener interface.
 func (l *WormholeListener) Start(ctx context.Context) error {
-	l.listener.Start(ctx)
+	for _, listener := range l.listeners {
+		listener.start(ctx)
+	}
 	go l.listenerRoutine(ctx)
 	return nil
 }
 
 func (l *WormholeListener) listenerRoutine(ctx context.Context) {
-	ch := l.listener.Events()
 	for {
 		select {
 		case <-ctx.Done():
+			close(l.messageCh)
 			return
-		case evt := <-ch:
+		case evt := <-l.eventsCh:
 			msg, err := eventToMessage(evt)
 			if err != nil {
 				l.log.WithError(err).Error("Unable to convert log to message")
 				continue
 			}
-			l.msgCh <- msg
+			l.messageCh <- msg
 		}
 	}
 }
 
-// logToMessage creates a transport message of "event" type from
-// given Ethereum log.
+// eventToMessage converts Starkware event to a transport message.
 func eventToMessage(evt *event) (*messages.Event, error) {
 	guid, err := packWormholeGUID(evt)
 	if err != nil {
@@ -125,6 +140,7 @@ func eventToMessage(evt *event) (*messages.Event, error) {
 	}, nil
 }
 
+// eventUniqueID returns a unique ID for the given event.
 func eventUniqueID(evt *event) []byte {
 	var b []byte
 	b = append(b, evt.txnHash.Bytes()...)
@@ -158,12 +174,14 @@ func packWormholeGUID(evt *event) ([]byte, error) {
 	return b, nil
 }
 
+// toL1String converts a felt value to Ethereum hash.
 func toL1String(f *starknet.Felt) common.Hash {
 	var s common.Hash
 	copy(s[:], f.Bytes())
 	return s
 }
 
+// toBytes32 converts a felt value to Ethereum hash.
 func toBytes32(f *starknet.Felt) common.Hash {
 	var s common.Hash
 	b := f.Bytes()
@@ -172,6 +190,15 @@ func toBytes32(f *starknet.Felt) common.Hash {
 	}
 	copy(s[32-len(b):], b)
 	return s
+}
+
+// intToUint64 converts int slice to uint64 slice.
+func intToUint64(i []int) []uint64 {
+	u := make([]uint64, len(i))
+	for n, v := range i {
+		u[n] = uint64(v)
+	}
+	return u
 }
 
 var abiWormholeGUID abi.Arguments

@@ -1,19 +1,19 @@
 package starknet
 
 type Block struct {
-	BlockHash           *Felt                 `json:"block_hash"`
-	ParentBlockHash     *Felt                 `json:"parent_block_hash"`
-	BlockNumber         uint64                `json:"block_number"`
-	StateRoot           string                `json:"state_root"`
-	Status              string                `json:"status"`
-	GasPrice            string                `json:"gas_price"`
-	Transactions        []Transactions        `json:"Transactions"`
-	Timestamp           int64                 `json:"timestamp"`
-	SequencerAddress    string                `json:"sequencer_address"`
-	TransactionReceipts []TransactionReceipts `json:"transaction_receipts"`
+	BlockHash           *Felt                `json:"block_hash"`
+	ParentBlockHash     *Felt                `json:"parent_block_hash"`
+	BlockNumber         uint64               `json:"block_number"`
+	StateRoot           string               `json:"state_root"`
+	Status              string               `json:"status"`
+	GasPrice            string               `json:"gas_price"`
+	Transactions        []Transaction        `json:"Transactions"`
+	Timestamp           int64                `json:"timestamp"`
+	SequencerAddress    string               `json:"sequencer_address"`
+	TransactionReceipts []TransactionReceipt `json:"transaction_receipts"`
 }
 
-type Transactions struct {
+type Transaction struct {
 	ContractAddress     *Felt   `json:"contract_address"`
 	ContractAddressSalt *Felt   `json:"contract_address_salt,omitempty"`
 	ClassHash           *Felt   `json:"class_hash,omitempty"`
@@ -35,7 +35,7 @@ type BuiltinInstanceCounter struct {
 	EcOpBuiltin       int `json:"ec_op_builtin"`
 }
 
-type ExecutionResources struct {
+type ExecutionResource struct {
 	NSteps                 int                    `json:"n_steps"`
 	BuiltinInstanceCounter BuiltinInstanceCounter `json:"builtin_instance_counter"`
 	NMemoryHoles           int                    `json:"n_memory_holes"`
@@ -55,12 +55,12 @@ type Event struct {
 	Data        []*Felt `json:"data"`
 }
 
-type TransactionReceipts struct {
-	TransactionIndex      int                `json:"transaction_index"`
-	TransactionHash       *Felt              `json:"transaction_hash"`
-	L2ToL1Messages        []L1ToL2Message    `json:"l2_to_l1_messages"`
-	Events                []Event            `json:"events"`
-	ExecutionResources    ExecutionResources `json:"execution_resources"`
-	ActualFee             string             `json:"actual_fee"`
-	L1ToL2ConsumedMessage L1ToL2Message      `json:"l1_to_l2_consumed_message,omitempty"`
+type TransactionReceipt struct {
+	TransactionIndex      int               `json:"transaction_index"`
+	TransactionHash       *Felt             `json:"transaction_hash"`
+	L2ToL1Messages        []L1ToL2Message   `json:"l2_to_l1_messages"`
+	Events                []Event           `json:"events"`
+	ExecutionResources    ExecutionResource `json:"execution_resources"`
+	ActualFee             string            `json:"actual_fee"`
+	L1ToL2ConsumedMessage L1ToL2Message     `json:"l1_to_l2_consumed_message,omitempty"`
 }
