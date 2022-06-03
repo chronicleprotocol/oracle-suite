@@ -22,7 +22,7 @@ func Test_acceptedBlockListener(t *testing.T) {
 	lis := acceptedBlockListener{
 		sequencer:    seq,
 		addresses:    []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
-		interval:     10 * time.Second,
+		interval:     250 * time.Millisecond,
 		maxBlocks:    3,
 		blocksBehind: []uint64{10},
 		eventsCh:     ch,
@@ -35,19 +35,21 @@ func Test_acceptedBlockListener(t *testing.T) {
 		panic(err)
 	}
 
+	// During the first interval, fetch the three black blocks defined in
+	// maxBlocks, the blocks must be 10 blocks from the last block.
 	seq.On("GetLatestBlock", ctx).Return(block, nil).Once()
 	seq.On("GetBlockByNumber", ctx, uint64(191492)).Return(block, nil).Once()
 	seq.On("GetBlockByNumber", ctx, uint64(191493)).Return(block, nil).Once()
 	seq.On("GetBlockByNumber", ctx, uint64(191494)).Return(block, nil).Once()
 
-	// Start listener and collect logs:
+	// Start listener and collect events:
 	lis.start(ctx)
 	var evts []*event
-	for len(evts) < 3 {
+	for len(evts) < 1 {
 		evts = append(evts, <-lis.events())
 		time.Sleep(time.Millisecond * 10)
 	}
-	assert.Len(t, evts, 4)
+	assert.Len(t, evts, 1)
 }
 
 func Test_pendingBlockListener(t *testing.T) {
@@ -72,7 +74,7 @@ func Test_pendingBlockListener(t *testing.T) {
 
 	seq.On("GetPendingBlock", ctx).Return(block, nil).Once()
 
-	// Start listener and collect logs:
+	// Start listener and collect events:
 	lis.start(ctx)
 	var evts []*event
 	for len(evts) < 1 {

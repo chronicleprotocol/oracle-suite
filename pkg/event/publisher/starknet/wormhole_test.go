@@ -42,6 +42,30 @@ const testBlockResponse = `
   "gas_price": "0x59682f07",
   "transactions": [
     {
+      "contract_address": "0x4aef408ac955fd9e5f1397ae9801c1b03344587231f454a0b49d0b99e77c937",
+      "entry_point_selector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad",
+      "entry_point_type": "EXTERNAL",
+      "calldata": [
+        "0x1",
+        "0x73314940630fd6dcda0d772d4c972c4e0a9946bef9dabf4ef84eda8ef542b82",
+        "0xe48e45e0642d5f170bb832c637926f4c85b77d555848b693304600c4275f26",
+        "0x0",
+        "0x3",
+        "0x3",
+        "0x9b872ffeda5ccbe5d3f3fbc40540651654d408f5",
+        "0x5543df729c0000",
+        "0x0",
+        "0x0"
+      ],
+      "signature": [
+        "0x436daf225278c6c10cec26e401b6a68b13b79ee53f46f76188244ed94efa34e",
+        "0x2269e54e844d7ac323279249baa5708ebbcd3b98493c7e6626862e17674efd8"
+      ],
+      "transaction_hash": "0x24a45d2690614692451862c5b0249567854c6731a0a9e9aef236c643ce9abaf",
+      "max_fee": "0x0",
+      "type": "INVOKE_FUNCTION"
+    },
+    {
       "contract_address": "0x1068104d5f1be3d69101835c6bf302172744102f8ab0c01f85741fe586a6af8",
       "entry_point_selector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad",
       "entry_point_type": "EXTERNAL",
@@ -70,6 +94,59 @@ const testBlockResponse = `
   "timestamp": 1652698140,
   "sequencer_address": "0x46a89ae102987331d369645031b49c27738ed096f2789c24449966da4c6de6b",
   "transaction_receipts": [
+    {
+      "transaction_index": 0,
+      "transaction_hash": "0x24a45d2690614692451862c5b0249567854c6731a0a9e9aef236c643ce9abaf",
+      "l2_to_l1_messages": [
+        {
+          "from_address": "0x73314940630fd6dcda0d772d4c972c4e0a9946bef9dabf4ef84eda8ef542b82",
+          "to_address": "0xae0Ee0A63A2cE6BaeEFFE56e7714FB4EFE48D419",
+          "payload": [
+            "0x0",
+            "0x9b872ffeda5ccbe5d3f3fbc40540651654d408f5",
+            "0x5543df729c0000",
+            "0x0"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "from_address": "0x73314940630fd6dcda0d772d4c972c4e0a9946bef9dabf4ef84eda8ef542b82",
+          "keys": [
+            "0x194fc63c49b0f07c8e7a78476844837255213824bd6cb81e0ccfb949921aad1"
+          ],
+          "data": [
+            "0x9b872ffeda5ccbe5d3f3fbc40540651654d408f5",
+            "0x5543df729c0000",
+            "0x0",
+            "0x4aef408ac955fd9e5f1397ae9801c1b03344587231f454a0b49d0b99e77c937"
+          ]
+        },
+        {
+          "from_address": "0x4aef408ac955fd9e5f1397ae9801c1b03344587231f454a0b49d0b99e77c937",
+          "keys": [
+            "0x5ad857f66a5b55f1301ff1ed7e098ac6d4433148f0b72ebc4a2945ab85ad53"
+          ],
+          "data": [
+            "0x24a45d2690614692451862c5b0249567854c6731a0a9e9aef236c643ce9abaf",
+            "0x0"
+          ]
+        }
+      ],
+      "execution_resources": {
+        "n_steps": 1348,
+        "builtin_instance_counter": {
+          "pedersen_builtin": 2,
+          "range_check_builtin": 35,
+          "output_builtin": 0,
+          "ecdsa_builtin": 1,
+          "bitwise_builtin": 0,
+          "ec_op_builtin": 0
+        },
+        "n_memory_holes": 44
+      },
+      "actual_fee": "0x0"
+    },
     {
       "transaction_index": 8,
       "transaction_hash": "0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202",
