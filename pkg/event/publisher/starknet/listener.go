@@ -18,7 +18,6 @@ package starknet
 import (
 	"bytes"
 	"context"
-	"sync"
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
@@ -54,9 +53,6 @@ type event struct {
 // It fetches events from blocks that are as far behind the most recent
 // block as specified in blocksBehind.
 type acceptedBlockListener struct {
-	mu sync.Mutex
-
-	// Configuration:
 	sequencer    Sequencer
 	addresses    []*starknet.Felt // The addresses of contract from which event should be handled.
 	interval     time.Duration    // Time interval between pulling events from Sequencer.
@@ -161,9 +157,6 @@ func (l *acceptedBlockListener) listenerRoutine(ctx context.Context) {
 
 // pendingBlockListener periodically fetches events from the pending block.
 type pendingBlockListener struct {
-	mu sync.Mutex
-
-	// Configuration:
 	sequencer Sequencer
 	addresses []*starknet.Felt // The addresses of contract from which event should be handled.
 	interval  time.Duration    // Time interval between pulling events from Sequencer.
