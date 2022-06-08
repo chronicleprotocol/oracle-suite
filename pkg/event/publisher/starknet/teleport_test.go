@@ -208,11 +208,11 @@ const testBlockResponse = `
 }
 `
 
-func Test_wormholeListener(t *testing.T) {
+func Test_teleportListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cli := &mocks.Sequencer{}
 
-	w := NewWormholeListener(WormholeListenerConfig{
+	w := NewTeleportListener(TeleportListenerConfig{
 		Sequencer:    cli,
 		Addresses:    []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
 		Interval:     time.Millisecond * 100,

@@ -30,7 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 )
 
-func TestEventPublisher_Configure_Wormhole(t *testing.T) {
+func TestEventPublisher_Configure_Teleport(t *testing.T) {
 	prevEventPublisherFactory := eventPublisherFactory
 	defer func() { eventPublisherFactory = prevEventPublisherFactory }()
 
@@ -39,7 +39,7 @@ func TestEventPublisher_Configure_Wormhole(t *testing.T) {
 	_ = tra.Start(context.Background())
 	log := null.New()
 
-	config := EventPublisher{Listeners: listeners{Wormhole: []wormholeListener{{
+	config := EventPublisher{Listeners: listeners{Teleport: []teleportListener{{
 		Ethereum:     ethereumConfig.Ethereum{RPC: "https://example.com/"},
 		Interval:     1,
 		BlocksBehind: []int{10, 60},

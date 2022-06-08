@@ -31,22 +31,22 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const WormholeEventType = "wormhole"
-const LoggerTag = "WORMHOLE_LISTENER"
+const TeleportEventType = "teleport_ethereum"
+const LoggerTag = "TELEPORT_LISTENER"
 
-// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
-var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
+// teleportTopic0 is Keccak256("TeleportGUID((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
+var teleportTopic0 = ethereum.HexToHash("0x9f692a9304834fdefeb4f9cd17d1493600af19c70af547480cccf4a8a4a7752c")
 
-// WormholeListener listens to particular logs on Ethereum compatible blockchain and
+// TeleportListener listens to particular logs on Ethereum compatible blockchain and
 // converts them into event messages.
-type WormholeListener struct {
+type TeleportListener struct {
 	msgCh    chan *messages.Event // List of channels to which messages will be sent.
 	listener logListener
 	log      log.Logger
 }
 
-// WormholeListenerConfig contains a configuration options for NewWormholeListener.
-type WormholeListenerConfig struct {
+// TeleportListenerConfig contains a configuration options for NewTeleportListener.
+type TeleportListenerConfig struct {
 	// Client is an instance of Ethereum RPC client.
 	Client EthClient
 	// Addresses is a list of contracts from which logs will be fetched.
@@ -64,15 +64,15 @@ type WormholeListenerConfig struct {
 	Logger log.Logger
 }
 
-// NewWormholeListener returns a new instance of the WormholeListener struct.
-func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
+// NewTeleportListener returns a new instance of the TeleportListener struct.
+func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 	logger := cfg.Logger.WithField("tag", LoggerTag)
-	return &WormholeListener{
+	return &TeleportListener{
 		msgCh: make(chan *messages.Event, 1),
 		listener: newEthClientLogListener(
 			cfg.Client,
 			cfg.Addresses,
-			[]common.Hash{wormholeTopic0},
+			[]common.Hash{teleportTopic0},
 			cfg.Interval,
 			uint64(cfg.BlocksBehind),
 			uint64(cfg.MaxBlocks),
@@ -83,18 +83,18 @@ func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
 }
 
 // Events implements the publisher.Listener interface.
-func (l *WormholeListener) Events() chan *messages.Event {
+func (l *TeleportListener) Events() chan *messages.Event {
 	return l.msgCh
 }
 
 // Start implements the publisher.Listener interface.
-func (l *WormholeListener) Start(ctx context.Context) error {
+func (l *TeleportListener) Start(ctx context.Context) error {
 	l.listener.Start(ctx)
 	go l.listenerRoutine(ctx)
 	return nil
 }
 
-func (l *WormholeListener) listenerRoutine(ctx context.Context) {
+func (l *TeleportListener) listenerRoutine(ctx context.Context) {
 	ch := l.listener.Logs()
 	for {
 		select {
@@ -114,7 +114,7 @@ func (l *WormholeListener) listenerRoutine(ctx context.Context) {
 // logToMessage creates a transport message of "event" type from
 // given Ethereum log.
 func logToMessage(log types.Log) (*messages.Event, error) {
-	guid, err := unpackWormholeGUID(log.Data)
+	guid, err := unpackTeleportGUID(log.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func logToMessage(log types.Log) (*messages.Event, error) {
 		"event": log.Data,     // Event data.
 	}
 	return &messages.Event{
-		Type: WormholeEventType,
+		Type: TeleportEventType,
 		// ID is additionally hashed to ensure that it is not similar to
 		// any other field, so it will not be misused. This field is intended
 		// to be used only be the event store.
@@ -140,9 +140,9 @@ func logToMessage(log types.Log) (*messages.Event, error) {
 	}, nil
 }
 
-// wormholeGUID as defined in:
-// https://github.com/makerdao/dss-wormhole/blob/master/src/WormholeGUID.sol
-type wormholeGUID struct {
+// teleportGUID as defined in:
+// https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol
+type teleportGUID struct {
 	sourceDomain common.Hash
 	targetDomain common.Hash
 	receiver     common.Hash
@@ -152,20 +152,20 @@ type wormholeGUID struct {
 	timestamp    int64
 }
 
-// hash is used to generate an oracle signature for the WormholeGUID struct.
+// hash is used to generate an oracle signature for the TeleportGUID struct.
 // It must be compatible with the following contract:
-// https://github.com/makerdao/dss-wormhole/blob/master/src/WormholeOracleAuth.sol
-func (g *wormholeGUID) hash() (common.Hash, error) {
-	b, err := packWormholeGUID(g)
+// https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol
+func (g *teleportGUID) hash() (common.Hash, error) {
+	b, err := packTeleportGUID(g)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("unable to generate a hash for WormholeGUID: %w", err)
+		return common.Hash{}, fmt.Errorf("unable to generate a hash for TeleportGUID: %w", err)
 	}
 	return crypto.Keccak256Hash(b), nil
 }
 
-// packWormholeGUID converts wormholeGUID to ABI encoded data.
-func packWormholeGUID(g *wormholeGUID) ([]byte, error) {
-	b, err := abiWormholeGUID.Pack(
+// packTeleportGUID converts teleportGUID to ABI encoded data.
+func packTeleportGUID(g *teleportGUID) ([]byte, error) {
+	b, err := abiTeleportGUID.Pack(
 		g.sourceDomain,
 		g.targetDomain,
 		g.receiver,
@@ -175,18 +175,18 @@ func packWormholeGUID(g *wormholeGUID) ([]byte, error) {
 		big.NewInt(g.timestamp),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to pack WormholeGUID: %w", err)
+		return nil, fmt.Errorf("unable to pack TeleportGUID: %w", err)
 	}
 	return b, nil
 }
 
-// unpackWormholeGUID converts ABI encoded data to wormholeGUID.
-func unpackWormholeGUID(data []byte) (*wormholeGUID, error) {
-	u, err := abiWormholeGUID.Unpack(data)
+// unpackTeleportGUID converts ABI encoded data to teleportGUID.
+func unpackTeleportGUID(data []byte) (*teleportGUID, error) {
+	u, err := abiTeleportGUID.Unpack(data)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unpack WormholeGUID: %w", err)
+		return nil, fmt.Errorf("unable to unpack TeleportGUID: %w", err)
 	}
-	return &wormholeGUID{
+	return &teleportGUID{
 		sourceDomain: bytes32ToHash(u[0].([32]uint8)),
 		targetDomain: bytes32ToHash(u[1].([32]uint8)),
 		receiver:     bytes32ToHash(u[2].([32]uint8)),
@@ -201,14 +201,14 @@ func bytes32ToHash(b [32]uint8) common.Hash {
 	return common.BytesToHash(b[:])
 }
 
-var abiWormholeGUID abi.Arguments
+var abiTeleportGUID abi.Arguments
 
 func init() {
 	bytes32, _ := abi.NewType("bytes32", "", nil)
 	uint128, _ := abi.NewType("uint128", "", nil)
 	uint80, _ := abi.NewType("uint128", "", nil)
 	uint48, _ := abi.NewType("uint48", "", nil)
-	abiWormholeGUID = abi.Arguments{
+	abiTeleportGUID = abi.Arguments{
 		{Type: bytes32}, // sourceDomain
 		{Type: bytes32}, // targetDomain
 		{Type: bytes32}, // receiver

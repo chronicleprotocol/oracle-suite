@@ -44,11 +44,11 @@ type EventPublisher struct {
 }
 
 type listeners struct {
-	Wormhole         []wormholeListener         `json:"wormhole"`
-	WormholeStarknet []wormholeStarknetListener `json:"wormholeStarknet"`
+	Teleport         []teleportListener         `json:"teleport"`
+	TeleportStarknet []teleportStarknetListener `json:"teleportStarknet"`
 }
 
-type wormholeListener struct {
+type teleportListener struct {
 	Ethereum     ethereumConfig.Ethereum `json:"ethereum"`
 	Interval     int64                   `json:"interval"`
 	BlocksBehind []int                   `json:"blocksBehind"`
@@ -56,7 +56,7 @@ type wormholeListener struct {
 	Addresses    []common.Address        `json:"addresses"`
 }
 
-type wormholeStarknetListener struct {
+type teleportStarknetListener struct {
 	RPC          string                 `json:"rpc"`
 	Interval     int64                  `json:"interval"`
 	BlocksBehind []int                  `json:"blocksBehind"`
@@ -81,11 +81,11 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
 	var lis []publisher.Listener
-	if err := c.configureWormholeListeners(&lis, d.Logger); err != nil {
+	if err := c.configureTeleportListeners(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
-	c.configureWormholeStarknetListeners(&lis, d.Logger)
-	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.WormholeEventType})}
+	c.configureTeleportStarknetListeners(&lis, d.Logger)
+	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.TeleportEventType})}
 	cfg := publisher.Config{
 		Listeners: lis,
 		Signers:   sig,
@@ -99,9 +99,9 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	return ep, nil
 }
 
-func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, logger log.Logger) error {
+func (c *EventPublisher) configureTeleportListeners(lis *[]publisher.Listener, logger log.Logger) error {
 	clis := ethClients{}
-	for _, w := range c.Listeners.Wormhole {
+	for _, w := range c.Listeners.Teleport {
 		cli, err := clis.configure(w.Ethereum, logger)
 		if err != nil {
 			return err
@@ -117,7 +117,7 @@ func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, l
 			return fmt.Errorf("maxBlocks must greather than 0")
 		}
 		for _, blocksBehind := range w.BlocksBehind {
-			*lis = append(*lis, publisherEthereum.NewWormholeListener(publisherEthereum.WormholeListenerConfig{
+			*lis = append(*lis, publisherEthereum.NewTeleportListener(publisherEthereum.TeleportListenerConfig{
 				Client:       cli,
 				Addresses:    w.Addresses,
 				Interval:     time.Second * time.Duration(interval),
@@ -130,9 +130,9 @@ func (c *EventPublisher) configureWormholeListeners(lis *[]publisher.Listener, l
 	return nil
 }
 
-func (c *EventPublisher) configureWormholeStarknetListeners(lis *[]publisher.Listener, logger log.Logger) {
-	for _, w := range c.Listeners.WormholeStarknet {
-		*lis = append(*lis, starknet.NewWormholeListener(starknet.WormholeListenerConfig{
+func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Listener, logger log.Logger) {
+	for _, w := range c.Listeners.TeleportStarknet {
+		*lis = append(*lis, starknet.NewTeleportListener(starknet.TeleportListenerConfig{
 			Sequencer:    starknetClient.NewSequencer(w.RPC, http.Client{}),
 			Addresses:    w.Addresses,
 			Interval:     time.Second * time.Duration(w.Interval),

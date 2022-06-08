@@ -29,10 +29,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const WormholeStarknetEventType = "wormhole_starknet"
+const TeleportStarknetEventType = "teleport_starknet"
 
-// WormholeListenerConfig contains a configuration options for NewWormholeListener.
-type WormholeListenerConfig struct {
+// TeleportListenerConfig contains a configuration options for NewTeleportListener.
+type TeleportListenerConfig struct {
 	// Sequencer is an instance of Ethereum RPC sequencer.
 	Sequencer Sequencer
 	// Addresses is a list of contracts from which events will be fetched.
@@ -50,19 +50,19 @@ type WormholeListenerConfig struct {
 	Logger log.Logger
 }
 
-// WormholeListener listens to particular logs on Ethereum compatible blockchain and
+// TeleportListener listens to particular logs on Ethereum compatible blockchain and
 // converts them into event messages.
-type WormholeListener struct {
+type TeleportListener struct {
 	listeners []eventListener
 	messageCh chan *messages.Event
 	eventsCh  chan *event
 	log       log.Logger
 }
 
-// NewWormholeListener creates a new instance of WormholeListener.
-func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
+// NewTeleportListener creates a new instance of TeleportListener.
+func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 	eventsCh := make(chan *event)
-	return &WormholeListener{
+	return &TeleportListener{
 		listeners: []eventListener{
 			&acceptedBlockListener{
 				sequencer:    cfg.Sequencer,
@@ -88,12 +88,12 @@ func NewWormholeListener(cfg WormholeListenerConfig) *WormholeListener {
 }
 
 // Events implements the publisher.Listener interface.
-func (l *WormholeListener) Events() chan *messages.Event {
+func (l *TeleportListener) Events() chan *messages.Event {
 	return l.messageCh
 }
 
 // Start implements the publisher.Listener interface.
-func (l *WormholeListener) Start(ctx context.Context) error {
+func (l *TeleportListener) Start(ctx context.Context) error {
 	for _, listener := range l.listeners {
 		listener.start(ctx)
 	}
@@ -101,7 +101,7 @@ func (l *WormholeListener) Start(ctx context.Context) error {
 	return nil
 }
 
-func (l *WormholeListener) listenerRoutine(ctx context.Context) {
+func (l *TeleportListener) listenerRoutine(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -121,7 +121,7 @@ func (l *WormholeListener) listenerRoutine(ctx context.Context) {
 
 // eventToMessage converts Starkware event to a transport message.
 func eventToMessage(evt *event) (*messages.Event, error) {
-	guid, err := packWormholeGUID(evt)
+	guid, err := packTeleportGUID(evt)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func eventToMessage(evt *event) (*messages.Event, error) {
 		"event": guid,         // NodeEvent data.
 	}
 	return &messages.Event{
-		Type:        WormholeStarknetEventType,
+		Type:        TeleportStarknetEventType,
 		ID:          eventUniqueID(evt),
 		Index:       evt.txnHash.Bytes(),
 		EventDate:   evt.time,
@@ -155,12 +155,12 @@ func eventUniqueID(evt *event) []byte {
 	return crypto.Keccak256Hash(b).Bytes()
 }
 
-// packWormholeGUID converts wormholeGUID to ABI encoded data.
-func packWormholeGUID(evt *event) ([]byte, error) {
+// packTeleportGUID converts teleportGUID to ABI encoded data.
+func packTeleportGUID(evt *event) ([]byte, error) {
 	if len(evt.data) < 7 {
 		return nil, fmt.Errorf("invalid number of data items: %d", len(evt.data))
 	}
-	b, err := abiWormholeGUID.Pack(
+	b, err := abiTeleportGUID.Pack(
 		toL1String(evt.data[0]),
 		toL1String(evt.data[1]),
 		toBytes32(evt.data[2]),
@@ -170,7 +170,7 @@ func packWormholeGUID(evt *event) ([]byte, error) {
 		evt.data[6].Int,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to pack WormholeGUID: %w", err)
+		return nil, fmt.Errorf("unable to pack TeleportGUID: %w", err)
 	}
 	return b, nil
 }
@@ -202,14 +202,14 @@ func intToUint64(i []int) []uint64 {
 	return u
 }
 
-var abiWormholeGUID abi.Arguments
+var abiTeleportGUID abi.Arguments
 
 func init() {
 	bytes32, _ := abi.NewType("bytes32", "", nil)
 	uint128, _ := abi.NewType("uint128", "", nil)
 	uint80, _ := abi.NewType("uint128", "", nil)
 	uint48, _ := abi.NewType("uint48", "", nil)
-	abiWormholeGUID = abi.Arguments{
+	abiTeleportGUID = abi.Arguments{
 		{Type: bytes32}, // sourceDomain
 		{Type: bytes32}, // targetDomain
 		{Type: bytes32}, // receiver
