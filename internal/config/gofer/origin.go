@@ -146,8 +146,6 @@ func NewHandler(
 		return origins.NewBaseExchangeHandler(origins.Kraken{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "kucoin":
 		return origins.NewBaseExchangeHandler(origins.Kucoin{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
-	case "kyber":
-		return origins.NewBaseExchangeHandler(origins.Kyber{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "loopring":
 		return origins.NewBaseExchangeHandler(origins.Loopring{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "okex":

@@ -95,7 +95,6 @@ Price model for each asset pair consists of three keys: `method`, `sources` and 
         - `huobi` - [Huobi](https://huobi.com/)
         - `kraken` - [Kraken](https://kraken.com/)
         - `kucoin` - [KuCoin](https://kucoin.com/)
-        - `kyber` - [Kyber](https://blog.kyber.network/)
         - `loopring` - [Loopring](https://loopring.org/)
         - `okex` - [OKEx](https://okex.com/)
         - `openexchangerates` - [OpenExchangeRates](https://openexchangerates.org)

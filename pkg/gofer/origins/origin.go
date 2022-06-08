@@ -271,7 +271,6 @@ func DefaultOriginSet(pool query.WorkerPool) *Set {
 		"huobi":         NewBaseExchangeHandler(Huobi{WorkerPool: pool}, nil),
 		"kraken":        NewBaseExchangeHandler(Kraken{WorkerPool: pool}, nil),
 		"kucoin":        NewBaseExchangeHandler(Kucoin{WorkerPool: pool}, nil),
-		"kyber":         NewBaseExchangeHandler(Kyber{WorkerPool: pool}, nil),
 		"loopring":      NewBaseExchangeHandler(Loopring{WorkerPool: pool}, nil),
 		"okex":          NewBaseExchangeHandler(Okex{WorkerPool: pool}, nil),
 		"okx":           NewBaseExchangeHandler(Okx{WorkerPool: pool}, nil),
