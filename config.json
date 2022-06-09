@@ -673,7 +673,7 @@
         "method": "median",
         "sources": [
           [{ "origin": "binance", "pair": "PAXG/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
-          [{ "origin": "bitthumb", "pair": "PAXG/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
+          [{ "origin": "ftx", "pair": "PAXG/USD" }],
           [{ "origin": "gemini", "pair": "PAXG/USD" }],
           [{ "origin": "kraken", "pair": "PAXG/USD" }],
           [{ "origin": "uniswap", "pair": "PAXG/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
