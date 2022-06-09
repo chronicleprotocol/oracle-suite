@@ -64,7 +64,6 @@
       "ETHBTC",
       "ETHUSD",
       "FILUSD",
-      "KNCUSD",
       "LINKUSD",
       "LRCUSD",
       "MANAUSD",
@@ -124,12 +123,6 @@
       "ETHUSD": {
         "oracle": "0x64DE91F5A373Cd4c28de3600cB34C7C6cE410C85",
         "oracleSpread": 1.0,
-        "oracleExpiration": 15500,
-        "msgExpiration": 1800
-      },
-      "KNCUSD": {
-        "oracle": "0x83076a2F42dc1925537165045c9FDe9A4B71AD97",
-        "oracleSpread": 4.0,
         "oracleExpiration": 15500,
         "msgExpiration": 1800
       },
@@ -200,7 +193,6 @@
       "ETHBTC",
       "ETHUSD",
       "FILUSD",
-      "KNCUSD",
       "LINKUSD",
       "LRCUSD",
       "MANAUSD",
@@ -248,7 +240,6 @@
             "SNX/WETH": "0x43ae24960e5534731fc831386c07755a2dc33d47",
             "COMP/WETH": "0xcffdded873554f362ac02f8fb1f02e5ada10516f",
             "WETH/USDC": "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
-            "KNC/WETH": "0xf49c43ae0faf37217bdcb00df478cf793edd6687",
             "LEND/WETH": "0xab3f9bf1d81ddb224a2014e98b238638824bcf20",
             "LRC/WETH": "0x8878df9e1a7c87dcbf6d3999d997f262c05d8c70",
             "PAXG/WETH": "0x9c4fe5ffd9a9fc5678cfbd93aa2d4fd684b67c4c",
@@ -597,18 +588,6 @@
           [{ "origin": "huobi", "pair": "FIL/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "binance", "pair": "FIL/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "okex", "pair": "FIL/USDT" },{ "origin": ".", "pair": "USDT/USD" }]
-        ],
-        "params": {
-          "minimumSuccessfulSources": 3
-        }
-      },
-      "KNC/USD": {
-        "method": "median",
-        "sources": [
-          [{ "origin": "binance", "pair": "KNC/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
-          [{ "origin": "huobi", "pair": "KNC/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
-          [{ "origin": "coinbasepro", "pair": "KNC/USD" }],
-          [{ "origin": "upbit", "pair": "KNC/KRW" },{ "origin": "openexchangerates", "pair": "KRW/USD", "ttl": 3600 }]
         ],
         "params": {
           "minimumSuccessfulSources": 3
