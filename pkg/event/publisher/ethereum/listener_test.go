@@ -39,24 +39,33 @@ func Test_logListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	cli := &mocks.EthClient{}
-	lis := newEthClientLogListener(cli, []common.Address{listenerTestAddress}, []common.Hash{listenerTestTopic1, listenerTestTopic2}, time.Millisecond*100, 10, 15, null.New())
+	lis := &logListener{
+		client:      cli,
+		addresses:   []common.Address{listenerTestAddress},
+		topics:      [][]common.Hash{{listenerTestTopic1}, {listenerTestTopic2}},
+		interval:    time.Millisecond * 100,
+		blocksDelta: []uint64{10},
+		blocksLimit: 15,
+		logCh:       make(chan types.Log),
+		logger:      null.New(),
+	}
 
-	// During the first call we are expecting to fetch up to maxBlocks.
+	// During the first call we are expecting to fetch up to blocksLimit.
 	cli.On("BlockNumber", ctx).Return(uint64(42), nil).Once()
 	cli.On("FilterLogs", ctx, mock.Anything).Return([]types.Log{{Index: 1}, {Index: 2}}, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(geth.FilterQuery)
-		assert.Equal(t, uint64(17), fq.FromBlock.Uint64()) // currentBlockNumber-blocksBehind-maxBlocks
-		assert.Equal(t, uint64(32), fq.ToBlock.Uint64())   // currentBlockNumber-blocksBehind
+		assert.Equal(t, uint64(18), fq.FromBlock.Uint64())
+		assert.Equal(t, uint64(32), fq.ToBlock.Uint64())
 		assert.Equal(t, []common.Address{listenerTestAddress}, fq.Addresses)
 		assert.Equal(t, [][]common.Hash{{listenerTestTopic1}, {listenerTestTopic2}}, fq.Topics)
 	})
 	// During the second call, we expect to fetch blocks between the last
-	// fetched one and the current one minus the value of blocksBehind..
+	// fetched one and the current one minus the value of blocksDelta..
 	cli.On("BlockNumber", ctx).Return(uint64(52), nil).Once()
 	cli.On("FilterLogs", ctx, mock.Anything).Return([]types.Log{{Index: 3}, {Index: 4}}, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(geth.FilterQuery)
-		assert.Equal(t, uint64(33), fq.FromBlock.Uint64()) // lastBlockNumber+1
-		assert.Equal(t, uint64(42), fq.ToBlock.Uint64())   // currentBlockNumber-blocksBehind
+		assert.Equal(t, uint64(33), fq.FromBlock.Uint64())
+		assert.Equal(t, uint64(42), fq.ToBlock.Uint64())
 		assert.Equal(t, []common.Address{listenerTestAddress}, fq.Addresses)
 		assert.Equal(t, [][]common.Hash{{listenerTestTopic1}, {listenerTestTopic2}}, fq.Topics)
 	})
@@ -65,10 +74,10 @@ func Test_logListener(t *testing.T) {
 	cli.On("BlockNumber", ctx).Return(uint64(52), nil).Once()
 
 	// Start listener and collect logs:
-	lis.Start(ctx)
+	lis.start(ctx)
 	var logs []types.Log
 	for len(logs) < 4 {
-		logs = append(logs, <-lis.Logs())
+		logs = append(logs, <-lis.logCh)
 		time.Sleep(time.Millisecond * 10)
 	}
 	assert.Len(t, logs, 4)

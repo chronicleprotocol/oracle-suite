@@ -44,24 +44,24 @@ type EventPublisher struct {
 }
 
 type listeners struct {
-	Teleport         []teleportListener         `json:"teleport"`
+	TeleportEVM      []teleportEVMListener      `json:"teleportEVM"`
 	TeleportStarknet []teleportStarknetListener `json:"teleportStarknet"`
 }
 
-type teleportListener struct {
-	Ethereum     ethereumConfig.Ethereum `json:"ethereum"`
-	Interval     int64                   `json:"interval"`
-	BlocksBehind []int                   `json:"blocksBehind"`
-	MaxBlocks    int                     `json:"maxBlocks"`
-	Addresses    []common.Address        `json:"addresses"`
+type teleportEVMListener struct {
+	Ethereum    ethereumConfig.Ethereum `json:"ethereum"`
+	Interval    int64                   `json:"interval"`
+	BlocksDelta []int                   `json:"blocksDelta"`
+	BlocksLimit int                     `json:"blocksLimit"`
+	Addresses   []common.Address        `json:"addresses"`
 }
 
 type teleportStarknetListener struct {
-	RPC          string                 `json:"rpc"`
-	Interval     int64                  `json:"interval"`
-	BlocksBehind []int                  `json:"blocksBehind"`
-	MaxBlocks    int                    `json:"maxBlocks"`
-	Addresses    []*starknetClient.Felt `json:"addresses"`
+	Sequencer   string                 `json:"sequencer"`
+	Interval    int64                  `json:"interval"`
+	BlocksDelta []int                  `json:"blocksDelta"`
+	BlocksLimit int                    `json:"blocksLimit"`
+	Addresses   []*starknetClient.Felt `json:"addresses"`
 }
 
 type Dependencies struct {
@@ -81,10 +81,12 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
 	var lis []publisher.Listener
-	if err := c.configureTeleportListeners(&lis, d.Logger); err != nil {
+	if err := c.configureTeleportEVMListeners(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
-	c.configureTeleportStarknetListeners(&lis, d.Logger)
+	if err := c.configureTeleportStarknetListeners(&lis, d.Logger); err != nil {
+		return nil, fmt.Errorf("eventpublisher config: %w", err)
+	}
 	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.TeleportEventType})}
 	cfg := publisher.Config{
 		Listeners: lis,
@@ -99,9 +101,9 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	return ep, nil
 }
 
-func (c *EventPublisher) configureTeleportListeners(lis *[]publisher.Listener, logger log.Logger) error {
+func (c *EventPublisher) configureTeleportEVMListeners(lis *[]publisher.Listener, logger log.Logger) error {
 	clis := ethClients{}
-	for _, w := range c.Listeners.Teleport {
+	for _, w := range c.Listeners.TeleportEVM {
 		cli, err := clis.configure(w.Ethereum, logger)
 		if err != nil {
 			return err
@@ -110,37 +112,46 @@ func (c *EventPublisher) configureTeleportListeners(lis *[]publisher.Listener, l
 		if interval < 1 {
 			interval = 1
 		}
-		if len(w.BlocksBehind) < 1 {
-			return fmt.Errorf("blocksBehind must contains at least one element")
+		if len(w.BlocksDelta) < 1 {
+			return fmt.Errorf("blocksDelta must contains at least one element")
 		}
-		if w.MaxBlocks <= 0 {
-			return fmt.Errorf("maxBlocks must greather than 0")
+		if w.BlocksLimit <= 0 {
+			return fmt.Errorf("blocksLimit must greather than 0")
 		}
-		for _, blocksBehind := range w.BlocksBehind {
-			*lis = append(*lis, publisherEthereum.NewTeleportListener(publisherEthereum.TeleportListenerConfig{
-				Client:       cli,
-				Addresses:    w.Addresses,
-				Interval:     time.Second * time.Duration(interval),
-				BlocksBehind: blocksBehind,
-				MaxBlocks:    w.MaxBlocks,
-				Logger:       logger,
-			}))
-		}
+		*lis = append(*lis, publisherEthereum.NewTeleportListener(publisherEthereum.TeleportListenerConfig{
+			Client:      cli,
+			Addresses:   w.Addresses,
+			Interval:    time.Second * time.Duration(interval),
+			BlocksDelta: w.BlocksDelta,
+			BlocksLimit: w.BlocksLimit,
+			Logger:      logger,
+		}))
 	}
 	return nil
 }
 
-func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Listener, logger log.Logger) {
+func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Listener, logger log.Logger) error {
 	for _, w := range c.Listeners.TeleportStarknet {
+		interval := w.Interval
+		if interval < 1 {
+			interval = 1
+		}
+		if len(w.BlocksDelta) < 1 {
+			return fmt.Errorf("blocksDelta must contains at least one element")
+		}
+		if w.BlocksLimit <= 0 {
+			return fmt.Errorf("blocksLimit must greather than 0")
+		}
 		*lis = append(*lis, starknet.NewTeleportListener(starknet.TeleportListenerConfig{
-			Sequencer:    starknetClient.NewSequencer(w.RPC, http.Client{}),
-			Addresses:    w.Addresses,
-			Interval:     time.Second * time.Duration(w.Interval),
-			BlocksBehind: w.BlocksBehind,
-			MaxBlocks:    w.MaxBlocks,
-			Logger:       logger,
+			Sequencer:   starknetClient.NewSequencer(w.Sequencer, http.Client{}),
+			Addresses:   w.Addresses,
+			Interval:    time.Second * time.Duration(w.Interval),
+			BlocksDelta: w.BlocksDelta,
+			BlocksLimit: w.BlocksLimit,
+			Logger:      logger,
 		}))
 	}
+	return nil
 }
 
 type ethClients map[string]geth.EthClient

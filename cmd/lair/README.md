@@ -3,7 +3,7 @@
 Lair is an application responsible for collecting signed events from the Spire P2P network, storing them, and providing
 an HTTP API to retrieve them along with Oracle signatures.
 
-Lair is one of the components of Maker Wormhole: https://forum.makerdao.com/t/introducing-maker-wormhole/11550
+Lair is one of the components of Maker Teleport: https://forum.makerdao.com/t/introducing-maker-teleport/11550
 
 ## Table of contents
 
@@ -167,7 +167,7 @@ is `config.json` in the current working directory. You can change the config fil
 
 ```
 Request:
-GET http://127.0.0.1:8080/?type=wormhole&index=0x17b4079be1518b2df6e04f9206ac2e2a8822247760627f822aff87dfcad63150
+GET http://127.0.0.1:8080/?type=teleport_evm&index=0x17b4079be1518b2df6e04f9206ac2e2a8822247760627f822aff87dfcad63150
 ```
 
 ```

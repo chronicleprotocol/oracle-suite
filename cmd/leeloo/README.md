@@ -3,7 +3,7 @@
 Leeloo is an application run by Oracles. This application is responsible for collecting specific events from other
 blockchains (such as Arbitrium or Optimism), attesting them, and sending them to the Spire P2P network.
 
-Leeloo is one of the components of Maker Wormhole: https://forum.makerdao.com/t/introducing-maker-wormhole/11550
+Leeloo is one of the components of Maker Teleport: https://forum.makerdao.com/t/introducing-maker-teleport/11550
 
 ## Table of contents
 
@@ -87,7 +87,7 @@ is `config.json` in the current working directory. You can change the config fil
   },
   "leeloo": {
     "listeners": {
-      "wormhole": [
+      "teleportEVM": [
         {
           "ethereum": {
             "rpc": [
@@ -100,7 +100,7 @@ is `config.json` in the current working directory. You can change the config fil
             "gracefulTimeout": 35
           },
           "interval": 60,
-          "blocksBehind": [
+          "blocksDelta": [
             30,
             5760,
             11520,
@@ -109,7 +109,7 @@ is `config.json` in the current working directory. You can change the config fil
             28800,
             34560
           ],
-          "maxBlocks": 1000,
+          "blocksLimit": 1000,
           "addresses": [
             "0x20265780907778b4d0e9431c8ba5c7f152707f1d"
           ]
@@ -173,9 +173,8 @@ is `config.json` in the current working directory. You can change the config fil
                 - `replace` (default) - Replace the value with a newer one.
 - `leeloo` - Leeloo configuration.
     - `listeners` - Event listeners configuration.
-        - `[]wormhole` - Configuration of the "wormhole" event listener. It listens for `WormhholeGUID` events on
-          Ethereum-compatible blockchains.
-            - `ethereum` - Etheeum client configuration.
+        - `[]teleportEVM` - Configuration of teleport bridge events on EVM compatible blockchains.
+            - `ethereum` - Ethereum client configuration.
                 - `rpc` (`string|[]string`) - List of RPC server addresses. If more than one is used, rpc-splitter is
                   used.
                   It is recommended to use at least three addresses from different providers.
@@ -185,23 +184,33 @@ is `config.json` in the current working directory. You can change the config fil
                   default: 1).
                 - `gracefulTimeout` (`int`) - if multiple RPC nodes are used, determines how far one node can be behind
                   the last known block (default: 0).
-            - `blocksBehind` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
+            - `interval` (`integer`) - Specifies how often (in seconds) the event listener should check for new events.
+            - `blocksDelta` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
               events should be retrieved.
-            - `maxBlocks` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This
+            - `blocksLimit` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This
               number must be large enough to ensure that no more blocks are added to the blockchain during the time
               interval defined above.
-            - `addresses` (`[]string`) - List of addresses of Wormhole contracts that emits `WormholeGUID` events.
+            - `addresses` (`[]string`) - List of addresses of Teleport contracts that emits `TeleportGUID` events.
+        - `[]teleportStarknet` - Configuration of teleport bridge events on Starknet.
+            - `sequencer` (`string`) - Address of the sequencer endpoint.
+            - `interval` (`integer`) - Specifies how often (in seconds) the event listener should check for new events.
+            - `blocksDelta` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
+              events should be retrieved.
+            - `blocksLimit` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This
+              number must be large enough to ensure that no more blocks are added to the blockchain during the time
+              interval defined above.
+            - `addresses` (`[]string`) - List of addresses of Teleport contracts that emits `TeleportGUID` events.
 
 ## Supported events
 
-Currently, only the `wormhole` event type is supported:
+Currently, only the `teleport` event type is supported:
 
-- Type: `wormhole`  
+- Type: `teleport`  
   This type of event is used for events emitted on Ethereum compatible blockchains, like Optimism or Arbitrium. It looks
-  for `WormholeGUID` events on specified contract addresses.  
+  for `TeleportGUID` events on specified contract addresses.  
   Reference:  
-  [https://github.com/makerdao/dss-wormhole/blob/master/src/WormholeGUID.sol](https://github.com/makerdao/dss-wormhole/blob/master/src/WormholeGUID.sol)  
-  [https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/wormhole.go#L156](https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/wormhole.go#L156)
+  [https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol](https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol)  
+  [https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/teleport.go#L156](https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/teleport.go#L156)
 
 ## Commands
 

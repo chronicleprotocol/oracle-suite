@@ -213,12 +213,12 @@ func Test_teleportListener(t *testing.T) {
 	cli := &mocks.Sequencer{}
 
 	w := NewTeleportListener(TeleportListenerConfig{
-		Sequencer:    cli,
-		Addresses:    []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
-		Interval:     time.Millisecond * 100,
-		BlocksBehind: []int{},
-		MaxBlocks:    1,
-		Logger:       null.New(),
+		Sequencer:   cli,
+		Addresses:   []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
+		Interval:    time.Millisecond * 100,
+		BlocksDelta: []int{},
+		BlocksLimit: 1,
+		Logger:      null.New(),
 	})
 
 	txHash := starknet.HexToFelt("57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202")

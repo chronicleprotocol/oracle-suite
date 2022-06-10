@@ -24,7 +24,7 @@ import (
 
 const SignatureKey = "ethereum"
 
-// Signer signs Ethereum log messages using Ethereum signature.
+// Signer signs Ethereum logger messages using Ethereum signature.
 type Signer struct {
 	signer ethereum.Signer
 	types  []string

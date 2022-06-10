@@ -40,12 +40,12 @@ func Test_teleportListener(t *testing.T) {
 	cli := &mocks.EthClient{}
 
 	w := NewTeleportListener(TeleportListenerConfig{
-		Client:       cli,
-		Addresses:    []common.Address{teleportTestAddress},
-		Interval:     time.Millisecond * 100,
-		BlocksBehind: 10,
-		MaxBlocks:    15,
-		Logger:       null.New(),
+		Client:      cli,
+		Addresses:   []common.Address{teleportTestAddress},
+		Interval:    time.Millisecond * 100,
+		BlocksDelta: []int{10},
+		BlocksLimit: 15,
+		Logger:      null.New(),
 	})
 
 	txHash := common.HexToHash("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8")

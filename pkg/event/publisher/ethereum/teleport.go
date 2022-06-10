@@ -31,7 +31,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const TeleportEventType = "teleport_ethereum"
+const TeleportEventType = "teleport_evm"
 const LoggerTag = "TELEPORT_LISTENER"
 
 // teleportTopic0 is Keccak256("TeleportGUID((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
@@ -41,24 +41,23 @@ var teleportTopic0 = ethereum.HexToHash("0x9f692a9304834fdefeb4f9cd17d1493600af1
 // converts them into event messages.
 type TeleportListener struct {
 	msgCh    chan *messages.Event // List of channels to which messages will be sent.
-	listener logListener
+	listener *logListener
 	log      log.Logger
 }
 
 // TeleportListenerConfig contains a configuration options for NewTeleportListener.
 type TeleportListenerConfig struct {
 	// Client is an instance of Ethereum RPC client.
-	Client EthClient
+	Client Client
 	// Addresses is a list of contracts from which logs will be fetched.
 	Addresses []ethereum.Address
 	// Interval specifies how often listener should check for new logs.
 	Interval time.Duration
-	// BlocksBehind specifies the distance between the newest block on the
-	// blockchain and the newest block from which logs are to be taken. This
-	// parameter can be used to ensure sufficient block confirmations.
-	BlocksBehind int
-	// MaxBlocks specifies how from many blocks logs can be fetched at once.
-	MaxBlocks int
+	// BlocksDelta specifies the distance between the newest block on the
+	// blockchain and the newest block from which logs are to be taken.
+	BlocksDelta []int
+	// BlocksLimit specifies how from many blocks logs can be fetched at once.
+	BlocksLimit int
 	// Logger is an instance of a logger. Logger is used mostly to report
 	// recoverable errors.
 	Logger log.Logger
@@ -69,15 +68,16 @@ func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 	logger := cfg.Logger.WithField("tag", LoggerTag)
 	return &TeleportListener{
 		msgCh: make(chan *messages.Event, 1),
-		listener: newEthClientLogListener(
-			cfg.Client,
-			cfg.Addresses,
-			[]common.Hash{teleportTopic0},
-			cfg.Interval,
-			uint64(cfg.BlocksBehind),
-			uint64(cfg.MaxBlocks),
-			logger,
-		),
+		listener: &logListener{
+			client:      cfg.Client,
+			addresses:   cfg.Addresses,
+			topics:      [][]common.Hash{{teleportTopic0}},
+			interval:    cfg.Interval,
+			blocksDelta: intsToUint64s(cfg.BlocksDelta),
+			blocksLimit: uint64(cfg.BlocksLimit),
+			logCh:       make(chan types.Log, 1),
+			logger:      logger,
+		},
 		log: logger,
 	}
 }
@@ -89,21 +89,20 @@ func (l *TeleportListener) Events() chan *messages.Event {
 
 // Start implements the publisher.Listener interface.
 func (l *TeleportListener) Start(ctx context.Context) error {
-	l.listener.Start(ctx)
+	l.listener.start(ctx)
 	go l.listenerRoutine(ctx)
 	return nil
 }
 
 func (l *TeleportListener) listenerRoutine(ctx context.Context) {
-	ch := l.listener.Logs()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case log := <-ch:
+		case log := <-l.listener.logs():
 			msg, err := logToMessage(log)
 			if err != nil {
-				l.log.WithError(err).Error("Unable to convert log to message")
+				l.log.WithError(err).Error("Unable to convert logger to message")
 				continue
 			}
 			l.msgCh <- msg
@@ -112,7 +111,7 @@ func (l *TeleportListener) listenerRoutine(ctx context.Context) {
 }
 
 // logToMessage creates a transport message of "event" type from
-// given Ethereum log.
+// given Ethereum logger.
 func logToMessage(log types.Log) (*messages.Event, error) {
 	guid, err := unpackTeleportGUID(log.Data)
 	if err != nil {
@@ -199,6 +198,15 @@ func unpackTeleportGUID(data []byte) (*teleportGUID, error) {
 
 func bytes32ToHash(b [32]uint8) common.Hash {
 	return common.BytesToHash(b[:])
+}
+
+// intsToUint64s converts int slice to uint64 slice.
+func intsToUint64s(i []int) []uint64 {
+	u := make([]uint64, len(i))
+	for n, v := range i {
+		u[n] = uint64(v)
+	}
+	return u
 }
 
 var abiTeleportGUID abi.Arguments

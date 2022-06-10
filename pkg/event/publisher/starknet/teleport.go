@@ -39,12 +39,11 @@ type TeleportListenerConfig struct {
 	Addresses []*starknet.Felt
 	// Interval specifies how often listener should check for new events.
 	Interval time.Duration
-	// BlocksBehind specifies the distance between the newest block on the
-	// blockchain and the newest block from which logs are to be taken. This
-	// parameter can be used to ensure sufficient block confirmations.
-	BlocksBehind []int
-	// MaxBlocks specifies how from many blocks logs can be fetched at once.
-	MaxBlocks int
+	// BlocksDelta specifies the distance between the newest block on the
+	// blockchain and the newest block from which events are to be taken.
+	BlocksDelta []int
+	// BlocksLimit specifies how from many blocks logs can be fetched at once.
+	BlocksLimit int
 	// Logger is an instance of a logger. Logger is used mostly to report
 	// recoverable errors.
 	Logger log.Logger
@@ -65,20 +64,20 @@ func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 	return &TeleportListener{
 		listeners: []eventListener{
 			&acceptedBlockListener{
-				sequencer:    cfg.Sequencer,
-				addresses:    cfg.Addresses,
-				interval:     cfg.Interval,
-				blocksBehind: intToUint64(cfg.BlocksBehind),
-				maxBlocks:    uint64(cfg.MaxBlocks),
-				eventsCh:     eventsCh,
-				log:          cfg.Logger,
+				sequencer:   cfg.Sequencer,
+				addresses:   cfg.Addresses,
+				interval:    cfg.Interval,
+				blocksDelta: intsToUint64s(cfg.BlocksDelta),
+				blocksLimit: uint64(cfg.BlocksLimit),
+				eventCh:     eventsCh,
+				logger:      cfg.Logger,
 			},
 			&pendingBlockListener{
 				sequencer: cfg.Sequencer,
 				addresses: cfg.Addresses,
 				interval:  cfg.Interval,
 				eventsCh:  eventsCh,
-				log:       cfg.Logger,
+				logger:    cfg.Logger,
 			},
 		},
 		messageCh: make(chan *messages.Event, 1),
@@ -193,8 +192,8 @@ func toBytes32(f *starknet.Felt) common.Hash {
 	return s
 }
 
-// intToUint64 converts int slice to uint64 slice.
-func intToUint64(i []int) []uint64 {
+// intsToUint64s converts int slice to uint64 slice.
+func intsToUint64s(i []int) []uint64 {
 	u := make([]uint64, len(i))
 	for n, v := range i {
 		u[n] = uint64(v)

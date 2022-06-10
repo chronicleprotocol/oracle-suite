@@ -39,19 +39,19 @@ func TestEventPublisher_Configure_Teleport(t *testing.T) {
 	_ = tra.Start(context.Background())
 	log := null.New()
 
-	config := EventPublisher{Listeners: listeners{Teleport: []teleportListener{{
-		Ethereum:     ethereumConfig.Ethereum{RPC: "https://example.com/"},
-		Interval:     1,
-		BlocksBehind: []int{10, 60},
-		MaxBlocks:    10,
-		Addresses:    []common.Address{common.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
+	config := EventPublisher{Listeners: listeners{TeleportEVM: []teleportEVMListener{{
+		Ethereum:    ethereumConfig.Ethereum{RPC: "https://example.com/"},
+		Interval:    1,
+		BlocksDelta: []int{10, 60},
+		BlocksLimit: 10,
+		Addresses:   []common.Address{common.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
 	}}}}
 
 	eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublisher, error) {
 		assert.Equal(t, tra, cfg.Transport)
 		assert.NotNil(t, cfg.Signers)
 		assert.Equal(t, log, cfg.Logger)
-		assert.Len(t, cfg.Listeners, 2)
+		assert.Len(t, cfg.Listeners, 1)
 		assert.Len(t, cfg.Signers, 1)
 		return &publisher.EventPublisher{}, nil
 	}

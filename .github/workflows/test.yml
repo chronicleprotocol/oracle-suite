@@ -50,37 +50,37 @@ jobs:
         run: docker build -t gofer_e2e -f e2e/gofer/Dockerfile .
       - name: Run E2E Test
         run: docker run -i --rm --link smocker gofer_e2e
-  test-e2e-wormhole:
-    name: Wormhole E2E Tests
-    strategy:
-      matrix:
-        go-version: [ 1.16.x ]
-        os: [ ubuntu-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: Install nix 2.3.6
-        uses: cachix/install-nix-action@v13
-        with:
-          install_url: https://releases.nixos.org/nix/nix-2.3.6/install
-          nix_path: nixpkgs=channel:nixos-unstable
-      - name: Use maker and dapp cachix
-        uses: cachix/cachix-action@v10
-        with:
-          name: maker
-          extraPullNames: dapp
-      - name: Nix install seth
-        run: nix-env -iA seth -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/releases/latest | jq -r .tarball_url)
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Login to Github Packages
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Wormhole E2E one-shot
-        run: make wormhole-e2e-one-shot
+#  test-e2e-teleport:
+#    name: Teleport E2E Tests
+#    strategy:
+#      matrix:
+#        go-version: [ 1.16.x ]
+#        os: [ ubuntu-latest ]
+#    runs-on: ${{ matrix.os }}
+#    steps:
+#      - name: Install Go
+#        uses: actions/setup-go@v2
+#        with:
+#          go-version: ${{ matrix.go-version }}
+#      - name: Install nix 2.3.6
+#        uses: cachix/install-nix-action@v13
+#        with:
+#          install_url: https://releases.nixos.org/nix/nix-2.3.6/install
+#          nix_path: nixpkgs=channel:nixos-unstable
+#      - name: Use maker and dapp cachix
+#        uses: cachix/cachix-action@v10
+#        with:
+#          name: maker
+#          extraPullNames: dapp
+#      - name: Nix install seth
+#        run: nix-env -iA seth -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/releases/latest | jq -r .tarball_url)
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#      - name: Login to Github Packages
+#        uses: docker/login-action@v1
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Teleport E2E one-shot
+#        run: make teleport-e2e-one-shot
