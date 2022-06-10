@@ -120,7 +120,6 @@ func (l *logListener) fetchLogs(ctx context.Context) {
 		}
 	}
 	l.lastBlock = to
-	return
 }
 
 func (l *logListener) nextRange(ctx context.Context) (uint64, uint64, error) {

@@ -145,7 +145,7 @@ func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Lis
 		*lis = append(*lis, starknet.NewTeleportListener(starknet.TeleportListenerConfig{
 			Sequencer:   starknetClient.NewSequencer(w.Sequencer, http.Client{}),
 			Addresses:   w.Addresses,
-			Interval:    time.Second * time.Duration(w.Interval),
+			Interval:    time.Second * time.Duration(interval),
 			BlocksDelta: w.BlocksDelta,
 			BlocksLimit: w.BlocksLimit,
 			Logger:      logger,
