@@ -82,7 +82,7 @@ type TeleportListener struct {
 // NewTeleportListener creates a new instance of TeleportListener.
 func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 	return &TeleportListener{
-		eventCh:     make(chan *messages.Event, 1),
+		eventCh:     make(chan *messages.Event),
 		sequencer:   cfg.Sequencer,
 		addresses:   cfg.Addresses,
 		interval:    cfg.Interval,
@@ -177,7 +177,7 @@ func (tl *TeleportListener) processPendingBlock(ctx context.Context) {
 func (tl *TeleportListener) processBlock(block *starknet.Block) {
 	for _, tx := range block.TransactionReceipts {
 		for _, evt := range tx.Events {
-			if tl.isTeleportEvent(evt) {
+			if !tl.isTeleportEvent(evt) {
 				continue
 			}
 			msg, err := eventToMessage(block, tx, evt)
@@ -185,6 +185,7 @@ func (tl *TeleportListener) processBlock(block *starknet.Block) {
 				tl.logger.
 					WithError(err).
 					Error("Unable to convert event to message")
+				continue
 			}
 			tl.eventCh <- msg
 		}
