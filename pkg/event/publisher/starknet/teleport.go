@@ -45,8 +45,12 @@ type TeleportListenerConfig struct {
 	Addresses []*starknet.Felt
 	// Interval specifies how often listener should check for new events.
 	Interval time.Duration
-	// BlocksDelta is a list of distances between the latest block on the
-	// blockchain and blocks from which events are to be taken.
+	// BlocksDelta is a list of distances between the latest accepted block on
+	// the blockchain and blocks from which events are to be fetched. If empty,
+	// then only events from pending block will be fetched. The purpose of this
+	// field is to ensure that older events are resent from time to time.
+	// This is to allow other clients on the Oracle network to restore its state
+	// and ensure that no events are missed in the event of an Oracle failure.
 	BlocksDelta []int
 	// BlocksLimit specifies how from many blocks events can be fetched at once.
 	BlocksLimit int
@@ -56,7 +60,9 @@ type TeleportListenerConfig struct {
 }
 
 // TeleportListener listens for TeleportGUID events on Starknet from pending
-// blocks and accepted blocks if blocksDelta is set.
+// blocks and, if BlockDelta is set, also from accepted blocks.
+//
+// https://github.com/makerdao/dss-teleport
 type TeleportListener struct {
 	eventCh chan *messages.Event
 
@@ -87,129 +93,132 @@ func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 }
 
 // Events implements the publisher.Listener interface.
-func (l *TeleportListener) Events() chan *messages.Event {
-	return l.eventCh
+func (tl *TeleportListener) Events() chan *messages.Event {
+	return tl.eventCh
 }
 
 // Start implements the publisher.Listener interface.
-func (l *TeleportListener) Start(ctx context.Context) error {
-	go l.fetchEventsRoutine(ctx)
+func (tl *TeleportListener) Start(ctx context.Context) error {
+	go tl.fetchEventsRoutine(ctx)
 	return nil
 }
 
-// fetchEventsRoutine periodically fetches events from the blockchain.
-func (l *TeleportListener) fetchEventsRoutine(ctx context.Context) {
-	t := time.NewTicker(l.interval)
+// fetchEventsRoutine periodically fetches TeleportGUID events from the
+// blockchain.
+func (tl *TeleportListener) fetchEventsRoutine(ctx context.Context) {
+	t := time.NewTicker(tl.interval)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			close(l.eventCh)
+			close(tl.eventCh)
 			return
 		case <-t.C:
-			if len(l.blocksDelta) > 0 {
-				l.fetchAcceptedEvents(ctx)
+			if len(tl.blocksDelta) > 0 {
+				// As explained in TeleportListenerConfig, blockDelta cannot be
+				// empty to fetch events from accepted blocks.
+				tl.processAcceptedBlocks(ctx)
 			}
-			l.fetchPendingEvents(ctx)
+			tl.processPendingBlock(ctx)
 		}
 	}
 }
 
-// fetchAcceptedEvents fetches TeleportGUID events from accepted blocks and
+// processAcceptedBlocks fetches TeleportGUID events from accepted blocks and
 // converts them into event messages. Converted messages are sent to the
 // eventCh channel.
-func (l *TeleportListener) fetchAcceptedEvents(ctx context.Context) {
-	from, to, err := l.nextBlockRange(ctx)
+func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
+	from, to, err := tl.nextBlockRange(ctx)
 	if err != nil {
-		l.logger.
-			WithError(err).
-			Error("Unable to get latest block")
+		tl.logger.WithError(err).Error("Unable to get latest block")
 		return
 	}
-
-	// There is no new blocks to fetch.
-	if from == l.lastBlock {
-		return
+	if from == tl.lastBlock {
+		return // There is no new blocks to fetch.
 	}
+	for num := from; num <= to; num++ {
+		for _, delta := range tl.blocksDelta {
+			bn := num - delta
 
-	for blockNumber := from; blockNumber <= to; blockNumber++ {
-		for _, delta := range l.blocksDelta {
-			fetchBlockNumber := blockNumber - delta
-			l.logger.
-				WithField("blockNumber", fetchBlockNumber).
+			tl.logger.
+				WithField("blockNumber", bn).
 				Info("Fetching block")
-			block, err := l.getBlockByNumber(ctx, fetchBlockNumber)
+
+			block, err := tl.getBlockByNumber(ctx, bn)
 			if err != nil {
-				l.logger.
+				tl.logger.
 					WithError(err).
 					Error("Unable to fetch block")
 				continue
 			}
-			l.handleBlock(block)
+
+			tl.processBlock(block)
 		}
 	}
-	l.lastBlock = to
+	tl.lastBlock = to
 }
 
-// fetchPendingEvents fetches TeleportGUID events from pending block and
+// processPendingBlock fetches TeleportGUID events from pending block and
 // converts them into event messages. Converted messages are sent to the
 // eventCh channel.
-func (l *TeleportListener) fetchPendingEvents(ctx context.Context) {
-	block, err := l.getPendingBlock(ctx)
+func (tl *TeleportListener) processPendingBlock(ctx context.Context) {
+	block, err := tl.getPendingBlock(ctx)
 	if err != nil {
-		l.logger.WithError(err).Error("Unable to fetch pending block")
+		tl.logger.
+			WithError(err).
+			Error("Unable to fetch pending block")
 		return
 	}
-	l.handleBlock(block)
+	tl.processBlock(block)
 }
 
-// handleBlock finds TeleportGUID events in the given block and converts them
+// processBlock finds TeleportGUID events in the given block and converts them
 // into event messages. Converted messages are sent to the eventCh channel.
-func (l *TeleportListener) handleBlock(block *starknet.Block) {
+func (tl *TeleportListener) processBlock(block *starknet.Block) {
 	for _, tx := range block.TransactionReceipts {
 		for _, evt := range tx.Events {
-			if l.isTeleportEvent(evt) {
-				msg, err := eventToMessage(block, tx, evt)
-				if err != nil {
-					l.logger.
-						WithError(err).
-						Error("Unable to convert event to message")
-				}
-				l.eventCh <- msg
+			if tl.isTeleportEvent(evt) {
+				continue
 			}
+			msg, err := eventToMessage(block, tx, evt)
+			if err != nil {
+				tl.logger.
+					WithError(err).
+					Error("Unable to convert event to message")
+			}
+			tl.eventCh <- msg
 		}
 	}
 }
 
-// nextBlockRange returns the range of blocks from which events should be
-// fetched. It returns the range from the latest fetched block stored in the
+// nextBlockRange returns the range of accepted blocks from which events should
+// be fetched. It returns the range from the latest fetched block stored in the
 // lastBlock parameter to the latest block on the blockchain. The maximum
 // number of blocks is limited by the blocksLimit parameter.
-func (l *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
+func (tl *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
 	// Get the latest block number.
-	block, err := l.getLatestBlock(ctx)
+	block, err := tl.getLatestBlock(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
 	to := block.BlockNumber
-
-	// Set "from" to the next block. If "from" is greater than "to", then there
-	// are no new blocks to fetch.
-	from := l.lastBlock + 1
+	// Set "from" to the next block and check if "from" is greater than "to",
+	// if so, then there are no new blocks to fetch.
+	from := tl.lastBlock + 1
 	if from > to {
 		return to, to, nil
 	}
-
 	// Limit the number of blocks to fetch.
-	if to-from > l.blocksLimit {
-		from = to - l.blocksLimit + 1
+	if to-from > tl.blocksLimit {
+		from = to - tl.blocksLimit + 1
 	}
 	return from, to, nil
 }
 
-// isTeleportEvent checks if the given event is a TeleportGUID event.
-func (l *TeleportListener) isTeleportEvent(evt *starknet.Event) bool {
-	for _, addr := range l.addresses {
+// isTeleportEvent checks if the given event was emitted by the Teleport
+// gateway.
+func (tl *TeleportListener) isTeleportEvent(evt *starknet.Event) bool {
+	for _, addr := range tl.addresses {
 		if bytes.Equal(evt.FromAddress.Bytes(), addr.Bytes()) {
 			return true
 		}
@@ -217,12 +226,12 @@ func (l *TeleportListener) isTeleportEvent(evt *starknet.Event) bool {
 	return false
 }
 
-func (l *TeleportListener) getBlockByNumber(ctx context.Context, num uint64) (block *starknet.Block, err error) {
+func (tl *TeleportListener) getBlockByNumber(ctx context.Context, num uint64) (block *starknet.Block, err error) {
 	err = retry.Retry(
 		ctx,
 		func() error {
 			var err error
-			block, err = l.sequencer.GetBlockByNumber(ctx, num)
+			block, err = tl.sequencer.GetBlockByNumber(ctx, num)
 			return err
 		},
 		retryAttempts,
@@ -231,12 +240,12 @@ func (l *TeleportListener) getBlockByNumber(ctx context.Context, num uint64) (bl
 	return block, err
 }
 
-func (l *TeleportListener) getLatestBlock(ctx context.Context) (block *starknet.Block, err error) {
+func (tl *TeleportListener) getLatestBlock(ctx context.Context) (block *starknet.Block, err error) {
 	err = retry.Retry(
 		ctx,
 		func() error {
 			var err error
-			block, err = l.sequencer.GetLatestBlock(ctx)
+			block, err = tl.sequencer.GetLatestBlock(ctx)
 			return err
 		},
 		retryAttempts,
@@ -245,12 +254,12 @@ func (l *TeleportListener) getLatestBlock(ctx context.Context) (block *starknet.
 	return block, err
 }
 
-func (l *TeleportListener) getPendingBlock(ctx context.Context) (block *starknet.Block, err error) {
+func (tl *TeleportListener) getPendingBlock(ctx context.Context) (block *starknet.Block, err error) {
 	err = retry.Retry(
 		ctx,
 		func() error {
 			var err error
-			block, err = l.sequencer.GetPendingBlock(ctx)
+			block, err = tl.sequencer.GetPendingBlock(ctx)
 			return err
 		},
 		retryAttempts,

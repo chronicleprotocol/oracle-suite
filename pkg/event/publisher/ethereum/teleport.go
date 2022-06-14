@@ -53,7 +53,11 @@ type TeleportListenerConfig struct {
 	// Interval specifies how often listener should check for new logs.
 	Interval time.Duration
 	// BlocksDelta is a list of distances between the latest block on the
-	// blockchain and blocks from which logs are to be taken.
+	// blockchain and blocks from which logs are to be taken. The purpose of
+	// this field is to ensure that older events are resent from time to time.
+	// This is to allow other clients on the Oracle network to restore its
+	// state and ensure that no events are missed in the event of an Oracle
+	// failure.
 	BlocksDelta []int
 	// BlocksLimit specifies how from many blocks logs can be fetched at once.
 	BlocksLimit int
@@ -64,6 +68,8 @@ type TeleportListenerConfig struct {
 
 // TeleportListener listens to TeleportGUID events on Ethereum compatible
 // blockchains.
+//
+// https://github.com/makerdao/dss-teleport
 type TeleportListener struct {
 	eventCh chan *messages.Event
 
@@ -94,119 +100,111 @@ func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 }
 
 // Events implements the publisher.Listener interface.
-func (l *TeleportListener) Events() chan *messages.Event {
-	return l.eventCh
+func (tl *TeleportListener) Events() chan *messages.Event {
+	return tl.eventCh
 }
 
 // Start implements the publisher.Listener interface.
-func (l *TeleportListener) Start(ctx context.Context) error {
-	go l.fetchLogsRoutine(ctx)
+func (tl *TeleportListener) Start(ctx context.Context) error {
+	go tl.fetchLogsRoutine(ctx)
 	return nil
 }
 
 // fetchLogsRoutine periodically fetches logs from the blockchain.
-func (l *TeleportListener) fetchLogsRoutine(ctx context.Context) {
-	t := time.NewTicker(l.interval)
+func (tl *TeleportListener) fetchLogsRoutine(ctx context.Context) {
+	t := time.NewTicker(tl.interval)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			close(l.eventCh)
+			close(tl.eventCh)
 			return
 		case <-t.C:
-			l.fetchLogs(ctx)
+			tl.fetchLogs(ctx)
 		}
 	}
 }
 
 // fetchLogs fetches WormholeGUID events from the blockchain and converts them
 // into event messages. The converted messages are sent to the eventCh channel.
-func (l *TeleportListener) fetchLogs(ctx context.Context) {
-	from, to, err := l.nextBlockRange(ctx)
+func (tl *TeleportListener) fetchLogs(ctx context.Context) {
+	rangeFrom, rangeTo, err := tl.nextBlockRange(ctx)
 	if err != nil {
-		l.logger.
+		tl.logger.
 			WithError(err).
 			Error("Unable to get latest block number")
 		return
 	}
-
-	// There is no new blocks to fetch.
-	if from == l.lastBlock {
-		return
+	if rangeFrom == tl.lastBlock {
+		return // There is no new blocks to fetch.
 	}
+	for _, delta := range tl.blocksDelta {
+		for _, address := range tl.addresses {
+			from := rangeFrom - delta
+			to := rangeTo - delta
 
-	for _, delta := range l.blocksDelta {
-		for _, address := range l.addresses {
-			fetchFrom := from - delta
-			fetchTo := to - delta
-
-			// Fetch logs.
-			l.logger.
+			tl.logger.
 				WithFields(log.Fields{
-					"from":    fetchFrom,
-					"to":      fetchTo,
+					"from":    from,
+					"to":      to,
 					"address": address.String(),
 				}).
 				Info("Fetching logs")
-			logs, err := l.filterLogs(ctx, address, fetchFrom, fetchTo)
+
+			logs, err := tl.filterLogs(ctx, address, from, to)
 			if err != nil {
-				l.logger.
+				tl.logger.
 					WithError(err).
 					Error("Unable to fetch logs")
 				continue
 			}
 
-			// Convert logs to events.
-			for _, log := range logs {
-				msg, err := logToMessage(log)
+			for _, l := range logs {
+				msg, err := logToMessage(l)
 				if err != nil {
-					l.logger.
+					tl.logger.
 						WithError(err).
 						Error("Unable to convert log to event")
 					continue
 				}
-				l.eventCh <- msg
+				tl.eventCh <- msg
 			}
 		}
 	}
-
-	l.lastBlock = to
+	tl.lastBlock = rangeTo
 }
 
 // nextBlockRange returns the range of blocks from which logs should be
 // fetched. It returns the range from the latest fetched block stored in the
 // lastBlock parameter to the latest block on the blockchain. The maximum
 // number of blocks is limited by the blocksLimit parameter.
-func (l *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
+func (tl *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
 	// Get the latest block number.
-	to, err := l.getBlockNumber(ctx)
+	to, err := tl.getBlockNumber(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
-
-	// Set "from" to the next block. If "from" is greater than "to", then there
-	// are no new blocks to fetch.
-	from := l.lastBlock + 1
+	// Set "from" to the next block and check if "from" is greater than "to",
+	// if so, then there are no new blocks to fetch.
+	from := tl.lastBlock + 1
 	if from > to {
 		return to, to, nil
 	}
-
 	// Limit the number of blocks to fetch.
-	if to-from > l.blocksLimit {
-		from = to - l.blocksLimit + 1
+	if to-from > tl.blocksLimit {
+		from = to - tl.blocksLimit + 1
 	}
-
 	return from, to, nil
 }
 
 // getBlockNumber returns the latest block number on the blockchain.
-func (l *TeleportListener) getBlockNumber(ctx context.Context) (uint64, error) {
+func (tl *TeleportListener) getBlockNumber(ctx context.Context) (uint64, error) {
 	var err error
 	var res uint64
 	err = retry.Retry(
 		ctx,
 		func() error {
-			res, err = l.client.BlockNumber(ctx)
+			res, err = tl.client.BlockNumber(ctx)
 			return err
 		},
 		retryAttempts,
@@ -219,13 +217,13 @@ func (l *TeleportListener) getBlockNumber(ctx context.Context) (uint64, error) {
 }
 
 // filterLogs fetches TeleportGUID events from the blockchain.
-func (l *TeleportListener) filterLogs(ctx context.Context, addr common.Address, from, to uint64) ([]types.Log, error) {
+func (tl *TeleportListener) filterLogs(ctx context.Context, addr common.Address, from, to uint64) ([]types.Log, error) {
 	var err error
 	var res []types.Log
 	err = retry.Retry(
 		ctx,
 		func() error {
-			res, err = l.client.FilterLogs(ctx, geth.FilterQuery{
+			res, err = tl.client.FilterLogs(ctx, geth.FilterQuery{
 				FromBlock: new(big.Int).SetUint64(from),
 				ToBlock:   new(big.Int).SetUint64(to),
 				Addresses: []common.Address{addr},
