@@ -15,19 +15,7 @@
 
 package starknet
 
-import (
-	"context"
-	"encoding/json"
-	"testing"
-	"time"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
-	"github.com/chronicleprotocol/oracle-suite/internal/starknet/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-)
-
+/*
 func Test_acceptedBlockListener(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -99,3 +87,4 @@ func Test_pendingBlockListener(t *testing.T) {
 	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, ch, 2)
 }
+*/

@@ -16,20 +16,26 @@
 package starknet
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
+	"github.com/chronicleprotocol/oracle-suite/internal/util/retry"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 const TeleportStarknetEventType = "teleport_starknet"
+const retryAttempts = 10              // The maximum number of attempts to call Sequencer in case of an error.
+const retryInterval = 6 * time.Second // The delay between retry attempts.
+
+// Sequencer is a Starknet sequencer.
+type Sequencer interface {
+	GetPendingBlock(ctx context.Context) (*starknet.Block, error)
+	GetLatestBlock(ctx context.Context) (*starknet.Block, error)
+	GetBlockByNumber(ctx context.Context, blockNumber uint64) (*starknet.Block, error)
+}
 
 // TeleportListenerConfig contains a configuration options for NewTeleportListener.
 type TeleportListenerConfig struct {
@@ -39,157 +45,218 @@ type TeleportListenerConfig struct {
 	Addresses []*starknet.Felt
 	// Interval specifies how often listener should check for new events.
 	Interval time.Duration
-	// BlocksDelta specifies the distance between the newest block on the
-	// blockchain and the newest block from which events are to be taken.
+	// BlocksDelta is a list of distances between the latest block on the
+	// blockchain and blocks from which events are to be taken.
 	BlocksDelta []int
-	// BlocksLimit specifies how from many blocks logs can be fetched at once.
+	// BlocksLimit specifies how from many blocks events can be fetched at once.
 	BlocksLimit int
 	// Logger is an instance of a logger. Logger is used mostly to report
 	// recoverable errors.
 	Logger log.Logger
 }
 
-// TeleportListener listens to particular logs on Ethereum compatible blockchain and
-// converts them into event messages.
+// TeleportListener listens for TeleportGUID events on Starknet from pending
+// blocks and accepted blocks if blocksDelta is set.
 type TeleportListener struct {
-	listeners []eventListener
-	messageCh chan *messages.Event
-	eventsCh  chan *event
-	log       log.Logger
+	eventCh chan *messages.Event
+
+	// lastBlock is a number of last block from which events were fetched.
+	// it is used in the nextBlockRange function.
+	lastBlock uint64
+
+	// Configuration parameters copied from TeleportListenerConfig:
+	sequencer   Sequencer
+	addresses   []*starknet.Felt
+	interval    time.Duration
+	blocksLimit uint64
+	blocksDelta []uint64
+	logger      log.Logger
 }
 
 // NewTeleportListener creates a new instance of TeleportListener.
 func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
-	eventsCh := make(chan *event)
 	return &TeleportListener{
-		listeners: []eventListener{
-			&acceptedBlockListener{
-				sequencer:   cfg.Sequencer,
-				addresses:   cfg.Addresses,
-				interval:    cfg.Interval,
-				blocksDelta: intsToUint64s(cfg.BlocksDelta),
-				blocksLimit: uint64(cfg.BlocksLimit),
-				eventCh:     eventsCh,
-				logger:      cfg.Logger,
-			},
-			&pendingBlockListener{
-				sequencer: cfg.Sequencer,
-				addresses: cfg.Addresses,
-				interval:  cfg.Interval,
-				eventsCh:  eventsCh,
-				logger:    cfg.Logger,
-			},
-		},
-		messageCh: make(chan *messages.Event, 1),
-		eventsCh:  eventsCh,
-		log:       cfg.Logger,
+		eventCh:     make(chan *messages.Event, 1),
+		sequencer:   cfg.Sequencer,
+		addresses:   cfg.Addresses,
+		interval:    cfg.Interval,
+		blocksLimit: uint64(cfg.BlocksLimit),
+		blocksDelta: intsToUint64s(cfg.BlocksDelta),
+		logger:      cfg.Logger,
 	}
 }
 
 // Events implements the publisher.Listener interface.
 func (l *TeleportListener) Events() chan *messages.Event {
-	return l.messageCh
+	return l.eventCh
 }
 
 // Start implements the publisher.Listener interface.
 func (l *TeleportListener) Start(ctx context.Context) error {
-	for _, listener := range l.listeners {
-		listener.start(ctx)
-	}
-	go l.listenerRoutine(ctx)
+	go l.fetchEventsRoutine(ctx)
 	return nil
 }
 
-func (l *TeleportListener) listenerRoutine(ctx context.Context) {
+// fetchEventsRoutine periodically fetches events from the blockchain.
+func (l *TeleportListener) fetchEventsRoutine(ctx context.Context) {
+	t := time.NewTicker(l.interval)
+	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			close(l.messageCh)
-			close(l.eventsCh)
+			close(l.eventCh)
 			return
-		case evt := <-l.eventsCh:
-			msg, err := eventToMessage(evt)
-			if err != nil {
-				l.log.WithError(err).Error("Unable to convert log to message")
-				continue
+		case <-t.C:
+			if len(l.blocksDelta) > 0 {
+				l.fetchAcceptedEvents(ctx)
 			}
-			l.messageCh <- msg
+			l.fetchPendingEvents(ctx)
 		}
 	}
 }
 
-// eventToMessage converts Starkware event to a transport message.
-func eventToMessage(evt *event) (*messages.Event, error) {
-	guid, err := packTeleportGUID(evt)
+// fetchAcceptedEvents fetches TeleportGUID events from accepted blocks and
+// converts them into event messages. Converted messages are sent to the
+// eventCh channel.
+func (l *TeleportListener) fetchAcceptedEvents(ctx context.Context) {
+	from, to, err := l.nextBlockRange(ctx)
 	if err != nil {
-		return nil, err
+		l.logger.
+			WithError(err).
+			Error("Unable to get latest block")
+		return
 	}
-	hash := crypto.Keccak256Hash(guid)
-	data := map[string][]byte{
-		"hash":  hash.Bytes(), // Hash to be used to calculate a signature.
-		"event": guid,         // NodeEvent data.
+
+	// There is no new blocks to fetch.
+	if from == l.lastBlock {
+		return
 	}
-	return &messages.Event{
-		Type:        TeleportStarknetEventType,
-		ID:          eventUniqueID(evt),
-		Index:       evt.txnHash.Bytes(),
-		EventDate:   evt.time,
-		MessageDate: time.Now(),
-		Data:        data,
-		Signatures:  map[string]messages.EventSignature{},
-	}, nil
+
+	for blockNumber := from; blockNumber <= to; blockNumber++ {
+		for _, delta := range l.blocksDelta {
+			fetchBlockNumber := blockNumber - delta
+			l.logger.
+				WithField("blockNumber", fetchBlockNumber).
+				Info("Fetching block")
+			block, err := l.getBlockByNumber(ctx, fetchBlockNumber)
+			if err != nil {
+				l.logger.
+					WithError(err).
+					Error("Unable to fetch block")
+				continue
+			}
+			l.handleBlock(block)
+		}
+	}
+	l.lastBlock = to
 }
 
-// eventUniqueID returns a unique ID for the given event.
-func eventUniqueID(evt *event) []byte {
-	var b []byte
-	b = append(b, evt.txnHash.Bytes()...)
-	b = append(b, evt.fromAddress.Bytes()...)
-	for _, k := range evt.keys {
-		b = append(b, k.Bytes()...)
+// fetchPendingEvents fetches TeleportGUID events from pending block and
+// converts them into event messages. Converted messages are sent to the
+// eventCh channel.
+func (l *TeleportListener) fetchPendingEvents(ctx context.Context) {
+	block, err := l.getPendingBlock(ctx)
+	if err != nil {
+		l.logger.WithError(err).Error("Unable to fetch pending block")
+		return
 	}
-	for _, d := range evt.data {
-		b = append(b, d.Bytes()...)
-	}
-	return crypto.Keccak256Hash(b).Bytes()
+	l.handleBlock(block)
 }
 
-// packTeleportGUID converts teleportGUID to ABI encoded data.
-func packTeleportGUID(evt *event) ([]byte, error) {
-	if len(evt.data) < 7 {
-		return nil, fmt.Errorf("invalid number of data items: %d", len(evt.data))
+// handleBlock finds TeleportGUID events in the given block and converts them
+// into event messages. Converted messages are sent to the eventCh channel.
+func (l *TeleportListener) handleBlock(block *starknet.Block) {
+	for _, tx := range block.TransactionReceipts {
+		for _, evt := range tx.Events {
+			if l.isTeleportEvent(evt) {
+				msg, err := eventToMessage(block, tx, evt)
+				if err != nil {
+					l.logger.
+						WithError(err).
+						Error("Unable to convert event to message")
+				}
+				l.eventCh <- msg
+			}
+		}
 	}
-	b, err := abiTeleportGUID.Pack(
-		toL1String(evt.data[0]),
-		toL1String(evt.data[1]),
-		toBytes32(evt.data[2]),
-		toBytes32(evt.data[3]),
-		evt.data[4].Int,
-		evt.data[5].Int,
-		evt.data[6].Int,
+}
+
+// nextBlockRange returns the range of blocks from which events should be
+// fetched. It returns the range from the latest fetched block stored in the
+// lastBlock parameter to the latest block on the blockchain. The maximum
+// number of blocks is limited by the blocksLimit parameter.
+func (l *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
+	// Get the latest block number.
+	block, err := l.getLatestBlock(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	to := block.BlockNumber
+
+	// Set "from" to the next block. If "from" is greater than "to", then there
+	// are no new blocks to fetch.
+	from := l.lastBlock + 1
+	if from > to {
+		return to, to, nil
+	}
+
+	// Limit the number of blocks to fetch.
+	if to-from > l.blocksLimit {
+		from = to - l.blocksLimit + 1
+	}
+	return from, to, nil
+}
+
+// isTeleportEvent checks if the given event is a TeleportGUID event.
+func (l *TeleportListener) isTeleportEvent(evt *starknet.Event) bool {
+	for _, addr := range l.addresses {
+		if bytes.Equal(evt.FromAddress.Bytes(), addr.Bytes()) {
+			return true
+		}
+	}
+	return false
+}
+
+func (l *TeleportListener) getBlockByNumber(ctx context.Context, num uint64) (block *starknet.Block, err error) {
+	err = retry.Retry(
+		ctx,
+		func() error {
+			var err error
+			block, err = l.sequencer.GetBlockByNumber(ctx, num)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
 	)
-	if err != nil {
-		return nil, fmt.Errorf("unable to pack TeleportGUID: %w", err)
-	}
-	return b, nil
+	return block, err
 }
 
-// toL1String converts a felt value to Ethereum hash.
-func toL1String(f *starknet.Felt) common.Hash {
-	var s common.Hash
-	copy(s[:], f.Bytes())
-	return s
+func (l *TeleportListener) getLatestBlock(ctx context.Context) (block *starknet.Block, err error) {
+	err = retry.Retry(
+		ctx,
+		func() error {
+			var err error
+			block, err = l.sequencer.GetLatestBlock(ctx)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
+	)
+	return block, err
 }
 
-// toBytes32 converts a felt value to Ethereum hash.
-func toBytes32(f *starknet.Felt) common.Hash {
-	var s common.Hash
-	b := f.Bytes()
-	if len(b) > 32 {
-		return s
-	}
-	copy(s[32-len(b):], b)
-	return s
+func (l *TeleportListener) getPendingBlock(ctx context.Context) (block *starknet.Block, err error) {
+	err = retry.Retry(
+		ctx,
+		func() error {
+			var err error
+			block, err = l.sequencer.GetPendingBlock(ctx)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
+	)
+	return block, err
 }
 
 // intsToUint64s converts int slice to uint64 slice.
@@ -199,22 +266,4 @@ func intsToUint64s(i []int) []uint64 {
 		u[n] = uint64(v)
 	}
 	return u
-}
-
-var abiTeleportGUID abi.Arguments
-
-func init() {
-	bytes32, _ := abi.NewType("bytes32", "", nil)
-	uint128, _ := abi.NewType("uint128", "", nil)
-	uint80, _ := abi.NewType("uint128", "", nil)
-	uint48, _ := abi.NewType("uint48", "", nil)
-	abiTeleportGUID = abi.Arguments{
-		{Type: bytes32}, // sourceDomain
-		{Type: bytes32}, // targetDomain
-		{Type: bytes32}, // receiver
-		{Type: bytes32}, // operator
-		{Type: uint128}, // amount
-		{Type: uint80},  // nonce
-		{Type: uint48},  // timestamp
-	}
 }

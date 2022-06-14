@@ -17,15 +17,14 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	geth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/chronicleprotocol/oracle-suite/internal/util/retry"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -33,16 +32,16 @@ import (
 
 const TeleportEventType = "teleport_evm"
 const LoggerTag = "TELEPORT_LISTENER"
+const retryAttempts = 3               // The maximum number of attempts to call Client in case of an error.
+const retryInterval = 5 * time.Second // The delay between retry attempts.
 
 // teleportTopic0 is Keccak256("TeleportGUID((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var teleportTopic0 = ethereum.HexToHash("0x9f692a9304834fdefeb4f9cd17d1493600af19c70af547480cccf4a8a4a7752c")
 
-// TeleportListener listens to particular logs on Ethereum compatible blockchain and
-// converts them into event messages.
-type TeleportListener struct {
-	msgCh    chan *messages.Event // List of channels to which messages will be sent.
-	listener *logListener
-	log      log.Logger
+// Client is a Ethereum compatible client.
+type Client interface {
+	BlockNumber(ctx context.Context) (uint64, error)
+	FilterLogs(ctx context.Context, q geth.FilterQuery) ([]types.Log, error)
 }
 
 // TeleportListenerConfig contains a configuration options for NewTeleportListener.
@@ -53,151 +52,194 @@ type TeleportListenerConfig struct {
 	Addresses []ethereum.Address
 	// Interval specifies how often listener should check for new logs.
 	Interval time.Duration
-	// BlocksDelta specifies the distance between the newest block on the
-	// blockchain and the newest block from which logs are to be taken.
+	// BlocksDelta is a list of distances between the latest block on the
+	// blockchain and blocks from which logs are to be taken.
 	BlocksDelta []int
 	// BlocksLimit specifies how from many blocks logs can be fetched at once.
 	BlocksLimit int
-	// Logger is an instance of a logger. Logger is used mostly to report
-	// recoverable errors.
+	// Logger is a current logger interface used by the TeleportListener.
+	// The Logger is used to monitor asynchronous processes.
 	Logger log.Logger
+}
+
+// TeleportListener listens to TeleportGUID events on Ethereum compatible
+// blockchains.
+type TeleportListener struct {
+	eventCh chan *messages.Event
+
+	// lastBlock is a number of last block from which events were fetched.
+	// it is used in the nextBlockRange function.
+	lastBlock uint64
+
+	// Configuration parameters copied from TeleportListenerConfig:
+	client      Client
+	interval    time.Duration
+	addresses   []common.Address
+	blocksDelta []uint64
+	blocksLimit uint64
+	logger      log.Logger
 }
 
 // NewTeleportListener returns a new instance of the TeleportListener struct.
 func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
-	logger := cfg.Logger.WithField("tag", LoggerTag)
 	return &TeleportListener{
-		msgCh: make(chan *messages.Event, 1),
-		listener: &logListener{
-			client:      cfg.Client,
-			addresses:   cfg.Addresses,
-			topics:      [][]common.Hash{{teleportTopic0}},
-			interval:    cfg.Interval,
-			blocksDelta: intsToUint64s(cfg.BlocksDelta),
-			blocksLimit: uint64(cfg.BlocksLimit),
-			logCh:       make(chan types.Log, 1),
-			logger:      logger,
-		},
-		log: logger,
+		client:      cfg.Client,
+		interval:    cfg.Interval,
+		addresses:   cfg.Addresses,
+		blocksDelta: intsToUint64s(cfg.BlocksDelta),
+		blocksLimit: uint64(cfg.BlocksLimit),
+		logger:      cfg.Logger.WithField("tag", LoggerTag),
+		eventCh:     make(chan *messages.Event),
 	}
 }
 
 // Events implements the publisher.Listener interface.
 func (l *TeleportListener) Events() chan *messages.Event {
-	return l.msgCh
+	return l.eventCh
 }
 
 // Start implements the publisher.Listener interface.
 func (l *TeleportListener) Start(ctx context.Context) error {
-	l.listener.start(ctx)
-	go l.listenerRoutine(ctx)
+	go l.fetchLogsRoutine(ctx)
 	return nil
 }
 
-func (l *TeleportListener) listenerRoutine(ctx context.Context) {
+// fetchLogsRoutine periodically fetches logs from the blockchain.
+func (l *TeleportListener) fetchLogsRoutine(ctx context.Context) {
+	t := time.NewTicker(l.interval)
+	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
+			close(l.eventCh)
 			return
-		case log := <-l.listener.logs():
-			msg, err := logToMessage(log)
-			if err != nil {
-				l.log.WithError(err).Error("Unable to convert logger to message")
-				continue
-			}
-			l.msgCh <- msg
+		case <-t.C:
+			l.fetchLogs(ctx)
 		}
 	}
 }
 
-// logToMessage creates a transport message of "event" type from
-// given Ethereum logger.
-func logToMessage(log types.Log) (*messages.Event, error) {
-	guid, err := unpackTeleportGUID(log.Data)
+// fetchLogs fetches WormholeGUID events from the blockchain and converts them
+// into event messages. The converted messages are sent to the eventCh channel.
+func (l *TeleportListener) fetchLogs(ctx context.Context) {
+	from, to, err := l.nextBlockRange(ctx)
 	if err != nil {
-		return nil, err
+		l.logger.
+			WithError(err).
+			Error("Unable to get latest block number")
+		return
 	}
-	hash, err := guid.hash()
-	if err != nil {
-		return nil, err
+
+	// There is no new blocks to fetch.
+	if from == l.lastBlock {
+		return
 	}
-	data := map[string][]byte{
-		"hash":  hash.Bytes(), // Hash to be used to calculate a signature.
-		"event": log.Data,     // Event data.
+
+	for _, delta := range l.blocksDelta {
+		for _, address := range l.addresses {
+			fetchFrom := from - delta
+			fetchTo := to - delta
+
+			// Fetch logs.
+			l.logger.
+				WithFields(log.Fields{
+					"from":    fetchFrom,
+					"to":      fetchTo,
+					"address": address.String(),
+				}).
+				Info("Fetching logs")
+			logs, err := l.filterLogs(ctx, address, fetchFrom, fetchTo)
+			if err != nil {
+				l.logger.
+					WithError(err).
+					Error("Unable to fetch logs")
+				continue
+			}
+
+			// Convert logs to events.
+			for _, log := range logs {
+				msg, err := logToMessage(log)
+				if err != nil {
+					l.logger.
+						WithError(err).
+						Error("Unable to convert log to event")
+					continue
+				}
+				l.eventCh <- msg
+			}
+		}
 	}
-	return &messages.Event{
-		Type: TeleportEventType,
-		// ID is additionally hashed to ensure that it is not similar to
-		// any other field, so it will not be misused. This field is intended
-		// to be used only be the event store.
-		ID:          crypto.Keccak256Hash(append(log.TxHash.Bytes(), big.NewInt(int64(log.Index)).Bytes()...)).Bytes(),
-		Index:       log.TxHash.Bytes(),
-		EventDate:   time.Unix(guid.timestamp, 0),
-		MessageDate: time.Now(),
-		Data:        data,
-		Signatures:  map[string]messages.EventSignature{},
-	}, nil
+
+	l.lastBlock = to
 }
 
-// teleportGUID as defined in:
-// https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol
-type teleportGUID struct {
-	sourceDomain common.Hash
-	targetDomain common.Hash
-	receiver     common.Hash
-	operator     common.Hash
-	amount       *big.Int
-	nonce        *big.Int
-	timestamp    int64
-}
-
-// hash is used to generate an oracle signature for the TeleportGUID struct.
-// It must be compatible with the following contract:
-// https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol
-func (g *teleportGUID) hash() (common.Hash, error) {
-	b, err := packTeleportGUID(g)
+// nextBlockRange returns the range of blocks from which logs should be
+// fetched. It returns the range from the latest fetched block stored in the
+// lastBlock parameter to the latest block on the blockchain. The maximum
+// number of blocks is limited by the blocksLimit parameter.
+func (l *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
+	// Get the latest block number.
+	to, err := l.getBlockNumber(ctx)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("unable to generate a hash for TeleportGUID: %w", err)
+		return 0, 0, err
 	}
-	return crypto.Keccak256Hash(b), nil
+
+	// Set "from" to the next block. If "from" is greater than "to", then there
+	// are no new blocks to fetch.
+	from := l.lastBlock + 1
+	if from > to {
+		return to, to, nil
+	}
+
+	// Limit the number of blocks to fetch.
+	if to-from > l.blocksLimit {
+		from = to - l.blocksLimit + 1
+	}
+
+	return from, to, nil
 }
 
-// packTeleportGUID converts teleportGUID to ABI encoded data.
-func packTeleportGUID(g *teleportGUID) ([]byte, error) {
-	b, err := abiTeleportGUID.Pack(
-		g.sourceDomain,
-		g.targetDomain,
-		g.receiver,
-		g.operator,
-		g.amount,
-		g.nonce,
-		big.NewInt(g.timestamp),
+// getBlockNumber returns the latest block number on the blockchain.
+func (l *TeleportListener) getBlockNumber(ctx context.Context) (uint64, error) {
+	var err error
+	var res uint64
+	err = retry.Retry(
+		ctx,
+		func() error {
+			res, err = l.client.BlockNumber(ctx)
+			return err
+		},
+		retryAttempts,
+		retryInterval,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to pack TeleportGUID: %w", err)
+		return 0, err
 	}
-	return b, nil
+	return res, nil
 }
 
-// unpackTeleportGUID converts ABI encoded data to teleportGUID.
-func unpackTeleportGUID(data []byte) (*teleportGUID, error) {
-	u, err := abiTeleportGUID.Unpack(data)
+// filterLogs fetches TeleportGUID events from the blockchain.
+func (l *TeleportListener) filterLogs(ctx context.Context, addr common.Address, from, to uint64) ([]types.Log, error) {
+	var err error
+	var res []types.Log
+	err = retry.Retry(
+		ctx,
+		func() error {
+			res, err = l.client.FilterLogs(ctx, geth.FilterQuery{
+				FromBlock: new(big.Int).SetUint64(from),
+				ToBlock:   new(big.Int).SetUint64(to),
+				Addresses: []common.Address{addr},
+				Topics:    [][]common.Hash{{teleportTopic0}},
+			})
+			return err
+		},
+		retryAttempts,
+		retryInterval,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unpack TeleportGUID: %w", err)
+		return nil, err
 	}
-	return &teleportGUID{
-		sourceDomain: bytes32ToHash(u[0].([32]uint8)),
-		targetDomain: bytes32ToHash(u[1].([32]uint8)),
-		receiver:     bytes32ToHash(u[2].([32]uint8)),
-		operator:     bytes32ToHash(u[3].([32]uint8)),
-		amount:       u[4].(*big.Int),
-		nonce:        u[5].(*big.Int),
-		timestamp:    u[6].(*big.Int).Int64(),
-	}, nil
-}
-
-func bytes32ToHash(b [32]uint8) common.Hash {
-	return common.BytesToHash(b[:])
+	return res, nil
 }
 
 // intsToUint64s converts int slice to uint64 slice.
@@ -207,22 +249,4 @@ func intsToUint64s(i []int) []uint64 {
 		u[n] = uint64(v)
 	}
 	return u
-}
-
-var abiTeleportGUID abi.Arguments
-
-func init() {
-	bytes32, _ := abi.NewType("bytes32", "", nil)
-	uint128, _ := abi.NewType("uint128", "", nil)
-	uint80, _ := abi.NewType("uint128", "", nil)
-	uint48, _ := abi.NewType("uint48", "", nil)
-	abiTeleportGUID = abi.Arguments{
-		{Type: bytes32}, // sourceDomain
-		{Type: bytes32}, // targetDomain
-		{Type: bytes32}, // receiver
-		{Type: bytes32}, // operator
-		{Type: uint128}, // amount
-		{Type: uint80},  // nonce
-		{Type: uint48},  // timestamp
-	}
 }

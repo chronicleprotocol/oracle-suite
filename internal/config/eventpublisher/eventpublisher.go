@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -135,6 +136,9 @@ func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Lis
 		interval := w.Interval
 		if interval < 1 {
 			interval = 1
+		}
+		if _, err := url.Parse(w.Sequencer); err != nil {
+			return fmt.Errorf("sequencer address is not valid url: %w", err)
 		}
 		if len(w.BlocksDelta) < 1 {
 			return fmt.Errorf("blocksDelta must contains at least one element")

@@ -209,15 +209,16 @@ const testBlockResponse = `
 `
 
 func Test_teleportListener(t *testing.T) {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	cli := &mocks.Sequencer{}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second)
+	defer cancelFunc()
 
-	w := NewTeleportListener(TeleportListenerConfig{
+	cli := &mocks.Sequencer{}
+	tl := NewTeleportListener(TeleportListenerConfig{
 		Sequencer:   cli,
 		Addresses:   []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
 		Interval:    time.Millisecond * 100,
-		BlocksDelta: []int{},
-		BlocksLimit: 1,
+		BlocksDelta: []int{10},
+		BlocksLimit: 2,
 		Logger:      null.New(),
 	})
 
@@ -228,22 +229,27 @@ func Test_teleportListener(t *testing.T) {
 		panic(err)
 	}
 
+	// Fetch the latest block to determine the latest block number:
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block, nil).Once()
+	// Because BlocksDelta is set to 10, we should fetch the block 10 blocks before the latest block.
+	// Because there were no blocks fetched previously, we are fetching also older blocks but no more
+	// that defined in thw BlocksLimit parameter.
+	cli.On("GetBlockByNumber", ctx, uint64(191504-11)).Return(block, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191504-10)).Return(block, nil).Once()
+	// Finally,fetch pending block.
 	cli.On("GetPendingBlock", ctx, mock.Anything, mock.Anything).Return(block, nil).Once()
 
-	require.NoError(t, w.Start(ctx))
-	for {
-		if len(cli.Calls()) >= 1 { // 2 is the number of mocked calls above.
-			cancelFunc()
-			break
-		}
-		time.Sleep(time.Millisecond * 10)
-	}
+	require.NoError(t, tl.Start(ctx))
+
 	events := 0
-	for len(w.Events()) > 0 {
+	for {
+		msg := <-tl.Events()
 		events++
-		msg := <-w.Events()
 		assert.Equal(t, txHash.Bytes(), msg.Index)
 		assert.Equal(t, common.FromHex("0x3507a75b6cda5f180fa8e3ddf7bcb967699061a8f95549b73ecd2673dd14aa97"), msg.Data["hash"])
+		if events == 3 {
+			break
+		}
 	}
-	assert.Equal(t, 1, events)
+	assert.Equal(t, 3, events)
 }
