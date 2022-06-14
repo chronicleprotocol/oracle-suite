@@ -76,7 +76,7 @@ type TeleportListener struct {
 	interval    time.Duration
 	blocksLimit uint64
 	blocksDelta []uint64
-	logger      log.Logger
+	log         log.Logger
 }
 
 // NewTeleportListener creates a new instance of TeleportListener.
@@ -88,7 +88,7 @@ func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 		interval:    cfg.Interval,
 		blocksLimit: uint64(cfg.BlocksLimit),
 		blocksDelta: intsToUint64s(cfg.BlocksDelta),
-		logger:      cfg.Logger,
+		log:         cfg.Logger,
 	}
 }
 
@@ -130,7 +130,9 @@ func (tl *TeleportListener) fetchEventsRoutine(ctx context.Context) {
 func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
 	from, to, err := tl.nextBlockRange(ctx)
 	if err != nil {
-		tl.logger.WithError(err).Error("Unable to get latest block")
+		tl.log.
+			WithError(err).
+			Error("Unable to get latest block")
 		return
 	}
 	if from == tl.lastBlock {
@@ -139,19 +141,16 @@ func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
 	for num := from; num <= to; num++ {
 		for _, delta := range tl.blocksDelta {
 			bn := num - delta
-
-			tl.logger.
+			tl.log.
 				WithField("blockNumber", bn).
 				Info("Fetching block")
-
 			block, err := tl.getBlockByNumber(ctx, bn)
 			if err != nil {
-				tl.logger.
+				tl.log.
 					WithError(err).
 					Error("Unable to fetch block")
 				continue
 			}
-
 			tl.processBlock(block)
 		}
 	}
@@ -164,7 +163,7 @@ func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
 func (tl *TeleportListener) processPendingBlock(ctx context.Context) {
 	block, err := tl.getPendingBlock(ctx)
 	if err != nil {
-		tl.logger.
+		tl.log.
 			WithError(err).
 			Error("Unable to fetch pending block")
 		return
@@ -182,7 +181,7 @@ func (tl *TeleportListener) processBlock(block *starknet.Block) {
 			}
 			msg, err := eventToMessage(block, tx, evt)
 			if err != nil {
-				tl.logger.
+				tl.log.
 					WithError(err).
 					Error("Unable to convert event to message")
 				continue

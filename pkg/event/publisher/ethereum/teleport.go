@@ -83,19 +83,19 @@ type TeleportListener struct {
 	addresses   []common.Address
 	blocksDelta []uint64
 	blocksLimit uint64
-	logger      log.Logger
+	log         log.Logger
 }
 
 // NewTeleportListener returns a new instance of the TeleportListener struct.
 func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 	return &TeleportListener{
+		eventCh:     make(chan *messages.Event),
 		client:      cfg.Client,
 		interval:    cfg.Interval,
 		addresses:   cfg.Addresses,
 		blocksDelta: intsToUint64s(cfg.BlocksDelta),
 		blocksLimit: uint64(cfg.BlocksLimit),
-		logger:      cfg.Logger.WithField("tag", LoggerTag),
-		eventCh:     make(chan *messages.Event),
+		log:         cfg.Logger.WithField("tag", LoggerTag),
 	}
 }
 
@@ -130,7 +130,7 @@ func (tl *TeleportListener) fetchLogsRoutine(ctx context.Context) {
 func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 	rangeFrom, rangeTo, err := tl.nextBlockRange(ctx)
 	if err != nil {
-		tl.logger.
+		tl.log.
 			WithError(err).
 			Error("Unable to get latest block number")
 		return
@@ -142,27 +142,24 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 		for _, address := range tl.addresses {
 			from := rangeFrom - delta
 			to := rangeTo - delta
-
-			tl.logger.
+			tl.log.
 				WithFields(log.Fields{
 					"from":    from,
 					"to":      to,
 					"address": address.String(),
 				}).
 				Info("Fetching logs")
-
 			logs, err := tl.filterLogs(ctx, address, from, to)
 			if err != nil {
-				tl.logger.
+				tl.log.
 					WithError(err).
 					Error("Unable to fetch logs")
 				continue
 			}
-
 			for _, l := range logs {
 				msg, err := logToMessage(l)
 				if err != nil {
-					tl.logger.
+					tl.log.
 						WithError(err).
 						Error("Unable to convert log to event")
 					continue
