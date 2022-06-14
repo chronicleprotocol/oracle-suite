@@ -17,6 +17,7 @@ package ethereum
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"time"
 
@@ -140,6 +141,9 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 	}
 	for _, delta := range tl.blocksDelta {
 		for _, address := range tl.addresses {
+			if ctx.Err() != nil {
+				return
+			}
 			from := rangeFrom - delta
 			to := rangeTo - delta
 			tl.log.
@@ -150,6 +154,9 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 				}).
 				Info("Fetching logs")
 			logs, err := tl.filterLogs(ctx, address, from, to)
+			if errors.Is(err, context.Canceled) {
+				continue
+			}
 			if err != nil {
 				tl.log.
 					WithError(err).

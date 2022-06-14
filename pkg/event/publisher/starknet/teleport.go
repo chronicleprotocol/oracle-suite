@@ -18,6 +18,7 @@ package starknet
 import (
 	"bytes"
 	"context"
+	"errors"
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
@@ -138,13 +139,18 @@ func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
 	if from == tl.lastBlock {
 		return // There is no new blocks to fetch.
 	}
-	for num := from; num <= to; num++ {
-		for _, delta := range tl.blocksDelta {
-			bn := num - delta
+	for _, delta := range tl.blocksDelta {
+		for num := from - delta; num <= to-delta; num++ {
+			if ctx.Err() != nil {
+				return
+			}
 			tl.log.
-				WithField("blockNumber", bn).
+				WithField("blockNumber", num).
 				Info("Fetching block")
-			block, err := tl.getBlockByNumber(ctx, bn)
+			block, err := tl.getBlockByNumber(ctx, num)
+			if errors.Is(err, context.Canceled) {
+				continue
+			}
 			if err != nil {
 				tl.log.
 					WithError(err).
@@ -162,6 +168,9 @@ func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
 // eventCh channel.
 func (tl *TeleportListener) processPendingBlock(ctx context.Context) {
 	block, err := tl.getPendingBlock(ctx)
+	if errors.Is(err, context.Canceled) {
+		return
+	}
 	if err != nil {
 		tl.log.
 			WithError(err).
