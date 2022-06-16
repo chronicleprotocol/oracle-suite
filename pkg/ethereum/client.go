@@ -68,7 +68,9 @@ type Client interface {
 	SendTransaction(ctx context.Context, transaction *Transaction) (*Hash, error)
 }
 
-const contextBlockNumber = "ethereum_block_number"
+type contextKey string
+
+const contextBlockNumber contextKey = "ethereum_block_number"
 
 // WithBlockNumber sets the block number in the context.
 func WithBlockNumber(ctx context.Context, block *big.Int) context.Context {
