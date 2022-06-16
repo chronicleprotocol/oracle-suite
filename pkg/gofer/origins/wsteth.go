@@ -31,7 +31,7 @@ import (
 //go:embed wsteth_abi.json
 var wrappedStakedETHABI string
 
-const wsethDenominator = 1e18
+const ether uint64 = 1e18
 
 type WrappedStakedETH struct {
 	ethClient ethereum.Client
@@ -53,22 +53,12 @@ func NewWrappedStakedETH(cli ethereum.Client, addrs ContractAddresses, blocks []
 	}, nil
 }
 
-func (s WrappedStakedETH) pairsToContractAddress(pair Pair) (ethereum.Address, bool, error) {
-	contract, inverted, ok := s.addrs.ByPair(pair)
-	if !ok {
-		return ethereum.Address{}, inverted, fmt.Errorf("failed to get Curve contract address for pair: %s", pair.String())
-	}
-	return ethereum.HexToAddress(contract), inverted, nil
-}
-
 func (s WrappedStakedETH) PullPrices(pairs []Pair) []FetchResult {
 	return callSinglePairOrigin(&s, pairs)
 }
 
 func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
-	ctx := context.Background()
-
-	contract, inverted, err := s.pairsToContractAddress(pair)
+	contract, inverted, err := s.addrs.AddressByPair(pair)
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +73,13 @@ func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("failed to get contract args for pair: %s", pair.String())
 	}
 
+	ctx := context.Background()
 	blockNumber, err := s.ethClient.BlockNumber(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block number: %w", err)
 	}
 
+{
 	var total float64
 	for _, block := range s.blocks {
 		resp, err := s.ethClient.Call(
@@ -105,6 +97,20 @@ func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
 	return &Price{
 		Pair:      pair,
 		Price:     total / float64(len(s.blocks)),
+		Timestamp: time.Now(),
+	}, nil
+}
+
+	resp, err := s.ethClient.Call(context.Background(), ethereum.Call{Address: contract, Data: callData})
+	if err != nil {
+		return nil, err
+	}
+	bn := new(big.Int).SetBytes(resp)
+	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(wsethDenominator)).Float64()
+
+	return &Price{
+		Pair:      pair,
+		Price:     price,
 		Timestamp: time.Now(),
 	}, nil
 }

@@ -325,6 +325,7 @@
         "name": "curve",
         "params": {
           "contracts": {
+            "RETH/WSTETH": "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
             "ETH/STETH": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
           }
         }
@@ -333,8 +334,12 @@
         "type": "balancerV2",
         "name": "balancerV2",
         "params": {
+          "symbolAliases": {
+            "ETH": "WETH"
+          },
           "contracts": {
-            "STETH/ETH": "0x32296969ef14eb0c6d29669c550d4a0449130230"
+            "RETH/WETH": "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
+            "STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230"
           }
         }
       },
@@ -346,9 +351,38 @@
             "WSTETH/STETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
           }
         }
+      },
+      "rocketpool": {
+        "type": "rocketpool",
+        "name": "rocketpool",
+        "params": {
+          "contracts": {
+            "ETH/RETH": "0xae78736Cd615f374D3085123A210448E74Fc6393"
+          }
+        }
       }
     },
     "priceModels": {
+      "RETH/ETH": {
+        "method": "median",
+        "sources": [
+          [{ "origin": "rocketpool", "pair": "RETH/ETH" }],
+          [{ "origin": "balancerV2", "pair": "RETH/ETH" }],
+          [{ "origin": "curve", "pair": "RETH/WSTETH" },{ "origin": ".", "pair": "WSTETH/ETH" }]
+        ],
+        "params": {
+          "minimumSuccessfulSources": 3
+        }
+      },
+      "RETH/USD": {
+        "method": "median",
+        "sources": [
+          [{ "origin": ".", "pair": "RETH/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
+        ],
+        "params": {
+          "minimumSuccessfulSources": 1
+        }
+      },
       "STETH/ETH": {
         "method": "median",
         "sources": [
@@ -359,19 +393,19 @@
           "minimumSuccessfulSources": 2
         }
       },
-      "WSTETH/ETH": {
+      "STETH/USD": {
         "method": "median",
         "sources": [
-          [{ "origin": "wsteth", "pair": "WSTETH/STETH" },{ "origin": ".", "pair": "STETH/ETH" }]
+          [{ "origin": ".", "pair": "STETH/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
         ],
         "params": {
           "minimumSuccessfulSources": 1
         }
       },
-      "STETH/USD": {
+      "WSTETH/ETH": {
         "method": "median",
         "sources": [
-          [{ "origin": ".", "pair": "STETH/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
+          [{ "origin": "wsteth", "pair": "WSTETH/STETH" },{ "origin": ".", "pair": "STETH/ETH" }]
         ],
         "params": {
           "minimumSuccessfulSources": 1

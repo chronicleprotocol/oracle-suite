@@ -1,9 +1,9 @@
 module github.com/chronicleprotocol/oracle-suite
 
-go 1.17
+go 1.18
 
 require (
-	github.com/ethereum/go-ethereum v1.10.13
+	github.com/ethereum/go-ethereum v1.10.19
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -27,6 +27,7 @@ require (
 	go.cryptoscope.co/ssb v0.2.1
 	go.mindeco.de v1.12.0
 	go.mindeco.de/ssb-refs v0.4.1
+	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	google.golang.org/protobuf v1.28.0
 )
@@ -38,6 +39,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -46,7 +48,8 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
-	github.com/deckarep/golang-set v0.0.0-20180603214616-504e848d77ea // indirect
+	github.com/deckarep/golang-set v1.8.0 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
 	github.com/dgraph-io/sroar v0.0.0-20210524170324-9b164cbe6e02 // indirect
@@ -181,7 +184,6 @@ require (
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect

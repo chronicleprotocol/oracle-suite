@@ -203,6 +203,16 @@ func NewHandler(
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(*h, aliases), nil
+	case "rocketpool":
+		contracts, err := parseParamsContracts(params)
+		if err != nil {
+			return nil, err
+		}
+		h, err := origins.NewRockerPool(cli, contracts)
+		if err != nil {
+			return nil, err
+		}
+		return origins.NewBaseExchangeHandler(*h, aliases), nil
 	case "uniswap", "uniswapV2":
 		contracts, err := parseParamsContracts(params)
 		if err != nil {
