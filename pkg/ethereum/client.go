@@ -52,6 +52,8 @@ type Call struct {
 }
 
 type Client interface {
+	// BlockNumber returns the current block number.
+	BlockNumber(ctx context.Context) (*big.Int, error)
 	// Call executes a message call transaction, which is directly
 	// executed in the VM of the node, but never mined into the blockchain.
 	Call(ctx context.Context, call Call) ([]byte, error)
@@ -64,4 +66,20 @@ type Client interface {
 	// SendTransaction injects a signed transaction into the pending pool
 	// for execution.
 	SendTransaction(ctx context.Context, transaction *Transaction) (*Hash, error)
+}
+
+const contextBlockNumber = "ethereum_block_number"
+
+// WithBlockNumber sets the block number in the context.
+func WithBlockNumber(ctx context.Context, block *big.Int) context.Context {
+	return context.WithValue(ctx, contextBlockNumber, block)
+}
+
+// BlockNumberFromContext returns the block number from the context.
+func BlockNumberFromContext(ctx context.Context) *big.Int {
+	n, ok := ctx.Value(contextBlockNumber).(*big.Int)
+	if ok {
+		return n
+	}
+	return nil
 }

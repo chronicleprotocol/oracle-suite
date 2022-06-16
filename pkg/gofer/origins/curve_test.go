@@ -16,8 +16,10 @@
 package origins
 
 import (
+	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -45,7 +47,7 @@ func (suite *CurveSuite) TearDownSuite() {
 }
 
 func (suite *CurveSuite) SetupTest() {
-	curveFinance, err := NewCurveFinance(suite.client, suite.addresses)
+	curveFinance, err := NewCurveFinance(suite.client, suite.addresses, []int64{0, 10, 20})
 	suite.NoError(err)
 	suite.origin = NewBaseExchangeHandler(curveFinance, nil)
 }
@@ -63,26 +65,60 @@ func TestCurveSuite(t *testing.T) {
 }
 
 func (suite *CurveSuite) TestSuccessResponse() {
+	suite.client.On("BlockNumber", mock.Anything).Return(big.NewInt(100), nil)
+
+	resp1 := common.BigToHash(big.NewInt(0.97 * 1e18))
+	resp2 := common.BigToHash(big.NewInt(0.98 * 1e18))
+	resp3 := common.BigToHash(big.NewInt(0.99 * 1e18))
+
 	suite.client.On("Call", mock.Anything, ethereum.Call{
 		Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
 		Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000"),
-	}).Return(ethereum.HexToBytes("0x0000000000000000000000000000000000000000000000000dc19f91822f3fe3"), nil)
+	}).Return(resp1.Bytes(), nil).Once()
+
+	suite.client.On("Call", mock.Anything, ethereum.Call{
+		Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+		Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+	}).Return(resp2.Bytes(), nil).Once()
+
+	suite.client.On("Call", mock.Anything, ethereum.Call{
+		Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+		Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+	}).Return(resp3.Bytes(), nil).Once()
 
 	pair := Pair{Base: "STETH", Quote: "ETH"}
-
 	results1 := suite.origin.Fetch([]Pair{pair})
 	suite.Require().NoError(results1[0].Error)
-	suite.Equal(0.9912488403014287, results1[0].Price.Price)
+	suite.Equal(0.98, results1[0].Price.Price)
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
+}
+
+func (suite *CurveSuite) TestSuccessResponse_Inverse() {
+	suite.client.On("BlockNumber", mock.Anything).Return(big.NewInt(100), nil)
+
+	resp1 := common.BigToHash(big.NewInt(0.97 * 1e18))
+	resp2 := common.BigToHash(big.NewInt(0.98 * 1e18))
+	resp3 := common.BigToHash(big.NewInt(0.99 * 1e18))
 
 	suite.client.On("Call", mock.Anything, ethereum.Call{
 		Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
 		Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000de0b6b3a7640000"),
-	}).Return(ethereum.HexToBytes("0x0000000000000000000000000000000000000000000000000dc19f91822f3fe3"), nil)
+	}).Return(resp1.Bytes(), nil).Once()
 
+	suite.client.On("Call", mock.Anything, ethereum.Call{
+		Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+		Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+	}).Return(resp2.Bytes(), nil).Once()
+
+	suite.client.On("Call", mock.Anything, ethereum.Call{
+		Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+		Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+	}).Return(resp3.Bytes(), nil).Once()
+
+	pair := Pair{Base: "STETH", Quote: "ETH"}
 	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
 	suite.Require().NoError(results2[0].Error)
-	suite.Equal(0.9912488403014287, results2[0].Price.Price)
+	suite.Equal(0.98, results2[0].Price.Price)
 	suite.Greater(results2[0].Price.Timestamp.Unix(), int64(0))
 }
 

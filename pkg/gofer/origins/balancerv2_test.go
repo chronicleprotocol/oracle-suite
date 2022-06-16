@@ -16,8 +16,10 @@
 package origins
 
 import (
+	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -45,7 +47,7 @@ func (suite *BalancerV2Suite) TearDownSuite() {
 }
 
 func (suite *BalancerV2Suite) SetupTest() {
-	balancerV2Finance, err := NewBalancerV2(suite.client, suite.addresses)
+	balancerV2Finance, err := NewBalancerV2(suite.client, suite.addresses, []int64{0, 10, 20})
 	suite.NoError(err)
 	suite.origin = NewBaseExchangeHandler(balancerV2Finance, nil)
 }
@@ -63,16 +65,32 @@ func TestBalancerV2Suite(t *testing.T) {
 }
 
 func (suite *BalancerV2Suite) TestSuccessResponse() {
+	suite.client.On("BlockNumber", mock.Anything).Return(big.NewInt(100), nil)
+
+	resp1 := common.BigToHash(big.NewInt(0.97 * 1e18))
+	resp2 := common.BigToHash(big.NewInt(0.98 * 1e18))
+	resp3 := common.BigToHash(big.NewInt(0.99 * 1e18))
+
 	suite.client.On("Call", mock.Anything, ethereum.Call{
 		Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
 		Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
-	}).Return(ethereum.HexToBytes("0x0000000000000000000000000000000000000000000000000dc19f91822f3fe3"), nil)
+	}).Return(resp1.Bytes(), nil).Once()
+
+	suite.client.On("Call", mock.Anything, ethereum.Call{
+		Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+		Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+	}).Return(resp2.Bytes(), nil).Once()
+
+	suite.client.On("Call", mock.Anything, ethereum.Call{
+		Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+		Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+	}).Return(resp3.Bytes(), nil).Once()
 
 	pair := Pair{Base: "STETH", Quote: "ETH"}
 
 	results1 := suite.origin.Fetch([]Pair{pair})
 	suite.Require().NoError(results1[0].Error)
-	suite.Equal(0.9912488403014287, results1[0].Price.Price)
+	suite.Equal(0.98, results1[0].Price.Price)
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
 
 	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
