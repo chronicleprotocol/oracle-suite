@@ -15,7 +15,7 @@ import (
 )
 
 func TestEthereum(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer ctxCancel()
 
 	s := smocker.NewAPI(getenv("SMOCKER_URL", "http://127.0.0.1:8081"))
@@ -43,9 +43,11 @@ func TestEthereum(t *testing.T) {
 	}
 
 	run(ctx, "../..", "./cmd/lair/...", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
-	time.Sleep(time.Second * 5)
+	waitForPort(ctx, "localhost", 30100)
 	run(ctx, "../..", "./cmd/leeloo/...", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
+	waitForPort(ctx, "localhost", 30101)
 	run(ctx, "../..", "./cmd/leeloo/...", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.json", "-v", "debug")
+	waitForPort(ctx, "localhost", 30102)
 
 	time.Sleep(time.Second * 15)
 

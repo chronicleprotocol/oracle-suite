@@ -5,9 +5,11 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
 )
 
 type LairResponse []struct {
@@ -52,18 +54,28 @@ func getenv(env string, def string) string {
 	return v
 }
 
-func mustAtoi(s string) int {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		panic(err)
-	}
-	return i
-}
-
 func mustReadFile(path string) string {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
 	return string(b)
+}
+
+func waitForPort(ctx context.Context, host string, port int) {
+	for ctx.Err() == nil {
+		if isPortOpen(host, port) {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func isPortOpen(host string, port int) bool {
+	c, err := net.Dial("tcp", host+":"+strconv.Itoa(port))
+	if err != nil {
+		return false
+	}
+	c.Close()
+	return true
 }
