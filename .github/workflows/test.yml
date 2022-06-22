@@ -64,6 +64,8 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Download vendors
+        run: go mod vendor
       - name: Start Smocker instance for testing
         run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
       - name: Run E2E Test (Ethereum)
