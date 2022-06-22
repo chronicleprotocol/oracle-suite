@@ -21,7 +21,7 @@ func TestEthereum(t *testing.T) {
 	s := smocker.NewAPI(getenv("SMOCKER_URL", "http://127.0.0.1:8081"))
 	err := s.Reset(ctx)
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 
 	mocks := []*smocker.Mock{
@@ -39,14 +39,30 @@ func TestEthereum(t *testing.T) {
 
 	err = s.AddMocks(ctx, mocks)
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 
-	run(ctx, "../..", "./cmd/lair/...", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
+	cmd2 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
+	cmd3 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.json", "-v", "debug")
+	defer func() {
+		ctxCancel()
+		_ = cmd1.Wait()
+		_ = cmd2.Wait()
+		_ = cmd3.Wait()
+	}()
+
+	if err := cmd1.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30100)
-	run(ctx, "../..", "./cmd/leeloo/...", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
+	if err := cmd2.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30101)
-	run(ctx, "../..", "./cmd/leeloo/...", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.json", "-v", "debug")
+	if err := cmd3.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30102)
 
 	time.Sleep(time.Second * 15)

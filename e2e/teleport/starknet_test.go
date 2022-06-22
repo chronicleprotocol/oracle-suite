@@ -22,7 +22,7 @@ func TestStarknet(t *testing.T) {
 	s := smocker.NewAPI(getenv("SMOCKER_URL", "http://127.0.0.1:8081"))
 	err := s.Reset(ctx)
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 
 	mocks := []*smocker.Mock{}
@@ -47,30 +47,46 @@ func TestStarknet(t *testing.T) {
 	}
 	err = s.AddMocks(ctx, mocks)
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 
-	run(ctx, "../..", "./cmd/lair/...", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
+	cmd2 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_starknet.json", "-v", "debug")
+	cmd3 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_starknet.json", "-v", "debug")
+	defer func() {
+		ctxCancel()
+		_ = cmd1.Wait()
+		_ = cmd2.Wait()
+		_ = cmd3.Wait()
+	}()
+
+	if err := cmd1.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30100)
-	run(ctx, "../..", "./cmd/leeloo/...", "run", "-c", "./e2e/teleport/testdata/config/leeloo_starknet.json", "-v", "debug")
+	if err := cmd2.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30101)
-	run(ctx, "../..", "./cmd/leeloo/...", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_starknet.json", "-v", "debug")
+	if err := cmd3.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30102)
 
 	time.Sleep(15 * time.Second)
 
 	res, err := http.Get("http://localhost:30000/?type=teleport_starknet&index=0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202")
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 	lairResponse := LairResponse{}
 	err = json.Unmarshal(body, &lairResponse)
 	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
