@@ -21,15 +21,15 @@ type LairResponseSignature struct {
 	Signature string `json:"signature"`
 }
 
-func debugRun(ctx context.Context, wd, path string, params ...string) error {
-	return call(ctx, wd, "dlv", append([]string{"--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "debug", path}, params...)...)
+func debugRun(ctx context.Context, wd, path string, params ...string) {
+	call(ctx, wd, "dlv", append([]string{"--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "debug", path}, params...)...)
 }
 
-func run(ctx context.Context, wd, path string, params ...string) error {
-	return call(ctx, wd, "go", append([]string{"run", path}, params...)...)
+func run(ctx context.Context, wd, path string, params ...string) {
+	call(ctx, wd, "go", append([]string{"run", path}, params...)...)
 }
 
-func call(ctx context.Context, wd, bin string, params ...string) error {
+func call(ctx context.Context, wd, bin string, params ...string) {
 	var stdoutBuf, stderrBuf bytes.Buffer
 
 	cmd := exec.CommandContext(ctx, bin, params...)
@@ -39,7 +39,9 @@ func call(ctx context.Context, wd, bin string, params ...string) error {
 	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
 }
 
 func getenv(env string, def string) string {
