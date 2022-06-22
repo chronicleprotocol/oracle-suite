@@ -230,7 +230,13 @@ func (tl *TeleportListener) getBlockNumber(ctx context.Context) (uint64, error) 
 }
 
 // filterLogs fetches TeleportGUID events from the blockchain.
-func (tl *TeleportListener) filterLogs(ctx context.Context, addr common.Address, from, to uint64, topic0 common.Hash) ([]types.Log, error) {
+func (tl *TeleportListener) filterLogs(
+	ctx context.Context,
+	addr common.Address,
+	from, to uint64,
+	topic0 common.Hash,
+) ([]types.Log, error) {
+
 	var err error
 	var res []types.Log
 	err = retry.Retry(
