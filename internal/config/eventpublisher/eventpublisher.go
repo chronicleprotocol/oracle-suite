@@ -30,7 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	publisherEthereum "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/starknet"
+	publisherStarknet "github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/starknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
@@ -88,7 +88,10 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	if err := c.configureTeleportStarknetListeners(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
-	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{publisherEthereum.TeleportEventType})}
+	sig := []publisher.Signer{publisherEthereum.NewSigner(d.Signer, []string{
+		publisherEthereum.TeleportEventType,
+		publisherStarknet.TeleportEventType,
+	})}
 	cfg := publisher.Config{
 		Listeners: lis,
 		Signers:   sig,
@@ -146,7 +149,7 @@ func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Lis
 		if w.BlocksLimit <= 0 {
 			return fmt.Errorf("blocksLimit must greather than 0")
 		}
-		*lis = append(*lis, starknet.NewTeleportListener(starknet.TeleportListenerConfig{
+		*lis = append(*lis, publisherStarknet.NewTeleportListener(publisherStarknet.TeleportListenerConfig{
 			Sequencer:   starknetClient.NewSequencer(w.Sequencer, http.Client{}),
 			Addresses:   w.Addresses,
 			Interval:    time.Second * time.Duration(interval),

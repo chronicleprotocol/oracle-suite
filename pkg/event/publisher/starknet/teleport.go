@@ -27,7 +27,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const TeleportStarknetEventType = "teleport_starknet"
+const TeleportEventType = "teleport_starknet"
 const retryAttempts = 10              // The maximum number of attempts to call Sequencer in case of an error.
 const retryInterval = 6 * time.Second // The delay between retry attempts.
 
@@ -140,6 +140,9 @@ func (tl *TeleportListener) processAcceptedBlocks(ctx context.Context) {
 		return // There is no new blocks to fetch.
 	}
 	for _, delta := range tl.blocksDelta {
+		if delta > from {
+			delta = from // To prevent overflow.
+		}
 		for num := from - delta; num <= to-delta; num++ {
 			if ctx.Err() != nil {
 				return

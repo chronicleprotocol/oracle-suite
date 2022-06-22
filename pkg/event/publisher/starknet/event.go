@@ -39,7 +39,7 @@ func eventToMessage(b *starknet.Block, tx *starknet.TransactionReceipt, e *stark
 		"event": guid,         // NodeEvent data.
 	}
 	return &messages.Event{
-		Type:        TeleportStarknetEventType,
+		Type:        TeleportEventType,
 		ID:          eventUniqueID(tx, e),
 		Index:       tx.TransactionHash.Bytes(),
 		EventDate:   time.Unix(b.Timestamp, 0),

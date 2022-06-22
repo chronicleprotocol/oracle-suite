@@ -165,5 +165,9 @@ func (e *EventAPI) contextCancelHandler() {
 }
 
 func decodeHex(h string) ([]byte, error) {
-	return hex.DecodeString(strings.TrimPrefix(h, "0x"))
+	h = strings.TrimPrefix(h, "0x")
+	if len(h)%2 != 0 {
+		h = "0" + h
+	}
+	return hex.DecodeString(h)
 }

@@ -1,0 +1,43 @@
+{
+  "transport": {
+    "libp2p": {
+      "privKeySeed": "57964e947d0ba817075402b5fcd93488ca8a502a80c9fbde3d781584857aa09f",
+      "listenAddrs": [
+        "/ip4/0.0.0.0/tcp/30102"
+      ],
+      "bootstrapAddrs": [
+        "/ip4/127.0.0.1/tcp/30100/p2p/12D3KooWSGCRPjd6dHHjfWYeKnurLcaSYAQsQqDYj7GcPN2uhdis"
+      ],
+      "directPeersAddrs": [],
+      "blockedAddrs": [],
+      "disableDiscovery": false
+    }
+  },
+  "ethereum": {
+    "from": "e3ced0f62f7eb2856d37bed128d2b195712d2644",
+    "keystore": "./e2e/teleport/testdata/keys",
+    "password": "./e2e/teleport/testdata/keys/pass",
+    "rpc": "http://localhost:8080"
+  },
+  "feeds": [
+    "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
+    "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
+  ],
+  "leeloo": {
+    "listeners": {
+      "teleportEVM": [
+        {
+          "ethereum": {
+            "rpc": "http://localhost:8080"
+          },
+          "interval": 10,
+          "blocksDelta": [0],
+          "blocksLimit": 1000,
+          "addresses": [
+            "0x20265780907778b4d0e9431c8ba5c7f152707f1d"
+          ]
+        }
+      ]
+    }
+  }
+}

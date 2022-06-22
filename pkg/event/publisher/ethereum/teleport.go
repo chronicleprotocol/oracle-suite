@@ -39,6 +39,10 @@ const retryInterval = 5 * time.Second // The delay between retry attempts.
 // teleportTopic0 is Keccak256("TeleportGUID((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var teleportTopic0 = ethereum.HexToHash("0x9f692a9304834fdefeb4f9cd17d1493600af19c70af547480cccf4a8a4a7752c")
 
+// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
+// TODO: This is a temporary, to remove after complete transition to TeleportGUID.
+var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
+
 // Client is a Ethereum compatible client.
 type Client interface {
 	BlockNumber(ctx context.Context) (uint64, error)
@@ -139,39 +143,44 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 	if rangeFrom == tl.lastBlock {
 		return // There is no new blocks to fetch.
 	}
-	for _, delta := range tl.blocksDelta {
-		for _, address := range tl.addresses {
-			if ctx.Err() != nil {
-				return
-			}
-			from := rangeFrom - delta
-			to := rangeTo - delta
-			tl.log.
-				WithFields(log.Fields{
-					"from":    from,
-					"to":      to,
-					"address": address.String(),
-				}).
-				Info("Fetching logs")
-			logs, err := tl.filterLogs(ctx, address, from, to)
-			if errors.Is(err, context.Canceled) {
-				continue
-			}
-			if err != nil {
+	for _, topic0 := range []common.Hash{teleportTopic0, wormholeTopic0} {
+		for _, delta := range tl.blocksDelta {
+			for _, address := range tl.addresses {
+				if ctx.Err() != nil {
+					return
+				}
+				if delta > rangeFrom {
+					delta = rangeFrom // To prevent overflow.
+				}
+				from := rangeFrom - delta
+				to := rangeTo - delta
 				tl.log.
-					WithError(err).
-					Error("Unable to fetch logs")
-				continue
-			}
-			for _, l := range logs {
-				msg, err := logToMessage(l)
+					WithFields(log.Fields{
+						"from":    from,
+						"to":      to,
+						"address": address.String(),
+					}).
+					Info("Fetching logs")
+				logs, err := tl.filterLogs(ctx, address, from, to, topic0)
+				if errors.Is(err, context.Canceled) {
+					continue
+				}
 				if err != nil {
 					tl.log.
 						WithError(err).
-						Error("Unable to convert log to event")
+						Error("Unable to fetch logs")
 					continue
 				}
-				tl.eventCh <- msg
+				for _, l := range logs {
+					msg, err := logToMessage(l)
+					if err != nil {
+						tl.log.
+							WithError(err).
+							Error("Unable to convert log to event")
+						continue
+					}
+					tl.eventCh <- msg
+				}
 			}
 		}
 	}
@@ -221,7 +230,7 @@ func (tl *TeleportListener) getBlockNumber(ctx context.Context) (uint64, error) 
 }
 
 // filterLogs fetches TeleportGUID events from the blockchain.
-func (tl *TeleportListener) filterLogs(ctx context.Context, addr common.Address, from, to uint64) ([]types.Log, error) {
+func (tl *TeleportListener) filterLogs(ctx context.Context, addr common.Address, from, to uint64, topic0 common.Hash) ([]types.Log, error) {
 	var err error
 	var res []types.Log
 	err = retry.Retry(
@@ -231,7 +240,7 @@ func (tl *TeleportListener) filterLogs(ctx context.Context, addr common.Address,
 				FromBlock: new(big.Int).SetUint64(from),
 				ToBlock:   new(big.Int).SetUint64(to),
 				Addresses: []common.Address{addr},
-				Topics:    [][]common.Hash{{teleportTopic0}},
+				Topics:    [][]common.Hash{{topic0}},
 			})
 			return err
 		},
