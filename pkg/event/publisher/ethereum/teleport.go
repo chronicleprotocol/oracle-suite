@@ -32,7 +32,7 @@ import (
 )
 
 const TeleportEventType = "teleport_evm"
-const LoggerTag = "TELEPORT_LISTENER"
+const LoggerTag = "ETHEREUM_TELEPORT_LISTENER"
 const retryAttempts = 3               // The maximum number of attempts to call Client in case of an error.
 const retryInterval = 5 * time.Second // The delay between retry attempts.
 
@@ -172,6 +172,17 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 					continue
 				}
 				for _, l := range logs {
+					if l.Address != address {
+						// This should never happen. All logs returned by
+						// eth_filterLogs should be emitted by the specified
+						// contract. If it happens, there is a bug somewhere.
+						tl.log.
+							WithFields(log.Fields{
+								"expected": address.String(),
+								"actual":   l.Address.String(),
+							}).
+							Panic("Log emitted by wrong contract")
+					}
 					msg, err := logToMessage(l)
 					if err != nil {
 						tl.log.

@@ -28,6 +28,7 @@ import (
 )
 
 const TeleportEventType = "teleport_starknet"
+const LoggerTag = "STARKNET_TELEPORT_LISTENER"
 const retryAttempts = 10              // The maximum number of attempts to call Sequencer in case of an error.
 const retryInterval = 6 * time.Second // The delay between retry attempts.
 
@@ -89,7 +90,7 @@ func NewTeleportListener(cfg TeleportListenerConfig) *TeleportListener {
 		interval:    cfg.Interval,
 		blocksLimit: uint64(cfg.BlocksLimit),
 		blocksDelta: intsToUint64s(cfg.BlocksDelta),
-		log:         cfg.Logger,
+		log:         cfg.Logger.WithField("tag", LoggerTag),
 	}
 }
 
