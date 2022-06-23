@@ -41,9 +41,10 @@ type CurveFinance struct {
 	addrs                     ContractAddresses
 	abi                       abi.ABI
 	baseIndex, quoteIndex, dx *big.Int
+	blocks                    []int64
 }
 
-func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses) (*CurveFinance, error) {
+func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses, blocks []int64) (*CurveFinance, error) {
 	a, err := abi.JSON(strings.NewReader(curvePoolABI))
 	if err != nil {
 		return nil, err
@@ -55,6 +56,7 @@ func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses) (*CurveFin
 		baseIndex:  big.NewInt(0),
 		quoteIndex: big.NewInt(1),
 		dx:         new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)),
+		blocks:     blocks,
 	}, nil
 }
 
@@ -71,6 +73,8 @@ func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
 }
 
 func (s CurveFinance) callOne(pair Pair) (*Price, error) {
+	ctx := context.Background()
+
 	contract, inverted, err := s.pairsToContractAddress(pair)
 	if err != nil {
 		return nil, err
@@ -86,16 +90,28 @@ func (s CurveFinance) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("failed to pack contract args for pair: %s", pair.String())
 	}
 
-	resp, err := s.ethClient.Call(context.Background(), pkgEthereum.Call{Address: contract, Data: callData})
+	blockNumber, err := s.ethClient.BlockNumber(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get block number: %w", err)
 	}
-	bn := new(big.Int).SetBytes(resp)
-	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(curveDenominator)).Float64()
+
+	var total float64
+	for _, block := range s.blocks {
+		resp, err := s.ethClient.Call(
+			pkgEthereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
+			pkgEthereum.Call{Address: contract, Data: callData},
+		)
+		if err != nil {
+			return nil, err
+		}
+		bn := new(big.Int).SetBytes(resp)
+		price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(curveDenominator)).Float64()
+		total += price
+	}
 
 	return &Price{
 		Pair:      pair,
-		Price:     price,
+		Price:     total / float64(len(s.blocks)),
 		Timestamp: time.Now(),
 	}, nil
 }

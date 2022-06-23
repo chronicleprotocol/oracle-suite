@@ -24,6 +24,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/gofer/origins"
 )
 
+// averageFromBlocks is a list of blocks distances from the latest blocks from
+// which prices will be averaged.
+var averageFromBlocks = []int64{0, 10, 20}
+
 func parseParamsSymbolAliases(params json.RawMessage) (origins.SymbolAliases, error) {
 	if params == nil {
 		return nil, fmt.Errorf("invalid origin parameters")
@@ -174,7 +178,7 @@ func NewHandler(
 		if err != nil {
 			return nil, err
 		}
-		h, err := origins.NewCurveFinance(cli, contracts)
+		h, err := origins.NewCurveFinance(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +188,7 @@ func NewHandler(
 		if err != nil {
 			return nil, err
 		}
-		h, err := origins.NewBalancerV2(cli, contracts)
+		h, err := origins.NewBalancerV2(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +198,7 @@ func NewHandler(
 		if err != nil {
 			return nil, err
 		}
-		h, err := origins.NewWrappedStakedETH(cli, contracts)
+		h, err := origins.NewWrappedStakedETH(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}

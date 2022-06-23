@@ -17,6 +17,7 @@ package mocks
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/stretchr/testify/mock"
 
@@ -25,6 +26,11 @@ import (
 
 type Client struct {
 	mock.Mock
+}
+
+func (c *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
+	args := c.Called(ctx)
+	return args.Get(0).(*big.Int), args.Error(1)
 }
 
 func (c *Client) Call(ctx context.Context, call ethereum.Call) ([]byte, error) {
