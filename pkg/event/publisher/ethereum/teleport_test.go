@@ -51,8 +51,8 @@ func Test_teleportListener(t *testing.T) {
 	// Test logs:
 	txHash := common.HexToHash("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8")
 	logs := []types.Log{
-		{TxIndex: 1, Data: teleportTestGUID, TxHash: txHash},
-		{TxIndex: 2, Data: teleportTestGUID, TxHash: txHash},
+		{TxIndex: 1, Data: teleportTestGUID, TxHash: txHash, Address: teleportTestAddress},
+		{TxIndex: 2, Data: teleportTestGUID, TxHash: txHash, Address: teleportTestAddress},
 	}
 
 	// During the first call we are expecting to fetch up to blocksLimit.
