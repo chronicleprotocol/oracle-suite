@@ -37,7 +37,9 @@ type BalancerV2Suite struct {
 
 func (suite *BalancerV2Suite) SetupSuite() {
 	suite.addresses = ContractAddresses{
-		"STETH/ETH": "0x32296969ef14eb0c6d29669c550d4a0449130230",
+		"Ref:RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+		"RETH/WETH":     "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
+		"STETH/WETH":    "0x32296969ef14eb0c6d29669c550d4a0449130230",
 	}
 	suite.client = &ethereumMocks.Client{}
 }

@@ -25,7 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
-	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 // The three values that can be queried:
@@ -42,21 +42,20 @@ import (
 // - INVARIANT: the value of the Pool's invariant, which serves as a measure of its liquidity.
 // enum Variable { PAIR_PRICE, BPT_PRICE, INVARIANT }
 
+const prefixRef = "Ref:"
+
 //go:embed balancerv2_abi.json
 var balancerV2PoolABI string
 
-// TODO: should be configurable
-const balancerV2Denominator = 1e18
-
 type BalancerV2 struct {
-	ethClient         pkgEthereum.Client
+	ethClient         ethereum.Client
 	ContractAddresses ContractAddresses
 	abi               abi.ABI
 	variable          byte
 	blocks            []int64
 }
 
-func NewBalancerV2(cli pkgEthereum.Client, addrs ContractAddresses, blocks []int64) (*BalancerV2, error) {
+func NewBalancerV2(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*BalancerV2, error) {
 	a, err := abi.JSON(strings.NewReader(balancerV2PoolABI))
 	if err != nil {
 		return nil, err
@@ -75,8 +74,6 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 }
 
 func (s BalancerV2) callOne(pair Pair) (*Price, error) {
-	ctx := context.Background()
-
 	contract, inverted, err := s.ContractAddresses.AddressByPair(pair)
 	if err != nil {
 		return nil, err
@@ -85,34 +82,67 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String())
 	}
 
-	var callData []byte
-	callData, err = s.abi.Pack("getLatest", s.variable)
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack contract args for pair %s: %w", pair.String(), err)
-	}
-
-	blockNumber, err := s.ethClient.BlockNumber(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get block number: %w", err)
-	}
-
-	var total float64
-	for _, block := range s.blocks {
-		resp, err := s.ethClient.Call(
-			pkgEthereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
-			pkgEthereum.Call{Address: contract, Data: callData},
-		)
+	var priceFloat *big.Float
+	{
+		callData, err := s.abi.Pack("getLatest", s.variable)
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
+		}
+		resp, err := s.ethClient.Call(context.Background(), ethereum.Call{Address: contract, Data: callData})
 		if err != nil {
 			return nil, err
 		}
-		bn := new(big.Int).SetBytes(resp)
-		price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(balancerV2Denominator)).Float64()
-		total += price
+		price := new(big.Int).SetBytes(resp)
+		priceFloat = new(big.Float).Quo(new(big.Float).SetInt(price), new(big.Float).SetUint64(ether))
 	}
 
+	token, inverted, ok := s.ContractAddresses.ByPair(Pair{Base: prefixRef + pair.Base, Quote: pair.Quote})
+	if ok && !inverted {
+		callData, err := s.abi.Pack("getPriceRateCache", ethereum.HexToAddress(token))
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack contract args for getPriceRateCache (pair %s): %w", pair.String(), err)
+		}
+		resp, err := s.ethClient.Call(context.Background(), ethereum.Call{Address: contract, Data: callData})
+		if err != nil {
+			return nil, err
+		}
+		rate := new(big.Int).SetBytes(resp[0:32])
+		priceFloat = new(big.Float).Mul(
+			new(big.Float).Quo(new(big.Float).SetInt(rate), new(big.Float).SetUint64(ether)),
+			priceFloat,
+		)
+	}
+
+	price, _ := priceFloat.Float64()
 	return &Price{
 		Pair:      pair,
-		Price:     total / float64(len(s.blocks)),
+		Price:     price,
 		Timestamp: time.Now(),
 	}, nil
+
+	// ctx := context.Background()
+	// blockNumber, err := s.ethClient.BlockNumber(ctx)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get block number: %w", err)
+	// }
+	//
+	// var total float64
+	// for _, block := range s.blocks {
+	// 	resp, err := s.ethClient.Call(
+	// 		ethereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
+	// 		ethereum.Call{Address: contract, Data: callData},
+	// 	)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	bn := new(big.Int).SetBytes(resp)
+	// 	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(balancerV2Denominator)).Float64()
+	// 	total += price
+	// }
+	//
+	// return &Price{
+	// 	Pair:      pair,
+	// 	Price:     total / float64(len(s.blocks)),
+	// 	Timestamp: time.Now(),
+	// }, nil
 }

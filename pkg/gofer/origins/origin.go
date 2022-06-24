@@ -70,13 +70,12 @@ func (h BaseExchangeHandler) Fetch(pairs []Pair) []FetchResult {
 type ContractAddresses map[string]string
 
 func (c ContractAddresses) ByPair(p Pair) (string, bool, bool) {
-	var inverted bool
 	contract, ok := c[fmt.Sprintf("%s/%s", p.Base, p.Quote)]
 	if !ok {
-		inverted = true
 		contract, ok = c[fmt.Sprintf("%s/%s", p.Quote, p.Base)]
+		return contract, true, ok
 	}
-	return contract, inverted, ok
+	return contract, false, ok
 }
 
 func (c ContractAddresses) AddressByPair(pair Pair) (ethereum.Address, bool, error) {
