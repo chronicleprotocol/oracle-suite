@@ -2,10 +2,6 @@ package teleport
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-	"sort"
 	"testing"
 	"time"
 
@@ -15,10 +11,9 @@ import (
 )
 
 func TestEthereum(t *testing.T) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer ctxCancel()
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 
-	s := smocker.NewAPI(getenv("SMOCKER_URL", "http://127.0.0.1:8081"))
+	s := smocker.NewAPI(env("SMOCKER_URL", "http://127.0.0.1:8081"))
 	err := s.Reset(ctx)
 	if err != nil {
 		require.Fail(t, err.Error())
@@ -65,27 +60,12 @@ func TestEthereum(t *testing.T) {
 	}
 	waitForPort(ctx, "localhost", 30102)
 
-	time.Sleep(time.Second * 15)
-
-	res, err := http.Get("http://localhost:30000/?type=teleport_evm&index=0x5f4a7c89123ed655b7fce471f2f14a4b699a9edfabeef6a8d5571976907f1884")
+	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_evm&index=0x5f4a7c89123ed655b7fce471f2f14a4b699a9edfabeef6a8d5571976907f1884", 2)
 	if err != nil {
-		assert.Fail(t, err.Error())
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
-	lairResponse := LairResponse{}
-	err = json.Unmarshal(body, &lairResponse)
-	if err != nil {
-		assert.Fail(t, err.Error())
+		require.Fail(t, err.Error())
 	}
 
-	require.Equal(t, http.StatusOK, res.StatusCode)
 	require.Len(t, lairResponse, 2)
-	sort.Slice(lairResponse, func(i, j int) bool {
-		return lairResponse[i].Signatures["ethereum"].Signer < lairResponse[j].Signatures["ethereum"].Signer
-	})
 
 	assert.Equal(t,
 		"52494e4b4542592d534c4156452d415242495452554d2d31000000000000000052494e4b4542592d4d41535445522d3100000000000000000000000000000000000000000000000000000000d747d98b8a2b28dfd6cd9f0e6015ad2a671611180000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000008180000000000000000000000000000000000000000000000000000000062b1e05f",

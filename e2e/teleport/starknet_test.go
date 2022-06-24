@@ -2,10 +2,6 @@ package teleport
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -16,16 +12,15 @@ import (
 )
 
 func TestStarknet(t *testing.T) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer ctxCancel()
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 
-	s := smocker.NewAPI(getenv("SMOCKER_URL", "http://127.0.0.1:8081"))
+	s := smocker.NewAPI(env("SMOCKER_URL", "http://127.0.0.1:8081"))
 	err := s.Reset(ctx)
 	if err != nil {
 		require.Fail(t, err.Error())
 	}
 
-	mocks := []*smocker.Mock{}
+	var mocks []*smocker.Mock
 	mocks = append(mocks,
 		smocker.NewMockBuilder().
 			SetRequestPath(smocker.ShouldEqual("/feeder_gateway/get_block")).
@@ -34,7 +29,6 @@ func TestStarknet(t *testing.T) {
 			SetResponseBody(mustReadFile("./testdata/mock/starknet.json")).
 			Mock(),
 	)
-
 	for n := 191500; n < 191504; n++ {
 		mocks = append(mocks,
 			smocker.NewMockBuilder().
@@ -73,27 +67,12 @@ func TestStarknet(t *testing.T) {
 	}
 	waitForPort(ctx, "localhost", 30102)
 
-	time.Sleep(15 * time.Second)
-
-	res, err := http.Get("http://localhost:30000/?type=teleport_starknet&index=0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202")
-	if err != nil {
-		require.Fail(t, err.Error())
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		require.Fail(t, err.Error())
-	}
-	lairResponse := LairResponse{}
-	err = json.Unmarshal(body, &lairResponse)
+	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_starknet&index=0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202", 2)
 	if err != nil {
 		require.Fail(t, err.Error())
 	}
 
-	require.Equal(t, http.StatusOK, res.StatusCode)
 	require.Len(t, lairResponse, 2)
-	sort.Slice(lairResponse, func(i, j int) bool {
-		return lairResponse[i].Signatures["ethereum"].Signer < lairResponse[j].Signatures["ethereum"].Signer
-	})
 
 	assert.Equal(t,
 		"474f45524c492d534c4156452d535441524b4e45542d31000000000000000000474f45524c492d4d41535445522d3100000000000000000000000000000000000000000000000000000000008aa7c51a6d380f4d9e273add4298d913416031ec0000000000000000000000008aa7c51a6d380f4d9e273add4298d913416031ec0000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000000000d0000000000000000000000000000000000000000000000000000000062822c1c",

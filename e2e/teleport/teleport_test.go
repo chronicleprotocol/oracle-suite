@@ -3,11 +3,14 @@ package teleport
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -55,7 +58,7 @@ func command(ctx context.Context, wd, bin string, params ...string) *exec.Cmd {
 	return cmd
 }
 
-func getenv(env string, def string) string {
+func env(env string, def string) string {
 	v := os.Getenv(env)
 	if len(v) == 0 {
 		return def
@@ -69,6 +72,36 @@ func mustReadFile(path string) string {
 		panic(err)
 	}
 	return string(b)
+}
+
+func waitForLair(ctx context.Context, url string, responses int) (LairResponse, error) {
+	lairResponse := LairResponse{}
+	for ctx.Err() == nil {
+		time.Sleep(time.Second)
+		res, err := http.Get(url)
+		if err != nil {
+			return nil, err
+		}
+		defer res.Body.Close()
+		if res.StatusCode != http.StatusOK {
+			continue
+		}
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(body, &lairResponse)
+		if err != nil {
+			return nil, err
+		}
+		if len(lairResponse) == responses {
+			break
+		}
+	}
+	sort.Slice(lairResponse, func(i, j int) bool {
+		return lairResponse[i].Signatures["ethereum"].Signer < lairResponse[j].Signatures["ethereum"].Signer
+	})
+	return lairResponse, nil
 }
 
 func waitForPort(ctx context.Context, host string, port int) {
