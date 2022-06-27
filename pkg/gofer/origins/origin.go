@@ -274,6 +274,7 @@ func DefaultOriginSet(pool query.WorkerPool) *Set {
 		"kyber":         NewBaseExchangeHandler(Kyber{WorkerPool: pool}, nil),
 		"loopring":      NewBaseExchangeHandler(Loopring{WorkerPool: pool}, nil),
 		"okex":          NewBaseExchangeHandler(Okex{WorkerPool: pool}, nil),
+		"okx":           NewBaseExchangeHandler(Okx{WorkerPool: pool}, nil),
 		"upbit":         NewBaseExchangeHandler(Upbit{WorkerPool: pool}, nil),
 	})
 }

@@ -152,6 +152,8 @@ func NewHandler(
 		return origins.NewBaseExchangeHandler(origins.Loopring{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "okex":
 		return origins.NewBaseExchangeHandler(origins.Okex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
+	case "okx":
+		return origins.NewBaseExchangeHandler(origins.Okx{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "openexchangerates":
 		apiKey, err := parseParamsAPIKey(params)
 		if err != nil {
