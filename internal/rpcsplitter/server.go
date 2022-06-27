@@ -430,8 +430,7 @@ func (r *rpcETHAPI) MaxPriorityFeePerGas() (interface{}, error) {
 //
 // It returns the most common response that occurred at least as many times as
 // specified in the minRes method.
-//nolint:revive,stylecheck
-func (r *rpcETHAPI) ChainId() (interface{}, error) {
+func (r *rpcETHAPI) ChainId() (interface{}, error) { //nolint:revive
 	ctx, ctxCancel := context.WithTimeout(context.Background(), r.handler.totalTimeout)
 	defer ctxCancel()
 

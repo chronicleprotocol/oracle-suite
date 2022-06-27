@@ -137,7 +137,6 @@ func (t *handlerTester) mockClientCall(n int, response interface{}, method strin
 }
 
 // mockClientSlowCall mocks call with a delay on n client.
-//nolint:unparam
 func (t *handlerTester) mockClientSlowCall(delay time.Duration, n int, response interface{}, method string, params ...interface{}) *handlerTester {
 	t.clients[n].(*mockClient).mockSlowCall(delay, response, method, params...)
 	return t

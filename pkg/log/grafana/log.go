@@ -106,7 +106,7 @@ type logger struct {
 }
 
 type shared struct {
-	mu               sync.Mutex //nolint:structcheck // false-positive
+	mu               sync.Mutex
 	ctx              context.Context
 	logger           log.Logger
 	metrics          []Metric

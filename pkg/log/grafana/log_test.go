@@ -31,7 +31,7 @@ func TestLogger(t *testing.T) {
 	type want struct {
 		name  string
 		value float64
-		tags  []string //nolint:structcheck // false-positive
+		tags  []string
 	}
 	tests := []struct {
 		metrics []Metric

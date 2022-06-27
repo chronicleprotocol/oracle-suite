@@ -136,7 +136,10 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 	// 		return nil, err
 	// 	}
 	// 	bn := new(big.Int).SetBytes(resp)
-	// 	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(balancerV2Denominator)).Float64()
+	// 	price, _ := new(big.Float).Quo(
+	// 		new(big.Float).SetInt(bn),
+	// 		new(big.Float).SetUint64(balancerV2Denominator),
+	// 	).Float64()
 	// 	total += price
 	// }
 	//

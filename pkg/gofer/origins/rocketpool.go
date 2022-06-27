@@ -18,7 +18,6 @@ package origins
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -39,7 +38,6 @@ type RockerPool struct {
 var rocketPoolABI string
 
 func NewRockerPool(cli ethereum.Client, addrs ContractAddresses) (*RockerPool, error) {
-	//nolint:lll
 	a, err := abi.JSON(strings.NewReader(rocketPoolABI))
 	if err != nil {
 		return nil, err
@@ -83,13 +81,4 @@ func (s RockerPool) callOne(pair Pair) (*Price, error) {
 		Price:     price,
 		Timestamp: time.Now(),
 	}, nil
-}
-
-func parseSelector(unescapedSelector string) ([]byte, error) {
-	selector, err := abi.ParseSelector(unescapedSelector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse selector: %v", err)
-	}
-
-	return json.Marshal([]abi.SelectorMarshaling{selector})
 }

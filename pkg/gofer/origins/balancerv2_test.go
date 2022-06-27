@@ -69,26 +69,25 @@ func TestBalancerV2Suite(t *testing.T) {
 func (suite *BalancerV2Suite) TestSuccessResponse() {
 	suite.client.On("BlockNumber", mock.Anything).Return(big.NewInt(100), nil)
 
-	resp1 := common.BigToHash(big.NewInt(0.97 * 1e18))
+	// resp1 := common.BigToHash(big.NewInt(0.97 * 1e18))
+	// suite.client.On("Call", mock.Anything, ethereum.Call{
+	// 	Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+	// 	Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+	// }).Return(resp1.Bytes(), nil).Once()
+
 	resp2 := common.BigToHash(big.NewInt(0.98 * 1e18))
-	resp3 := common.BigToHash(big.NewInt(0.99 * 1e18))
-
-	suite.client.On("Call", mock.Anything, ethereum.Call{
-		Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
-		Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
-	}).Return(resp1.Bytes(), nil).Once()
-
 	suite.client.On("Call", mock.Anything, ethereum.Call{
 		Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
 		Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 	}).Return(resp2.Bytes(), nil).Once()
 
-	suite.client.On("Call", mock.Anything, ethereum.Call{
-		Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
-		Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
-	}).Return(resp3.Bytes(), nil).Once()
+	// resp3 := common.BigToHash(big.NewInt(0.99 * 1e18))
+	// suite.client.On("Call", mock.Anything, ethereum.Call{
+	// 	Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+	// 	Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+	// }).Return(resp3.Bytes(), nil).Once()
 
-	pair := Pair{Base: "STETH", Quote: "ETH"}
+	pair := Pair{Base: "STETH", Quote: "WETH"}
 
 	results1 := suite.origin.Fetch([]Pair{pair})
 	suite.Require().NoError(results1[0].Error)
