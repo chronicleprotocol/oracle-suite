@@ -73,44 +73,42 @@ func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("failed to get contract args for pair: %s", pair.String())
 	}
 
-	ctx := context.Background()
-	blockNumber, err := s.ethClient.BlockNumber(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get block number: %w", err)
-	}
-
-{
-	var total float64
-	for _, block := range s.blocks {
-		resp, err := s.ethClient.Call(
-			ethereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
-			ethereum.Call{Address: contract, Data: callData},
-		)
-		if err != nil {
-			return nil, err
-		}
-		bn := new(big.Int).SetBytes(resp)
-		price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(wsethDenominator)).Float64()
-		total += price
-	}
-
-	return &Price{
-		Pair:      pair,
-		Price:     total / float64(len(s.blocks)),
-		Timestamp: time.Now(),
-	}, nil
-}
-
 	resp, err := s.ethClient.Call(context.Background(), ethereum.Call{Address: contract, Data: callData})
 	if err != nil {
 		return nil, err
 	}
 	bn := new(big.Int).SetBytes(resp)
-	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(wsethDenominator)).Float64()
+	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether)).Float64()
 
 	return &Price{
 		Pair:      pair,
 		Price:     price,
 		Timestamp: time.Now(),
 	}, nil
+
+	// ctx := context.Background()
+	// blockNumber, err := s.ethClient.BlockNumber(ctx)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get block number: %w", err)
+	// }
+	//
+	// var total float64
+	// for _, block := range s.blocks {
+	// 	resp, err := s.ethClient.Call(
+	// 		ethereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
+	// 		ethereum.Call{Address: contract, Data: callData},
+	// 	)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	bn := new(big.Int).SetBytes(resp)
+	// 	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether)).Float64()
+	// 	total += price
+	// }
+	//
+	// return &Price{
+	// 	Pair:      pair,
+	// 	Price:     total / float64(len(s.blocks)),
+	// 	Timestamp: time.Now(),
+	// }, nil
 }
