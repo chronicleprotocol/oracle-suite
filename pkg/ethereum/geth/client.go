@@ -138,6 +138,27 @@ func (e *Client) Call(ctx context.Context, call pkgEthereum.Call) ([]byte, error
 	return resp, err
 }
 
+func (e *Client) CallBlocks(ctx context.Context, call pkgEthereum.Call, blocks []int64) (pkgEthereum.Reducible, error) {
+	blockNumber, err := e.BlockNumber(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block number: %w", err)
+	}
+
+	var resps [][]byte
+	for _, block := range blocks {
+		r, err := e.Call(
+			pkgEthereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
+			call,
+		)
+		if err != nil {
+			return nil, err
+		}
+		resps = append(resps, r)
+	}
+
+	return resps, nil
+}
+
 // MultiCall implements the ethereum.Client interface.
 func (e *Client) MultiCall(ctx context.Context, calls []pkgEthereum.Call) ([][]byte, error) {
 	type abiCall struct {

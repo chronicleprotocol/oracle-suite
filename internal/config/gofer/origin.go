@@ -73,14 +73,14 @@ func parseParamsContracts(params json.RawMessage) (origins.ContractAddresses, er
 	return res.Contracts, nil
 }
 
-//nolint:funlen,gocyclo
+//nolint:funlen,gocyclo,whitespace
 func NewHandler(
 	origin string,
 	wp query.WorkerPool,
 	cli pkgEthereum.Client,
 	baseURL string,
-	params json.RawMessage) (origins.Handler, error) {
-
+	params json.RawMessage,
+) (origins.Handler, error) {
 	aliases, err := parseParamsSymbolAliases(params)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func NewHandler(
 		if err != nil {
 			return nil, err
 		}
-		h, err := origins.NewRockerPool(cli, contracts)
+		h, err := origins.NewRockerPool(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}

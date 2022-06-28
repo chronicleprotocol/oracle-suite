@@ -73,42 +73,20 @@ func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("failed to get contract args for pair: %s", pair.String())
 	}
 
-	resp, err := s.ethClient.Call(context.Background(), ethereum.Call{Address: contract, Data: callData})
+	resp, err := s.ethClient.CallBlocks(context.Background(), ethereum.Call{Address: contract, Data: callData}, s.blocks)
 	if err != nil {
 		return nil, err
 	}
-	bn := new(big.Int).SetBytes(resp)
-	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether)).Float64()
 
+	priceFloat := resp.AverageReduce(func(resp []byte) *big.Float {
+		bn := new(big.Int).SetBytes(resp)
+		return new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether))
+	})
+
+	price, _ := priceFloat.Float64()
 	return &Price{
 		Pair:      pair,
 		Price:     price,
 		Timestamp: time.Now(),
 	}, nil
-
-	// ctx := context.Background()
-	// blockNumber, err := s.ethClient.BlockNumber(ctx)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get block number: %w", err)
-	// }
-	//
-	// var total float64
-	// for _, block := range s.blocks {
-	// 	resp, err := s.ethClient.Call(
-	// 		ethereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
-	// 		ethereum.Call{Address: contract, Data: callData},
-	// 	)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	bn := new(big.Int).SetBytes(resp)
-	// 	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether)).Float64()
-	// 	total += price
-	// }
-	//
-	// return &Price{
-	// 	Pair:      pair,
-	// 	Price:     total / float64(len(s.blocks)),
-	// 	Timestamp: time.Now(),
-	// }, nil
 }

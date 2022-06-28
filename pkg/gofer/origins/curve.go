@@ -33,9 +33,6 @@ import (
 //go:embed curve_abi.json
 var curvePoolABI string
 
-// TODO: should be configurable
-const curveDenominator = 1e18
-
 type CurveFinance struct {
 	ethClient                 pkgEthereum.Client
 	addrs                     ContractAddresses
@@ -73,8 +70,6 @@ func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
 }
 
 func (s CurveFinance) callOne(pair Pair) (*Price, error) {
-	ctx := context.Background()
-
 	contract, inverted, err := s.pairsToContractAddress(pair)
 	if err != nil {
 		return nil, err
@@ -90,28 +85,24 @@ func (s CurveFinance) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("failed to pack contract args for pair: %s", pair.String())
 	}
 
-	blockNumber, err := s.ethClient.BlockNumber(ctx)
+	resp, err := s.ethClient.CallBlocks(
+		context.Background(),
+		pkgEthereum.Call{Address: contract, Data: callData},
+		s.blocks,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get block number: %w", err)
+		return nil, err
 	}
 
-	var total float64
-	for _, block := range s.blocks {
-		resp, err := s.ethClient.Call(
-			pkgEthereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
-			pkgEthereum.Call{Address: contract, Data: callData},
-		)
-		if err != nil {
-			return nil, err
-		}
+	priceFloat := resp.AverageReduce(func(resp []byte) *big.Float {
 		bn := new(big.Int).SetBytes(resp)
-		price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(curveDenominator)).Float64()
-		total += price
-	}
+		return new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether))
+	})
 
+	price, _ := priceFloat.Float64()
 	return &Price{
 		Pair:      pair,
-		Price:     total / float64(len(s.blocks)),
+		Price:     price,
 		Timestamp: time.Now(),
 	}, nil
 }

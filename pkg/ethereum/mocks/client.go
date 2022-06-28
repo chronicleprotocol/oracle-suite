@@ -38,6 +38,11 @@ func (c *Client) Call(ctx context.Context, call ethereum.Call) ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (c *Client) CallBlocks(ctx context.Context, call ethereum.Call, blocks []int64) (ethereum.Reducible, error) {
+	args := c.Called(ctx, call, blocks)
+	return args.Get(0).([][]byte), args.Error(1)
+}
+
 func (c *Client) MultiCall(ctx context.Context, calls []ethereum.Call) ([][]byte, error) {
 	args := c.Called(ctx, calls)
 	return args.Get(0).([][]byte), args.Error(1)

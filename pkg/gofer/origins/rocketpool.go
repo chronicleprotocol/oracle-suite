@@ -32,12 +32,13 @@ type RockerPool struct {
 	ethClient ethereum.Client
 	addrs     ContractAddresses
 	abi       abi.ABI
+	blocks    []int64
 }
 
 //go:embed rocketpool.json
 var rocketPoolABI string
 
-func NewRockerPool(cli ethereum.Client, addrs ContractAddresses) (*RockerPool, error) {
+func NewRockerPool(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*RockerPool, error) {
 	a, err := abi.JSON(strings.NewReader(rocketPoolABI))
 	if err != nil {
 		return nil, err
@@ -46,6 +47,7 @@ func NewRockerPool(cli ethereum.Client, addrs ContractAddresses) (*RockerPool, e
 		ethClient: cli,
 		addrs:     addrs,
 		abi:       a,
+		blocks:    blocks,
 	}, nil
 }
 
@@ -69,13 +71,16 @@ func (s RockerPool) callOne(pair Pair) (*Price, error) {
 		return nil, fmt.Errorf("failed to get contract args for pair: %s: %w", pair.String(), err)
 	}
 
-	resp, err := s.ethClient.Call(context.Background(), ethereum.Call{Address: contract, Data: callData})
+	resp, err := s.ethClient.CallBlocks(context.Background(), ethereum.Call{Address: contract, Data: callData}, s.blocks)
 	if err != nil {
 		return nil, err
 	}
-	bn := new(big.Int).SetBytes(resp)
-	price, _ := new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether)).Float64()
+	priceFloat := resp.AverageReduce(func(resp []byte) *big.Float {
+		bn := new(big.Int).SetBytes(resp)
+		return new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether))
+	})
 
+	price, _ := priceFloat.Float64()
 	return &Price{
 		Pair:      pair,
 		Price:     price,
