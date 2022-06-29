@@ -36,7 +36,7 @@ func eventToMessage(b *starknet.Block, tx *starknet.TransactionReceipt, e *stark
 	hash := crypto.Keccak256Hash(guid)
 	data := map[string][]byte{
 		"hash":  hash.Bytes(), // Hash to be used to calculate a signature.
-		"event": guid,         // NodeEvent data.
+		"event": guid,         // Event data.
 	}
 	return &messages.Event{
 		Type:        TeleportEventType,

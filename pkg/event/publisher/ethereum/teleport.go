@@ -39,7 +39,7 @@ const retryInterval = 5 * time.Second // The delay between retry attempts.
 // teleportTopic0 is Keccak256("TeleportGUID((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var teleportTopic0 = ethereum.HexToHash("0x9f692a9304834fdefeb4f9cd17d1493600af19c70af547480cccf4a8a4a7752c")
 
-// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
+// wormholeTopic0 is Keccak256("WormholeGUID(bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 // TODO: This is a temporary, to remove after complete transition to TeleportGUID.
 var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
 
@@ -199,9 +199,7 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 }
 
 // nextBlockRange returns the range of blocks from which logs should be
-// fetched. It returns the range from the latest fetched block stored in the
-// lastBlock parameter to the latest block on the blockchain. The maximum
-// number of blocks is limited by the blocksLimit parameter.
+// fetched.
 func (tl *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
 	// Get the latest block number.
 	to, err := tl.getBlockNumber(ctx)

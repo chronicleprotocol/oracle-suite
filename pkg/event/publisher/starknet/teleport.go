@@ -204,10 +204,8 @@ func (tl *TeleportListener) processBlock(block *starknet.Block) {
 	}
 }
 
-// nextBlockRange returns the range of accepted blocks from which events should
-// be fetched. It returns the range from the latest fetched block stored in the
-// lastBlock parameter to the latest block on the blockchain. The maximum
-// number of blocks is limited by the blocksLimit parameter.
+// nextBlockRange returns the range of blocks from which logs should be
+// fetched.
 func (tl *TeleportListener) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
 	// Get the latest block number.
 	block, err := tl.getLatestBlock(ctx)
