@@ -94,12 +94,7 @@ func (s CurveFinance) callOne(pair Pair) (*Price, error) {
 		return nil, err
 	}
 
-	priceFloat := resp.AverageReduce(func(resp []byte) *big.Float {
-		bn := new(big.Int).SetBytes(resp)
-		return new(big.Float).Quo(new(big.Float).SetInt(bn), new(big.Float).SetUint64(ether))
-	})
-
-	price, _ := priceFloat.Float64()
+	price, _ := reduceEtherAverageFloat(resp).Float64()
 	return &Price{
 		Pair:      pair,
 		Price:     price,

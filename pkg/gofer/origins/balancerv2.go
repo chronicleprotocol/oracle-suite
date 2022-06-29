@@ -88,14 +88,12 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
 		}
+
 		resp, err := s.ethClient.CallBlocks(context.Background(), ethereum.Call{Address: contract, Data: callData}, s.blocks)
 		if err != nil {
 			return nil, err
 		}
-		priceFloat = resp.AverageReduce(func(resp []byte) *big.Float {
-			price := new(big.Int).SetBytes(resp)
-			return new(big.Float).Quo(new(big.Float).SetInt(price), new(big.Float).SetUint64(ether))
-		})
+		priceFloat = reduceEtherAverageFloat(resp)
 	}
 
 	token, inverted, ok := s.ContractAddresses.ByPair(Pair{Base: prefixRef + pair.Base, Quote: pair.Quote})
@@ -108,13 +106,7 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 		if err != nil {
 			return nil, err
 		}
-		priceFloat = resp.AverageReduce(func(resp []byte) *big.Float {
-			rate := new(big.Int).SetBytes(resp[0:32])
-			return new(big.Float).Mul(
-				new(big.Float).Quo(new(big.Float).SetInt(rate), new(big.Float).SetUint64(ether)),
-				priceFloat,
-			)
-		})
+		priceFloat = new(big.Float).Mul(reduceEtherAverageFloat(resp), priceFloat)
 	}
 
 	price, _ := priceFloat.Float64()

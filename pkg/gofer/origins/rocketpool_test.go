@@ -28,45 +28,43 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type BalancerV2Suite struct {
+type RockerPoolSuite struct {
 	suite.Suite
 	addresses ContractAddresses
 	client    *ethereumMocks.Client
 	origin    *BaseExchangeHandler
 }
 
-func (suite *BalancerV2Suite) SetupSuite() {
+func (suite *RockerPoolSuite) SetupSuite() {
 	suite.addresses = ContractAddresses{
-		"Ref:RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
-		"RETH/WETH":     "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
-		"STETH/WETH":    "0x32296969ef14eb0c6d29669c550d4a0449130230",
+		"RETH/ETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
 	}
 }
-func (suite *BalancerV2Suite) TearDownSuite() {
+func (suite *RockerPoolSuite) TearDownSuite() {
 	suite.addresses = nil
 }
 
-func (suite *BalancerV2Suite) SetupTest() {
+func (suite *RockerPoolSuite) SetupTest() {
 	suite.client = &ethereumMocks.Client{}
-	o, err := NewBalancerV2(suite.client, suite.addresses, []int64{0, 10, 20})
+	o, err := NewRockerPool(suite.client, suite.addresses, []int64{0, 10, 20})
 	suite.NoError(err)
 	suite.origin = NewBaseExchangeHandler(o, nil)
 }
 
-func (suite *BalancerV2Suite) TearDownTest() {
+func (suite *RockerPoolSuite) TearDownTest() {
 	suite.origin = nil
 	suite.client = nil
 }
 
-func (suite *BalancerV2Suite) Origin() Handler {
+func (suite *RockerPoolSuite) Origin() Handler {
 	return suite.origin
 }
 
-func TestBalancerV2Suite(t *testing.T) {
-	suite.Run(t, new(BalancerV2Suite))
+func TestRockerPoolSuite(t *testing.T) {
+	suite.Run(t, new(RockerPoolSuite))
 }
 
-func (suite *BalancerV2Suite) TestSuccessResponse() {
+func (suite *RockerPoolSuite) TestSuccessResponse() {
 	resp := [][]byte{
 		common.BigToHash(big.NewInt(0.94 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
@@ -76,13 +74,13 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 		"CallBlocks",
 		mock.Anything,
 		ethereum.Call{
-			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+			Address: ethereum.HexToAddress("0xae78736Cd615f374D3085123A210448E74Fc6393"),
+			Data:    ethereum.HexToBytes("0xe6aa216c"),
 		},
 		[]int64{0, 10, 20},
 	).Return(resp, nil).Once()
 
-	pair := Pair{Base: "STETH", Quote: "WETH"}
+	pair := Pair{Base: "RETH", Quote: "ETH"}
 
 	results1 := suite.origin.Fetch([]Pair{pair})
 	suite.Require().NoError(results1[0].Error)
@@ -90,12 +88,9 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
 
 	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 1)
-
-	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
-	suite.Require().Error(results2[0].Error)
 }
 
-func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
+func (suite *RockerPoolSuite) TestSuccessResponse_Inverted() {
 	resp := [][]byte{
 		common.BigToHash(big.NewInt(0.94 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
@@ -105,41 +100,23 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 		"CallBlocks",
 		mock.Anything,
 		ethereum.Call{
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+			Address: ethereum.HexToAddress("0xae78736Cd615f374D3085123A210448E74Fc6393"),
+			Data:    ethereum.HexToBytes("0x4346f03e0000000000000000000000000000000000000000000000000de0b6b3a7640000"),
 		},
 		[]int64{0, 10, 20},
 	).Return(resp, nil).Once()
 
-	resp1 := [][]byte{
-		common.BigToHash(big.NewInt(0.2 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.6 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.7 * 1e18)).Bytes(),
-	}
-	suite.client.On(
-		"CallBlocks",
-		mock.Anything,
-		ethereum.Call{
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
-		},
-		[]int64{0, 10, 20},
-	).Return(resp1, nil).Once()
-
-	pair := Pair{Base: "RETH", Quote: "WETH"}
+	pair := Pair{Base: "ETH", Quote: "RETH"}
 
 	results1 := suite.origin.Fetch([]Pair{pair})
 	suite.Require().NoError(results1[0].Error)
-	suite.Equal(0.485, results1[0].Price.Price)
+	suite.Equal(0.97, results1[0].Price.Price)
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
 
-	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 2)
-
-	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
-	suite.Require().Error(results2[0].Error)
+	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 1)
 }
 
-func (suite *BalancerV2Suite) TestFailOnWrongPair() {
+func (suite *RockerPoolSuite) TestFailOnWrongPair() {
 	pair := Pair{Base: "x", Quote: "y"}
 	cr := suite.origin.Fetch([]Pair{pair})
 	suite.Require().EqualError(cr[0].Error, "failed to get contract address for pair: x/y")

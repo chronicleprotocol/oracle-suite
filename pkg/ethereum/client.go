@@ -59,7 +59,7 @@ type Client interface {
 	Call(ctx context.Context, call Call) ([]byte, error)
 	// CallBlocks executes the same call on multiple blocks (counting back from the latest)
 	// and returns multiple results in a slice
-	CallBlocks(ctx context.Context, call Call, blocks []int64) (Reducible, error)
+	CallBlocks(ctx context.Context, call Call, blocks []int64) ([][]byte, error)
 	// MultiCall works like the Call function but allows to execute multiple
 	// calls at once.
 	MultiCall(ctx context.Context, calls []Call) ([][]byte, error)
@@ -87,14 +87,4 @@ func BlockNumberFromContext(ctx context.Context) *big.Int {
 		return n
 	}
 	return nil
-}
-
-type Reducible [][]byte
-
-func (r Reducible) AverageReduce(f func([]byte) *big.Float) *big.Float {
-	total := new(big.Float).SetInt64(0)
-	for _, resp := range r {
-		total = new(big.Float).Add(total, f(resp))
-	}
-	return new(big.Float).Quo(total, new(big.Float).SetUint64(uint64(len(r))))
 }

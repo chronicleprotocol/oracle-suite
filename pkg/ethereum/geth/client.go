@@ -138,7 +138,7 @@ func (e *Client) Call(ctx context.Context, call pkgEthereum.Call) ([]byte, error
 	return resp, err
 }
 
-func (e *Client) CallBlocks(ctx context.Context, call pkgEthereum.Call, blocks []int64) (pkgEthereum.Reducible, error) {
+func (e *Client) CallBlocks(ctx context.Context, call pkgEthereum.Call, blocks []int64) ([][]byte, error) {
 	blockNumber, err := e.BlockNumber(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block number: %w", err)

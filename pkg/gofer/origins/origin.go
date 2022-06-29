@@ -17,6 +17,7 @@ package origins
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
@@ -321,4 +322,16 @@ func buildOriginURL(template, configURL, defaultURL string, a ...interface{}) st
 	replacement = append(replacement, a...)
 
 	return fmt.Sprintf(template, replacement...)
+}
+
+func reduceEtherAverageFloat(r [][]byte) *big.Float {
+	total := new(big.Float).SetInt64(0)
+	for _, resp := range r {
+		price := new(big.Int).SetBytes(resp)
+		total = new(big.Float).Add(
+			total,
+			new(big.Float).Quo(new(big.Float).SetInt(price), new(big.Float).SetUint64(ether)),
+		)
+	}
+	return new(big.Float).Quo(total, new(big.Float).SetUint64(uint64(len(r))))
 }
