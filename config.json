@@ -316,7 +316,8 @@
           },
           "contracts": {
             "SNX/WETH": "0xa1d7b2d891e3a1f9ef4bbc5be20630c2feb1c470",
-            "CRV/WETH": "0x58dc5a51fe44589beb22e8ce67720b5bc5378009"
+            "CRV/WETH": "0x58dc5a51fe44589beb22e8ce67720b5bc5378009",
+            "YFI/WETH": "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c"
           }
         }
       },
@@ -340,7 +341,8 @@
           "contracts": {
             "Ref:RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
             "RETH/WETH": "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
-            "STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230"
+            "STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230",
+            "WETH/YFI": "0x186084ff790c65088ba694df11758fae4943ee9e"
           }
         }
       },
@@ -790,12 +792,13 @@
       "YFI/USD": {
         "method": "median",
         "sources": [
+          [{ "origin": "balancerV2", "pair": "YFI/ETH" },{ "origin": ".", "pair": "ETH/USD" }],
+          [{ "origin": "sushiswap", "pair": "YFI/ETH" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "binance", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
-          [{ "origin": "huobi", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
+          [{ "origin": "okx", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "coinbasepro", "pair": "YFI/USD" }],
           [{ "origin": "ftx", "pair": "YFI/USD" }],
-          [{ "origin": "gemini", "pair": "YFI/USD" }],
-          [{ "origin": "uniswapV3", "pair": "YFI/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
+          [{ "origin": "kraken", "pair": "YFI/USD" }]
         ],
         "params": {
           "minimumSuccessfulSources": 2
