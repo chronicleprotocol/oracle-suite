@@ -107,9 +107,6 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 	}
 
 	price, _ := priceFloat.Float64()
-	if inverted {
-		price = 1 / price
-	}
 
 	return &Price{
 		Pair:      pair,

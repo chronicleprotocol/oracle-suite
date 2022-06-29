@@ -40,7 +40,7 @@ func (suite *OkxSuite) SetupSuite() {
 func (suite *OkxSuite) TestLocalPair() {
 	ex := suite.origin.ExchangeHandler.(Okx)
 	suite.EqualValues("BTC-ETH-SWAP", ex.localPairName(Pair{Base: "BTC", Quote: "ETH"}))
-	suite.NotEqual("BTC-USD-SWAP", ex.localPairName(Pair{Base: "BTC", Quote: "USD"}))
+	suite.EqualValues("BTC-USD-SWAP", ex.localPairName(Pair{Base: "BTC", Quote: "USD"}))
 }
 
 func (suite *OkxSuite) TestFailOnWrongInput() {
@@ -60,7 +60,7 @@ func (suite *OkxSuite) TestFailOnWrongInput() {
 		Error: ourErr,
 	}
 
-	suite.origin.ExchangeHandler.(Okex).Pool().(*query.MockWorkerPool).MockResp(resp)
+	suite.origin.ExchangeHandler.(Okx).Pool().(*query.MockWorkerPool).MockResp(resp)
 	fr = suite.origin.Fetch([]Pair{pair})
 	suite.Equal(ourErr, fr[0].Error)
 
@@ -68,7 +68,7 @@ func (suite *OkxSuite) TestFailOnWrongInput() {
 	resp = &query.HTTPResponse{
 		Body: []byte(""),
 	}
-	suite.origin.ExchangeHandler.(Okex).Pool().(*query.MockWorkerPool).MockResp(resp)
+	suite.origin.ExchangeHandler.(Okx).Pool().(*query.MockWorkerPool).MockResp(resp)
 	fr = suite.origin.Fetch([]Pair{pair})
 	suite.Error(fr[0].Error)
 
@@ -92,7 +92,7 @@ func (suite *OkxSuite) TestFailOnWrongInput() {
 			}
 		`),
 	}
-	suite.origin.ExchangeHandler.(Okex).Pool().(*query.MockWorkerPool).MockResp(resp)
+	suite.origin.ExchangeHandler.(Okx).Pool().(*query.MockWorkerPool).MockResp(resp)
 	fr = suite.origin.Fetch([]Pair{pair})
 	suite.Error(fr[0].Error)
 }
