@@ -74,7 +74,7 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 }
 
 func (s BalancerV2) callOne(pair Pair) (*Price, error) {
-	contract, inverted, err := s.ContractAddresses.AddressByPair(pair)
+	contract, _, err := s.ContractAddresses.AddressByPair(pair)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 	}
 
 	token, inverted, ok := s.ContractAddresses.ByPair(Pair{Base: prefixRef + pair.Base, Quote: pair.Quote})
-	if ok {
+	if ok && !inverted {
 		callData, err := s.abi.Pack("getPriceRateCache", ethereum.HexToAddress(token))
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack contract args for getPriceRateCache (pair %s): %w", pair.String(), err)

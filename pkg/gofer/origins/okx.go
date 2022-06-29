@@ -18,6 +18,7 @@ package origins
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/chronicleprotocol/oracle-suite/internal/query"
 )
 
