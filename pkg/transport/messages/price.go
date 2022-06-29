@@ -27,8 +27,9 @@ const PriceMessageName = "price/v0"
 var ErrPriceMalformedMessage = errors.New("malformed price message")
 
 type Price struct {
-	Price *oracle.Price   `json:"price"`
-	Trace json.RawMessage `json:"trace"`
+	Price   *oracle.Price   `json:"price"`
+	Trace   json.RawMessage `json:"trace"`
+	Version string          `json:"version,omitempty"`
 }
 
 func (p *Price) Marshall() ([]byte, error) {
