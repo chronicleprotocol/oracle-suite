@@ -74,11 +74,13 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 }
 
 func (s BalancerV2) callOne(pair Pair) (*Price, error) {
-	contract, _, err := s.ContractAddresses.AddressByPair(pair)
+	contract, indirect, err := s.ContractAddresses.AddressByPair(pair)
 	if err != nil {
 		return nil, err
 	}
-
+	if indirect {
+		return nil, fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String())
+	}
 	var priceFloat *big.Float
 	{
 		callData, err := s.abi.Pack("getLatest", s.variable)

@@ -792,7 +792,7 @@
       "YFI/USD": {
         "method": "median",
         "sources": [
-          [{ "origin": "balancerV2", "pair": "YFI/ETH" },{ "origin": ".", "pair": "ETH/USD" }],
+          [{ "origin": "balancerV2", "pair": "ETH/YFI" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "sushiswap", "pair": "YFI/ETH" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "binance", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "okx", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],

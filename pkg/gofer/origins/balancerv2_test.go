@@ -92,8 +92,8 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 
 	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 1)
 
-	// results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
-	// suite.Require().Error(results2[0].Error)
+	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
+	suite.Require().Error(results2[0].Error)
 }
 
 func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
@@ -136,8 +136,8 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 
 	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 2)
 
-	// results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
-	// suite.Require().Error(results2[0].Error)
+	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
+	suite.Require().Error(results2[0].Error)
 }
 
 func (suite *BalancerV2Suite) TestFailOnWrongPair() {
