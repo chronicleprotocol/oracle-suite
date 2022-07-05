@@ -32,7 +32,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/rpc"
 
-	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -97,7 +97,7 @@ type Source struct {
 }
 
 // ConfigureRPCAgent returns a new rpc.Agent instance.
-func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, gof provider.Provider, logger log.Logger) (*rpc.Agent, error) {
+func (c *Gofer) ConfigureRPCAgent(cli ethereum.Client, gof provider.Provider, logger log.Logger) (*rpc.Agent, error) {
 	srv, err := rpc.NewAgent(rpc.AgentConfig{
 		Gofer:   gof,
 		Network: "tcp",
@@ -111,7 +111,7 @@ func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, gof provider.Provider,
 }
 
 // ConfigureAsyncGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureAsyncGofer(cli pkgEthereum.Client, logger log.Logger) (provider.Service, error) {
+func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (provider.Service, error) {
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load price models: %w", err)
@@ -133,7 +133,7 @@ func (c *Gofer) ConfigureAsyncGofer(cli pkgEthereum.Client, logger log.Logger) (
 }
 
 // ConfigureGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
+func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
 	if c.RPC.Address == "" || noRPC {
 		gra, err := c.buildGraphs()
 		if err != nil {
@@ -155,7 +155,7 @@ func (c *Gofer) configureRPCClient() (*rpc.Gofer, error) {
 	return rpc.NewGofer("tcp", c.RPC.Address)
 }
 
-func (c *Gofer) buildOrigins(cli pkgEthereum.Client) (*origins.Set, error) {
+func (c *Gofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) {
 	const defaultWorkerCount = 10
 	wp := query.NewHTTPWorkerPool(defaultWorkerCount)
 	originSet := origins.DefaultOriginSet(wp)
