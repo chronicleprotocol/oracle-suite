@@ -23,23 +23,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/rpc"
 
 	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/feeder"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/nodes"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/origins"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/rpc"
 )
 
 const defaultTTL = 60 * time.Second
 const maxTTL = 240 * time.Second
 
 type ErrCyclicReference struct {
-	Pair gofer.Pair
+	Pair provider.Pair
 	Path []nodes.Node
 }
 
@@ -96,7 +97,7 @@ type Source struct {
 }
 
 // ConfigureRPCAgent returns a new rpc.Agent instance.
-func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, gof gofer.Gofer, logger log.Logger) (*rpc.Agent, error) {
+func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, gof provider.Provider, logger log.Logger) (*rpc.Agent, error) {
 	srv, err := rpc.NewAgent(rpc.AgentConfig{
 		Gofer:   gof,
 		Network: "tcp",
@@ -110,7 +111,7 @@ func (c *Gofer) ConfigureRPCAgent(cli pkgEthereum.Client, gof gofer.Gofer, logge
 }
 
 // ConfigureAsyncGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureAsyncGofer(cli pkgEthereum.Client, logger log.Logger) (gofer.StartableGofer, error) {
+func (c *Gofer) ConfigureAsyncGofer(cli pkgEthereum.Client, logger log.Logger) (provider.Service, error) {
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load price models: %w", err)
@@ -132,7 +133,7 @@ func (c *Gofer) ConfigureAsyncGofer(cli pkgEthereum.Client, logger log.Logger) (
 }
 
 // ConfigureGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC bool) (gofer.Gofer, error) {
+func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
 	if c.RPC.Address == "" || noRPC {
 		gra, err := c.buildGraphs()
 		if err != nil {
@@ -143,7 +144,7 @@ func (c *Gofer) ConfigureGofer(cli pkgEthereum.Client, logger log.Logger, noRPC 
 			return nil, err
 		}
 		fed := feeder.NewFeeder(originSet, logger)
-		gof := graph.NewGofer(gra, fed)
+		gof := graph.NewGraph(gra, fed)
 		return gof, nil
 	}
 	return c.configureRPCClient()
@@ -169,10 +170,10 @@ func (c *Gofer) buildOrigins(cli pkgEthereum.Client) (*origins.Set, error) {
 	return originSet, nil
 }
 
-func (c *Gofer) buildGraphs() (map[gofer.Pair]nodes.Aggregator, error) {
+func (c *Gofer) buildGraphs() (map[provider.Pair]nodes.Aggregator, error) {
 	var err error
 
-	graphs := map[gofer.Pair]nodes.Aggregator{}
+	graphs := map[provider.Pair]nodes.Aggregator{}
 
 	// It's important to create root nodes before branches, because branches
 	// may refer to another root nodes instances.
@@ -194,9 +195,9 @@ func (c *Gofer) buildGraphs() (map[gofer.Pair]nodes.Aggregator, error) {
 	return graphs, nil
 }
 
-func (c *Gofer) buildRoots(graphs map[gofer.Pair]nodes.Aggregator) error {
+func (c *Gofer) buildRoots(graphs map[provider.Pair]nodes.Aggregator) error {
 	for name, model := range c.PriceModels {
-		modelPair, err := gofer.NewPair(name)
+		modelPair, err := provider.NewPair(name)
 		if err != nil {
 			return err
 		}
@@ -219,11 +220,11 @@ func (c *Gofer) buildRoots(graphs map[gofer.Pair]nodes.Aggregator) error {
 	return nil
 }
 
-func (c *Gofer) buildBranches(graphs map[gofer.Pair]nodes.Aggregator) error {
+func (c *Gofer) buildBranches(graphs map[provider.Pair]nodes.Aggregator) error {
 	for name, model := range c.PriceModels {
 		// We can ignore error here, because it was checked already
 		// in buildRoots method.
-		modelPair, _ := gofer.NewPair(name)
+		modelPair, _ := provider.NewPair(name)
 
 		var parent nodes.Parent
 		if typedNode, ok := graphs[modelPair].(nodes.Parent); ok {
@@ -278,8 +279,8 @@ func (c *Gofer) buildBranches(graphs map[gofer.Pair]nodes.Aggregator) error {
 	return nil
 }
 
-func (c *Gofer) reference(graphs map[gofer.Pair]nodes.Aggregator, source Source) (nodes.Node, error) {
-	sourcePair, err := gofer.NewPair(source.Pair)
+func (c *Gofer) reference(graphs map[provider.Pair]nodes.Aggregator, source Source) (nodes.Node, error) {
+	sourcePair, err := provider.NewPair(source.Pair)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +296,7 @@ func (c *Gofer) reference(graphs map[gofer.Pair]nodes.Aggregator, source Source)
 }
 
 func (c *Gofer) originNode(model PriceModel, source Source) (nodes.Node, error) {
-	sourcePair, err := gofer.NewPair(source.Pair)
+	sourcePair, err := provider.NewPair(source.Pair)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +317,7 @@ func (c *Gofer) originNode(model PriceModel, source Source) (nodes.Node, error) 
 	return nodes.NewOriginNode(originPair, ttl, ttl+maxTTL), nil
 }
 
-func (c *Gofer) detectCycle(graphs map[gofer.Pair]nodes.Aggregator) error {
+func (c *Gofer) detectCycle(graphs map[provider.Pair]nodes.Aggregator) error {
 	for _, pair := range sortGraphs(graphs) {
 		if path := nodes.DetectCycle(graphs[pair]); len(path) > 0 {
 			return ErrCyclicReference{Pair: pair, Path: path}
@@ -326,8 +327,8 @@ func (c *Gofer) detectCycle(graphs map[gofer.Pair]nodes.Aggregator) error {
 	return nil
 }
 
-func sortGraphs(graphs map[gofer.Pair]nodes.Aggregator) []gofer.Pair {
-	var ps []gofer.Pair
+func sortGraphs(graphs map[provider.Pair]nodes.Aggregator) []provider.Pair {
+	var ps []provider.Pair
 	for p := range graphs {
 		ps = append(ps, p)
 	}

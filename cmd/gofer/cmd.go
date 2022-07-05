@@ -27,7 +27,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		Version: opts.Version,
 		Short:   "Tool for providing reliable data in the blockchain ecosystem",
 		Long: `
-Gofer is a CLI interface for the Gofer Go Library.
+Graph is a CLI interface for the Graph Go Library.
 
 It is a tool that allows for easy data retrieval from various sources
 with aggregates that increase reliability in the DeFi environment.`,

@@ -95,7 +95,7 @@ func callGofer(params ...string) (string, int, error) {
 	out, err := cmd.Output()
 
 	if err != nil {
-		fmt.Println("Gofer error:")
+		fmt.Println("Graph error:")
 		fmt.Println("Output: ", string(out))
 		fmt.Println("Error: ", err.Error())
 	}

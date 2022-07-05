@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/marshal"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -39,26 +39,26 @@ type ErrUnableToFindAsset struct {
 }
 
 func (e ErrUnableToFindAsset) Error() string {
-	return fmt.Sprintf("unable to find the %s in Gofer price models", e.AssetName)
+	return fmt.Sprintf("unable to find the %s in Provider price models", e.AssetName)
 }
 
 type Ghost struct {
 	ctx    context.Context
 	waitCh chan error
 
-	gofer      gofer.Gofer
+	gofer      provider.Provider
 	signer     ethereum.Signer
 	transport  transport.Transport
 	interval   time.Duration
 	pairs      []string
-	goferPairs map[gofer.Pair]string
+	goferPairs map[provider.Pair]string
 	log        log.Logger
 }
 
 type Config struct {
 	// Gofer is an instance of the gofer.Gofer which will be used to fetch
 	// prices.
-	Gofer gofer.Gofer
+	Gofer provider.Provider
 	// Signer is an instance of the ethereum.Signer which will be used to
 	// sign prices.
 	Signer ethereum.Signer
@@ -82,7 +82,7 @@ func NewGhost(cfg Config) (*Ghost, error) {
 		transport:  cfg.Transport,
 		interval:   cfg.Interval,
 		pairs:      cfg.Pairs,
-		goferPairs: make(map[gofer.Pair]string),
+		goferPairs: make(map[provider.Pair]string),
 		log:        cfg.Logger.WithField("tag", LoggerTag),
 	}
 	return g, nil
@@ -96,7 +96,7 @@ func (g *Ghost) Start(ctx context.Context) error {
 	}
 	g.ctx = ctx
 
-	// Unfortunately, the Gofer stores pairs in the AAA/BBB format but Ghost
+	// Unfortunately, the Provider stores pairs in the AAA/BBB format but Ghost
 	// (and oracle contract) stores them in AAABBB format. Because of this we
 	// need to make this wired mapping:
 	for _, pair := range g.pairs {
@@ -132,8 +132,8 @@ func (g *Ghost) Wait() chan error {
 }
 
 // broadcast sends price for single pair to the network. This method uses
-// current price from the Gofer so it must be updated beforehand.
-func (g *Ghost) broadcast(goferPair gofer.Pair) error {
+// current price from the Provider so it must be updated beforehand.
+func (g *Ghost) broadcast(goferPair provider.Pair) error {
 	var err error
 
 	pair := g.goferPairs[goferPair]
@@ -221,7 +221,7 @@ func (g *Ghost) contextCancelHandler() {
 	<-g.ctx.Done()
 }
 
-func createPriceMessage(op *oracle.Price, gp *gofer.Price) (*messages.Price, error) {
+func createPriceMessage(op *oracle.Price, gp *provider.Price) (*messages.Price, error) {
 	trace, err := marshal.Marshall(marshal.JSON, gp)
 	if err != nil {
 		return nil, err

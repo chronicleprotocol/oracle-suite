@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 func NewPricesCmd(opts *options) *cobra.Command {
@@ -56,7 +56,7 @@ func NewPricesCmd(opts *options) *cobra.Command {
 					err = sErr
 				}
 			}()
-			pairs, err := gofer.NewPairs(args...)
+			pairs, err := provider.NewPairs(args...)
 			if err != nil {
 				return err
 			}

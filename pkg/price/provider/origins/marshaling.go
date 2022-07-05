@@ -77,6 +77,25 @@ func (s *stringAsUnixTimestamp) val() time.Time {
 	return time.Time(*s)
 }
 
+type stringAsUnixTimestampMs time.Time
+
+func (s *stringAsUnixTimestampMs) UnmarshalJSON(bytes []byte) error {
+	var ss string
+	if err := json.Unmarshal(bytes, &ss); err != nil {
+		return err
+	}
+	i, err := strconv.ParseInt(ss, 10, 64)
+	if err != nil {
+		return err
+	}
+	*s = stringAsUnixTimestampMs(time.Unix(i/1000, 0))
+	return nil
+}
+
+func (s *stringAsUnixTimestampMs) val() time.Time {
+	return time.Time(*s)
+}
+
 type stringAsInt64 int64
 
 func (s *stringAsInt64) UnmarshalJSON(bytes []byte) error {

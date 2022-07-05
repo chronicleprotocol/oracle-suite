@@ -31,7 +31,7 @@ lint:
 .PHONY: lint
 
 test:
-	$(GO) test $$(go list ./... | grep -v /e2e/) -tags $(TEST_FLAGS)
+	$(GO) test -v $$(go list ./... | grep -v /e2e/) -tags $(TEST_FLAGS)
 .PHONY: test
 
 test-api: export GOFER_TEST_API_CALLS = 1

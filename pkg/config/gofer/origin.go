@@ -22,7 +22,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 
 	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/origins"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
 )
 
 // averageFromBlocks is a list of blocks distances from the latest blocks from
@@ -147,12 +147,12 @@ func NewHandler(
 		return origins.NewBaseExchangeHandler(origins.Kraken{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "kucoin":
 		return origins.NewBaseExchangeHandler(origins.Kucoin{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
-	case "kyber":
-		return origins.NewBaseExchangeHandler(origins.Kyber{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "loopring":
 		return origins.NewBaseExchangeHandler(origins.Loopring{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "okex":
 		return origins.NewBaseExchangeHandler(origins.Okex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
+	case "okx":
+		return origins.NewBaseExchangeHandler(origins.Okx{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "openexchangerates":
 		apiKey, err := parseParamsAPIKey(params)
 		if err != nil {

@@ -21,7 +21,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ghost"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
@@ -36,7 +36,7 @@ type Ghost struct {
 }
 
 type Dependencies struct {
-	Gofer     gofer.Gofer
+	Gofer     provider.Provider
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Logger    log.Logger

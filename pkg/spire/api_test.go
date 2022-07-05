@@ -47,7 +47,8 @@ var (
 			Age: time.Unix(100, 0),
 			V:   1,
 		},
-		Trace: nil,
+		Trace:   nil,
+		Version: "0.4.10",
 	}
 	agent     *Agent
 	spire     *Client

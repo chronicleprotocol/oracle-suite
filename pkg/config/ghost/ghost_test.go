@@ -25,7 +25,7 @@ import (
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ghost"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	goferMocks "github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/mocks"
+	goferMocks "github.com/chronicleprotocol/oracle-suite/pkg/price/provider/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 )
 
@@ -35,7 +35,7 @@ func TestGhost_Configure(t *testing.T) {
 
 	interval := 10
 	pairs := []string{"AAABBB", "XXXYYY"}
-	gofer := &goferMocks.Gofer{}
+	gofer := &goferMocks.Provider{}
 	signer := &ethereumMocks.Signer{}
 	transport := local.New([]byte("test"), 0, nil)
 	logger := null.New()

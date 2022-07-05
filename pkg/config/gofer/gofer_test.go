@@ -19,10 +19,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
+
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/nodes"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/origins"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,9 +66,9 @@ func TestConfig_buildGraphs_ValidConfig(t *testing.T) {
 	assert.Nil(t, err2)
 
 	// List of pairs used in config file:
-	ab := gofer.Pair{Base: "A", Quote: "B"}
-	bc := gofer.Pair{Base: "B", Quote: "C"}
-	ac := gofer.Pair{Base: "A", Quote: "C"}
+	ab := provider.Pair{Base: "A", Quote: "B"}
+	bc := provider.Pair{Base: "B", Quote: "C"}
+	ac := provider.Pair{Base: "A", Quote: "C"}
 
 	// Check if all three pairs was loaded correctly:
 	assert.Contains(t, c, bc)
@@ -233,7 +234,7 @@ func TestConfig_buildGraphs_DefaultTTL(t *testing.T) {
 		},
 	}
 
-	p, _ := gofer.NewPair("A/B")
+	p, _ := provider.NewPair("A/B")
 	g, _ := config.buildGraphs()
 
 	assert.Equal(t, 300*time.Second, g[p].Children()[0].(*nodes.OriginNode).MaxTTL())
@@ -256,7 +257,7 @@ func TestConfig_buildGraphs_OriginTTL(t *testing.T) {
 		},
 	}
 
-	p, _ := gofer.NewPair("A/B")
+	p, _ := provider.NewPair("A/B")
 	g, _ := config.buildGraphs()
 
 	assert.Equal(t, 360*time.Second, g[p].Children()[0].(*nodes.OriginNode).MaxTTL())
@@ -279,7 +280,7 @@ func TestConfig_buildGraphs_MedianTTL(t *testing.T) {
 		},
 	}
 
-	p, _ := gofer.NewPair("A/B")
+	p, _ := provider.NewPair("A/B")
 	g, _ := config.buildGraphs()
 
 	assert.Equal(t, 360*time.Second, g[p].Children()[0].(*nodes.OriginNode).MaxTTL())
