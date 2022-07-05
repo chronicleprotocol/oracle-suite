@@ -13,14 +13,34 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package gofer
+package provider
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
+
+// Provider provides prices for asset pairs.
+type Provider interface {
+	// Models describes price models which are used to calculate prices.
+	// If no pairs are specified, models for all pairs are returned.
+	Models(pairs ...Pair) (map[Pair]*Model, error)
+	// Price returns a Price for the given pair.
+	Price(pair Pair) (*Price, error)
+	// Prices returns prices for the given pairs. If no pairs are specified,
+	// prices for all pairs are returned.
+	Prices(pairs ...Pair) (map[Pair]*Price, error)
+	// Pairs returns all pairs.
+	Pairs() ([]Pair, error)
+}
+
+type Service interface {
+	Provider
+	supervisor.Service
+}
 
 // Pair represents an asset pair.
 type Pair struct {
@@ -81,7 +101,7 @@ type Model struct {
 	Models []*Model
 }
 
-// Price represents price for a single pair. If the Price price was calculated
+// Price represents price for a single pair. If the Price was calculated
 // indirectly it will also contain all prices used to calculate the price.
 type Price struct {
 	Type       string
@@ -94,26 +114,4 @@ type Price struct {
 	Time       time.Time
 	Prices     []*Price
 	Error      string
-}
-
-// Gofer provides prices for asset pairs.
-type Gofer interface {
-	// Models describes price models which are used to calculate prices.
-	// If no pairs are specified, models for all pairs are returned.
-	Models(pairs ...Pair) (map[Pair]*Model, error)
-	// Price returns a Price for the given pair.
-	Price(pair Pair) (*Price, error)
-	// Prices returns prices for the given pairs. If no pairs are specified,
-	// prices for all pairs are returned.
-	Prices(pairs ...Pair) (map[Pair]*Price, error)
-	// Pairs returns all pairs.
-	Pairs() ([]Pair, error)
-}
-
-// StartableGofer interface represents a Gofer instances that have to be
-// started first to work properly.
-type StartableGofer interface {
-	Gofer
-	Start(ctx context.Context) error
-	Wait() chan error
 }

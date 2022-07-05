@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 const originTestTTL = 10 * time.Second
@@ -30,7 +30,7 @@ const originTestTTL = 10 * time.Second
 func TestOriginNode_OriginPair(t *testing.T) {
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	o := NewOriginNode(op, originTestTTL, originTestTTL)
@@ -40,12 +40,12 @@ func TestOriginNode_OriginPair(t *testing.T) {
 func TestOriginNode_Ingest_Valid(t *testing.T) {
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	ot := OriginPrice{
 		PairPrice: PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "B"},
+			Pair:      provider.Pair{Base: "A", Quote: "B"},
 			Price:     10,
 			Bid:       10,
 			Ask:       10,
@@ -68,12 +68,12 @@ func TestOriginNode_Ingest_Valid(t *testing.T) {
 func TestOriginNode_Ingest_IncompatiblePair(t *testing.T) {
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	ot := OriginPrice{
 		PairPrice: PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "C"},
+			Pair:      provider.Pair{Base: "A", Quote: "C"},
 			Price:     10,
 			Bid:       10,
 			Ask:       10,
@@ -94,12 +94,12 @@ func TestOriginNode_Ingest_IncompatiblePair(t *testing.T) {
 func TestOriginNode_Ingest_IncompatibleOrigin(t *testing.T) {
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	ot := OriginPrice{
 		PairPrice: PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "B"},
+			Pair:      provider.Pair{Base: "A", Quote: "B"},
 			Price:     10,
 			Bid:       10,
 			Ask:       10,
@@ -120,12 +120,12 @@ func TestOriginNode_Ingest_IncompatibleOrigin(t *testing.T) {
 func TestOriginNode_Ingest_IncompatibleEverything(t *testing.T) {
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	ot := OriginPrice{
 		PairPrice: PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "C"},
+			Pair:      provider.Pair{Base: "A", Quote: "C"},
 			Price:     10,
 			Bid:       10,
 			Ask:       10,
@@ -149,12 +149,12 @@ func TestOriginNode_Ingest_PriceWithError(t *testing.T) {
 
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	ot := OriginPrice{
 		PairPrice: PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "B"},
+			Pair:      provider.Pair{Base: "A", Quote: "B"},
 			Price:     10,
 			Bid:       10,
 			Ask:       10,
@@ -175,12 +175,12 @@ func TestOriginNode_Ingest_PriceWithError(t *testing.T) {
 func TestOriginNode_Price_Expired(t *testing.T) {
 	op := OriginPair{
 		Origin: "foo",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}
 
 	ot := OriginPrice{
 		PairPrice: PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "B"},
+			Pair:      provider.Pair{Base: "A", Quote: "B"},
 			Price:     10,
 			Bid:       10,
 			Ask:       10,

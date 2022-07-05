@@ -20,10 +20,11 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/nodes"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/origins"
 )
 
 const LoggerTag = "FEEDER"
@@ -194,7 +195,7 @@ func appendNodeIfUnique(ns []Feedable, f Feedable) []Feedable {
 func mapOriginResult(origin string, fr origins.FetchResult) nodes.OriginPrice {
 	return nodes.OriginPrice{
 		PairPrice: nodes.PairPrice{
-			Pair: gofer.Pair{
+			Pair: provider.Pair{
 				Base:  fr.Price.Pair.Base,
 				Quote: fr.Price.Pair.Quote,
 			},

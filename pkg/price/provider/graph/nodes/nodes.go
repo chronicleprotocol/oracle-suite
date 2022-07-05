@@ -15,7 +15,7 @@
 
 package nodes
 
-import "github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+import "github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 
 // Node represents generics node in a graph.
 type Node interface {
@@ -31,7 +31,7 @@ type Parent interface {
 // Aggregator represents a node which can aggregate prices from its children.
 type Aggregator interface {
 	Node
-	Pair() gofer.Pair
+	Pair() provider.Pair
 	Price() AggregatorPrice
 }
 

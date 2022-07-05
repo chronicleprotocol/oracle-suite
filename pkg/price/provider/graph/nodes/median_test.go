@@ -22,17 +22,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 const medianTestTTL = 10 * time.Second
 
 func TestMedianAggregatorNode_Children(t *testing.T) {
-	m := NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 3)
+	m := NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 3)
 
-	c1 := NewOriginNode(OriginPair{Pair: gofer.Pair{Base: "A", Quote: "B"}, Origin: "a"}, medianTestTTL, medianTestTTL)
-	c2 := NewOriginNode(OriginPair{Pair: gofer.Pair{Base: "A", Quote: "B"}, Origin: "b"}, medianTestTTL, medianTestTTL)
-	c3 := NewOriginNode(OriginPair{Pair: gofer.Pair{Base: "A", Quote: "B"}, Origin: "c"}, medianTestTTL, medianTestTTL)
+	c1 := NewOriginNode(OriginPair{Pair: provider.Pair{Base: "A", Quote: "B"}, Origin: "a"}, medianTestTTL, medianTestTTL)
+	c2 := NewOriginNode(OriginPair{Pair: provider.Pair{Base: "A", Quote: "B"}, Origin: "b"}, medianTestTTL, medianTestTTL)
+	c3 := NewOriginNode(OriginPair{Pair: provider.Pair{Base: "A", Quote: "B"}, Origin: "c"}, medianTestTTL, medianTestTTL)
 
 	m.AddChild(c1)
 	m.AddChild(c2)
@@ -45,14 +45,14 @@ func TestMedianAggregatorNode_Children(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Pair(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	m := NewMedianAggregatorNode(p, 3)
 
 	assert.Equal(t, m.Pair(), p)
 }
 
 func TestMedianAggregatorNode_Price_ThreeOriginPrices(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	n := time.Now()
 	m := NewMedianAggregatorNode(p, 3)
 
@@ -122,7 +122,7 @@ func TestMedianAggregatorNode_Price_ThreeOriginPrices(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Price_ThreeAggregatorPrices(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	n := time.Now()
 	m := NewMedianAggregatorNode(p, 3)
 
@@ -244,7 +244,7 @@ func TestMedianAggregatorNode_Price_ThreeAggregatorPrices(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Price_NotEnoughSources(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	n := time.Now()
 	m := NewMedianAggregatorNode(p, 3)
 
@@ -276,7 +276,7 @@ func TestMedianAggregatorNode_Price_NotEnoughSources(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Price_ChildPriceWithError(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	n := time.Now()
 	m := NewMedianAggregatorNode(p, 2)
 
@@ -323,8 +323,8 @@ func TestMedianAggregatorNode_Price_ChildPriceWithError(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Price_IncompatiblePairs(t *testing.T) {
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "C", Quote: "D"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "C", Quote: "D"}
 	n := time.Now()
 	m := NewMedianAggregatorNode(p1, 2)
 
@@ -371,7 +371,7 @@ func TestMedianAggregatorNode_Price_IncompatiblePairs(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Price_NoChildrenNodes(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	m := NewMedianAggregatorNode(p, 2)
 
 	price := m.Price()
@@ -380,7 +380,7 @@ func TestMedianAggregatorNode_Price_NoChildrenNodes(t *testing.T) {
 }
 
 func TestMedianAggregatorNode_Price_FilterOutPricesLteZero(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	n := time.Now()
 	m := NewMedianAggregatorNode(p, 1)
 

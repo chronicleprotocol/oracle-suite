@@ -22,17 +22,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 const testTTL = 10 * time.Second
 
 func TestIndirectAggregatorNode_Children(t *testing.T) {
-	m := NewIndirectAggregatorNode(gofer.Pair{Base: "A", Quote: "B"})
+	m := NewIndirectAggregatorNode(provider.Pair{Base: "A", Quote: "B"})
 
-	c1 := NewOriginNode(OriginPair{Pair: gofer.Pair{Base: "A", Quote: "B"}, Origin: "a"}, testTTL, testTTL)
-	c2 := NewOriginNode(OriginPair{Pair: gofer.Pair{Base: "A", Quote: "B"}, Origin: "b"}, testTTL, testTTL)
-	c3 := NewOriginNode(OriginPair{Pair: gofer.Pair{Base: "A", Quote: "B"}, Origin: "c"}, testTTL, testTTL)
+	c1 := NewOriginNode(OriginPair{Pair: provider.Pair{Base: "A", Quote: "B"}, Origin: "a"}, testTTL, testTTL)
+	c2 := NewOriginNode(OriginPair{Pair: provider.Pair{Base: "A", Quote: "B"}, Origin: "b"}, testTTL, testTTL)
+	c3 := NewOriginNode(OriginPair{Pair: provider.Pair{Base: "A", Quote: "B"}, Origin: "c"}, testTTL, testTTL)
 
 	m.AddChild(c1)
 	m.AddChild(c2)
@@ -45,17 +45,17 @@ func TestIndirectAggregatorNode_Children(t *testing.T) {
 }
 
 func TestIndirectAggregatorNode_Pair(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 	m := NewIndirectAggregatorNode(p)
 
 	assert.Equal(t, m.Pair(), p)
 }
 
 func TestIndirectAggregatorNode_Price_ThreeOriginPrices(t *testing.T) {
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "B", Quote: "C"}
-	p3 := gofer.Pair{Base: "C", Quote: "D"}
-	pf := gofer.Pair{Base: "A", Quote: "D"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "B", Quote: "C"}
+	p3 := provider.Pair{Base: "C", Quote: "D"}
+	pf := provider.Pair{Base: "A", Quote: "D"}
 
 	n := time.Now()
 	m := NewIndirectAggregatorNode(pf)
@@ -126,10 +126,10 @@ func TestIndirectAggregatorNode_Price_ThreeOriginPrices(t *testing.T) {
 }
 
 func TestIndirectAggregatorNode_Price_ThreeAggregatorPrices(t *testing.T) {
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "B", Quote: "C"}
-	p3 := gofer.Pair{Base: "C", Quote: "D"}
-	pf := gofer.Pair{Base: "A", Quote: "D"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "B", Quote: "C"}
+	p3 := provider.Pair{Base: "C", Quote: "D"}
+	pf := provider.Pair{Base: "A", Quote: "D"}
 
 	n := time.Now()
 	m := NewIndirectAggregatorNode(pf)
@@ -252,9 +252,9 @@ func TestIndirectAggregatorNode_Price_ThreeAggregatorPrices(t *testing.T) {
 }
 
 func TestIndirectAggregatorNode_Price_ChildPriceWithError(t *testing.T) {
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "B", Quote: "C"}
-	pf := gofer.Pair{Base: "A", Quote: "C"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "B", Quote: "C"}
+	pf := provider.Pair{Base: "A", Quote: "C"}
 
 	n := time.Now()
 	m := NewIndirectAggregatorNode(pf)
@@ -296,9 +296,9 @@ func TestIndirectAggregatorNode_Price_ChildPriceWithError(t *testing.T) {
 
 func TestIndirectAggregatorNode_Price_ResolveToWrongPair(t *testing.T) {
 	// Below pairs will be resolved resolve to the A/D but the A/C is expected:
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "B", Quote: "D"}
-	pf := gofer.Pair{Base: "A", Quote: "C"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "B", Quote: "D"}
+	pf := provider.Pair{Base: "A", Quote: "C"}
 
 	n := time.Now()
 	m := NewIndirectAggregatorNode(pf)
@@ -340,9 +340,9 @@ func TestIndirectAggregatorNode_Price_ResolveToWrongPair(t *testing.T) {
 
 func TestIndirectAggregatorNode_Price_UnableToResolve(t *testing.T) {
 	// It's impossible to resolve below pairs, because the A/B and C/D have no common part:
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "C", Quote: "D"}
-	pf := gofer.Pair{Base: "A", Quote: "C"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "C", Quote: "D"}
+	pf := provider.Pair{Base: "A", Quote: "C"}
 
 	n := time.Now()
 	m := NewIndirectAggregatorNode(pf)
@@ -384,9 +384,9 @@ func TestIndirectAggregatorNode_Price_UnableToResolve(t *testing.T) {
 }
 
 func TestIndirectAggregatorNode_Price_DivByZero(t *testing.T) {
-	p1 := gofer.Pair{Base: "A", Quote: "B"}
-	p2 := gofer.Pair{Base: "C", Quote: "B"}
-	pf := gofer.Pair{Base: "A", Quote: "C"}
+	p1 := provider.Pair{Base: "A", Quote: "B"}
+	p2 := provider.Pair{Base: "C", Quote: "B"}
+	pf := provider.Pair{Base: "A", Quote: "C"}
 
 	n := time.Now()
 	m := NewIndirectAggregatorNode(pf)
@@ -445,7 +445,7 @@ func Test_crossRate(t *testing.T) {
 			name: "one-pair",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "A", Quote: "B"},
+					Pair:      provider.Pair{Base: "A", Quote: "B"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -454,7 +454,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "A", Quote: "B"},
+				Pair:      provider.Pair{Base: "A", Quote: "B"},
 				Price:     10,
 				Bid:       5,
 				Ask:       15,
@@ -466,8 +466,8 @@ func Test_crossRate(t *testing.T) {
 		{
 			name: "invalid-conversion",
 			prices: []PairPrice{
-				{Pair: gofer.Pair{Base: "A", Quote: "B"}},
-				{Pair: gofer.Pair{Base: "X", Quote: "Y"}},
+				{Pair: provider.Pair{Base: "A", Quote: "B"}},
+				{Pair: provider.Pair{Base: "X", Quote: "Y"}},
 			},
 			want:    PairPrice{},
 			wantErr: true,
@@ -476,7 +476,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ac/bc",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "A", Quote: "C"},
+					Pair:      provider.Pair{Base: "A", Quote: "C"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -484,7 +484,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "B", Quote: "C"},
+					Pair:      provider.Pair{Base: "B", Quote: "C"},
 					Price:     20,
 					Bid:       10,
 					Ask:       30,
@@ -493,7 +493,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "A", Quote: "C"},
+				Pair:      provider.Pair{Base: "A", Quote: "C"},
 				Price:     float64(10) / 20,
 				Bid:       float64(5) / 10,
 				Ask:       float64(15) / 30,
@@ -506,7 +506,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ac/bc-divByZero",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "A", Quote: "C"},
+					Pair:      provider.Pair{Base: "A", Quote: "C"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -514,7 +514,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "B", Quote: "C"},
+					Pair:      provider.Pair{Base: "B", Quote: "C"},
 					Price:     0,
 					Bid:       0,
 					Ask:       0,
@@ -529,7 +529,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ca/cb",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "A"},
+					Pair:      provider.Pair{Base: "C", Quote: "A"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -537,7 +537,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "B"},
+					Pair:      provider.Pair{Base: "C", Quote: "B"},
 					Price:     20,
 					Bid:       10,
 					Ask:       30,
@@ -546,7 +546,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "A", Quote: "C"},
+				Pair:      provider.Pair{Base: "A", Quote: "C"},
 				Price:     float64(20) / 10,
 				Bid:       float64(10) / 5,
 				Ask:       float64(30) / 15,
@@ -559,7 +559,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ca/cb-divByZero",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "A"},
+					Pair:      provider.Pair{Base: "C", Quote: "A"},
 					Price:     0,
 					Bid:       0,
 					Ask:       0,
@@ -567,7 +567,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "B"},
+					Pair:      provider.Pair{Base: "C", Quote: "B"},
 					Price:     20,
 					Bid:       10,
 					Ask:       30,
@@ -582,7 +582,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ac/cb",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "A", Quote: "C"},
+					Pair:      provider.Pair{Base: "A", Quote: "C"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -590,7 +590,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "B"},
+					Pair:      provider.Pair{Base: "C", Quote: "B"},
 					Price:     20,
 					Bid:       10,
 					Ask:       30,
@@ -599,7 +599,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "A", Quote: "C"},
+				Pair:      provider.Pair{Base: "A", Quote: "C"},
 				Price:     float64(20) * 10,
 				Bid:       float64(10) * 5,
 				Ask:       float64(30) * 15,
@@ -612,7 +612,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ca/bc",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "A"},
+					Pair:      provider.Pair{Base: "C", Quote: "A"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -620,7 +620,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "B", Quote: "C"},
+					Pair:      provider.Pair{Base: "B", Quote: "C"},
 					Price:     20,
 					Bid:       10,
 					Ask:       30,
@@ -629,7 +629,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "A", Quote: "C"},
+				Pair:      provider.Pair{Base: "A", Quote: "C"},
 				Price:     float64(1) / 20 / 10,
 				Bid:       float64(1) / 10 / 5,
 				Ask:       float64(1) / 30 / 15,
@@ -642,7 +642,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ca/bc-divByZero1",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "A"},
+					Pair:      provider.Pair{Base: "C", Quote: "A"},
 					Price:     10,
 					Bid:       5,
 					Ask:       15,
@@ -650,7 +650,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "B", Quote: "C"},
+					Pair:      provider.Pair{Base: "B", Quote: "C"},
 					Price:     0,
 					Bid:       0,
 					Ask:       0,
@@ -665,7 +665,7 @@ func Test_crossRate(t *testing.T) {
 			name: "ca/bc-divByZero2",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "A"},
+					Pair:      provider.Pair{Base: "C", Quote: "A"},
 					Price:     0,
 					Bid:       0,
 					Ask:       0,
@@ -673,7 +673,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "B", Quote: "C"},
+					Pair:      provider.Pair{Base: "B", Quote: "C"},
 					Price:     20,
 					Bid:       10,
 					Ask:       30,
@@ -688,7 +688,7 @@ func Test_crossRate(t *testing.T) {
 			name: "lowest-timestamp",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "A", Quote: "B"},
+					Pair:      provider.Pair{Base: "A", Quote: "B"},
 					Price:     1,
 					Bid:       1,
 					Ask:       1,
@@ -696,7 +696,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "B", Quote: "C"},
+					Pair:      provider.Pair{Base: "B", Quote: "C"},
 					Price:     1,
 					Bid:       1,
 					Ask:       1,
@@ -704,7 +704,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(5, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "C", Quote: "D"},
+					Pair:      provider.Pair{Base: "C", Quote: "D"},
 					Price:     1,
 					Bid:       1,
 					Ask:       1,
@@ -713,7 +713,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "A", Quote: "D"},
+				Pair:      provider.Pair{Base: "A", Quote: "D"},
 				Price:     1,
 				Bid:       1,
 				Ask:       1,
@@ -726,7 +726,7 @@ func Test_crossRate(t *testing.T) {
 			name: "five-pairs",
 			prices: []PairPrice{
 				{
-					Pair:      gofer.Pair{Base: "ETH", Quote: "BTC"}, // -> ETH/BTC
+					Pair:      provider.Pair{Base: "ETH", Quote: "BTC"}, // -> ETH/BTC
 					Price:     0.050,
 					Bid:       0.040,
 					Ask:       0.060,
@@ -734,7 +734,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(10, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "BTC", Quote: "USD"}, // -> ETH/USD
+					Pair:      provider.Pair{Base: "BTC", Quote: "USD"}, // -> ETH/USD
 					Price:     10000.000,
 					Bid:       9000.000,
 					Ask:       11000.000,
@@ -742,7 +742,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(9, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "EUR", Quote: "USD"}, // -> ETH/EUR
+					Pair:      provider.Pair{Base: "EUR", Quote: "USD"}, // -> ETH/EUR
 					Price:     1.250,
 					Bid:       1.200,
 					Ask:       1.300,
@@ -750,7 +750,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(11, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "EUR", Quote: "CAD"}, // -> ETH/CAD
+					Pair:      provider.Pair{Base: "EUR", Quote: "CAD"}, // -> ETH/CAD
 					Price:     1.250,
 					Bid:       1.200,
 					Ask:       1.300,
@@ -758,7 +758,7 @@ func Test_crossRate(t *testing.T) {
 					Time:      time.Unix(8, 0),
 				},
 				{
-					Pair:      gofer.Pair{Base: "GPB", Quote: "ETH"}, // -> GPB/CAD
+					Pair:      provider.Pair{Base: "GPB", Quote: "ETH"}, // -> GPB/CAD
 					Price:     0.005,
 					Bid:       0.004,
 					Ask:       0.006,
@@ -767,7 +767,7 @@ func Test_crossRate(t *testing.T) {
 				},
 			},
 			want: PairPrice{
-				Pair:      gofer.Pair{Base: "GPB", Quote: "CAD"},
+				Pair:      provider.Pair{Base: "GPB", Quote: "CAD"},
 				Price:     float64(1) / (((float64(0.050) * 10000.000) / 1.250) * 1.250) / 0.005,
 				Bid:       float64(1) / (((float64(0.040) * 9000.000) / 1.200) * 1.200) / 0.004,
 				Ask:       float64(1) / (((float64(0.060) * 11000.000) / 1.300) * 1.300) / 0.006,

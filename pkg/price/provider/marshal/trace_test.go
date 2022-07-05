@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/marshal/testutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal/testutil"
 )
 
 func TestTrace_Graph(t *testing.T) {
@@ -32,7 +32,7 @@ func TestTrace_Graph(t *testing.T) {
 	b := &bytes.Buffer{}
 	m := newTrace()
 
-	ab := gofer.Pair{Base: "A", Quote: "B"}
+	ab := provider.Pair{Base: "A", Quote: "B"}
 	ns := testutil.Models(ab)
 
 	err = m.Write(b, ns[ab])
@@ -62,7 +62,7 @@ func TestTrace_Prices(t *testing.T) {
 	b := &bytes.Buffer{}
 	m := newTrace()
 
-	ab := gofer.Pair{Base: "A", Quote: "B"}
+	ab := provider.Pair{Base: "A", Quote: "B"}
 	ts := testutil.Prices(ab)
 
 	err = m.Write(b, ts[ab])

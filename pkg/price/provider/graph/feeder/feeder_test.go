@@ -21,10 +21,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/nodes"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/origins"
 )
 
 type mockHandler struct {
@@ -80,7 +81,7 @@ func TestFeeder_Feed_EmptyGraph(t *testing.T) {
 }
 
 func TestFeeder_Feed_NoFeedableNodes(t *testing.T) {
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
+	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
 	f := NewFeeder(originsSetMock(nil), null.New())
 
 	// Feed method shouldn't panic
@@ -103,10 +104,10 @@ func TestFeeder_Feed_OneOriginNode(t *testing.T) {
 		},
 	})
 
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
+	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
 	o := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}, 0, 0)
 
 	g.AddChild(o)
@@ -114,7 +115,7 @@ func TestFeeder_Feed_OneOriginNode(t *testing.T) {
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
-	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
 	assert.Equal(t, 10.0, o.Price().Price)
 	assert.Equal(t, 9.0, o.Price().Bid)
 	assert.Equal(t, 11.0, o.Price().Ask)
@@ -154,22 +155,22 @@ func TestFeeder_Feed_ManyOriginNodes(t *testing.T) {
 		},
 	})
 
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
+	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
 	o1 := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}, 0, 0)
 	o2 := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test",
-		Pair:   gofer.Pair{Base: "C", Quote: "D"},
+		Pair:   provider.Pair{Base: "C", Quote: "D"},
 	}, 0, 0)
 	o3 := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test2",
-		Pair:   gofer.Pair{Base: "E", Quote: "F"},
+		Pair:   provider.Pair{Base: "E", Quote: "F"},
 	}, 0, 0)
 	o4 := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test2",
-		Pair:   gofer.Pair{Base: "E", Quote: "F"},
+		Pair:   provider.Pair{Base: "E", Quote: "F"},
 	}, 0, 0)
 
 	// The last o4 origin is intentionally same as an o3 origin. Also an o3
@@ -187,28 +188,28 @@ func TestFeeder_Feed_ManyOriginNodes(t *testing.T) {
 
 	assert.Len(t, warns.List, 0)
 
-	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o1.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "A", Quote: "B"}, o1.Price().Pair)
 	assert.Equal(t, 10.0, o1.Price().Price)
 	assert.Equal(t, 9.0, o1.Price().Bid)
 	assert.Equal(t, 11.0, o1.Price().Ask)
 	assert.Equal(t, 10.0, o1.Price().Volume24h)
 	assert.Equal(t, time.Unix(10000, 0), o1.Price().Time)
 
-	assert.Equal(t, gofer.Pair{Base: "C", Quote: "D"}, o2.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "C", Quote: "D"}, o2.Price().Pair)
 	assert.Equal(t, 20.0, o2.Price().Price)
 	assert.Equal(t, 19.0, o2.Price().Bid)
 	assert.Equal(t, 21.0, o2.Price().Ask)
 	assert.Equal(t, 20.0, o2.Price().Volume24h)
 	assert.Equal(t, time.Unix(20000, 0), o2.Price().Time)
 
-	assert.Equal(t, gofer.Pair{Base: "E", Quote: "F"}, o3.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "E", Quote: "F"}, o3.Price().Pair)
 	assert.Equal(t, 30.0, o3.Price().Price)
 	assert.Equal(t, 39.0, o3.Price().Bid)
 	assert.Equal(t, 31.0, o3.Price().Ask)
 	assert.Equal(t, 30.0, o3.Price().Volume24h)
 	assert.Equal(t, time.Unix(30000, 0), o3.Price().Time)
 
-	assert.Equal(t, gofer.Pair{Base: "E", Quote: "F"}, o4.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "E", Quote: "F"}, o4.Price().Pair)
 	assert.Equal(t, 30.0, o4.Price().Price)
 	assert.Equal(t, 39.0, o4.Price().Bid)
 	assert.Equal(t, 31.0, o4.Price().Ask)
@@ -237,11 +238,11 @@ func TestFeeder_Feed_NestedOriginNode(t *testing.T) {
 		},
 	})
 
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
-	i := nodes.NewIndirectAggregatorNode(gofer.Pair{Base: "A", Quote: "B"})
+	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
+	i := nodes.NewIndirectAggregatorNode(provider.Pair{Base: "A", Quote: "B"})
 	o := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}, 0, 0)
 
 	g.AddChild(i)
@@ -251,7 +252,7 @@ func TestFeeder_Feed_NestedOriginNode(t *testing.T) {
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
-	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
 	assert.Equal(t, 10.0, o.Price().Price)
 	assert.Equal(t, 9.0, o.Price().Bid)
 	assert.Equal(t, 11.0, o.Price().Ask)
@@ -273,15 +274,15 @@ func TestFeeder_Feed_BelowMinTTL(t *testing.T) {
 		},
 	})
 
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
+	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
 	o := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}, 10*time.Second, 10*time.Second)
 
 	_ = o.Ingest(nodes.OriginPrice{
 		PairPrice: nodes.PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "B"},
+			Pair:      provider.Pair{Base: "A", Quote: "B"},
 			Price:     10,
 			Bid:       9,
 			Ask:       11,
@@ -299,7 +300,7 @@ func TestFeeder_Feed_BelowMinTTL(t *testing.T) {
 
 	// OriginNode shouldn't be updated because time diff is below MinTTL setting:
 	assert.Len(t, warns.List, 0)
-	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
 	assert.Equal(t, 10.0, o.Price().Price)
 	assert.Equal(t, 9.0, o.Price().Bid)
 	assert.Equal(t, 11.0, o.Price().Ask)
@@ -320,15 +321,15 @@ func TestFeeder_Feed_BetweenTTLs(t *testing.T) {
 		},
 	})
 
-	g := nodes.NewMedianAggregatorNode(gofer.Pair{Base: "A", Quote: "B"}, 1)
+	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
 	o := nodes.NewOriginNode(nodes.OriginPair{
 		Origin: "test",
-		Pair:   gofer.Pair{Base: "A", Quote: "B"},
+		Pair:   provider.Pair{Base: "A", Quote: "B"},
 	}, 10*time.Second, 60*time.Second)
 
 	_ = o.Ingest(nodes.OriginPrice{
 		PairPrice: nodes.PairPrice{
-			Pair:      gofer.Pair{Base: "A", Quote: "B"},
+			Pair:      provider.Pair{Base: "A", Quote: "B"},
 			Price:     10,
 			Bid:       9,
 			Ask:       11,
@@ -346,7 +347,7 @@ func TestFeeder_Feed_BetweenTTLs(t *testing.T) {
 
 	// OriginNode should be updated because time diff is above MinTTL setting:
 	assert.Len(t, warns.List, 0)
-	assert.Equal(t, gofer.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
+	assert.Equal(t, provider.Pair{Base: "A", Quote: "B"}, o.Price().Pair)
 	assert.Equal(t, 11.0, o.Price().Price)
 	assert.Equal(t, 10.0, o.Price().Bid)
 	assert.Equal(t, 12.0, o.Price().Ask)

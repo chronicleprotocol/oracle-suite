@@ -20,7 +20,7 @@ import (
 	"errors"
 	"net/rpc"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 var ErrNotStarted = errors.New("gofer RPC client is not started")
@@ -66,7 +66,7 @@ func (g *Gofer) Wait() chan error {
 }
 
 // Models implements the gofer.Gofer interface.
-func (g *Gofer) Models(pairs ...gofer.Pair) (map[gofer.Pair]*gofer.Model, error) {
+func (g *Gofer) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -79,7 +79,7 @@ func (g *Gofer) Models(pairs ...gofer.Pair) (map[gofer.Pair]*gofer.Model, error)
 }
 
 // Price implements the gofer.Gofer interface.
-func (g *Gofer) Price(pair gofer.Pair) (*gofer.Price, error) {
+func (g *Gofer) Price(pair provider.Pair) (*provider.Price, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -91,7 +91,7 @@ func (g *Gofer) Price(pair gofer.Pair) (*gofer.Price, error) {
 }
 
 // Prices implements the gofer.Gofer interface.
-func (g *Gofer) Prices(pairs ...gofer.Pair) (map[gofer.Pair]*gofer.Price, error) {
+func (g *Gofer) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -104,7 +104,7 @@ func (g *Gofer) Prices(pairs ...gofer.Pair) (map[gofer.Pair]*gofer.Price, error)
 }
 
 // Pairs implements the gofer.Gofer interface.
-func (g *Gofer) Pairs() ([]gofer.Pair, error) {
+func (g *Gofer) Pairs() ([]provider.Pair, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}

@@ -16,21 +16,22 @@
 package rpc
 
 import (
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/feeder"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/marshal"
 )
 
 type Nothing = struct{}
 
 type API struct {
-	gofer gofer.Gofer
+	gofer provider.Provider
 	log   log.Logger
 }
 
 type FeedArg struct {
-	Pairs []gofer.Pair
+	Pairs []provider.Pair
 }
 
 type FeedResp struct {
@@ -39,23 +40,23 @@ type FeedResp struct {
 
 type NodesArg struct {
 	Format marshal.FormatType
-	Pairs  []gofer.Pair
+	Pairs  []provider.Pair
 }
 
 type NodesResp struct {
-	Pairs map[gofer.Pair]*gofer.Model
+	Pairs map[provider.Pair]*provider.Model
 }
 
 type PricesArg struct {
-	Pairs []gofer.Pair
+	Pairs []provider.Pair
 }
 
 type PricesResp struct {
-	Prices map[gofer.Pair]*gofer.Price
+	Prices map[provider.Pair]*provider.Price
 }
 
 type PairsResp struct {
-	Pairs []gofer.Pair
+	Pairs []provider.Pair
 }
 
 func (n *API) Models(arg *NodesArg, resp *NodesResp) error {

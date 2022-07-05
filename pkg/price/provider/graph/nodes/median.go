@@ -23,7 +23,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type ErrNotEnoughSources struct {
@@ -40,8 +40,8 @@ func (e ErrNotEnoughSources) Error() string {
 }
 
 type ErrIncompatiblePairs struct {
-	Given    gofer.Pair
-	Expected gofer.Pair
+	Given    provider.Pair
+	Expected provider.Pair
 }
 
 func (e ErrIncompatiblePairs) Error() string {
@@ -65,12 +65,12 @@ func (e ErrIncompatiblePairs) Error() string {
 //
 // All children of this node must return a Price for the same pair.
 type MedianAggregatorNode struct {
-	pair       gofer.Pair
+	pair       provider.Pair
 	minSources int
 	children   []Node
 }
 
-func NewMedianAggregatorNode(pair gofer.Pair, minSources int) *MedianAggregatorNode {
+func NewMedianAggregatorNode(pair provider.Pair, minSources int) *MedianAggregatorNode {
 	return &MedianAggregatorNode{
 		pair:       pair,
 		minSources: minSources,
@@ -87,7 +87,7 @@ func (n *MedianAggregatorNode) AddChild(node Node) {
 	n.children = append(n.children, node)
 }
 
-func (n *MedianAggregatorNode) Pair() gofer.Pair {
+func (n *MedianAggregatorNode) Pair() provider.Pair {
 	return n.pair
 }
 

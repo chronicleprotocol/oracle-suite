@@ -22,12 +22,12 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type ErrIncompatiblePair struct {
-	Given    gofer.Pair
-	Expected gofer.Pair
+	Given    provider.Pair
+	Expected provider.Pair
 }
 
 func (e ErrIncompatiblePair) Error() string {

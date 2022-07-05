@@ -23,7 +23,7 @@ import (
 	"net/rpc"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 const AgentLoggerTag = "GOFER_AGENT"
@@ -33,7 +33,7 @@ type AgentConfig struct {
 	// implements the gofer.StartableGofer interface, the Start and Stop
 	// methods are called whenever corresponding Agent's Start and
 	// Stop are called.
-	Gofer gofer.Gofer
+	Gofer provider.Provider
 	// Network is used for the rpc.Listener function.
 	Network string
 	// Address is used for the rpc.Listener function.

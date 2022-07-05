@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/marshal/testutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal/testutil"
 )
 
 func TestJSON_Nodes(t *testing.T) {
@@ -30,8 +30,8 @@ func TestJSON_Nodes(t *testing.T) {
 	b := &bytes.Buffer{}
 	m := newJSON(false)
 
-	ab := gofer.Pair{Base: "A", Quote: "B"}
-	cd := gofer.Pair{Base: "C", Quote: "D"}
+	ab := provider.Pair{Base: "A", Quote: "B"}
+	cd := provider.Pair{Base: "C", Quote: "D"}
 	ns := testutil.Models(ab, cd)
 
 	err = m.Write(b, ns[ab])
@@ -53,8 +53,8 @@ func TestNDJSON_Nodes(t *testing.T) {
 	b := &bytes.Buffer{}
 	m := newJSON(true)
 
-	ab := gofer.Pair{Base: "A", Quote: "B"}
-	cd := gofer.Pair{Base: "C", Quote: "D"}
+	ab := provider.Pair{Base: "A", Quote: "B"}
+	cd := provider.Pair{Base: "C", Quote: "D"}
 	ns := testutil.Models(ab, cd)
 
 	err = m.Write(b, ns[ab])
@@ -77,7 +77,7 @@ func TestJSON_Prices(t *testing.T) {
 	b := &bytes.Buffer{}
 	m := newJSON(false)
 
-	ab := gofer.Pair{Base: "A", Quote: "B"}
+	ab := provider.Pair{Base: "A", Quote: "B"}
 	ts := testutil.Prices(ab)
 
 	err = m.Write(b, ts[ab])

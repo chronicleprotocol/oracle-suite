@@ -19,13 +19,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/nodes"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
 )
 
-func Gofer(ps ...gofer.Pair) gofer.Gofer {
-	graphs := map[gofer.Pair]nodes.Aggregator{}
+func Gofer(ps ...provider.Pair) provider.Provider {
+	graphs := map[provider.Pair]nodes.Aggregator{}
 	for _, p := range ps {
 		root := nodes.NewMedianAggregatorNode(p, 1)
 
@@ -72,10 +72,10 @@ func Gofer(ps ...gofer.Pair) gofer.Gofer {
 		graphs[p] = root
 	}
 
-	return graph.NewGofer(graphs, nil)
+	return graph.NewGraph(graphs, nil)
 }
 
-func Models(ps ...gofer.Pair) map[gofer.Pair]*gofer.Model {
+func Models(ps ...provider.Pair) map[provider.Pair]*provider.Model {
 	g := Gofer(ps...)
 	ns, err := g.Models()
 	if err != nil {
@@ -84,7 +84,7 @@ func Models(ps ...gofer.Pair) map[gofer.Pair]*gofer.Model {
 	return ns
 }
 
-func Prices(ps ...gofer.Pair) map[gofer.Pair]*gofer.Price {
+func Prices(ps ...provider.Pair) map[provider.Pair]*provider.Price {
 	g := Gofer(ps...)
 	ts, err := g.Prices()
 	if err != nil {

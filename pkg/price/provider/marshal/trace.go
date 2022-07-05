@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type traceItem struct {
@@ -44,9 +44,9 @@ func newTrace() *trace {
 func (t *trace) Write(writer io.Writer, item interface{}) error {
 	var i []byte
 	switch typedItem := item.(type) {
-	case *gofer.Price:
+	case *provider.Price:
 		i = t.handlePrice(typedItem)
-	case *gofer.Model:
+	case *provider.Model:
 		i = t.handleModel(typedItem)
 	case error:
 		i = []byte(fmt.Sprintf("Error: %s", typedItem.Error()))
@@ -70,9 +70,9 @@ func (t *trace) Flush() error {
 	return nil
 }
 
-func (*trace) handlePrice(price *gofer.Price) []byte {
+func (*trace) handlePrice(price *provider.Price) []byte {
 	tree := renderTree(func(node interface{}) ([]byte, []interface{}) {
-		t := node.(*gofer.Price)
+		t := node.(*provider.Price)
 		var tErr error
 		if t.Error != "" {
 			tErr = errors.New(t.Error)
@@ -105,9 +105,9 @@ func (*trace) handlePrice(price *gofer.Price) []byte {
 	return buf.Bytes()
 }
 
-func (t *trace) handleModel(node *gofer.Model) []byte {
+func (t *trace) handleModel(node *provider.Model) []byte {
 	tree := renderTree(func(node interface{}) ([]byte, []interface{}) {
-		n := node.(*gofer.Model)
+		n := node.(*provider.Model)
 		s := renderNode(
 			n.Type,
 			mergeKVMap(

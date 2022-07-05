@@ -20,11 +20,11 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type ErrPrice struct {
-	Pair gofer.Pair
+	Pair provider.Pair
 	Err  error
 }
 
@@ -37,8 +37,8 @@ func (e ErrPrice) Error() string {
 }
 
 type ErrResolve struct {
-	ExpectedPair gofer.Pair
-	ResolvedPair gofer.Pair
+	ExpectedPair provider.Pair
+	ResolvedPair provider.Pair
 }
 
 func (e ErrResolve) Error() string {
@@ -50,7 +50,7 @@ func (e ErrResolve) Error() string {
 }
 
 type ErrInvalidPrice struct {
-	Pair gofer.Pair
+	Pair provider.Pair
 }
 
 func (e ErrInvalidPrice) Error() string {
@@ -61,8 +61,8 @@ func (e ErrInvalidPrice) Error() string {
 }
 
 type ErrNoCommonPart struct {
-	PairA gofer.Pair
-	PairB gofer.Pair
+	PairA provider.Pair
+	PairB provider.Pair
 }
 
 func (e ErrNoCommonPart) Error() string {
@@ -74,8 +74,8 @@ func (e ErrNoCommonPart) Error() string {
 }
 
 type ErrDivByZero struct {
-	PairA gofer.Pair
-	PairB gofer.Pair
+	PairA provider.Pair
+	PairB provider.Pair
 }
 
 func (e ErrDivByZero) Error() string {
@@ -101,11 +101,11 @@ func (e ErrDivByZero) Error() string {
 // to add child nodes in the correct order, because prices will be calculated from
 // first to last.
 type IndirectAggregatorNode struct {
-	pair     gofer.Pair
+	pair     provider.Pair
 	children []Node
 }
 
-func NewIndirectAggregatorNode(pair gofer.Pair) *IndirectAggregatorNode {
+func NewIndirectAggregatorNode(pair provider.Pair) *IndirectAggregatorNode {
 	return &IndirectAggregatorNode{
 		pair: pair,
 	}
@@ -121,7 +121,7 @@ func (n *IndirectAggregatorNode) AddChild(node Node) {
 	n.children = append(n.children, node)
 }
 
-func (n *IndirectAggregatorNode) Pair() gofer.Pair {
+func (n *IndirectAggregatorNode) Pair() provider.Pair {
 	return n.pair
 }
 
@@ -216,7 +216,7 @@ func crossRate(t []PairPrice) (PairPrice, error) {
 		a := t[i]
 		b := t[i+1]
 
-		var pair gofer.Pair
+		var pair provider.Pair
 		var price, bid, ask float64
 		switch {
 		case a.Pair.Quote == b.Pair.Quote: // A/C, B/C

@@ -21,7 +21,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type jsonItem struct {
@@ -44,9 +44,9 @@ func newJSON(ndjson bool) *json {
 func (j *json) Write(writer io.Writer, item interface{}) error {
 	var i interface{}
 	switch typedItem := item.(type) {
-	case *gofer.Price:
+	case *provider.Price:
 		i = j.handlePrice(typedItem)
-	case *gofer.Model:
+	case *provider.Model:
 		i = j.handleModel(typedItem)
 	case error:
 		i = j.handleError(typedItem)
@@ -98,11 +98,11 @@ func (j *json) Flush() error {
 	return nil
 }
 
-func (*json) handlePrice(price *gofer.Price) interface{} {
+func (*json) handlePrice(price *provider.Price) interface{} {
 	return jsonPriceFromGoferPrice(price)
 }
 
-func (*json) handleModel(node *gofer.Model) interface{} {
+func (*json) handleModel(node *provider.Model) interface{} {
 	return node.Pair.String()
 }
 
@@ -126,7 +126,7 @@ type jsonPrice struct {
 	Error      string            `json:"error,omitempty"`
 }
 
-func jsonPriceFromGoferPrice(t *gofer.Price) jsonPrice {
+func jsonPriceFromGoferPrice(t *provider.Price) jsonPrice {
 	var prices []jsonPrice
 	for _, c := range t.Prices {
 		prices = append(prices, jsonPriceFromGoferPrice(c))

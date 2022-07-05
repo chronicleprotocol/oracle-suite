@@ -20,18 +20,19 @@ import (
 	"errors"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/feeder"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/graph/nodes"
 )
 
 const LoggerTag = "ASYNC_GOFER"
 
-// AsyncGofer implements the gofer.Gofer interface. It works just like Gofer
+// AsyncGofer implements the gofer.Gofer interface. It works just like Graph
 // but allows updating prices asynchronously.
 type AsyncGofer struct {
-	*Gofer
+	*Graph
 	ctx    context.Context
 	waitCh chan error
 	feeder *feeder.Feeder
@@ -41,14 +42,14 @@ type AsyncGofer struct {
 
 // NewAsyncGofer returns a new AsyncGofer instance.
 func NewAsyncGofer(
-	graph map[gofer.Pair]nodes.Aggregator,
+	graph map[provider.Pair]nodes.Aggregator,
 	feeder *feeder.Feeder,
 	nodes []nodes.Node,
 	logger log.Logger,
 ) (*AsyncGofer, error) {
 
 	return &AsyncGofer{
-		Gofer:  NewGofer(graph, nil),
+		Graph:  NewGraph(graph, nil),
 		waitCh: make(chan error),
 		feeder: feeder,
 		nodes:  nodes,

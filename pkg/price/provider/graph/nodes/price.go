@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type OriginPair struct {
 	Origin string
-	Pair   gofer.Pair
+	Pair   provider.Pair
 }
 
 func (o OriginPair) String() string {
@@ -32,7 +32,7 @@ func (o OriginPair) String() string {
 }
 
 type PairPrice struct {
-	Pair      gofer.Pair
+	Pair      provider.Pair
 	Price     float64
 	Bid       float64
 	Ask       float64

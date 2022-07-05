@@ -22,14 +22,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/mocks"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer/mocks"
 )
 
 var (
 	agent     *Agent
-	mockGofer *mocks.Gofer
+	mockGofer *mocks.Provider
 	rpcGofer  *Gofer
 )
 
@@ -37,7 +38,7 @@ func TestMain(m *testing.M) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	var err error
 
-	mockGofer = &mocks.Gofer{}
+	mockGofer = &mocks.Provider{}
 	agent, err = NewAgent(AgentConfig{
 		Gofer:   mockGofer,
 		Network: "tcp",
@@ -65,8 +66,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_Models(t *testing.T) {
-	pair := gofer.Pair{Base: "A", Quote: "B"}
-	model := map[gofer.Pair]*gofer.Model{pair: {Type: "test"}}
+	pair := provider.Pair{Base: "A", Quote: "B"}
+	model := map[provider.Pair]*provider.Model{pair: {Type: "test"}}
 
 	mockGofer.On("Models", pair).Return(model, nil)
 	resp, err := rpcGofer.Models(pair)
@@ -76,8 +77,8 @@ func TestClient_Models(t *testing.T) {
 }
 
 func TestClient_Price(t *testing.T) {
-	pair := gofer.Pair{Base: "A", Quote: "B"}
-	prices := map[gofer.Pair]*gofer.Price{pair: {Type: "test"}}
+	pair := provider.Pair{Base: "A", Quote: "B"}
+	prices := map[provider.Pair]*provider.Price{pair: {Type: "test"}}
 
 	mockGofer.On("Prices", pair).Return(prices, nil)
 	resp, err := rpcGofer.Price(pair)
@@ -87,8 +88,8 @@ func TestClient_Price(t *testing.T) {
 }
 
 func TestClient_Prices(t *testing.T) {
-	pair := gofer.Pair{Base: "A", Quote: "B"}
-	prices := map[gofer.Pair]*gofer.Price{pair: {Type: "test"}}
+	pair := provider.Pair{Base: "A", Quote: "B"}
+	prices := map[provider.Pair]*provider.Price{pair: {Type: "test"}}
 
 	mockGofer.On("Prices", pair).Return(prices, nil)
 	resp, err := rpcGofer.Prices(pair)
@@ -98,7 +99,7 @@ func TestClient_Prices(t *testing.T) {
 }
 
 func TestClient_Pairs(t *testing.T) {
-	pairs := []gofer.Pair{{Base: "A", Quote: "B"}}
+	pairs := []provider.Pair{{Base: "A", Quote: "B"}}
 
 	mockGofer.On("Pairs").Return(pairs, nil)
 	resp, err := rpcGofer.Pairs()

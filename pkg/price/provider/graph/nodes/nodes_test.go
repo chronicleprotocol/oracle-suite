@@ -20,11 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 func TestDetectCycles(t *testing.T) {
-	p := gofer.Pair{Base: "A", Quote: "B"}
+	p := provider.Pair{Base: "A", Quote: "B"}
 
 	// Non cyclic graph:
 	nonCyclic := NewMedianAggregatorNode(p, 0)

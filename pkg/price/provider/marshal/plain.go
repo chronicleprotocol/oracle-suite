@@ -20,7 +20,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 type plainItem struct {
@@ -40,9 +40,9 @@ func newPlain() *plain {
 func (p *plain) Write(writer io.Writer, item interface{}) error {
 	var i []byte
 	switch typedItem := item.(type) {
-	case *gofer.Price:
+	case *provider.Price:
 		i = p.handlePrice(typedItem)
-	case *gofer.Model:
+	case *provider.Model:
 		i = p.handleModel(typedItem)
 	case error:
 		i = []byte(fmt.Sprintf("Error: %s", typedItem.Error()))
@@ -70,13 +70,13 @@ func (p *plain) Flush() error {
 	return nil
 }
 
-func (*plain) handlePrice(price *gofer.Price) []byte {
+func (*plain) handlePrice(price *provider.Price) []byte {
 	if price.Error != "" {
 		return []byte(fmt.Sprintf("%s - %s", price.Pair, strings.TrimSpace(price.Error)))
 	}
 	return []byte(fmt.Sprintf("%s %f", price.Pair, price.Price))
 }
 
-func (*plain) handleModel(node *gofer.Model) []byte {
+func (*plain) handleModel(node *provider.Model) []byte {
 	return []byte(node.Pair.String())
 }

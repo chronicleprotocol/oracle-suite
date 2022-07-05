@@ -23,26 +23,26 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
-type Gofer struct {
+type Provider struct {
 	mock.Mock
 }
 
-func (g *Gofer) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
+func (g *Provider) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
 	args := g.Called(interfaceSlice(pairs)...)
 	return args.Get(0).(map[provider.Pair]*provider.Model), args.Error(1)
 }
 
-func (g *Gofer) Price(pair provider.Pair) (*provider.Price, error) {
+func (g *Provider) Price(pair provider.Pair) (*provider.Price, error) {
 	args := g.Called(pair)
 	return args.Get(0).(*provider.Price), args.Error(1)
 }
 
-func (g *Gofer) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
+func (g *Provider) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
 	args := g.Called(interfaceSlice(pairs)...)
 	return args.Get(0).(map[provider.Pair]*provider.Price), args.Error(1)
 }
 
-func (g *Gofer) Pairs() ([]provider.Pair, error) {
+func (g *Provider) Pairs() ([]provider.Pair, error) {
 	args := g.Called()
 	return args.Get(0).([]provider.Pair), args.Error(1)
 }
