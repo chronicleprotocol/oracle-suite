@@ -1,6 +1,6 @@
 module teleport
 
-go 1.17
+go 1.18
 
 require (
 	github.com/chronicleprotocol/infestor v0.2.6-0.20220622093859-8a170b82b84c
