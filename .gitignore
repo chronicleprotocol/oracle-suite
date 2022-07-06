@@ -9,7 +9,7 @@
 *.so
 *.dylib
 
-# Dependency directories (remove the comment below to include it)
+# Dependency directories
 /vendor/
 
 # Compiled binaries
@@ -22,6 +22,15 @@
 # Output of the go coverage tool
 *.out
 
+# Temporary and local files
+.tmp
+.DS_Store
+node_modules
+/package*.json
+
+# Go Workspaces
+/go.work
+
 # These are all generated from e2e/wormhole/init.sh and are git pulled. No need
 # to track.
 e2e/wormhole/dss
@@ -29,7 +38,3 @@ e2e/wormhole/dss-wormhole
 e2e/wormhole/esm
 e2e/wormhole/pause_proxy
 e2e/wormhole/optimism
-.DS_Store
-node_modules
-/package*.json
-.tmp
