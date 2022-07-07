@@ -26,8 +26,8 @@ import (
 type Nothing = struct{}
 
 type API struct {
-	gofer provider.Provider
-	log   log.Logger
+	provider provider.Provider
+	log      log.Logger
 }
 
 type FeedArg struct {
@@ -61,7 +61,7 @@ type PairsResp struct {
 
 func (n *API) Models(arg *NodesArg, resp *NodesResp) error {
 	n.log.WithField("pairs", arg.Pairs).Info("Models")
-	pairs, err := n.gofer.Models(arg.Pairs...)
+	pairs, err := n.provider.Models(arg.Pairs...)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (n *API) Models(arg *NodesArg, resp *NodesResp) error {
 
 func (n *API) Prices(arg *PricesArg, resp *PricesResp) error {
 	n.log.WithField("pairs", arg.Pairs).Info("Prices")
-	prices, err := n.gofer.Prices(arg.Pairs...)
+	prices, err := n.provider.Prices(arg.Pairs...)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (n *API) Prices(arg *PricesArg, resp *PricesResp) error {
 
 func (n *API) Pairs(_ *Nothing, resp *PairsResp) error {
 	n.log.Info("Prices")
-	pairs, err := n.gofer.Pairs()
+	pairs, err := n.provider.Pairs()
 	if err != nil {
 		return err
 	}

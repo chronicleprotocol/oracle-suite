@@ -99,10 +99,10 @@ type Source struct {
 // ConfigureRPCAgent returns a new rpc.Agent instance.
 func (c *Gofer) ConfigureRPCAgent(cli ethereum.Client, gof provider.Provider, logger log.Logger) (*rpc.Agent, error) {
 	srv, err := rpc.NewAgent(rpc.AgentConfig{
-		Gofer:   gof,
-		Network: "tcp",
-		Address: c.RPC.Address,
-		Logger:  logger,
+		Provider: gof,
+		Network:  "tcp",
+		Address:  c.RPC.Address,
+		Logger:   logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
@@ -111,7 +111,7 @@ func (c *Gofer) ConfigureRPCAgent(cli ethereum.Client, gof provider.Provider, lo
 }
 
 // ConfigureAsyncGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (provider.Service, error) {
+func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (provider.Provider, error) {
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load price models: %w", err)
@@ -125,7 +125,7 @@ func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (pro
 		return nil, err
 	}
 	fed := feeder.NewFeeder(originSet, logger)
-	gof, err := graph.NewAsyncGofer(gra, fed, ns, logger)
+	gof, err := graph.NewAsyncProvider(gra, fed, ns, logger)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
 	}
@@ -144,15 +144,15 @@ func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC boo
 			return nil, err
 		}
 		fed := feeder.NewFeeder(originSet, logger)
-		gof := graph.NewGraph(gra, fed)
+		gof := graph.NewProvider(gra, fed)
 		return gof, nil
 	}
 	return c.configureRPCClient()
 }
 
 // configureRPCClient returns a new rpc.RPC instance.
-func (c *Gofer) configureRPCClient() (*rpc.Gofer, error) {
-	return rpc.NewGofer("tcp", c.RPC.Address)
+func (c *Gofer) configureRPCClient() (*rpc.Provider, error) {
+	return rpc.NewProvider("tcp", c.RPC.Address)
 }
 
 func (c *Gofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) {

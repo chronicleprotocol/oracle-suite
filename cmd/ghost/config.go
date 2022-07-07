@@ -29,7 +29,6 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -98,7 +97,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	}
 	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, gho, sysmon.New(time.Minute, log))
-	if g, ok := gof.(provider.Service); ok {
+	if g, ok := gof.(supervisor.Service); ok {
 		sup.Watch(g)
 	}
 	return sup, nil

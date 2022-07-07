@@ -72,7 +72,7 @@ func Gofer(ps ...provider.Pair) provider.Provider {
 		graphs[p] = root
 	}
 
-	return graph.NewGraph(graphs, nil)
+	return graph.NewProvider(graphs, nil)
 }
 
 func Models(ps ...provider.Pair) map[provider.Pair]*provider.Model {

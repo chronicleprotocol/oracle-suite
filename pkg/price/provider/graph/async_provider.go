@@ -29,10 +29,10 @@ import (
 
 const LoggerTag = "ASYNC_GOFER"
 
-// AsyncGofer implements the gofer.Gofer interface. It works just like Graph
+// AsyncProvider implements the provider.Provider interface. It works just like Graph
 // but allows updating prices asynchronously.
-type AsyncGofer struct {
-	*Graph
+type AsyncProvider struct {
+	*Provider
 	ctx    context.Context
 	waitCh chan error
 	feeder *feeder.Feeder
@@ -40,25 +40,25 @@ type AsyncGofer struct {
 	log    log.Logger
 }
 
-// NewAsyncGofer returns a new AsyncGofer instance.
-func NewAsyncGofer(
+// NewAsyncProvider returns a new AsyncGofer instance.
+func NewAsyncProvider(
 	graph map[provider.Pair]nodes.Aggregator,
 	feeder *feeder.Feeder,
 	nodes []nodes.Node,
 	logger log.Logger,
-) (*AsyncGofer, error) {
+) (*AsyncProvider, error) {
 
-	return &AsyncGofer{
-		Graph:  NewGraph(graph, nil),
-		waitCh: make(chan error),
-		feeder: feeder,
-		nodes:  nodes,
-		log:    logger.WithField("tag", LoggerTag),
+	return &AsyncProvider{
+		Provider: NewProvider(graph, nil),
+		waitCh:   make(chan error),
+		feeder:   feeder,
+		nodes:    nodes,
+		log:      logger.WithField("tag", LoggerTag),
 	}, nil
 }
 
 // Start starts asynchronous price updater.
-func (a *AsyncGofer) Start(ctx context.Context) error {
+func (a *AsyncProvider) Start(ctx context.Context) error {
 	if a.ctx != nil {
 		return errors.New("service can be started only once")
 	}
@@ -116,11 +116,11 @@ func (a *AsyncGofer) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (a *AsyncGofer) Wait() chan error {
+func (a *AsyncProvider) Wait() chan error {
 	return a.waitCh
 }
 
-func (a *AsyncGofer) contextCancelHandler() {
+func (a *AsyncProvider) contextCancelHandler() {
 	defer func() { close(a.waitCh) }()
 	defer a.log.Info("Stopped")
 	<-a.ctx.Done()

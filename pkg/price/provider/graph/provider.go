@@ -34,22 +34,22 @@ func (e ErrPairNotFound) Error() string {
 	return fmt.Sprintf("unable to find the %s pair", e.Pair)
 }
 
-// Graph implements the gofer.Gofer interface. It uses a graph structure
-// to calculate pairs prices.
-type Graph struct {
+// Provider implements the provider.Provider interface. It uses a graph
+// structure to calculate pairs prices.
+type Provider struct {
 	graphs map[provider.Pair]nodes.Aggregator
 	feeder *feeder.Feeder
 }
 
-// NewGraph returns a new Graph instance. If the Feeder is not nil,
+// NewProvider returns a new Provider instance. If the Feeder is not nil,
 // then prices are automatically updated when the Price or Prices methods are
 // called. Otherwise, prices have to be updated externally.
-func NewGraph(graph map[provider.Pair]nodes.Aggregator, feeder *feeder.Feeder) *Graph {
-	return &Graph{graphs: graph, feeder: feeder}
+func NewProvider(graph map[provider.Pair]nodes.Aggregator, feeder *feeder.Feeder) *Provider {
+	return &Provider{graphs: graph, feeder: feeder}
 }
 
-// Models implements the gofer.Gofer interface.
-func (g *Graph) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
+// Models implements the provider.Provider interface.
+func (g *Provider) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
 	ns, err := g.findNodes(pairs...)
 	if err != nil {
 		return nil, err
@@ -63,8 +63,8 @@ func (g *Graph) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Mode
 	return res, nil
 }
 
-// Price implements the gofer.Gofer interface.
-func (g *Graph) Price(pair provider.Pair) (*provider.Price, error) {
+// Price implements the provider.Provider interface.
+func (g *Provider) Price(pair provider.Pair) (*provider.Price, error) {
 	n, ok := g.graphs[pair]
 	if !ok {
 		return nil, ErrPairNotFound{Pair: pair}
@@ -75,8 +75,8 @@ func (g *Graph) Price(pair provider.Pair) (*provider.Price, error) {
 	return mapGraphPrice(n.Price()), nil
 }
 
-// Prices implements the gofer.Gofer interface.
-func (g *Graph) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
+// Prices implements the provider.Providerinterface.
+func (g *Provider) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
 	ns, err := g.findNodes(pairs...)
 	if err != nil {
 		return nil, err
@@ -93,8 +93,8 @@ func (g *Graph) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Pric
 	return res, nil
 }
 
-// Pairs implements the gofer.Gofer interface.
-func (g *Graph) Pairs() ([]provider.Pair, error) {
+// Pairs implements the provider.Provider interface.
+func (g *Provider) Pairs() ([]provider.Pair, error) {
 	var ps []provider.Pair
 	for p := range g.graphs {
 		ps = append(ps, p)
@@ -104,7 +104,7 @@ func (g *Graph) Pairs() ([]provider.Pair, error) {
 
 // findNodes return root nodes for given pairs. If no nodes are specified,
 // then all root nodes are returned.
-func (g *Graph) findNodes(pairs ...provider.Pair) ([]nodes.Node, error) {
+func (g *Provider) findNodes(pairs ...provider.Pair) ([]nodes.Node, error) {
 	var ns []nodes.Node
 	if len(pairs) == 0 { // Return all:
 		for _, n := range g.graphs {

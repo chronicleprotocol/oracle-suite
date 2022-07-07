@@ -31,7 +31,7 @@ import (
 var (
 	agent     *Agent
 	mockGofer *mocks.Provider
-	rpcGofer  *Gofer
+	rpcGofer  *Provider
 )
 
 func TestMain(m *testing.M) {
@@ -40,10 +40,10 @@ func TestMain(m *testing.M) {
 
 	mockGofer = &mocks.Provider{}
 	agent, err = NewAgent(AgentConfig{
-		Gofer:   mockGofer,
-		Network: "tcp",
-		Address: "127.0.0.1:0",
-		Logger:  null.New(),
+		Provider: mockGofer,
+		Network:  "tcp",
+		Address:  "127.0.0.1:0",
+		Logger:   null.New(),
 	})
 	if err != nil {
 		panic(err)
@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 	if err = agent.Start(ctx); err != nil {
 		panic(err)
 	}
-	rpcGofer, err = NewGofer("tcp", agent.listener.Addr().String())
+	rpcGofer, err = NewProvider("tcp", agent.listener.Addr().String())
 	if err != nil {
 		panic(err)
 	}

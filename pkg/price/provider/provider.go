@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 // Provider provides prices for asset pairs.
@@ -35,11 +33,6 @@ type Provider interface {
 	Prices(pairs ...Pair) (map[Pair]*Price, error)
 	// Pairs returns all pairs.
 	Pairs() ([]Pair, error)
-}
-
-type Service interface {
-	Provider
-	supervisor.Service
 }
 
 // Pair represents an asset pair.

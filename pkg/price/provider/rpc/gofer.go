@@ -23,11 +23,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
-var ErrNotStarted = errors.New("gofer RPC client is not started")
+var ErrNotStarted = errors.New("price provider RPC client is not started")
 
-// Gofer implements the gofer.Gofer interface. It uses a remote RPC server
-// to fetch prices and models.
-type Gofer struct {
+// Provider implements the provider.Provider interface. It uses a remote RPC
+// server to fetch prices and models.
+type Provider struct {
 	ctx    context.Context
 	waitCh chan error
 
@@ -36,17 +36,17 @@ type Gofer struct {
 	address string
 }
 
-// NewGofer returns a new Gofer instance.
-func NewGofer(network, address string) (*Gofer, error) {
-	return &Gofer{
+// NewProvider returns a new Provider instance.
+func NewProvider(network, address string) (*Provider, error) {
+	return &Provider{
 		waitCh:  make(chan error),
 		network: network,
 		address: address,
 	}, nil
 }
 
-// Start implements the gofer.StartableGofer interface.
-func (g *Gofer) Start(ctx context.Context) error {
+// Start implements the supervisor.Service interface.
+func (g *Provider) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
@@ -60,13 +60,13 @@ func (g *Gofer) Start(ctx context.Context) error {
 	return nil
 }
 
-// Wait implements the gofer.StartableGofer interface.
-func (g *Gofer) Wait() chan error {
+// Wait implements the supervisor.Service interface.
+func (g *Provider) Wait() chan error {
 	return g.waitCh
 }
 
-// Models implements the gofer.Gofer interface.
-func (g *Gofer) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
+// Models implements the provider.Provider interface.
+func (g *Provider) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Model, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -78,8 +78,8 @@ func (g *Gofer) Models(pairs ...provider.Pair) (map[provider.Pair]*provider.Mode
 	return resp.Pairs, nil
 }
 
-// Price implements the gofer.Gofer interface.
-func (g *Gofer) Price(pair provider.Pair) (*provider.Price, error) {
+// Price implements the provider.Provider interface.
+func (g *Provider) Price(pair provider.Pair) (*provider.Price, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -90,8 +90,8 @@ func (g *Gofer) Price(pair provider.Pair) (*provider.Price, error) {
 	return resp[pair], nil
 }
 
-// Prices implements the gofer.Gofer interface.
-func (g *Gofer) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
+// Prices implements the provider.Provider interface.
+func (g *Provider) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -103,8 +103,8 @@ func (g *Gofer) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Pric
 	return resp.Prices, nil
 }
 
-// Pairs implements the gofer.Gofer interface.
-func (g *Gofer) Pairs() ([]provider.Pair, error) {
+// Pairs implements the provider.Provider interface.
+func (g *Provider) Pairs() ([]provider.Pair, error) {
 	if g.rpc == nil {
 		return nil, ErrNotStarted
 	}
@@ -116,7 +116,7 @@ func (g *Gofer) Pairs() ([]provider.Pair, error) {
 	return resp.Pairs, nil
 }
 
-func (g *Gofer) contextCancelHandler() {
+func (g *Provider) contextCancelHandler() {
 	<-g.ctx.Done()
 	g.waitCh <- g.rpc.Close()
 }

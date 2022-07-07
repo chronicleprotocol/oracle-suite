@@ -254,7 +254,7 @@ func init() {
 }
 
 func TestGofer_Models_SinglePair(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	r, err := g.Models(testPairs["A/B"])
 
 	assert.Equal(t, map[provider.Pair]*provider.Model{
@@ -264,7 +264,7 @@ func TestGofer_Models_SinglePair(t *testing.T) {
 }
 
 func TestGofer_Models_AllPairs(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	r, err := g.Models()
 
 	assert.Equal(t, map[provider.Pair]*provider.Model{
@@ -275,14 +275,14 @@ func TestGofer_Models_AllPairs(t *testing.T) {
 }
 
 func TestGofer_Models_MissingPair(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	_, err := g.Models(provider.Pair{})
 
 	assert.True(t, errors.As(err, &ErrPairNotFound{}))
 }
 
 func TestGofer_Price(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	r, err := g.Price(testPairs["A/B"])
 
 	assert.Equal(t, testPrices["A/B"], r)
@@ -290,14 +290,14 @@ func TestGofer_Price(t *testing.T) {
 }
 
 func TestGofer_Price_MissingPair(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	_, err := g.Price(provider.Pair{})
 
 	assert.True(t, errors.As(err, &ErrPairNotFound{}))
 }
 
 func TestGofer_Prices_SinglePair(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	r, err := g.Prices(testPairs["A/B"])
 
 	assert.Equal(t, map[provider.Pair]*provider.Price{
@@ -307,7 +307,7 @@ func TestGofer_Prices_SinglePair(t *testing.T) {
 }
 
 func TestGofer_Prices_AllPair(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	r, err := g.Prices()
 
 	assert.Equal(t, map[provider.Pair]*provider.Price{
@@ -318,7 +318,7 @@ func TestGofer_Prices_AllPair(t *testing.T) {
 }
 
 func TestGofer_Prices_MissingPair(t *testing.T) {
-	g := NewGraph(testGraph, testFeeder)
+	g := NewProvider(testGraph, testFeeder)
 	_, err := g.Prices(provider.Pair{})
 
 	assert.True(t, errors.As(err, &ErrPairNotFound{}))

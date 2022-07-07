@@ -26,14 +26,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
-const AgentLoggerTag = "GOFER_AGENT"
+const AgentLoggerTag = "PRICE_PROVIDER_AGENT"
 
 type AgentConfig struct {
-	// Gofer instance which will be used by the agent. If this instance
-	// implements the gofer.StartableGofer interface, the Start and Stop
-	// methods are called whenever corresponding Agent's Start and
-	// Stop are called.
-	Gofer provider.Provider
+	// Provider instance which will be used by the agent.
+	Provider provider.Provider
 	// Network is used for the rpc.Listener function.
 	Network string
 	// Address is used for the rpc.Listener function.
@@ -41,7 +38,7 @@ type AgentConfig struct {
 	Logger  log.Logger
 }
 
-// Agent creates and manages an RPC server for remote Gofer calls.
+// Agent creates and manages an RPC server for remote Provider calls.
 type Agent struct {
 	ctx    context.Context
 	waitCh chan error
@@ -59,8 +56,8 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	server := &Agent{
 		waitCh: make(chan error),
 		api: &API{
-			gofer: cfg.Gofer,
-			log:   cfg.Logger.WithField("tag", AgentLoggerTag),
+			provider: cfg.Provider,
+			log:      cfg.Logger.WithField("tag", AgentLoggerTag),
 		},
 		rpc:     rpc.NewServer(),
 		network: cfg.Network,
