@@ -84,7 +84,7 @@ is `config.json` in the current working directory. You can change the config fil
     "password": "password"
   },
   "spire": {
-    "listenAddr": "127.0.0.1:9100",
+    "rpcListenAddr": "127.0.0.1:9100",
     "pairs": [
       "AAVEUSD",
       "AVAXUSD",
@@ -171,7 +171,7 @@ is `config.json` in the current working directory. You can change the config fil
                 - `min` - Use lower one.
                 - `replace` (default) - Replace the value with a newer one.
 - `spire` - Spire configuration.
-    - `listenAddr` (`string`) - Listen address for the RPC endpoint provided as the combination of IP address and
+    - `rpcListenAddr` (`string`) - Listen address for the RPC endpoint provided as the combination of IP address and
       port number.
     - `pairs` (`[]string`) - List of price pairs to be monitored. Only pairs in this list will be available via pull
       command.
@@ -214,7 +214,6 @@ spire pull prices
 ```bash
 spire pull price BTCUSD 0xFeedEthereumAddress
 ```
-
 
 ## Commands
 

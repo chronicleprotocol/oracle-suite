@@ -123,7 +123,7 @@ is `config.json` in the current working directory. You can change the config fil
 ### Configuration reference
 
 - `transport` - Configuration parameters for transports mechanisms used to relay messages.
-    - `transport` (string) - Transport to use. Supported mechanism are: `libp2p` and `ssb`. If empty, thw `libp2p` is
+    - `transport` (string) - Transport to use. Supported mechanism are: `libp2p` and `ssb`. If empty, the `libp2p` is
       used.
     - `libp2p` - Configuration parameters for the libp2p transport (Spire network).
         - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the
@@ -175,9 +175,8 @@ is `config.json` in the current working directory. You can change the config fil
     - `listeners` - Event listeners configuration.
         - `[]teleportEVM` - Configuration of teleport bridge events on EVM compatible blockchains.
             - `ethereum` - Ethereum client configuration.
-                - `rpc` (`string|[]string`) - List of RPC server addresses. If more than one is used, rpc-splitter is
-                  used.
-                  It is recommended to use at least three addresses from different providers.
+                - `rpc` (`string|[]string`) - List of RPC server addresses. It is recommended to use at least three
+                  addresses from different providers.
                 - `timeout` (`int`) - total timeout in seconds (default: 10).
                 - `gracefulTimeout` (`int`) - timeout to graceful finish requests to slower RPC nodes, it is used only
                   when it is possible to return a correct response using responses from the remaining RPC nodes (
@@ -231,7 +230,6 @@ Flags:
       --version                                        version for leeloo
 
 Use "leeloo [command] --help" for more information about a command.
-➜  oracle-suite git:(sc-448/lair-storage-mechanism) ✗ 
 
 ```
 

@@ -39,9 +39,9 @@ var datastoreFactory = func(cfg storeMemory.Config) (store.Store, error) {
 }
 
 type Spire struct {
-	RPC        RPC      `json:"rpc"` // Olf configuration format, to remove in the future.
-	ListenAddr string   `json:"listenAddr"`
-	Pairs      []string `json:"pairs"`
+	RPC           RPC      `json:"rpc"` // Old configuration format, to remove in the future.
+	RPCListenAddr string   `json:"rpcListenAddr"`
+	Pairs         []string `json:"pairs"`
 }
 
 type RPC struct {
@@ -68,15 +68,15 @@ type DatastoreDependencies struct {
 }
 
 func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
-	rpc := c.RPC.Address
-	if len(c.ListenAddr) != 0 {
-		rpc = c.ListenAddr
+	listenAddr := c.RPC.Address
+	if len(c.RPCListenAddr) != 0 {
+		listenAddr = c.RPCListenAddr
 	}
 	agent, err := spireAgentFactory(spire.AgentConfig{
 		Datastore: d.Datastore,
 		Transport: d.Transport,
 		Signer:    d.Signer,
-		Address:   rpc,
+		Address:   listenAddr,
 		Logger:    d.Logger,
 	})
 	if err != nil {
@@ -86,9 +86,13 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 }
 
 func (c *Spire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
+	listenAddr := c.RPC.Address
+	if len(c.RPCListenAddr) != 0 {
+		listenAddr = c.RPCListenAddr
+	}
 	return spireClientFactory(spire.ClientConfig{
 		Signer:  d.Signer,
-		Address: c.RPC.Address,
+		Address: listenAddr,
 	})
 }
 
