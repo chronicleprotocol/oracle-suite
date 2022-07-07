@@ -294,7 +294,6 @@ func TestConfig_buildGraphs_UpdatedOriginURL(t *testing.T) {
 		Origins: map[string]Origin{
 			"ab": {
 				Type:   "binance",
-				Name:   "ab",
 				URL:    url,
 				Params: []byte(`{}`),
 			},
