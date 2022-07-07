@@ -1,28 +1,13 @@
 {
-  "transport": {
-    "libp2p": {
-      "privKeySeed": "",
-      "listenAddrs": ["/ip4/0.0.0.0/tcp/8000"],
-      "bootstrapAddrs": [],
-      "directPeersAddrs": [],
-      "blockedAddrs": [],
-      "disableDiscovery": false
-    },
-    "ssb": {
-      "caps": "./caps.json",
-      "key": "./ssb.json"
-    }
-  },
   "ethereum": {
     "from": "",
     "keystore": "",
     "password": "",
-    "rpc": "http://127.0.0.1:8545"
+    "rpc": "http://smocker:8080"
   },
   "gofer": {
     "rpc": {
-      "disable": false,
-      "address": "127.0.0.1:9000"
+      "disable": true
     },
     "origins": {
       "binance": {

@@ -69,6 +69,7 @@ func (s *PriceRETHUSDE2ESuite) TestPrice() {
 		Add(origin.NewExchange("bitstamp").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("bittrex").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("gemini").WithSymbol("BTC/USD").WithPrice(1)).
+		Add(origin.NewExchange("ethrpc")).
 		Deploy(s.api)
 
 	s.Require().NoError(err)

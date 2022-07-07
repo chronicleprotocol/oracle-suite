@@ -29,7 +29,7 @@ node_modules
 /package*.json
 
 # Go Workspaces
-/go.work
+go.work
 
 # These are all generated from e2e/wormhole/init.sh and are git pulled. No need
 # to track.

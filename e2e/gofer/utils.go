@@ -33,8 +33,7 @@ func (s *SmockerAPISuite) Setup() {
 	}
 
 	s.api = smocker.API{
-		Host: smockerHost,
-		Port: smockerPort,
+		URL: fmt.Sprintf("%s:%d", smockerHost, smockerPort),
 	}
 
 	s.url = fmt.Sprintf("%s:8080", smockerHost)
