@@ -63,9 +63,10 @@ func (e ErrCyclicReference) Error() string {
 }
 
 type Gofer struct {
-	RPC         RPC                   `json:"rpc"`
-	Origins     map[string]Origin     `json:"origins"`
-	PriceModels map[string]PriceModel `json:"priceModels"`
+	RPC           RPC                   `json:"rpc"` // Old configuration format, to remove in the future.
+	RPCListenAddr string                `json:"rpcListenAddr"`
+	Origins       map[string]Origin     `json:"origins"`
+	PriceModels   map[string]PriceModel `json:"priceModels"`
 }
 
 type RPC struct {
@@ -74,8 +75,7 @@ type RPC struct {
 
 type Origin struct {
 	Type   string          `json:"type"`
-	Name   string          `json:"name"`
-	URL    string          `json:"url"`
+	URL    string          `json:"url"` // TODO: Move it to the params field.
 	Params json.RawMessage `json:"params"`
 }
 
@@ -98,10 +98,14 @@ type Source struct {
 
 // ConfigureRPCAgent returns a new rpc.Agent instance.
 func (c *Gofer) ConfigureRPCAgent(cli ethereum.Client, gof provider.Provider, logger log.Logger) (*rpc.Agent, error) {
+	listenAddr := c.RPC.Address
+	if len(c.RPCListenAddr) != 0 {
+		listenAddr = c.RPCListenAddr
+	}
 	srv, err := rpc.NewAgent(rpc.AgentConfig{
 		Provider: gof,
 		Network:  "tcp",
-		Address:  c.RPC.Address,
+		Address:  listenAddr,
 		Logger:   logger,
 	})
 	if err != nil {
@@ -134,7 +138,11 @@ func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (pro
 
 // ConfigureGofer returns a new async gofer instance.
 func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
-	if c.RPC.Address == "" || noRPC {
+	listenAddr := c.RPC.Address
+	if len(c.RPCListenAddr) != 0 {
+		listenAddr = c.RPCListenAddr
+	}
+	if listenAddr == "" || noRPC {
 		gra, err := c.buildGraphs()
 		if err != nil {
 			return nil, fmt.Errorf("unable to load price models: %w", err)
@@ -147,12 +155,12 @@ func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC boo
 		gof := graph.NewProvider(gra, fed)
 		return gof, nil
 	}
-	return c.configureRPCClient()
+	return c.configureRPCClient(listenAddr)
 }
 
 // configureRPCClient returns a new rpc.RPC instance.
-func (c *Gofer) configureRPCClient() (*rpc.Provider, error) {
-	return rpc.NewProvider("tcp", c.RPC.Address)
+func (c *Gofer) configureRPCClient(listenAddr string) (*rpc.Provider, error) {
+	return rpc.NewProvider("tcp", listenAddr)
 }
 
 func (c *Gofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) {
@@ -162,8 +170,9 @@ func (c *Gofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) {
 	for name, origin := range c.Origins {
 		handler, err := NewHandler(origin.Type, wp, cli, origin.URL, origin.Params)
 		if err != nil || handler == nil {
-			return nil, fmt.Errorf("failed to initiate %s origin with name %s due to error: %w",
-				origin.Type, origin.Name, err)
+			return nil, fmt.Errorf(
+				"failed to initiate %s origin with name %s due to error: %w", origin.Type, name, err,
+			)
 		}
 		originSet.SetHandler(name, handler)
 	}
