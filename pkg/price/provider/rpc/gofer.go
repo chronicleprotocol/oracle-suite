@@ -47,6 +47,9 @@ func NewProvider(network, address string) (*Provider, error) {
 
 // Start implements the supervisor.Service interface.
 func (g *Provider) Start(ctx context.Context) error {
+	if g.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}

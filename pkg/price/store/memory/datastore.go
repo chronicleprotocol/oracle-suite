@@ -81,85 +81,88 @@ func NewDatastore(cfg Config) (*Datastore, error) {
 }
 
 // Start implements the store.Store interface.
-func (c *Datastore) Start(ctx context.Context) error {
-	c.log.Info("Starting")
+func (d *Datastore) Start(ctx context.Context) error {
+	if d.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	c.ctx = ctx
-	go c.contextCancelHandler()
-	return c.collectorLoop()
+	d.log.Info("Starting")
+	d.ctx = ctx
+	go d.contextCancelHandler()
+	return d.collectorLoop()
 }
 
 // Wait implements the store.Store interface.
-func (c *Datastore) Wait() chan error {
-	return c.waitCh
+func (d *Datastore) Wait() chan error {
+	return d.waitCh
 }
 
 // Prices implements the store.Store interface.
-func (c *Datastore) Prices() store.PriceStore {
-	return c.priceStore
+func (d *Datastore) Prices() store.PriceStore {
+	return d.priceStore
 }
 
 // collectPrice adds a price from a feeder which may be used to update
 // Oracle contract. The price will be added only if a feeder is
 // allowed to send prices.
-func (c *Datastore) collectPrice(msg *messages.Price) error {
-	from, err := msg.Price.From(c.signer)
+func (d *Datastore) collectPrice(msg *messages.Price) error {
+	from, err := msg.Price.From(d.signer)
 	if err != nil {
 		return errInvalidSignature
 	}
-	if _, ok := c.pairs[msg.Price.Wat]; !ok {
+	if _, ok := d.pairs[msg.Price.Wat]; !ok {
 		return errUnknownPair
 	}
-	if !c.isFeedAllowed(msg.Price.Wat, *from) {
+	if !d.isFeedAllowed(msg.Price.Wat, *from) {
 		return errUnknownFeeder
 	}
 	if msg.Price.Val.Cmp(big.NewInt(0)) <= 0 {
 		return errInvalidPrice
 	}
 
-	c.priceStore.Add(*from, msg)
+	d.priceStore.Add(*from, msg)
 
 	return nil
 }
 
 // collectorLoop creates a asynchronous loop which fetches prices from feeders.
-func (c *Datastore) collectorLoop() error {
+func (d *Datastore) collectorLoop() error {
 	go func() {
-		c.mu.Lock()
-		defer c.mu.Unlock()
+		d.mu.Lock()
+		defer d.mu.Unlock()
 
 		for {
 			select {
-			case <-c.ctx.Done():
+			case <-d.ctx.Done():
 				return
-			case m := <-c.transport.Messages(messages.PriceMessageName):
+			case m := <-d.transport.Messages(messages.PriceMessageName):
 				// If there was a problem while reading prices from the transport:
 				if m.Error != nil {
-					c.log.
+					d.log.
 						WithError(m.Error).
 						Warn("Unable to read prices from the transport")
 					continue
 				}
 				price, ok := m.Message.(*messages.Price)
 				if !ok {
-					c.log.Error("Unexpected value returned from transport layer")
+					d.log.Error("Unexpected value returned from transport layer")
 					continue
 				}
 
 				// Try to collect received price:
-				err := c.collectPrice(price)
+				err := d.collectPrice(price)
 
 				// Print logs:
 				if err != nil {
-					c.log.
+					d.log.
 						WithError(err).
-						WithFields(price.Price.Fields(c.signer)).
+						WithFields(price.Price.Fields(d.signer)).
 						Warn("Received invalid price")
 				} else {
-					c.log.
-						WithFields(price.Price.Fields(c.signer)).
+					d.log.
+						WithFields(price.Price.Fields(d.signer)).
 						Info("Price received")
 				}
 			}
@@ -169,8 +172,8 @@ func (c *Datastore) collectorLoop() error {
 	return nil
 }
 
-func (c *Datastore) isFeedAllowed(assetPair string, address ethereum.Address) bool {
-	for _, a := range c.pairs[assetPair].Feeds {
+func (d *Datastore) isFeedAllowed(assetPair string, address ethereum.Address) bool {
+	for _, a := range d.pairs[assetPair].Feeds {
 		if a == address {
 			return true
 		}
@@ -178,8 +181,8 @@ func (c *Datastore) isFeedAllowed(assetPair string, address ethereum.Address) bo
 	return false
 }
 
-func (c *Datastore) contextCancelHandler() {
-	defer func() { close(c.waitCh) }()
-	defer c.log.Info("Stopped")
-	<-c.ctx.Done()
+func (d *Datastore) contextCancelHandler() {
+	defer func() { close(d.waitCh) }()
+	defer d.log.Info("Stopped")
+	<-d.ctx.Done()
 }

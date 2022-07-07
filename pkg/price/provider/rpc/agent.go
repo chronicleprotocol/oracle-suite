@@ -76,13 +76,16 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 
 // Start starts the RPC server.
 func (s *Agent) Start(ctx context.Context) error {
-	s.log.Infof("Starting")
-	var err error
-
+	if s.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	s.log.Infof("Starting")
 	s.ctx = ctx
+
+	var err error
 
 	// Start RPC server:
 	s.listener, err = net.Listen(s.network, s.address)

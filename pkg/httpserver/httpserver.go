@@ -91,6 +91,9 @@ func (s *HTTPServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 // Start starts HTTP server.
 func (s *HTTPServer) Start(ctx context.Context) error {
+	if s.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}

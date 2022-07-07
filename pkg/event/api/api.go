@@ -84,10 +84,13 @@ func New(cfg Config) (*EventAPI, error) {
 
 // Start starts HTTP server.
 func (e *EventAPI) Start(ctx context.Context) error {
-	e.log.Infof("Starting")
+	if e.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	e.log.Infof("Starting")
 	e.ctx = ctx
 	err := e.srv.Start(ctx)
 	if err != nil {

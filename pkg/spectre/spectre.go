@@ -115,10 +115,13 @@ func NewSpectre(cfg Config) (*Spectre, error) {
 }
 
 func (s *Spectre) Start(ctx context.Context) error {
-	s.log.Info("Starting")
+	if s.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	s.log.Info("Starting")
 	s.ctx = ctx
 	go s.contextCancelHandler()
 	s.relayerLoop()

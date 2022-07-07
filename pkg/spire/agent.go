@@ -67,10 +67,13 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 }
 
 func (s *Agent) Start(ctx context.Context) error {
-	s.log.Infof("Starting")
+	if s.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	s.log.Infof("Starting")
 	s.ctx = ctx
 	err := s.srv.Start(ctx)
 	if err != nil {

@@ -89,11 +89,13 @@ func NewGhost(cfg Config) (*Ghost, error) {
 }
 
 func (g *Ghost) Start(ctx context.Context) error {
-	g.log.Infof("Starting")
-
+	if g.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	g.log.Infof("Starting")
 	g.ctx = ctx
 
 	// Unfortunately, the Provider stores pairs in the AAA/BBB format but Ghost
