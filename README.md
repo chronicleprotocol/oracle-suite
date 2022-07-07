@@ -17,6 +17,12 @@ A peer-to-peer node & client for broadcast signed asset prices.
 
 see: [Spire CLI Readme](cmd/spire/README.md)
 
+## Spire-Bootstrap
+
+A bootstrap node for the Spire network.
+
+see: [Spire Bootstrap CLI Readme](cmd/spire-bootstrap/README.md)
+
 ## Leeloo
 
 A tool to observe and attest blockchain events.

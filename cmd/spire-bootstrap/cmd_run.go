@@ -28,7 +28,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Use:     "run",
 		Args:    cobra.ExactArgs(0),
 		Aliases: []string{"agent"},
-		Short:   "",
+		Short:   "Starts bootstrap node",
 		Long:    ``,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
