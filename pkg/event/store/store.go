@@ -21,6 +21,7 @@ import (
 	"errors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -41,10 +42,10 @@ type EventStore struct {
 type Config struct {
 	Storage   Storage
 	Transport transport.Transport
-	Log       log.Logger
+	Logger    log.Logger
 }
 
-// Storage provides an interface to the event storage mechanism.
+// Storage provides an interface to the event storage.
 type Storage interface {
 	// Add adds an event to the store. If the event already exists, it will be
 	// updated if the MessageDate is newer. The first argument is true if the
@@ -57,10 +58,19 @@ type Storage interface {
 
 // New returns a new instance of the EventStore struct.
 func New(cfg Config) (*EventStore, error) {
+	if cfg.Storage == nil {
+		return nil, errors.New("storage must not be nil")
+	}
+	if cfg.Transport == nil {
+		return nil, errors.New("transport must not be nil")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	return &EventStore{
 		storage:   cfg.Storage,
 		transport: cfg.Transport,
-		log:       cfg.Log.WithField("tag", LoggerTag),
+		log:       cfg.Logger.WithField("tag", LoggerTag),
 		waitCh:    make(chan error),
 	}, nil
 }

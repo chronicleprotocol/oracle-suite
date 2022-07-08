@@ -73,7 +73,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	evs, err := store.New(store.Config{
 		Storage:   sto,
 		Transport: tra,
-		Log:       log,
+		Logger:    log,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)

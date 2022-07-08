@@ -41,7 +41,7 @@ type Provider struct {
 	feeder *feeder.Feeder
 }
 
-// NewProvider returns a new Provider instance. If the Feeder is not nil,
+// NewProvider returns a new Provider instance. If the GetByFeeder is not nil,
 // then prices are automatically updated when the Price or Prices methods are
 // called. Otherwise, prices have to be updated externally.
 func NewProvider(graph map[provider.Pair]nodes.Aggregator, feeder *feeder.Feeder) *Provider {

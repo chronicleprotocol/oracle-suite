@@ -38,7 +38,7 @@ func TestEventStore(t *testing.T) {
 	evs, err := New(Config{
 		Storage:   mem,
 		Transport: tra,
-		Log:       null.New(),
+		Logger:    null.New(),
 	})
 	require.NoError(t, err)
 

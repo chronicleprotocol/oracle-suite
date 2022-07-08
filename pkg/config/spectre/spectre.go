@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -33,8 +33,9 @@ var spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
 	return spectre.NewSpectre(cfg)
 }
 
-var datastoreFactory = func(cfg datastoreMemory.Config) (store.Store, error) {
-	return datastoreMemory.NewDatastore(cfg)
+//nolint
+var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
+	return store.New(cfg)
 }
 
 type Spectre struct {
@@ -51,13 +52,13 @@ type Medianizer struct {
 
 type Dependencies struct {
 	Signer         ethereum.Signer
-	Datastore      store.Store
+	PriceStore     *store.PriceStore
 	EthereumClient ethereum.Client
 	Feeds          []ethereum.Address
 	Logger         log.Logger
 }
 
-type DatastoreDependencies struct {
+type PriceStoreDependencies struct {
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Feeds     []ethereum.Address
@@ -66,10 +67,10 @@ type DatastoreDependencies struct {
 
 func (c *Spectre) ConfigureSpectre(d Dependencies) (*spectre.Spectre, error) {
 	cfg := spectre.Config{
-		Signer:    d.Signer,
-		Interval:  time.Second * time.Duration(c.Interval),
-		Datastore: d.Datastore,
-		Logger:    d.Logger,
+		Signer:     d.Signer,
+		Interval:   time.Second * time.Duration(c.Interval),
+		PriceStore: d.PriceStore,
+		Logger:     d.Logger,
 	}
 	for name, pair := range c.Medianizers {
 		cfg.Pairs = append(cfg.Pairs, &spectre.Pair{
@@ -83,15 +84,14 @@ func (c *Spectre) ConfigureSpectre(d Dependencies) (*spectre.Spectre, error) {
 	return spectreFactory(cfg)
 }
 
-func (c *Spectre) ConfigureDatastore(d DatastoreDependencies) (store.Store, error) {
-	cfg := datastoreMemory.Config{
+func (c *Spectre) ConfigurePriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
+	cfg := store.Config{
+		Storage:   store.NewMemoryStorage(),
 		Signer:    d.Signer,
 		Transport: d.Transport,
-		Pairs:     make(map[string]*datastoreMemory.Pair),
+		Pairs:     maputil.Keys(c.Medianizers),
 		Logger:    d.Logger,
 	}
-	for name := range c.Medianizers {
-		cfg.Pairs[name] = &datastoreMemory.Pair{Feeds: d.Feeds}
-	}
-	return datastoreFactory(cfg)
+
+	return priceStoreFactory(cfg)
 }

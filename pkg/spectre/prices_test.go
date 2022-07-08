@@ -24,12 +24,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory/testutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/store/testutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 func TestPrices_len(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,
@@ -40,7 +40,7 @@ func TestPrices_len(t *testing.T) {
 }
 
 func TestPrices_messages(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,
@@ -55,7 +55,7 @@ func TestPrices_messages(t *testing.T) {
 }
 
 func TestPrices_oraclePrices(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,
@@ -77,21 +77,21 @@ func TestPrices_truncate(t *testing.T) {
 		testutil.PriceAAABBB4,
 	}
 
-	ps1 := newPrices(msgs)
+	ps1 := newPricesList(msgs)
 	ps1.truncate(5)
 	assert.Len(t, ps1.messages(), 4)
 
-	ps2 := newPrices(msgs)
+	ps2 := newPricesList(msgs)
 	ps2.truncate(4)
 	assert.Len(t, ps2.messages(), 4)
 
-	ps3 := newPrices(msgs)
+	ps3 := newPricesList(msgs)
 	ps3.truncate(3)
 	assert.Len(t, ps3.messages(), 3)
 }
 
 func TestPrices_median_Even(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,
@@ -102,7 +102,7 @@ func TestPrices_median_Even(t *testing.T) {
 }
 
 func TestPrices_Median_Odd(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,
@@ -112,13 +112,13 @@ func TestPrices_Median_Odd(t *testing.T) {
 }
 
 func TestPrices_Median_Empty(t *testing.T) {
-	ps := newPrices([]*messages.Price{})
+	ps := newPricesList([]*messages.Price{})
 
 	assert.Equal(t, big.NewInt(0), ps.median())
 }
 
 func TestPrices_spread(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,
@@ -154,7 +154,7 @@ func TestPrices_spread(t *testing.T) {
 }
 
 func TestPrices_clearOlderThan(t *testing.T) {
-	ps := newPrices([]*messages.Price{
+	ps := newPricesList([]*messages.Price{
 		testutil.PriceAAABBB1,
 		testutil.PriceAAABBB2,
 		testutil.PriceAAABBB3,

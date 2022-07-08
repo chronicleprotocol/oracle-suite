@@ -20,6 +20,7 @@ import (
 	"errors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -61,6 +62,12 @@ type Signer interface {
 
 // New returns a new instance of the EventPublisher struct.
 func New(cfg Config) (*EventPublisher, error) {
+	if cfg.Transport == nil {
+		return nil, errors.New("transport must not be nil")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	return &EventPublisher{
 		waitCh:    make(chan error),
 		transport: cfg.Transport,

@@ -25,23 +25,23 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
 )
 
 func TestSpectre_Configure(t *testing.T) {
 	prevSpectreFactory := spectreFactory
-	prevDatastoreFactory := datastoreFactory
+	prevDatastoreFactory := priceStoreFactory
 	defer func() {
 		spectreFactory = prevSpectreFactory
-		datastoreFactory = prevDatastoreFactory
+		priceStoreFactory = prevDatastoreFactory
 	}()
 
 	interval := int64(10)
 	signer := &ethereumMocks.Signer{}
 	ethClient := &ethereumMocks.Client{}
 	feeds := []ethereum.Address{ethereum.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")}
-	ds := &datastoreMemory.Datastore{}
+	ps := &store.PriceStore{}
 	logger := null.New()
 
 	config := Spectre{
@@ -58,7 +58,7 @@ func TestSpectre_Configure(t *testing.T) {
 
 	spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
 		assert.Equal(t, signer, cfg.Signer)
-		assert.Equal(t, ds, cfg.Datastore)
+		assert.Equal(t, ps, cfg.PriceStore)
 		assert.Equal(t, secToDuration(interval), cfg.Interval)
 		assert.Equal(t, logger, cfg.Logger)
 		assert.Equal(t, "AAABBB", cfg.Pairs[0].AssetPair)
@@ -71,7 +71,7 @@ func TestSpectre_Configure(t *testing.T) {
 
 	s, err := config.ConfigureSpectre(Dependencies{
 		Signer:         signer,
-		Datastore:      ds,
+		PriceStore:     ps,
 		EthereumClient: ethClient,
 		Feeds:          feeds,
 		Logger:         logger,

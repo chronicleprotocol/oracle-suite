@@ -41,7 +41,7 @@ func TestEventAPI(t *testing.T) {
 	evs, err := store.New(store.Config{
 		Storage:   mem,
 		Transport: loc,
-		Log:       null.New(),
+		Logger:    null.New(),
 	})
 	require.NoError(t, err)
 	api, err := New(Config{

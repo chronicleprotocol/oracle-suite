@@ -74,7 +74,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	dat, err := opts.Config.Spectre.ConfigureDatastore(spectreConfig.DatastoreDependencies{
+	pst, err := opts.Config.Spectre.ConfigurePriceStore(spectreConfig.PriceStoreDependencies{
 		Signer:    sig,
 		Transport: tra,
 		Feeds:     fed,
@@ -85,7 +85,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	}
 	spe, err := opts.Config.Spectre.ConfigureSpectre(spectreConfig.Dependencies{
 		Signer:         sig,
-		Datastore:      dat,
+		PriceStore:     pst,
 		EthereumClient: cli,
 		Logger:         log,
 	})
@@ -93,6 +93,6 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra, dat, spe, sysmon.New(time.Minute, log))
+	sup.Watch(tra, pst, spe, sysmon.New(time.Minute, log))
 	return sup, nil
 }

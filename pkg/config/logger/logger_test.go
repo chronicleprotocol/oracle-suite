@@ -90,7 +90,7 @@ func TestLogger_Configure(t *testing.T) {
 		},
 	}
 
-	grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) log.Logger {
+	grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) (log.Logger, error) {
 		assert.Equal(t, log.Panic, lvl)
 		assert.Equal(t, uint(60), cfg.Interval)
 		assert.Equal(t, http.DefaultClient, cfg.HTTPClient)
@@ -116,7 +116,7 @@ func TestLogger_Configure(t *testing.T) {
 		assert.NotNil(t, cfg.Metrics[9].TransformFunc)
 		assert.Equal(t, 100.0, cfg.Metrics[9].TransformFunc(1))
 
-		return cfg.Logger
+		return cfg.Logger, nil
 	}
 
 	l, err := config.Configure(Dependencies{

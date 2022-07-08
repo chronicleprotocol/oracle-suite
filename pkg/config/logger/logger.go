@@ -30,7 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/grafana"
 )
 
-var grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) log.Logger {
+var grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) (log.Logger, error) {
 	return grafana.New(context.Background(), lvl, cfg)
 }
 
@@ -115,14 +115,18 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 			interval = 1
 		}
 
-		loggers = append(loggers, grafanaLoggerFactory(d.BaseLogger.Level(), grafana.Config{
+		grafanaLogger, err := grafanaLoggerFactory(d.BaseLogger.Level(), grafana.Config{
 			Metrics:          ms,
 			Interval:         uint(interval),
 			GraphiteEndpoint: c.Grafana.Endpoint,
 			GraphiteAPIKey:   c.Grafana.APIKey,
 			HTTPClient:       http.DefaultClient,
 			Logger:           d.BaseLogger,
-		}))
+		})
+		if err != nil {
+			return nil, fmt.Errorf("logger config: unable to create grafana logger: %s", err)
+		}
+		loggers = append(loggers, grafanaLogger)
 	}
 
 	logger := chain.New(loggers...)

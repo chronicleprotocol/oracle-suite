@@ -16,7 +16,9 @@
 package spire
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -25,13 +27,15 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+const defaultTimeout = time.Minute
+
 type Nothing = struct{}
 
 type API struct {
-	transport transport.Transport
-	datastore store.Store
-	signer    ethereum.Signer
-	log       log.Logger
+	transport  transport.Transport
+	priceStore *store.PriceStore
+	signer     ethereum.Signer
+	log        log.Logger
 }
 
 type PublishPriceArg struct {
@@ -65,20 +69,39 @@ func (n *API) PublishPrice(arg *PublishPriceArg, _ *Nothing) error {
 }
 
 func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer ctxCancel()
+
 	n.log.
 		WithField("assetPair", arg.FilterAssetPair).
 		WithField("feeder", arg.FilterFeeder).
 		Info("Pull prices")
 
+	var err error
 	var prices []*messages.Price
-	for fp, p := range n.datastore.Prices().All() {
-		if arg.FilterAssetPair != "" && arg.FilterAssetPair != fp.AssetPair {
-			continue
+
+	switch {
+	case arg.FilterAssetPair != "" && arg.FilterFeeder != "":
+		price, err := n.priceStore.GetByFeeder(ctx, arg.FilterAssetPair, ethereum.HexToAddress(arg.FilterFeeder))
+		if err != nil {
+			return err
 		}
-		if arg.FilterFeeder != "" && !strings.EqualFold(arg.FilterFeeder, fp.Feeder.String()) {
-			continue
+		prices = []*messages.Price{price}
+	case arg.FilterAssetPair != "":
+		prices, err = n.priceStore.GetByAssetPair(ctx, arg.FilterAssetPair)
+		if err != nil {
+			return err
 		}
-		prices = append(prices, p)
+	case arg.FilterFeeder != "":
+		feederPrices, err := n.priceStore.GetAll(ctx)
+		if err != nil {
+			return err
+		}
+		for fp, price := range feederPrices {
+			if strings.EqualFold(arg.FilterFeeder, fp.Feeder.String()) {
+				prices = append(prices, price)
+			}
+		}
 	}
 
 	*resp = PullPricesResp{Prices: prices}
@@ -87,14 +110,20 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 }
 
 func (n *API) PullPrice(arg *PullPriceArg, resp *PullPriceResp) error {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer ctxCancel()
+
 	n.log.
 		WithField("assetPair", arg.AssetPair).
 		WithField("feeder", arg.Feeder).
 		Info("Pull price")
 
-	*resp = PullPriceResp{
-		Price: n.datastore.Prices().Feeder(arg.AssetPair, ethereum.HexToAddress(arg.Feeder)),
+	price, err := n.priceStore.GetByFeeder(ctx, arg.AssetPair, ethereum.HexToAddress(arg.Feeder))
+	if err != nil {
+		return err
 	}
+
+	*resp = PullPriceResp{Price: price}
 
 	return nil
 }

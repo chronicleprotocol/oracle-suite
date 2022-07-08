@@ -268,7 +268,7 @@ func (c *Gofer) buildBranches(graphs map[provider.Pair]nodes.Aggregator) error {
 
 			// If there are provided multiple sources it means, that the price
 			// have to be calculated by using the nodes.IndirectAggregatorNode.
-			// Otherwise we can pass that nodes.OriginNode directly to
+			// Otherwise, we can pass that nodes.OriginNode directly to
 			// the parent node.
 			var node nodes.Node
 			if len(children) == 1 {

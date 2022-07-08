@@ -44,12 +44,12 @@ type Dependencies struct {
 
 func (c *Ghost) Configure(d Dependencies) (*ghost.Ghost, error) {
 	cfg := ghost.Config{
-		Gofer:     d.Gofer,
-		Signer:    d.Signer,
-		Transport: d.Transport,
-		Logger:    d.Logger,
-		Interval:  time.Second * time.Duration(c.Interval),
-		Pairs:     c.Pairs,
+		PriceProvider: d.Gofer,
+		Signer:        d.Signer,
+		Transport:     d.Transport,
+		Logger:        d.Logger,
+		Interval:      time.Second * time.Duration(c.Interval),
+		Pairs:         c.Pairs,
 	}
 	return ghostFactory(cfg)
 }

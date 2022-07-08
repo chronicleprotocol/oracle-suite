@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 
@@ -56,9 +57,8 @@ type Ghost struct {
 }
 
 type Config struct {
-	// Gofer is an instance of the gofer.Gofer which will be used to fetch
-	// prices.
-	Gofer provider.Provider
+	// PriceProvider is an instance of the provider.Provider.
+	PriceProvider provider.Provider
 	// Signer is an instance of the ethereum.Signer which will be used to
 	// sign prices.
 	Signer ethereum.Signer
@@ -75,9 +75,21 @@ type Config struct {
 }
 
 func NewGhost(cfg Config) (*Ghost, error) {
+	if cfg.PriceProvider == nil {
+		return nil, errors.New("price provider must not be nil")
+	}
+	if cfg.Signer == nil {
+		return nil, errors.New("signer must not be nil")
+	}
+	if cfg.Transport == nil {
+		return nil, errors.New("transport must not be nil")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	g := &Ghost{
 		waitCh:     make(chan error),
-		gofer:      cfg.Gofer,
+		gofer:      cfg.PriceProvider,
 		signer:     cfg.Signer,
 		transport:  cfg.Transport,
 		interval:   cfg.Interval,

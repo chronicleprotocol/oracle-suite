@@ -30,6 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver/middleware"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -66,6 +67,15 @@ type jsonSignature struct {
 
 // New returns a new instance of the EventAPI struct.
 func New(cfg Config) (*EventAPI, error) {
+	if cfg.EventStore == nil {
+		return nil, errors.New("event store must not be nil")
+	}
+	if cfg.Address == "" {
+		return nil, errors.New("address must not be empty")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	api := &EventAPI{
 		waitCh: make(chan error),
 		es:     cfg.EventStore,

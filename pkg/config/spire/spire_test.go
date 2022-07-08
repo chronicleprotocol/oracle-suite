@@ -24,7 +24,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 )
@@ -39,7 +39,7 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 	transport := local.New([]byte("test"), 0, nil)
 	feeds := []ethereum.Address{ethereum.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")}
 	logger := null.New()
-	ds := &datastoreMemory.Datastore{}
+	ps := &store.PriceStore{}
 
 	config := Spire{
 		RPC:   RPC{Address: "1.2.3.4:1234"},
@@ -47,7 +47,7 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 	}
 
 	spireAgentFactory = func(cfg spire.AgentConfig) (*spire.Agent, error) {
-		assert.Equal(t, ds, cfg.Datastore)
+		assert.Equal(t, ps, cfg.PriceStore)
 		assert.Equal(t, transport, cfg.Transport)
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, "1.2.3.4:1234", cfg.Address)
@@ -56,11 +56,11 @@ func TestSpire_ConfigureAgent(t *testing.T) {
 	}
 
 	a, err := config.ConfigureAgent(AgentDependencies{
-		Signer:    signer,
-		Transport: transport,
-		Datastore: ds,
-		Feeds:     feeds,
-		Logger:    logger,
+		Signer:     signer,
+		Transport:  transport,
+		PriceStore: ps,
+		Feeds:      feeds,
+		Logger:     logger,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, a)

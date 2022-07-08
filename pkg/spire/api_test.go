@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	datastoreMemory "github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
@@ -50,10 +49,10 @@ var (
 		Trace:   nil,
 		Version: "0.4.10",
 	}
-	agent     *Agent
-	spire     *Client
-	dat       store.Store
-	ctxCancel context.CancelFunc
+	agent      *Agent
+	spire      *Client
+	priceStore *store.PriceStore
+	ctxCancel  context.CancelFunc
 )
 
 func newTestInstances() (*Agent, *Client) {
@@ -65,14 +64,12 @@ func newTestInstances() (*Agent, *Client) {
 	sig := &mocks.Signer{}
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
 	_ = tra.Start(ctx)
-	dat, err = datastoreMemory.NewDatastore(datastoreMemory.Config{
+	priceStore, err = store.New(store.Config{
+		Storage:   store.NewMemoryStorage(),
 		Signer:    sig,
 		Transport: tra,
-		Pairs: map[string]*datastoreMemory.Pair{
-			"AAABBB": {Feeds: []ethereum.Address{testAddress}},
-			"XXXYYY": {Feeds: []ethereum.Address{testAddress}},
-		},
-		Logger: null.New(),
+		Pairs:     []string{"AAABBB", "XXXYYY"},
+		Logger:    null.New(),
 	})
 	if err != nil {
 		panic(err)
@@ -81,16 +78,16 @@ func newTestInstances() (*Agent, *Client) {
 	sig.On("Recover", mock.Anything, mock.Anything).Return(&testAddress, nil)
 
 	agt, err := NewAgent(AgentConfig{
-		Datastore: dat,
-		Transport: tra,
-		Signer:    sig,
-		Address:   "127.0.0.1:0",
-		Logger:    log,
+		PriceStore: priceStore,
+		Transport:  tra,
+		Signer:     sig,
+		Address:    "127.0.0.1:0",
+		Logger:     log,
 	})
 	if err != nil {
 		panic(err)
 	}
-	err = dat.Start(ctx)
+	err = priceStore.Start(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -121,7 +118,7 @@ func TestMain(m *testing.M) {
 	ctxCancel()
 	<-agent.Wait()
 	<-spire.Wait()
-	<-dat.Wait()
+	<-priceStore.Wait()
 
 	os.Exit(retCode)
 }
@@ -156,7 +153,7 @@ func TestClient_PullPrices_ByAssetPrice(t *testing.T) {
 
 	wait(func() bool {
 		prices, err = spire.PullPrices("AAABBB", "")
-		return len(prices) == 0
+		return len(prices) != 0
 	}, time.Second)
 
 	assert.NoError(t, err)
@@ -173,7 +170,7 @@ func TestClient_PullPrices_ByFeeder(t *testing.T) {
 
 	wait(func() bool {
 		prices, err = spire.PullPrices("", testAddress.String())
-		return len(prices) == 0
+		return len(prices) != 0
 	}, time.Second)
 
 	assert.NoError(t, err)

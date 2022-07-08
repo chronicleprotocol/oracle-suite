@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package memory
+package store
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory/testutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/store/testutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
@@ -35,7 +35,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func TestDatastore_Prices(t *testing.T) {
+func TestStore(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
@@ -43,17 +43,15 @@ func TestDatastore_Prices(t *testing.T) {
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
 	_ = tra.Start(ctx)
 
-	ds, err := NewDatastore(Config{
+	ps, err := New(Config{
 		Signer:    sig,
+		Storage:   NewMemoryStorage(),
 		Transport: tra,
-		Pairs: map[string]*Pair{
-			"AAABBB": {Feeds: []ethereum.Address{testutil.Address1, testutil.Address2}},
-			"XXXYYY": {Feeds: []ethereum.Address{testutil.Address1, testutil.Address2}},
-		},
-		Logger: null.New(),
+		Pairs:     []string{"AAABBB", "XXXYYY"},
+		Logger:    null.New(),
 	})
 	require.NoError(t, err)
-	require.NoError(t, ds.Start(ctx))
+	require.NoError(t, ps.Start(ctx))
 
 	sig.On("Recover", testutil.PriceAAABBB1.Price.Signature(), mock.Anything).Return(&testutil.Address1, nil)
 	sig.On("Recover", testutil.PriceAAABBB2.Price.Signature(), mock.Anything).Return(&testutil.Address2, nil)
@@ -65,12 +63,12 @@ func TestDatastore_Prices(t *testing.T) {
 	assert.NoError(t, tra.Broadcast(messages.PriceMessageName, testutil.PriceXXXYYY1))
 	assert.NoError(t, tra.Broadcast(messages.PriceMessageName, testutil.PriceXXXYYY2))
 
-	// Datastore fetches prices asynchronously, so we wait up to 1 second:
+	// PriceStore fetches prices asynchronously, so we wait up to 1 second:
 	var aaabbb, xxxyyy []*messages.Price
 	for i := 0; i < 10; i++ {
 		time.Sleep(100 * time.Millisecond)
-		aaabbb = ds.Prices().AssetPair("AAABBB")
-		xxxyyy = ds.Prices().AssetPair("XXXYYY")
+		aaabbb = errutil.Must(ps.GetByAssetPair(ctx, "AAABBB"))
+		xxxyyy = errutil.Must(ps.GetByAssetPair(ctx, "XXXYYY"))
 		if len(aaabbb) == 2 && len(xxxyyy) == 2 {
 			break
 		}

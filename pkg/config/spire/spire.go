@@ -19,7 +19,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	storeMemory "github.com/chronicleprotocol/oracle-suite/pkg/price/store/memory"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
@@ -34,8 +33,9 @@ var spireClientFactory = func(cfg spire.ClientConfig) (*spire.Client, error) {
 	return spire.NewClient(cfg)
 }
 
-var datastoreFactory = func(cfg storeMemory.Config) (store.Store, error) {
-	return storeMemory.NewDatastore(cfg)
+//nolint
+var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
+	return store.New(cfg)
 }
 
 type Spire struct {
@@ -49,18 +49,18 @@ type RPC struct {
 }
 
 type AgentDependencies struct {
-	Signer    ethereum.Signer
-	Transport transport.Transport
-	Datastore store.Store
-	Feeds     []ethereum.Address
-	Logger    log.Logger
+	Signer     ethereum.Signer
+	Transport  transport.Transport
+	PriceStore *store.PriceStore
+	Feeds      []ethereum.Address
+	Logger     log.Logger
 }
 
 type ClientDependencies struct {
 	Signer ethereum.Signer
 }
 
-type DatastoreDependencies struct {
+type PriceStoreDependencies struct {
 	Signer    ethereum.Signer
 	Transport transport.Transport
 	Feeds     []ethereum.Address
@@ -73,11 +73,11 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 		listenAddr = c.RPCListenAddr
 	}
 	agent, err := spireAgentFactory(spire.AgentConfig{
-		Datastore: d.Datastore,
-		Transport: d.Transport,
-		Signer:    d.Signer,
-		Address:   listenAddr,
-		Logger:    d.Logger,
+		PriceStore: d.PriceStore,
+		Transport:  d.Transport,
+		Signer:     d.Signer,
+		Address:    listenAddr,
+		Logger:     d.Logger,
 	})
 	if err != nil {
 		return nil, err
@@ -96,15 +96,13 @@ func (c *Spire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
 	})
 }
 
-func (c *Spire) ConfigureDatastore(d DatastoreDependencies) (store.Store, error) {
-	cfg := storeMemory.Config{
+func (c *Spire) ConfigurePriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
+	cfg := store.Config{
+		Storage:   store.NewMemoryStorage(),
 		Signer:    d.Signer,
 		Transport: d.Transport,
-		Pairs:     make(map[string]*storeMemory.Pair),
+		Pairs:     c.Pairs,
 		Logger:    d.Logger,
 	}
-	for _, name := range c.Pairs {
-		cfg.Pairs[name] = &storeMemory.Pair{Feeds: d.Feeds}
-	}
-	return datastoreFactory(cfg)
+	return priceStoreFactory(cfg)
 }

@@ -28,77 +28,77 @@ import (
 
 // prices contains a list of messages.Price's for a single asset pair.
 type prices struct {
-	msgs []*messages.Price
+	prices []*messages.Price
 }
 
-// newPrices creates a new store instance.
-func newPrices(msgs []*messages.Price) *prices {
+// newPricesList creates a new store instance.
+func newPricesList(p []*messages.Price) *prices {
 	return &prices{
-		msgs: msgs,
+		prices: p,
 	}
 }
 
 // len returns the number of messages in the list.
 func (p *prices) len() int {
-	return len(p.msgs)
+	return len(p.prices)
 }
 
 // messages returns raw messages list.
 func (p *prices) messages() []*messages.Price {
-	return p.msgs
+	return p.prices
 }
 
 // oraclePrices returns oracle prices.
 func (p *prices) oraclePrices() []*oracle.Price {
 	var prices []*oracle.Price
-	for _, price := range p.msgs {
+	for _, price := range p.prices {
 		prices = append(prices, price.Price)
 	}
 	return prices
 }
 
-// truncate removes random msgs until the number of remaining prices is equal
+// truncate removes random prices until the number of remaining prices is equal
 // to n. If the number of prices is less or equal to n, it does nothing.
 //
 // This method is used to reduce number of arguments in transaction which will
 // reduce transaction costs.
 func (p *prices) truncate(n int64) {
-	if int64(len(p.msgs)) <= n {
+	if int64(len(p.prices)) <= n {
 		return
 	}
 
-	rand.Shuffle(len(p.msgs), func(i, j int) {
-		p.msgs[i], p.msgs[j] = p.msgs[j], p.msgs[i]
+	rand.Shuffle(len(p.prices), func(i, j int) {
+		p.prices[i], p.prices[j] = p.prices[j], p.prices[i]
 	})
 
-	p.msgs = p.msgs[0:n]
+	p.prices = p.prices[0:n]
 }
 
 // median calculates the median price for all messages in the list.
 func (p *prices) median() *big.Int {
-	count := len(p.msgs)
+	count := len(p.prices)
 	if count == 0 {
 		return big.NewInt(0)
 	}
 
-	sort.Slice(p.msgs, func(i, j int) bool {
-		return p.msgs[i].Price.Val.Cmp(p.msgs[j].Price.Val) < 0
+	sort.Slice(p.prices, func(i, j int) bool {
+		return p.prices[i].Price.Val.Cmp(p.prices[j].Price.Val) < 0
 	})
 
 	if count%2 == 0 {
 		m := count / 2
-		x1 := p.msgs[m-1].Price.Val
-		x2 := p.msgs[m].Price.Val
+		x1 := p.prices[m-1].Price.Val
+		x2 := p.prices[m].Price.Val
 		return new(big.Int).Div(new(big.Int).Add(x1, x2), big.NewInt(2))
 	}
 
-	return p.msgs[(count-1)/2].Price.Val
+	return p.prices[(count-1)/2].Price.Val
 }
 
 // spread calculates the spread between given price and a median price.
 // The spread is returned as percentage points.
 func (p *prices) spread(price *big.Int) float64 {
-	if len(p.msgs) == 0 || price.Cmp(big.NewInt(0)) == 0 {
+	if len(p.prices) == 0 || price.Cmp(big.NewInt(0)) == 0 {
 		return math.Inf(1)
 	}
 
@@ -116,10 +116,10 @@ func (p *prices) spread(price *big.Int) float64 {
 // clearOlderThan deletes messages which are older than given time.
 func (p *prices) clearOlderThan(t time.Time) {
 	var prices []*messages.Price
-	for _, price := range p.msgs {
+	for _, price := range p.prices {
 		if !price.Price.Age.Before(t) {
 			prices = append(prices, price)
 		}
 	}
-	p.msgs = prices
+	p.prices = prices
 }

@@ -71,7 +71,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	dat, err := opts.Config.Spire.ConfigureDatastore(spireConfig.DatastoreDependencies{
+	dat, err := opts.Config.Spire.ConfigurePriceStore(spireConfig.PriceStoreDependencies{
 		Signer:    sig,
 		Transport: tra,
 		Feeds:     fed,
@@ -81,11 +81,11 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
 	age, err := opts.Config.Spire.ConfigureAgent(spireConfig.AgentDependencies{
-		Signer:    sig,
-		Transport: tra,
-		Datastore: dat,
-		Feeds:     fed,
-		Logger:    log,
+		Signer:     sig,
+		Transport:  tra,
+		PriceStore: dat,
+		Feeds:      fed,
+		Logger:     log,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`spire config error: %w`, err)

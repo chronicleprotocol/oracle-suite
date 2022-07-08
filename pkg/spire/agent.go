@@ -40,21 +40,21 @@ type Agent struct {
 }
 
 type AgentConfig struct {
-	Datastore store.Store
-	Transport transport.Transport
-	Signer    ethereum.Signer
-	Address   string
-	Logger    log.Logger
+	PriceStore *store.PriceStore
+	Transport  transport.Transport
+	Signer     ethereum.Signer
+	Address    string
+	Logger     log.Logger
 }
 
 func NewAgent(cfg AgentConfig) (*Agent, error) {
 	logger := cfg.Logger.WithField("tag", AgentLoggerTag)
 	rpcSrv := rpc.NewServer()
 	err := rpcSrv.Register(&API{
-		datastore: cfg.Datastore,
-		transport: cfg.Transport,
-		signer:    cfg.Signer,
-		log:       logger,
+		priceStore: cfg.PriceStore,
+		transport:  cfg.Transport,
+		signer:     cfg.Signer,
+		log:        logger,
 	})
 	if err != nil {
 		return nil, err

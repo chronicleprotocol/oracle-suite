@@ -29,6 +29,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal"
@@ -144,6 +145,9 @@ func New(cfg Config) (*P2P, error) {
 	if cfg.MessagePrivKey == nil {
 		cfg.MessagePrivKey = cfg.PeerPrivKey
 	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 
 	listenAddrs, err := strsToMaddrs(cfg.ListenAddrs)
 	if err != nil {
@@ -221,6 +225,8 @@ func New(cfg Config) (*P2P, error) {
 			internal.DisablePubSub(),
 			internal.Discovery(bootstrapAddrs),
 		)
+	default:
+		return nil, fmt.Errorf("P2P transport error: invalid mode: %d", cfg.Mode)
 	}
 
 	n, err := internal.NewNode(opts...)
