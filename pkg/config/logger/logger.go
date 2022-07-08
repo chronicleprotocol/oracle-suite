@@ -62,71 +62,14 @@ type grafanaMetric struct {
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
-	var err error
 	loggers := []log.Logger{d.BaseLogger}
 
 	if c.Grafana.Enable {
-		var ms []grafana.Metric
-		for _, cm := range c.Grafana.Metrics {
-			gm := grafana.Metric{
-				Value:         cm.Value,
-				Name:          cm.Name,
-				Tags:          cm.Tags,
-				TransformFunc: scalingFunc(cm.ScaleFactor),
-			}
-
-			// Compile the regular expression for a message:
-			gm.MatchMessage, err = regexp.Compile(cm.MatchMessage)
-			if err != nil {
-				return nil, fmt.Errorf("logger config: unable to compile regexp: %s", cm.MatchMessage)
-			}
-
-			// Compile regular expressions for log fields:
-			gm.MatchFields = map[string]*regexp.Regexp{}
-			for f, p := range cm.MatchFields {
-				rx, err := regexp.Compile(p)
-				if err != nil {
-					return nil, fmt.Errorf("logger config: unable to compile regexp: %s", p)
-				}
-				gm.MatchFields[f] = rx
-			}
-
-			// On duplicate:
-			switch strings.ToLower(cm.OnDuplicate) {
-			case "sum":
-				gm.OnDuplicate = grafana.Sum
-			case "sub":
-				gm.OnDuplicate = grafana.Sub
-			case "min":
-				gm.OnDuplicate = grafana.Min
-			case "max":
-				gm.OnDuplicate = grafana.Max
-			case "replace", "":
-				gm.OnDuplicate = grafana.Replace
-			default:
-				return nil, fmt.Errorf("logger config: unknown onDuplicate value: %s", cm.OnDuplicate)
-			}
-
-			ms = append(ms, gm)
-		}
-
-		interval := c.Grafana.Interval
-		if interval < 1 {
-			interval = 1
-		}
-
-		grafanaLogger, err := grafanaLoggerFactory(d.BaseLogger.Level(), grafana.Config{
-			Metrics:          ms,
-			Interval:         uint(interval),
-			GraphiteEndpoint: c.Grafana.Endpoint,
-			GraphiteAPIKey:   c.Grafana.APIKey,
-			HTTPClient:       http.DefaultClient,
-			Logger:           d.BaseLogger,
-		})
+		logger, err := c.configureGrafanaLogger(d)
 		if err != nil {
 			return nil, fmt.Errorf("logger config: unable to create grafana logger: %s", err)
 		}
-		loggers = append(loggers, grafanaLogger)
+		loggers = append(loggers, logger)
 	}
 
 	logger := chain.New(loggers...)
@@ -143,6 +86,72 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 			"x-goArch":     runtime.GOARCH,
 			"x-instanceID": fmt.Sprintf("%08x", rand.Uint64()), //nolint:gosec
 		})
+
+	return logger, nil
+}
+
+func (c *Logger) configureGrafanaLogger(d Dependencies) (log.Logger, error) {
+	var err error
+	var ms []grafana.Metric
+	for _, cm := range c.Grafana.Metrics {
+		gm := grafana.Metric{
+			Value:         cm.Value,
+			Name:          cm.Name,
+			Tags:          cm.Tags,
+			TransformFunc: scalingFunc(cm.ScaleFactor),
+		}
+
+		// Compile the regular expression for a message:
+		gm.MatchMessage, err = regexp.Compile(cm.MatchMessage)
+		if err != nil {
+			return nil, fmt.Errorf("unable to compile regexp: %s", cm.MatchMessage)
+		}
+
+		// Compile regular expressions for log fields:
+		gm.MatchFields = map[string]*regexp.Regexp{}
+		for f, p := range cm.MatchFields {
+			rx, err := regexp.Compile(p)
+			if err != nil {
+				return nil, fmt.Errorf("unable to compile regexp: %s", p)
+			}
+			gm.MatchFields[f] = rx
+		}
+
+		// On duplicate:
+		switch strings.ToLower(cm.OnDuplicate) {
+		case "sum":
+			gm.OnDuplicate = grafana.Sum
+		case "sub":
+			gm.OnDuplicate = grafana.Sub
+		case "min":
+			gm.OnDuplicate = grafana.Min
+		case "max":
+			gm.OnDuplicate = grafana.Max
+		case "replace", "":
+			gm.OnDuplicate = grafana.Replace
+		default:
+			return nil, fmt.Errorf("unknown onDuplicate value: %s", cm.OnDuplicate)
+		}
+
+		ms = append(ms, gm)
+	}
+
+	interval := c.Grafana.Interval
+	if interval < 1 {
+		interval = 1
+	}
+
+	logger, err := grafanaLoggerFactory(d.BaseLogger.Level(), grafana.Config{
+		Metrics:          ms,
+		Interval:         uint(interval),
+		GraphiteEndpoint: c.Grafana.Endpoint,
+		GraphiteAPIKey:   c.Grafana.APIKey,
+		HTTPClient:       http.DefaultClient,
+		Logger:           d.BaseLogger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to create grafana logger: %s", err)
+	}
 
 	return logger, nil
 }

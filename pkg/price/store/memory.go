@@ -60,12 +60,12 @@ func (p *MemoryStorage) GetAll(_ context.Context) (map[FeederPrice]*messages.Pri
 }
 
 // GetByAssetPair implements the store.Storage interface.
-func (p *MemoryStorage) GetByAssetPair(_ context.Context, assetPair string) ([]*messages.Price, error) {
+func (p *MemoryStorage) GetByAssetPair(_ context.Context, pair string) ([]*messages.Price, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	var ps []*messages.Price
 	for k, v := range p.ps {
-		if k.AssetPair != assetPair {
+		if k.AssetPair != pair {
 			continue
 		}
 		ps = append(ps, v)
@@ -74,11 +74,11 @@ func (p *MemoryStorage) GetByAssetPair(_ context.Context, assetPair string) ([]*
 }
 
 // GetByFeeder implements the store.Storage interface.
-func (p *MemoryStorage) GetByFeeder(_ context.Context, assetPair string, feeder ethereum.Address) (*messages.Price, error) {
+func (p *MemoryStorage) GetByFeeder(_ context.Context, pair string, feeder ethereum.Address) (*messages.Price, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	fp := FeederPrice{
-		AssetPair: assetPair,
+		AssetPair: pair,
 		Feeder:    feeder,
 	}
 	if m, ok := p.ps[fp]; ok {

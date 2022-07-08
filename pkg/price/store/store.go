@@ -67,8 +67,8 @@ type Storage interface {
 	// event was added, false if it was replaced. The method is thread-safe.
 	Add(ctx context.Context, from ethereum.Address, msg *messages.Price) error
 	GetAll(ctx context.Context) (map[FeederPrice]*messages.Price, error)
-	GetByAssetPair(ctx context.Context, assetPair string) ([]*messages.Price, error)
-	GetByFeeder(ctx context.Context, assetPair string, feeder ethereum.Address) (*messages.Price, error)
+	GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error)
+	GetByFeeder(ctx context.Context, pair string, feeder ethereum.Address) (*messages.Price, error)
 }
 
 type FeederPrice struct {
@@ -132,13 +132,13 @@ func (p *PriceStore) GetAll(ctx context.Context) (map[FeederPrice]*messages.Pric
 }
 
 // GetByAssetPair returns all prices for given asset pair.
-func (p *PriceStore) GetByAssetPair(ctx context.Context, assetPair string) ([]*messages.Price, error) {
-	return p.storage.GetByAssetPair(ctx, assetPair)
+func (p *PriceStore) GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error) {
+	return p.storage.GetByAssetPair(ctx, pair)
 }
 
 // GetByFeeder returns the latest price for given asset pair sent by given feeder.
-func (p *PriceStore) GetByFeeder(ctx context.Context, assetPair string, feeder ethereum.Address) (*messages.Price, error) {
-	return p.storage.GetByFeeder(ctx, assetPair, feeder)
+func (p *PriceStore) GetByFeeder(ctx context.Context, pair string, feeder ethereum.Address) (*messages.Price, error) {
+	return p.storage.GetByFeeder(ctx, pair, feeder)
 }
 
 func (p *PriceStore) collectPrice(price *messages.Price) error {
@@ -155,9 +155,9 @@ func (p *PriceStore) collectPrice(price *messages.Price) error {
 	return p.Add(p.ctx, *from, price)
 }
 
-func (p *PriceStore) isPairSupported(assetPair string) bool {
+func (p *PriceStore) isPairSupported(pair string) bool {
 	for _, a := range p.pairs {
-		if a == assetPair {
+		if a == pair {
 			return true
 		}
 	}
