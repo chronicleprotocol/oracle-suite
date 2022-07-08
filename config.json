@@ -218,6 +218,12 @@
       "address": "127.0.0.1:9000"
     },
     "origins": {
+      "binance_us": {
+        "type": "binance",
+        "name": "binance_us",
+        "url": "https://www.binance.us",
+        "params": {}
+      },
       "openexchangerates": {
         "type": "openexchangerates",
         "name": "openexchangerates",
@@ -263,7 +269,8 @@
             "USDC/WETH": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
             "UNI/WETH": "0x1d42064fc4beb5f8aaf85f4617ae8b3b5b8bd801",
             "WNXM/WETH": "0x058d79a4c6eb5b11d0248993ffa1faa168ddd3c0",
-            "YFI/WETH": "0x04916039b1f59d9745bf6e0a21f191d1e0a84287"
+            "YFI/WETH": "0x04916039b1f59d9745bf6e0a21f191d1e0a84287",
+            "LINK/ETH": "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8"
           }
         }
       },
@@ -470,9 +477,10 @@
       "BTC/USD": {
         "method": "median",
         "sources": [
+          [{ "origin": "binance_us", "pair": "BTC/USD" }],
           [{ "origin": "bitstamp", "pair": "BTC/USD" }],
-          [{ "origin": "bittrex", "pair": "BTC/USD" }],
           [{ "origin": "coinbasepro", "pair": "BTC/USD" }],
+          [{ "origin": "ftx", "pair": "BTC/USD" }],
           [{ "origin": "gemini", "pair": "BTC/USD" }],
           [{ "origin": "kraken", "pair": "BTC/USD" }]
         ],
@@ -597,11 +605,12 @@
         "method": "median",
         "sources": [
           [{ "origin": "binance", "pair": "LINK/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
+          [{ "origin": "bitstamp", "pair": "LINK/USD" }],
           [{ "origin": "coinbasepro", "pair": "LINK/USD" }],
           [{ "origin": "ftx", "pair": "LINK/USD" }],
           [{ "origin": "gemini", "pair": "LINK/USD" }],
-          [{ "origin": "huobi", "pair": "LINK/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
-          [{ "origin": "kraken", "pair": "LINK/USD" }]
+          [{ "origin": "kraken", "pair": "LINK/USD" }],
+          [{ "origin": "uniswap_v3", "pair": "LINK/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
         ],
         "params": {
           "minimumSuccessfulSources": 3
@@ -623,10 +632,12 @@
       "MANA/USD": {
         "method": "median",
         "sources": [
+          [{ "origin": "binance_us", "pair": "MANA/USD" }],
           [{ "origin": "binance", "pair": "MANA/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
-          [{ "origin": "bittrex", "pair": "MANA/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
-          [{ "origin": "coinbasepro", "pair": "MANA/USDC" },{ "origin": ".", "pair": "USDC/USD" }],
-          [{ "origin": "huobi", "pair": "MANA/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
+          [{ "origin": "ftx", "pair": "MANA/USD" }],
+          [{ "origin": "coinbasepro", "pair": "MANA/USD" }],
+          [{ "origin": "kraken", "pair": "MANA/USD" }],
+          [{ "origin": "okx", "pair": "MANA/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "upbit", "pair": "MANA/KRW" },{ "origin": "openexchangerates", "pair": "KRW/USD", "ttl": 300 }]
         ],
         "params": {
@@ -694,7 +705,7 @@
           [{ "origin": "coinbasepro", "pair": "UNI/USD" }],
           [{ "origin": "ftx", "pair": "UNI/USD" }],
           [{ "origin": "huobi", "pair": "UNI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
-          [{ "origin": "okex", "pair": "UNI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
+          [{ "origin": "okx", "pair": "UNI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "uniswapV3", "pair": "UNI/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
         ],
         "params": {
