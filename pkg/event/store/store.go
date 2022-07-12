@@ -38,7 +38,7 @@ type EventStore struct {
 	waitCh    chan error
 }
 
-// Config contains configuration parameters for EventStore.
+// Config is the configuration for the EventStore.
 type Config struct {
 	Storage   Storage
 	Transport transport.Transport

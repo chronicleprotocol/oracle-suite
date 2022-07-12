@@ -44,7 +44,7 @@ type PriceStore struct {
 	waitCh    chan error
 }
 
-// Config contains configuration parameters for EventStore.
+// Config is the configuration for Storage.
 type Config struct {
 	Storage Storage
 	// Signer is an instance of the ethereum.Signer which will be used to
@@ -62,12 +62,15 @@ type Config struct {
 
 // Storage provides an interface to the price storage.
 type Storage interface {
-	// Add adds an event to the store. If the event already exists, it will be
-	// updated if the MessageDate is newer. The first argument is true if the
-	// event was added, false if it was replaced. The method is thread-safe.
+	// Add adds a price to the store. The method is thread-safe.
 	Add(ctx context.Context, from ethereum.Address, msg *messages.Price) error
+	// GetAll returns all prices. The method is thread-safe.
 	GetAll(ctx context.Context) (map[FeederPrice]*messages.Price, error)
+	// GetByAssetPair returns all prices for given asset pair. The method is
+	// thread-safe.
 	GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error)
+	// GetByFeeder returns the latest price for given asset pair sent by given
+	// feeder. The method is thread-safe.
 	GetByFeeder(ctx context.Context, pair string, feeder ethereum.Address) (*messages.Price, error)
 }
 

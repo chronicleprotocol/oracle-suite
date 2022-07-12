@@ -13,14 +13,19 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package errutil
+package maputil
 
-// Must is a helper function that panics when the error is not nil. Otherwise,
-// it returns the first argument. It is intended for use with functions that
-// should never return an error when called.
-func Must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestKeys(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		assert.ElementsMatch(t, []string{"a", "b"}, Keys(map[string]string{"a": "a", "b": "b"}))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		assert.ElementsMatch(t, []int{1, 2}, Keys(map[int]int{1: 1, 2: 2}))
+	})
 }

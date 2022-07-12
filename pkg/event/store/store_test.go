@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
@@ -34,7 +33,7 @@ func TestEventStore(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	tra := local.New([]byte("test"), 1, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 
-	mem := memory.New(time.Minute)
+	mem := NewMemoryStorage(time.Minute)
 	evs, err := New(Config{
 		Storage:   mem,
 		Transport: tra,

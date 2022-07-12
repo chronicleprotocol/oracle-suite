@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package memory
+package store
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-// Memory provides storage mechanism for store.EventStore.
+// MemoryStorage provides storage mechanism for store.EventStore.
 // It stores events in a local memory.
-type Memory struct {
+type MemoryStorage struct {
 	mu sync.RWMutex
 
 	ttl   time.Duration // Message TTL.
@@ -37,10 +37,10 @@ type Memory struct {
 	gcevery int // Specifies every how many messages the garbage collector should be called.
 }
 
-// New returns a new instance of Memory. The ttl argument specifies how long
+// NewMemoryStorage returns a new instance of MemoryStorage. The ttl argument specifies how long
 // messages should be kept in storage.
-func New(ttl time.Duration) *Memory {
-	return &Memory{
+func NewMemoryStorage(ttl time.Duration) *MemoryStorage {
+	return &MemoryStorage{
 		ttl:     ttl,
 		index:   map[[sha256.Size]byte]map[[sha256.Size]byte]*messages.Event{},
 		gcevery: 100,
@@ -48,7 +48,7 @@ func New(ttl time.Duration) *Memory {
 }
 
 // Add implements the store.Storage interface.
-func (m *Memory) Add(_ context.Context, author []byte, evt *messages.Event) (bool, error) {
+func (m *MemoryStorage) Add(_ context.Context, author []byte, evt *messages.Event) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	hi := hashIndex(evt.Type, evt.Index)
@@ -65,7 +65,7 @@ func (m *Memory) Add(_ context.Context, author []byte, evt *messages.Event) (boo
 }
 
 // Get implements the store.Storage interface.
-func (m *Memory) Get(_ context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+func (m *MemoryStorage) Get(_ context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	hi := hashIndex(typ, idx)
@@ -80,7 +80,7 @@ func (m *Memory) Get(_ context.Context, typ string, idx []byte) ([]*messages.Eve
 }
 
 // Garbage Collector removes expired messages.
-func (m *Memory) gc() {
+func (m *MemoryStorage) gc() {
 	m.gccount++
 	if m.gccount%m.gcevery != 0 {
 		return

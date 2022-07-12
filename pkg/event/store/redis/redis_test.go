@@ -42,7 +42,7 @@ func TestRedis_Add(t *testing.T) {
 	}
 	typ := strconv.Itoa(rand.Int())
 	author := strconv.Itoa(rand.Int())
-	r, err := New(cfg)
+	r, err := NewRedisStorage(cfg)
 	require.NoError(t, err)
 	e1 := &messages.Event{
 		Type:        typ,
@@ -97,7 +97,7 @@ func TestRedis_Add_replacePreviousEvent(t *testing.T) {
 	}
 	typ := strconv.Itoa(rand.Int())
 	author := strconv.Itoa(rand.Int())
-	r, err := New(cfg)
+	r, err := NewRedisStorage(cfg)
 	require.NoError(t, err)
 	e1 := &messages.Event{
 		Type:        typ,
@@ -149,7 +149,7 @@ func TestRedis_memoryLimit(t *testing.T) {
 	}
 	typ := strconv.Itoa(rand.Int())
 	author := strconv.Itoa(rand.Int())
-	r, err := New(cfg)
+	r, err := NewRedisStorage(cfg)
 	require.NoError(t, err)
 
 	e1 := &messages.Event{

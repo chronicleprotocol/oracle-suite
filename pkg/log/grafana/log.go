@@ -37,7 +37,7 @@ import (
 
 const LoggerTag = "GRAFANA"
 
-// Config contains a configuration values for grafana.Logger.
+// Config is the configuration for the Grafana logger.
 type Config struct {
 	// Metrics is a list of metric definitions.
 	Metrics []Metric

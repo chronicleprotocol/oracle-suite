@@ -29,6 +29,8 @@ const LoggerTag = "EVENT_PUBLISHER"
 
 // EventPublisher collects event messages from listeners and publishes them
 // using transport.
+//
+// An event message could be anything Oracle could sign.
 type EventPublisher struct {
 	ctx    context.Context
 	waitCh chan error
@@ -39,12 +41,12 @@ type EventPublisher struct {
 	log       log.Logger
 }
 
-// Config contains configuration parameters for EventPublisher.
+// Config is the configuration for the EventPublisher.
 type Config struct {
 	Listeners []Listener
 	// Signer is a list of Signers used to sign events.
 	Signers []Signer
-	// Transport is implementation of transport used to send events to relayers.
+	// Transport is used to send events to the Oracle network.
 	Transport transport.Transport
 	// Logger is a current logger interface used by the EventPublisher. The Logger
 	// helps to monitor asynchronous processes.
@@ -77,6 +79,7 @@ func New(cfg Config) (*EventPublisher, error) {
 	}, nil
 }
 
+// Start implements the supervisor.Service interface.
 func (l *EventPublisher) Start(ctx context.Context) error {
 	if l.ctx != nil {
 		return errors.New("service can be started only once")
@@ -97,7 +100,7 @@ func (l *EventPublisher) Start(ctx context.Context) error {
 	return nil
 }
 
-// Wait waits until the context is canceled or until an error occurs.
+// Wait implements the supervisor.Service interface.
 func (l *EventPublisher) Wait() chan error {
 	return l.waitCh
 }

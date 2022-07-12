@@ -35,8 +35,8 @@ func (m MiddlewareFunc) Handle(h http.Handler) http.Handler {
 	return m(h)
 }
 
-// HTTPServer allows using middlewares with http.Server and allow controlling
-// server lifecycle using context.
+// HTTPServer wraps the default net/http server to add the ability to use
+// middlewares and support for the supervisor.Service interface.
 type HTTPServer struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
@@ -89,7 +89,7 @@ func (s *HTTPServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	s.wrappedHandler.ServeHTTP(rw, r)
 }
 
-// Start starts HTTP server.
+// Start implements the supervisor.Service interface. It starts HTTP server.
 func (s *HTTPServer) Start(ctx context.Context) error {
 	if s.ctx != nil {
 		return errors.New("service can be started only once")
@@ -112,7 +112,7 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 	return nil
 }
 
-// Wait waits until the context is canceled or until an error occurs.
+// Wait implements the supervisor.Service interface.
 func (s *HTTPServer) Wait() chan error {
 	return s.waitCh
 }

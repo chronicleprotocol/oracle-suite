@@ -56,6 +56,7 @@ type Ghost struct {
 	log        log.Logger
 }
 
+// Config is the configuration for the Ghost.
 type Config struct {
 	// PriceProvider is an instance of the provider.Provider.
 	PriceProvider provider.Provider

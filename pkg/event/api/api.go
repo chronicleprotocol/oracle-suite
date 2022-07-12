@@ -36,9 +36,19 @@ import (
 
 const LoggerTag = "EVENT_API"
 
+// defaultTimeout is the default timeout for the HTTP server.
 const defaultTimeout = 3 * time.Second
 
 // EventAPI provides an HTTP API for EventStore.
+//
+// It provides one GET endpoint in root path that expects two query parameters:
+// type - the type of the event
+// index - the search index for the events
+//
+// If any of them is missing, then bad request status is returned.
+// Both parameters must be provided as hex encoded strings.
+//
+// Events are returned in JSON format.
 type EventAPI struct {
 	ctx    context.Context
 	waitCh chan error
@@ -48,10 +58,15 @@ type EventAPI struct {
 	log log.Logger
 }
 
+// Config is the configuration for the EventAPI.
 type Config struct {
+	// EventStore is the event store to use.
 	EventStore *store.EventStore
-	Address    string
-	Logger     log.Logger
+	// Address specifies the TCP address for the server to listen on in the
+	// form "host:port".
+	Address string
+	// Logger is a current logger used by the EventAPI.
+	Logger log.Logger
 }
 
 type jsonEvent struct {
@@ -115,7 +130,12 @@ func (e *EventAPI) Wait() chan error {
 	return e.waitCh
 }
 
+// handler is the HTTP handler for the EventAPI.
 func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	typ, ok := req.URL.Query()["type"]
 	if !ok || len(typ) != 1 {
 		res.WriteHeader(http.StatusBadRequest)
@@ -144,6 +164,8 @@ func (e *EventAPI) handler(res http.ResponseWriter, req *http.Request) {
 	_ = json.NewEncoder(res).Encode(mapEvents(events))
 }
 
+// mapEvents converts a list of events from the EventStore to a list of JSON
+// events to be returned as HTTP response.
 func mapEvents(es []*messages.Event) []*jsonEvent {
 	sort.Slice(es, func(i, j int) bool {
 		return es[i].MessageDate.Unix() < es[j].MessageDate.Unix()

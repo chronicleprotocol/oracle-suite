@@ -35,9 +35,9 @@ const retryAttempts = 3               // The maximum number of attempts to call 
 const retryInterval = 1 * time.Second // The delay between retry attempts.
 const memUsageTimeQuantum = 3600      // The length of the time window for which memory usage information is stored.
 
-// Redis provides storage mechanism for store.EventStore.
+// Storage provides storage mechanism for store.EventStore.
 // It uses a Redis database to store events.
-type Redis struct {
+type Storage struct {
 	mu sync.Mutex
 
 	client   *redis.Client
@@ -45,7 +45,7 @@ type Redis struct {
 	memLimit int64
 }
 
-// Config contains configuration parameters for Redis.
+// Config is the configuration for the Storage.
 type Config struct {
 	// MemoryLimit specifies a maximum memory limit for a single Oracle.
 	MemoryLimit int64
@@ -59,8 +59,8 @@ type Config struct {
 	DB int
 }
 
-// New returns a new instance of Redis.
-func New(cfg Config) (*Redis, error) {
+// NewRedisStorage returns a new instance of Redis.
+func NewRedisStorage(cfg Config) (*Storage, error) {
 	cli := redis.NewClient(&redis.Options{
 		Addr:     cfg.Address,
 		Password: cfg.Password,
@@ -71,7 +71,7 @@ func New(cfg Config) (*Redis, error) {
 	if res.Err() != nil {
 		return nil, res.Err()
 	}
-	return &Redis{
+	return &Storage{
 		client:   cli,
 		ttl:      cfg.TTL,
 		memLimit: cfg.MemoryLimit,
@@ -79,7 +79,7 @@ func New(cfg Config) (*Redis, error) {
 }
 
 // Add implements the store.Storage interface.
-func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
+func (r *Storage) Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	var isNew bool
@@ -92,7 +92,7 @@ func (r *Redis) Add(ctx context.Context, author []byte, evt *messages.Event) (bo
 }
 
 // Get implements the store.Storage interface.
-func (r *Redis) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+func (r *Storage) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	var evts []*messages.Event
@@ -104,7 +104,7 @@ func (r *Redis) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Ev
 	return evts, err
 }
 
-func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
+func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	key := evtKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
@@ -153,7 +153,7 @@ func (r *Redis) add(ctx context.Context, author []byte, evt *messages.Event) (bo
 	return isNew, err
 }
 
-func (r *Redis) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	var evts []*messages.Event
 	err := r.scan(ctx, wildcardEvtKey(typ, idx), r.client, func(keys []string) error {
 		vals, err := r.client.MGet(ctx, keys...).Result()
@@ -177,7 +177,7 @@ func (r *Redis) get(ctx context.Context, typ string, idx []byte) ([]*messages.Ev
 	return evts, err
 }
 
-func (r *Redis) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, mem int, evtDate time.Time) error {
+func (r *Storage) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, mem int, evtDate time.Time) error {
 	if r.memLimit == 0 {
 		return nil
 	}
@@ -196,7 +196,7 @@ func (r *Redis) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte
 	return nil
 }
 
-func (r *Redis) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte) (int64, error) {
+func (r *Storage) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte) (int64, error) {
 	if r.memLimit == 0 {
 		return 0, nil
 	}
@@ -225,7 +225,7 @@ func (r *Redis) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte)
 	return r.memLimit - size, nil
 }
 
-func (r *Redis) scan(ctx context.Context, pattern string, c redis.Cmdable, fn func(keys []string) error) error {
+func (r *Storage) scan(ctx context.Context, pattern string, c redis.Cmdable, fn func(keys []string) error) error {
 	var err error
 	var keys []string
 	var cursor uint64

@@ -20,7 +20,10 @@ import (
 	"time"
 )
 
-// Retry runs the f function until it returns nil.
+// Retry runs the f function until it returns nil but not more than defined in
+// the attempts argument. After reaching the max attempts, it returns the last
+// error. The delay argument defines the time between each attempt. If the
+// context is canceled, the function stops and returns the error.
 func Retry(ctx context.Context, f func() error, attempts int, delay time.Duration) (err error) {
 	for i := 0; i < attempts; i++ {
 		if ctx.Err() != nil {

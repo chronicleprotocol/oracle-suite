@@ -37,10 +37,7 @@ func NewMemoryStorage() *MemoryStorage {
 func (p *MemoryStorage) Add(_ context.Context, from ethereum.Address, price *messages.Price) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	fp := FeederPrice{
-		AssetPair: price.Price.Wat,
-		Feeder:    from,
-	}
+	fp := FeederPrice{AssetPair: price.Price.Wat, Feeder: from}
 	if prev, ok := p.ps[fp]; ok && prev.Price.Age.After(price.Price.Age) {
 		return nil
 	}

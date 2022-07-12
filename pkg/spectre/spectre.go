@@ -70,6 +70,7 @@ type Spectre struct {
 	pairs      map[string]*Pair
 }
 
+// Config is the configuration for Spectre.
 type Config struct {
 	Signer ethereum.Signer
 	// PriceStore provides prices for Spectre.

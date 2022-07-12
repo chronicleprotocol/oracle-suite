@@ -23,9 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/redis"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
@@ -91,7 +92,7 @@ func TestEventAPI_ConfigureStorage_redis(t *testing.T) {
 	}
 	sto, err := config.ConfigureStorage()
 	require.NoError(t, err)
-	require.IsType(t, &redis.Redis{}, sto)
+	require.IsType(t, &redis.Storage{}, sto)
 }
 
 func TestEventAPI_ConfigureStorage_invalidType(t *testing.T) {
