@@ -96,7 +96,10 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 	}
 
 	token, inverted, ok := s.ContractAddresses.ByPair(Pair{Base: prefixRef + pair.Base, Quote: pair.Quote})
-	if ok && !inverted {
+	if ok {
+		if inverted {
+			return nil, fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String())
+		}
 		callData, err := s.abi.Pack("getPriceRateCache", ethereum.HexToAddress(token))
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack contract args for getPriceRateCache (pair %s): %w", pair.String(), err)

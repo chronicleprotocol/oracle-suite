@@ -9,7 +9,7 @@
 *.so
 *.dylib
 
-# Dependency directories (remove the comment below to include it)
+# Dependency directories
 /vendor/
 
 # Compiled binaries
@@ -22,7 +22,11 @@
 # Output of the go coverage tool
 *.out
 
+# Temporary and local files
+.tmp
 .DS_Store
 node_modules
 /package*.json
-.tmp
+
+# Go Workspaces
+go.work

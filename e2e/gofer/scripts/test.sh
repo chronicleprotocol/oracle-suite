@@ -8,7 +8,7 @@ start_rpcsplitter() {
     sleep 3
 }
 
-start_rpcsplitter
+#start_rpcsplitter
 
 printenv
 go test -v -parallel 1 -cpu 1 ./
