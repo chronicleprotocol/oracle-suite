@@ -27,7 +27,7 @@ import (
 )
 
 func TestMemory_Add(t *testing.T) {
-	m := New(time.Minute)
+	m := NewMemoryStorage(time.Minute)
 	e1 := &messages.Event{
 		Type:        "test",
 		ID:          []byte("test"),
@@ -74,7 +74,7 @@ func TestMemory_Add(t *testing.T) {
 }
 
 func TestMemory_Add_replacePreviousEvent(t *testing.T) {
-	m := New(time.Minute)
+	m := NewMemoryStorage(time.Minute)
 	e1 := &messages.Event{
 		Type:        "test",
 		ID:          []byte("test"),
@@ -118,7 +118,7 @@ func TestMemory_Add_replacePreviousEvent(t *testing.T) {
 }
 
 func TestMemory_gc(t *testing.T) {
-	m := New(time.Minute)
+	m := NewMemoryStorage(time.Minute)
 	_, err := m.Add(context.Background(), []byte("author"), &messages.Event{
 		Type:        "test",
 		ID:          []byte("test"),
@@ -149,7 +149,7 @@ func TestMemory_gc(t *testing.T) {
 }
 
 func TestMemory_gc_allExpired(t *testing.T) {
-	m := New(time.Minute)
+	m := NewMemoryStorage(time.Minute)
 	for i := 0; i < m.gcevery; i++ {
 		e := &messages.Event{
 			Type:        "test",

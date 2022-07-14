@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/redis"
@@ -68,7 +66,7 @@ func TestEventAPI_ConfigureStorage_memory(t *testing.T) {
 	}
 	sto, err := config.ConfigureStorage()
 	require.NoError(t, err)
-	require.IsType(t, &memory.Memory{}, sto)
+	require.IsType(t, &store.MemoryStorage{}, sto)
 }
 
 func TestEventAPI_ConfigureStorage_redis(t *testing.T) {
@@ -109,5 +107,5 @@ func TestEventAPI_ConfigureStorage_defaultType(t *testing.T) {
 	config := EventAPI{}
 	sto, err := config.ConfigureStorage()
 	require.NoError(t, err)
-	require.IsType(t, &memory.Memory{}, sto)
+	require.IsType(t, &store.MemoryStorage{}, sto)
 }

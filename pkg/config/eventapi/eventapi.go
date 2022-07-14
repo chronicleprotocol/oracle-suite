@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/memory"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/api"
-	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/redis"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -87,7 +86,7 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 		if c.Storage.Memory.TTL > 0 {
 			ttl = c.Storage.Memory.TTL
 		}
-		return memory.New(time.Second * time.Duration(ttl)), nil
+		return store.NewMemoryStorage(time.Second * time.Duration(ttl)), nil
 	case "redis":
 		ttl := week
 		if c.Storage.Redis.TTL > 0 {
