@@ -76,6 +76,8 @@ type Metric struct {
 	OnDuplicate OnDuplicate
 	// TransformFunc defines the function applied to the value before setting it.
 	TransformFunc func(float64) float64
+	// ParserFunc is going to be applied to transform the value reflection to an actual float64 value
+	ParserFunc func(reflect.Value) (float64, bool)
 }
 
 // New creates a new logger that can extract parameters from log messages and
@@ -281,15 +283,6 @@ func (c *logger) collect(msg string, fields log.Fields) {
 		var mv metricValue
 		mk.time = roundTime(time.Now().Unix(), c.interval)
 		mv.value = 1
-		if len(metric.Value) > 0 {
-			mv.value, ok = toFloat(byPath(rfields, metric.Value))
-			if !ok {
-				c.logger.
-					WithField("path", metric.Value).
-					Warn("Invalid path")
-				continue
-			}
-		}
 		mk.name, ok = replaceVars(metric.Name, rfields)
 		if !ok {
 			c.logger.
@@ -307,6 +300,20 @@ func (c *logger) collect(msg string, fields log.Fields) {
 					continue
 				}
 				mv.tags = append(mv.tags, t+"="+rt)
+			}
+		}
+		if len(metric.Value) > 0 {
+			value := byPath(rfields, metric.Value)
+			if metric.ParserFunc != nil {
+				mv.value, ok = metric.ParserFunc(value)
+			} else {
+				mv.value, ok = toFloat(value)
+			}
+			if !ok {
+				c.logger.
+					WithField("path", metric.Value).
+					Warn("Invalid path")
+				continue
 			}
 		}
 		if metric.TransformFunc != nil {
@@ -434,7 +441,7 @@ func match(metric Metric, msg string, fields reflect.Value) bool {
 }
 
 // varRegexp matches vars in format: ${foo}
-var varRegexp = regexp.MustCompile(`\$\{[^}]+\}`)
+var varRegexp = regexp.MustCompile(`\$\{[^}]+}`)
 
 // replaceVars replaces vars provided as ${field} with values from log fields.
 func replaceVars(s string, fields reflect.Value) (string, bool) {
@@ -519,6 +526,38 @@ func toFloat(value reflect.Value) (float64, bool) {
 		return float64(value.Int()), true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return float64(value.Uint()), true
+	}
+	return 0, false
+}
+
+func ToFloatVersion(value reflect.Value) (float64, bool) {
+	if !value.IsValid() {
+		return 0, false
+	}
+	if value.Type().Kind() == reflect.String {
+		r := regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(.*)$`)
+		ret := r.FindStringSubmatch(value.String())
+		if ret == nil {
+			return 0, false
+		}
+
+		vMajor, err := strconv.ParseFloat(ret[1], 64)
+		if err != nil {
+			return 0, false
+		}
+		vMinor, err := strconv.ParseFloat(ret[2], 64)
+		if err != nil {
+			return 0, false
+		}
+		vPatch, err := strconv.ParseFloat(ret[3], 64)
+		if err != nil {
+			return 0, false
+		}
+		v := vMajor*1e6 + vMinor*1e3 + vPatch
+		if len(ret[4]) > 0 {
+			return -v, err == nil
+		}
+		return v, err == nil
 	}
 	return 0, false
 }
