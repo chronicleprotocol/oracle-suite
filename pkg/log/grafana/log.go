@@ -541,17 +541,31 @@ func ToFloatVersion(value reflect.Value) (float64, bool) {
 			return 0, false
 		}
 
-		vMajor, err := strconv.ParseFloat(ret[1], 64)
-		if err != nil {
-			return 0, false
+		var vMajor, vMinor, vPatch float64
+		var err error
+		if ret[1] != "" {
+			vMajor, err = strconv.ParseFloat(ret[1], 64)
+			if err != nil {
+				return 0, false
+			}
+		} else {
+			vMajor = 0
 		}
-		vMinor, err := strconv.ParseFloat(ret[2], 64)
-		if err != nil {
-			return 0, false
+		if ret[2] != "" {
+			vMinor, err = strconv.ParseFloat(ret[2], 64)
+			if err != nil {
+				return 0, false
+			}
+		} else {
+			vMinor = 0
 		}
-		vPatch, err := strconv.ParseFloat(ret[3], 64)
-		if err != nil {
-			return 0, false
+		if ret[3] != "" {
+			vPatch, err = strconv.ParseFloat(ret[3], 64)
+			if err != nil {
+				return 0, false
+			}
+		} else {
+			vPatch = 0
 		}
 		v := vMajor*1e6 + vMinor*1e3 + vPatch
 		if len(ret[4]) > 0 {
