@@ -70,6 +70,30 @@ func TestLogger(t *testing.T) {
 				l.WithField("key", "1.5").Info("foo")
 			},
 		},
+		// Value form version string:
+		{
+			metrics: []Metric{
+				{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key", ParserFunc: ToFloatVersion},
+			},
+			want: []want{
+				{name: "test", value: 1002003},
+			},
+			logs: func(l log.Logger) {
+				l.WithField("key", "1.2.3").Info("foo")
+			},
+		},
+		// Value form version string:
+		{
+			metrics: []Metric{
+				{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key", ParserFunc: ToFloatVersion},
+			},
+			want: []want{
+				{name: "test", value: -1002003},
+			},
+			logs: func(l log.Logger) {
+				l.WithField("key", "1.2.3-test.0").Info("foo")
+			},
+		},
 		// Value from float:
 		{
 			metrics: []Metric{{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key"}},
