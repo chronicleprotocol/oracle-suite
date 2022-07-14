@@ -156,10 +156,12 @@ func (c *Datastore) collectorLoop() error {
 					c.log.
 						WithError(err).
 						WithFields(price.Price.Fields(c.signer)).
+						WithField("feedVersion", price.Version).
 						Warn("Received invalid price")
 				} else {
 					c.log.
 						WithFields(price.Price.Fields(c.signer)).
+						WithField("feedVersion", price.Version).
 						Info("Price received")
 				}
 			}
