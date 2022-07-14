@@ -52,6 +52,7 @@ type grafanaLogger struct {
 }
 
 type grafanaMetric struct {
+	Type         string              `json:"type"`
 	MatchMessage string              `json:"matchMessage"`
 	MatchFields  map[string]string   `json:"matchFields"`
 	Value        string              `json:"value"`
@@ -73,6 +74,9 @@ func (c *Logger) Configure(d Dependencies) (log.Logger, error) {
 				Name:          cm.Name,
 				Tags:          cm.Tags,
 				TransformFunc: scalingFunc(cm.ScaleFactor),
+			}
+			if cm.Type == "semver" {
+				gm.ParserFunc = grafana.ToFloatVersion
 			}
 
 			// Compile the regular expression for a message:
