@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
-	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
-	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
-	spireConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spire"
-	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	spireConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
+	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -71,7 +71,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	dat, err := opts.Config.Spire.ConfigureDatastore(spireConfig.DatastoreDependencies{
+	dat, err := opts.Config.Spire.ConfigurePriceStore(spireConfig.PriceStoreDependencies{
 		Signer:    sig,
 		Transport: tra,
 		Feeds:     fed,
@@ -81,11 +81,11 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
 	age, err := opts.Config.Spire.ConfigureAgent(spireConfig.AgentDependencies{
-		Signer:    sig,
-		Transport: tra,
-		Datastore: dat,
-		Feeds:     fed,
-		Logger:    log,
+		Signer:     sig,
+		Transport:  tra,
+		PriceStore: dat,
+		Feeds:      fed,
+		Logger:     log,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`spire config error: %w`, err)

@@ -70,11 +70,14 @@ func New(id []byte, queue int, topics map[string]transport.Message) *Local {
 
 // Start implements the transport.Transport interface.
 func (l *Local) Start(ctx context.Context) error {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	if l.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	l.ctx = ctx
 	go l.contextCancelHandler()
 	return nil

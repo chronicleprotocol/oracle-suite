@@ -15,7 +15,7 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p/messages/pb";
+option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/messages/pb";
 
 message Event {
   message Signature {

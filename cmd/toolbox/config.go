@@ -18,9 +18,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
-	spectreConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spectre"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	spectreConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )

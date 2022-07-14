@@ -23,7 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
+	"github.com/chronicleprotocol/oracle-suite/pkg/starknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 

@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config"
-	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
-	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/p2p"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 )
 
 type Config struct {
@@ -51,7 +51,7 @@ func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervis
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	if _, ok := tra.(*p2p.P2P); !ok {
+	if _, ok := tra.(*libp2p.P2P); !ok {
 		return nil, errors.New("spire-bootstrap works only with the libp2p transport")
 	}
 	sup := supervisor.New(ctx, log)

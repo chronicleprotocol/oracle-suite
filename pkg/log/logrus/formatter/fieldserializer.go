@@ -5,7 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/dump"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/dump"
 )
 
 // FieldSerializerFormatter will serialize the log field values to basic types.

@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
 )
 
 const PriceMessageName = "price/v0"

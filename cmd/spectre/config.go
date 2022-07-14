@@ -20,14 +20,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
-	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
-	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
-	spectreConfig "github.com/chronicleprotocol/oracle-suite/internal/config/spectre"
-	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	spectreConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
+	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -74,7 +74,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	dat, err := opts.Config.Spectre.ConfigureDatastore(spectreConfig.DatastoreDependencies{
+	pst, err := opts.Config.Spectre.ConfigurePriceStore(spectreConfig.PriceStoreDependencies{
 		Signer:    sig,
 		Transport: tra,
 		Feeds:     fed,
@@ -85,7 +85,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	}
 	spe, err := opts.Config.Spectre.ConfigureSpectre(spectreConfig.Dependencies{
 		Signer:         sig,
-		Datastore:      dat,
+		PriceStore:     pst,
 		EthereumClient: cli,
 		Logger:         log,
 	})
@@ -93,6 +93,6 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(tra, dat, spe, sysmon.New(time.Minute, log))
+	sup.Watch(tra, pst, spe, sysmon.New(time.Minute, log))
 	return sup, nil
 }

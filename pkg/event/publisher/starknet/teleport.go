@@ -21,10 +21,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/starknet"
-	"github.com/chronicleprotocol/oracle-suite/internal/util/retry"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/starknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/retry"
 )
 
 const TeleportEventType = "teleport_starknet"

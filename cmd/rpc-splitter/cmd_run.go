@@ -21,14 +21,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/httpserver"
-	"github.com/chronicleprotocol/oracle-suite/internal/httpserver/middleware"
-	"github.com/chronicleprotocol/oracle-suite/internal/rpcsplitter"
+	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
+	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver/middleware"
+	"github.com/chronicleprotocol/oracle-suite/pkg/rpcsplitter"
 )
 
 func NewRunCmd(opts *options) *cobra.Command {
@@ -39,7 +38,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Short:   "Start server",
 		Long:    `Start server`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			log := opts.Logger()
 			var server, err = rpcsplitter.NewServer(
 				rpcsplitter.WithEndpoints(opts.EthRPCURLs),

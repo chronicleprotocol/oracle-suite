@@ -25,7 +25,7 @@ import (
 	"go.cryptoscope.co/ssb/invite"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
-	ssbConf "github.com/chronicleprotocol/oracle-suite/internal/config/ssb"
+	ssbConf "github.com/chronicleprotocol/oracle-suite/pkg/config/ssb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ssb"
 )
 

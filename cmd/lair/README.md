@@ -97,7 +97,7 @@ is `config.json` in the current working directory. You can change the config fil
 ### Configuration reference
 
 - `transport` - Configuration parameters for transports mechanisms used to relay messages.
-    - `transport` (string) - Transport to use. Supported mechanism are: `libp2p` and `ssb`. If empty, thw `libp2p` is
+    - `transport` (string) - Transport to use. Supported mechanism are: `libp2p` and `ssb`. If empty, the `libp2p` is
       used.
     - `libp2p` - Configuration parameters for the libp2p transport (Spire network).
         - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the

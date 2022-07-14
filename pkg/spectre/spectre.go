@@ -22,10 +22,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 )
 
 const LoggerTag = "SPECTRE"
@@ -54,7 +55,7 @@ type errNoPrices struct {
 }
 
 func (e errNoPrices) Error() string {
-	return fmt.Sprintf("there is no prices in the datastore for %s pair", e.AssetPair)
+	return fmt.Sprintf("there is no prices in the priceStore for %s pair", e.AssetPair)
 }
 
 type Spectre struct {
@@ -62,17 +63,18 @@ type Spectre struct {
 	mu     sync.Mutex
 	waitCh chan error
 
-	signer    ethereum.Signer
-	datastore datastore.Datastore
-	interval  time.Duration
-	log       log.Logger
-	pairs     map[string]*Pair
+	signer     ethereum.Signer
+	priceStore *store.PriceStore
+	interval   time.Duration
+	log        log.Logger
+	pairs      map[string]*Pair
 }
 
+// Config is the configuration for Spectre.
 type Config struct {
 	Signer ethereum.Signer
-	// Datastore provides prices for Spectre.
-	Datastore datastore.Datastore
+	// PriceStore provides prices for Spectre.
+	PriceStore *store.PriceStore
 	// Interval describes how often we should try to update Oracles.
 	Interval time.Duration
 	// Pairs is the list supported pairs by Spectre with their configuration.
@@ -100,13 +102,22 @@ type Pair struct {
 }
 
 func NewSpectre(cfg Config) (*Spectre, error) {
+	if cfg.Signer == nil {
+		return nil, errors.New("signer must not be nil")
+	}
+	if cfg.PriceStore == nil {
+		return nil, errors.New("price store must not be nil")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	r := &Spectre{
-		waitCh:    make(chan error),
-		signer:    cfg.Signer,
-		datastore: cfg.Datastore,
-		interval:  cfg.Interval,
-		pairs:     make(map[string]*Pair),
-		log:       cfg.Logger.WithField("tag", LoggerTag),
+		waitCh:     make(chan error),
+		signer:     cfg.Signer,
+		priceStore: cfg.PriceStore,
+		interval:   cfg.Interval,
+		pairs:      make(map[string]*Pair),
+		log:        cfg.Logger.WithField("tag", LoggerTag),
 	}
 	for _, p := range cfg.Pairs {
 		r.pairs[p.AssetPair] = p
@@ -115,10 +126,13 @@ func NewSpectre(cfg Config) (*Spectre, error) {
 }
 
 func (s *Spectre) Start(ctx context.Context) error {
-	s.log.Info("Starting")
+	if s.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	s.log.Info("Starting")
 	s.ctx = ctx
 	go s.contextCancelHandler()
 	s.relayerLoop()
@@ -141,8 +155,13 @@ func (s *Spectre) relay(assetPair string) (*ethereum.Hash, error) {
 		return nil, errUnknownAsset{AssetPair: assetPair}
 	}
 
-	prices := newPrices(s.datastore.Prices().AssetPair(assetPair))
-	if prices == nil || prices.len() == 0 {
+	pricesSlice, err := s.priceStore.GetByAssetPair(context.Background(), assetPair)
+	if err != nil {
+		return nil, err
+	}
+
+	pricesList := newPricesList(pricesSlice)
+	if pricesList == nil || pricesList.len() == 0 {
 		return nil, errNoPrices{AssetPair: assetPair}
 	}
 
@@ -160,13 +179,13 @@ func (s *Spectre) relay(assetPair string) (*ethereum.Hash, error) {
 	}
 
 	// Clear expired prices:
-	prices.clearOlderThan(time.Now().Add(-1 * pair.PriceExpiration))
-	prices.clearOlderThan(oracleTime)
+	pricesList.clearOlderThan(time.Now().Add(-1 * pair.PriceExpiration))
+	pricesList.clearOlderThan(oracleTime)
 
 	// Use only a minimum prices required to achieve a quorum:
-	prices.truncate(oracleQuorum)
+	pricesList.truncate(oracleQuorum)
 
-	spread := prices.spread(oraclePrice)
+	spread := pricesList.spread(oraclePrice)
 	isExpired := oracleTime.Add(pair.OracleExpiration).Before(time.Now())
 	isStale := spread >= pair.OracleSpread
 
@@ -185,7 +204,7 @@ func (s *Spectre) relay(assetPair string) (*ethereum.Hash, error) {
 			"currentSpread":    spread,
 		}).
 		Debug("Trying to update Oracle")
-	for _, price := range prices.oraclePrices() {
+	for _, price := range pricesList.oraclePrices() {
 		s.log.
 			WithFields(price.Fields(s.signer)).
 			Debug("Feed")
@@ -193,12 +212,12 @@ func (s *Spectre) relay(assetPair string) (*ethereum.Hash, error) {
 
 	if isExpired || isStale {
 		// Check if there are enough prices to achieve a quorum:
-		if int64(prices.len()) != oracleQuorum {
+		if int64(pricesList.len()) != oracleQuorum {
 			return nil, errNotEnoughPricesForQuorum{AssetPair: assetPair}
 		}
 
 		// Send *actual* transaction to the Ethereum network:
-		tx, err := pair.Median.Poke(s.ctx, prices.oraclePrices(), true)
+		tx, err := pair.Median.Poke(s.ctx, pricesList.oraclePrices(), true)
 		return tx, err
 	}
 

@@ -22,10 +22,10 @@ import (
 	"net/http"
 	"net/rpc"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/httpserver"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datastore"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
@@ -40,21 +40,21 @@ type Agent struct {
 }
 
 type AgentConfig struct {
-	Datastore datastore.Datastore
-	Transport transport.Transport
-	Signer    ethereum.Signer
-	Address   string
-	Logger    log.Logger
+	PriceStore *store.PriceStore
+	Transport  transport.Transport
+	Signer     ethereum.Signer
+	Address    string
+	Logger     log.Logger
 }
 
 func NewAgent(cfg AgentConfig) (*Agent, error) {
 	logger := cfg.Logger.WithField("tag", AgentLoggerTag)
 	rpcSrv := rpc.NewServer()
 	err := rpcSrv.Register(&API{
-		datastore: cfg.Datastore,
-		transport: cfg.Transport,
-		signer:    cfg.Signer,
-		log:       logger,
+		priceStore: cfg.PriceStore,
+		transport:  cfg.Transport,
+		signer:     cfg.Signer,
+		log:        logger,
 	})
 	if err != nil {
 		return nil, err
@@ -67,10 +67,13 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 }
 
 func (s *Agent) Start(ctx context.Context) error {
-	s.log.Infof("Starting")
+	if s.ctx != nil {
+		return errors.New("service can be started only once")
+	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
+	s.log.Infof("Starting")
 	s.ctx = ctx
 	err := s.srv.Start(ctx)
 	if err != nil {

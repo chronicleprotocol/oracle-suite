@@ -25,10 +25,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/util/retry"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/retry"
 )
 
 const TeleportEventType = "teleport_evm"
@@ -172,6 +172,9 @@ func (tl *TeleportListener) fetchLogs(ctx context.Context) {
 					continue
 				}
 				for _, l := range logs {
+					if l.Removed {
+						continue
+					}
 					if l.Address != address {
 						// This should never happen. All logs returned by
 						// eth_filterLogs should be emitted by the specified

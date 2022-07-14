@@ -19,11 +19,10 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
 func NewPricesCmd(opts *options) *cobra.Command {
@@ -34,7 +33,7 @@ func NewPricesCmd(opts *options) *cobra.Command {
 		Short:   "Return prices for given PAIRs",
 		Long:    `Return prices for given PAIRs.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
-			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, gof, mar, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
@@ -57,7 +56,7 @@ func NewPricesCmd(opts *options) *cobra.Command {
 					err = sErr
 				}
 			}()
-			pairs, err := gofer.NewPairs(args...)
+			pairs, err := provider.NewPairs(args...)
 			if err != nil {
 				return err
 			}

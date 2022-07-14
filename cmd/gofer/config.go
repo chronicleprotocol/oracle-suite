@@ -20,14 +20,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
-	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
-	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
-	"github.com/chronicleprotocol/oracle-suite/internal/gofer/marshal"
-	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
-	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	goferConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 )
 
 type Config struct {
@@ -39,7 +40,7 @@ type Config struct {
 func PrepareClientServices(
 	ctx context.Context,
 	opts *options,
-) (*supervisor.Supervisor, gofer.Gofer, marshal.Marshaller, error) {
+) (*supervisor.Supervisor, provider.Provider, marshal.Marshaller, error) {
 
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
@@ -65,7 +66,7 @@ func PrepareClientServices(
 		return nil, nil, nil, fmt.Errorf(`invalid format option: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	if g, ok := gof.(gofer.StartableGofer); ok {
+	if g, ok := gof.(supervisor.Service); ok {
 		sup.Watch(g)
 	}
 	return sup, gof, mar, nil
@@ -96,6 +97,6 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
 	sup := supervisor.New(ctx, log)
-	sup.Watch(gof, age, sysmon.New(time.Minute, log))
+	sup.Watch(gof.(supervisor.Service), age, sysmon.New(time.Minute, log))
 	return sup, nil
 }

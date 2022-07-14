@@ -21,17 +21,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ethereum"
-	feedsConfig "github.com/chronicleprotocol/oracle-suite/internal/config/feeds"
-	ghostConfig "github.com/chronicleprotocol/oracle-suite/internal/config/ghost"
-	goferConfig "github.com/chronicleprotocol/oracle-suite/internal/config/gofer"
-	loggerConfig "github.com/chronicleprotocol/oracle-suite/internal/config/logger"
-	transportConfig "github.com/chronicleprotocol/oracle-suite/internal/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/internal/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/internal/sysmon"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
+	ghostConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ghost"
+	goferConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/gofer"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -98,7 +97,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	}
 	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, gho, sysmon.New(time.Minute, log))
-	if g, ok := gof.(gofer.StartableGofer); ok {
+	if g, ok := gof.(supervisor.Service); ok {
 		sup.Watch(g)
 	}
 	return sup, nil

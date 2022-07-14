@@ -29,13 +29,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/internal/dump"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/dump"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
 const LoggerTag = "GRAFANA"
 
-// Config contains a configuration values for grafana.Logger.
+// Config is the configuration for the Grafana logger.
 type Config struct {
 	// Metrics is a list of metric definitions.
 	Metrics []Metric
@@ -80,7 +82,13 @@ type Metric struct {
 // send them to Grafana Cloud using the Graphite endpoint. It starts
 // a background goroutine that will be sending metrics to the Grafana Cloud
 // server as often as described in Config.Interval parameter.
-func New(ctx context.Context, level log.Level, cfg Config) log.Logger {
+func New(ctx context.Context, level log.Level, cfg Config) (log.Logger, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("context is nil")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	l := &logger{
 		shared: &shared{
 			ctx:              ctx,
@@ -96,7 +104,7 @@ func New(ctx context.Context, level log.Level, cfg Config) log.Logger {
 		fields: log.Fields{},
 	}
 	go l.pushRoutine()
-	return l
+	return l, nil
 }
 
 type logger struct {

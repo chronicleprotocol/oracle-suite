@@ -19,7 +19,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ func NewAgentCmd(opts *options) *cobra.Command {
 		Short: "Start an RPC server",
 		Long:  `Start an RPC server.`,
 		RunE: func(_ *cobra.Command, args []string) error {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, err := PrepareAgentServices(ctx, opts)
 			if err != nil {
 				return err

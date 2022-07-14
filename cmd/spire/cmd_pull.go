@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -50,7 +49,7 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 		Short: "",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
@@ -95,7 +94,7 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 		Short: "",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, cli, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
