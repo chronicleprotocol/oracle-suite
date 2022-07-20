@@ -31,18 +31,26 @@ const LoggerTag = "EVENT_STORE"
 // EventStore listens for event messages using the transport and stores
 // them for later use.
 type EventStore struct {
-	ctx       context.Context
-	storage   Storage
-	transport transport.Transport
-	log       log.Logger
-	waitCh    chan error
+	ctx        context.Context
+	eventTypes []string
+	storage    Storage
+	transport  transport.Transport
+	log        log.Logger
+	waitCh     chan error
 }
 
 // Config is the configuration for the EventStore.
 type Config struct {
-	Storage   Storage
+	// EventTypes is a list of supported event types. Events of other types will
+	// be ignored.
+	EventTypes []string
+	// Storage is the storage implementation.
+	Storage Storage
+	// Transport is a transport interface used to fetch events from Oracles.
 	Transport transport.Transport
-	Logger    log.Logger
+	// Logger is a current logger interface used by the EventStore.
+	// The Logger is required to monitor asynchronous processes.
+	Logger log.Logger
 }
 
 // Storage provides an interface to the event storage.
@@ -68,10 +76,11 @@ func New(cfg Config) (*EventStore, error) {
 		cfg.Logger = null.New()
 	}
 	return &EventStore{
-		storage:   cfg.Storage,
-		transport: cfg.Transport,
-		log:       cfg.Logger.WithField("tag", LoggerTag),
-		waitCh:    make(chan error),
+		eventTypes: cfg.EventTypes,
+		storage:    cfg.Storage,
+		transport:  cfg.Transport,
+		log:        cfg.Logger.WithField("tag", LoggerTag),
+		waitCh:     make(chan error),
 	}, nil
 }
 
@@ -114,6 +123,9 @@ func (e *EventStore) eventCollectorRoutine() {
 				e.log.Error("Unexpected value returned from the transport layer")
 				continue
 			}
+			if !e.isEventSupported(evt) {
+				continue
+			}
 			isNew, err := e.storage.Add(e.ctx, msg.Author, evt)
 			e.log.
 				WithFields(log.Fields{
@@ -134,6 +146,15 @@ func (e *EventStore) eventCollectorRoutine() {
 			}
 		}
 	}
+}
+
+func (e *EventStore) isEventSupported(evt *messages.Event) bool {
+	for _, typ := range e.eventTypes {
+		if typ == evt.Type {
+			return true
+		}
+	}
+	return false
 }
 
 // contextCancelHandler handles context cancellation.

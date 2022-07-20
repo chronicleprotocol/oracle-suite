@@ -49,7 +49,7 @@ type Client interface {
 	FilterLogs(ctx context.Context, q geth.FilterQuery) ([]types.Log, error)
 }
 
-// TeleportEventProviderConfig contains a configuration options for NewTeleportListener.
+// TeleportEventProviderConfig contains a configuration options for New.
 type TeleportEventProviderConfig struct {
 	// Client is an instance of Ethereum RPC client.
 	Client Client
@@ -88,8 +88,8 @@ type TeleportEventProvider struct {
 	log         log.Logger
 }
 
-// NewTeleportListener returns a new instance of the TeleportEventProvider struct.
-func NewTeleportListener(cfg TeleportEventProviderConfig) *TeleportEventProvider {
+// New returns a new instance of the TeleportEventProvider struct.
+func New(cfg TeleportEventProviderConfig) *TeleportEventProvider {
 	return &TeleportEventProvider{
 		eventCh:     make(chan *messages.Event),
 		client:      cfg.Client,

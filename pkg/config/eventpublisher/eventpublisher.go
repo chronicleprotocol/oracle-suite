@@ -82,10 +82,10 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
 	var lis []publisher.EventProvider
-	if err := c.configureTeleportEVMListeners(&lis, d.Logger); err != nil {
+	if err := c.configureTeleportEVMEventProviders(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
-	if err := c.configureTeleportStarknetListeners(&lis, d.Logger); err != nil {
+	if err := c.configureTeleportStarknetEventProviders(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
 	sig := []publisher.Signer{teleportevm.NewSigner(d.Signer, []string{
@@ -105,7 +105,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	return ep, nil
 }
 
-func (c *EventPublisher) configureTeleportEVMListeners(lis *[]publisher.EventProvider, logger log.Logger) error {
+func (c *EventPublisher) configureTeleportEVMEventProviders(lis *[]publisher.EventProvider, logger log.Logger) error {
 	clis := ethClients{}
 	for _, w := range c.Listeners.TeleportEVM {
 		cli, err := clis.configure(w.Ethereum, logger)
@@ -122,7 +122,7 @@ func (c *EventPublisher) configureTeleportEVMListeners(lis *[]publisher.EventPro
 		if w.BlocksLimit <= 0 {
 			return fmt.Errorf("blocksLimit must greather than 0")
 		}
-		*lis = append(*lis, teleportevm.NewTeleportListener(teleportevm.TeleportEventProviderConfig{
+		*lis = append(*lis, teleportevm.New(teleportevm.TeleportEventProviderConfig{
 			Client:      cli,
 			Addresses:   w.Addresses,
 			Interval:    time.Second * time.Duration(interval),
@@ -134,7 +134,7 @@ func (c *EventPublisher) configureTeleportEVMListeners(lis *[]publisher.EventPro
 	return nil
 }
 
-func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.EventProvider, logger log.Logger) error {
+func (c *EventPublisher) configureTeleportStarknetEventProviders(lis *[]publisher.EventProvider, logger log.Logger) error {
 	for _, w := range c.Listeners.TeleportStarknet {
 		interval := w.Interval
 		if interval < 1 {
@@ -149,7 +149,7 @@ func (c *EventPublisher) configureTeleportStarknetListeners(lis *[]publisher.Eve
 		if w.BlocksLimit <= 0 {
 			return fmt.Errorf("blocksLimit must greather than 0")
 		}
-		*lis = append(*lis, teleportstarknet.NewTeleportListener(teleportstarknet.TeleportEventProviderConfig{
+		*lis = append(*lis, teleportstarknet.New(teleportstarknet.TeleportEventProviderConfig{
 			Sequencer:   starknetClient.NewSequencer(w.Sequencer, http.Client{}),
 			Addresses:   w.Addresses,
 			Interval:    time.Second * time.Duration(interval),

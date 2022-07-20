@@ -26,6 +26,8 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportevm"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportstarknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
@@ -71,9 +73,10 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
 	evs, err := store.New(store.Config{
-		Storage:   sto,
-		Transport: tra,
-		Logger:    log,
+		EventTypes: []string{teleportevm.TeleportEventType, teleportstarknet.TeleportEventType},
+		Storage:    sto,
+		Transport:  tra,
+		Logger:     log,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)

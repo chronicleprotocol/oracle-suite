@@ -213,7 +213,7 @@ func Test_teleportListener(t *testing.T) {
 	defer cancelFunc()
 
 	cli := &mocks.Sequencer{}
-	tl := NewTeleportListener(TeleportEventProviderConfig{
+	tl := New(TeleportEventProviderConfig{
 		Sequencer:   cli,
 		Addresses:   []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
 		Interval:    time.Millisecond * 100,

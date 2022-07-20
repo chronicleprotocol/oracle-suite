@@ -46,6 +46,7 @@ type PriceStore struct {
 
 // Config is the configuration for Storage.
 type Config struct {
+	// Storage is the storage implementation.
 	Storage Storage
 	// Signer is an instance of the ethereum.Signer which will be used to
 	// verify price signatures.

@@ -39,7 +39,7 @@ func Test_teleportListener(t *testing.T) {
 	defer cancelFunc()
 
 	cli := &mocks.EthClient{}
-	w := NewTeleportListener(TeleportEventProviderConfig{
+	w := New(TeleportEventProviderConfig{
 		Client:      cli,
 		Addresses:   []common.Address{teleportTestAddress},
 		Interval:    time.Millisecond * 100,

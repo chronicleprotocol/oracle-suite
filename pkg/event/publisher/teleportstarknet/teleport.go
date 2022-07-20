@@ -39,7 +39,7 @@ type Sequencer interface {
 	GetBlockByNumber(ctx context.Context, blockNumber uint64) (*starknet.Block, error)
 }
 
-// TeleportEventProviderConfig contains a configuration options for NewTeleportListener.
+// TeleportEventProviderConfig contains a configuration options for New.
 type TeleportEventProviderConfig struct {
 	// Sequencer is an instance of Ethereum RPC sequencer.
 	Sequencer Sequencer
@@ -79,8 +79,8 @@ type TeleportEventProvider struct {
 	log         log.Logger
 }
 
-// NewTeleportListener creates a new instance of TeleportEventProvider.
-func NewTeleportListener(cfg TeleportEventProviderConfig) *TeleportEventProvider {
+// New creates a new instance of TeleportEventProvider.
+func New(cfg TeleportEventProviderConfig) *TeleportEventProvider {
 	return &TeleportEventProvider{
 		eventCh:     make(chan *messages.Event),
 		sequencer:   cfg.Sequencer,
