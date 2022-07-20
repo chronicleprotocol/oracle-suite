@@ -144,11 +144,13 @@ func (p *Price) copy() *Price {
 		Trace:   p.Trace,
 		Version: p.Version,
 	}
-	c.Trace = make([]byte, len(p.Trace))
+	if p.Trace != nil {
+		c.Trace = make([]byte, len(p.Trace))
+		copy(c.Trace, p.Trace)
+	}
 	c.Price.StarkS = make([]byte, len(p.Price.StarkS))
 	c.Price.StarkR = make([]byte, len(p.Price.StarkR))
 	c.Price.StarkPK = make([]byte, len(p.Price.StarkPK))
-	copy(c.Trace, p.Trace)
 	copy(c.Price.StarkS, p.Price.StarkS)
 	copy(c.Price.StarkR, p.Price.StarkR)
 	copy(c.Price.StarkPK, p.Price.StarkPK)

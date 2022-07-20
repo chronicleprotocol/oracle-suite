@@ -35,9 +35,10 @@ func TestEventStore(t *testing.T) {
 
 	mem := NewMemoryStorage(time.Minute)
 	evs, err := New(Config{
-		Storage:   mem,
-		Transport: tra,
-		Logger:    null.New(),
+		EventTypes: []string{"test"},
+		Storage:    mem,
+		Transport:  tra,
+		Logger:     null.New(),
 	})
 	require.NoError(t, err)
 

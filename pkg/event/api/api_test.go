@@ -38,9 +38,10 @@ func TestEventAPI(t *testing.T) {
 	loc := local.New([]byte("test"), 4, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
 	mem := store.NewMemoryStorage(time.Minute)
 	evs, err := store.New(store.Config{
-		Storage:   mem,
-		Transport: loc,
-		Logger:    null.New(),
+		EventTypes: []string{"event1", "event2"},
+		Storage:    mem,
+		Transport:  loc,
+		Logger:     null.New(),
 	})
 	require.NoError(t, err)
 	api, err := New(Config{

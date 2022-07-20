@@ -62,7 +62,10 @@ func newTestInstances() (*Agent, *Client) {
 
 	log := null.New()
 	sig := &mocks.Signer{}
-	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
+	tra := local.New([]byte("test"), 0, map[string]transport.Message{
+		messages.PriceMessageName:   (*messages.Price)(nil),
+		messages.PriceV1MessageName: (*messages.Price)(nil),
+	})
 	_ = tra.Start(ctx)
 	priceStore, err = store.New(store.Config{
 		Storage:   store.NewMemoryStorage(),
