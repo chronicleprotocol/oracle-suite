@@ -82,10 +82,10 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
 	var lis []publisher.EventProvider
-	if err := c.configureTeleportEVMEventProviders(&lis, d.Logger); err != nil {
+	if err := c.configureTeleportEVM(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
-	if err := c.configureTeleportStarknetEventProviders(&lis, d.Logger); err != nil {
+	if err := c.configureTeleportStarknet(&lis, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
 	sig := []publisher.Signer{teleportevm.NewSigner(d.Signer, []string{
@@ -105,7 +105,7 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	return ep, nil
 }
 
-func (c *EventPublisher) configureTeleportEVMEventProviders(lis *[]publisher.EventProvider, logger log.Logger) error {
+func (c *EventPublisher) configureTeleportEVM(lis *[]publisher.EventProvider, logger log.Logger) error {
 	clis := ethClients{}
 	for _, w := range c.Listeners.TeleportEVM {
 		cli, err := clis.configure(w.Ethereum, logger)
@@ -134,7 +134,7 @@ func (c *EventPublisher) configureTeleportEVMEventProviders(lis *[]publisher.Eve
 	return nil
 }
 
-func (c *EventPublisher) configureTeleportStarknetEventProviders(lis *[]publisher.EventProvider, logger log.Logger) error {
+func (c *EventPublisher) configureTeleportStarknet(lis *[]publisher.EventProvider, logger log.Logger) error {
 	for _, w := range c.Listeners.TeleportStarknet {
 		interval := w.Interval
 		if interval < 1 {
