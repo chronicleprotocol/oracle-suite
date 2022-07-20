@@ -185,7 +185,7 @@ func (g *Ghost) broadcast(goferPair provider.Pair) error {
 	return err
 }
 
-// broadcasterLoop creates a asynchronous loop which fetches prices from exchanges and then
+// broadcasterLoop creates an asynchronous loop which fetches prices from exchanges and then
 // sends them to the network at a specified interval.
 func (g *Ghost) broadcasterLoop() error {
 	if g.interval == 0 {

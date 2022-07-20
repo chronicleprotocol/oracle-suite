@@ -169,7 +169,6 @@ func (p *PriceStore) isPairSupported(pair string) bool {
 }
 
 func (p *PriceStore) priceCollectorRoutine() {
-
 	for {
 		select {
 		case <-p.ctx.Done():
