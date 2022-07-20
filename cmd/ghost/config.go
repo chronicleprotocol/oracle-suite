@@ -81,7 +81,10 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Feeds:  fed,
 		Logger: log,
 	},
-		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+		map[string]transport.Message{
+			messages.PriceMessageName:   (*messages.Price)(nil),
+			messages.PriceV1MessageName: (*messages.Price)(nil),
+		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)

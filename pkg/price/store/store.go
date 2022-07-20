@@ -114,7 +114,7 @@ func (p *PriceStore) Start(ctx context.Context) error {
 	}
 	p.log.Info("Starting")
 	p.ctx = ctx
-	go p.eventCollectorRoutine()
+	go p.priceCollectorRoutine()
 	go p.contextCancelHandler()
 	return nil
 }
@@ -168,33 +168,40 @@ func (p *PriceStore) isPairSupported(pair string) bool {
 	return false
 }
 
-func (p *PriceStore) eventCollectorRoutine() {
+func (p *PriceStore) priceCollectorRoutine() {
+
 	for {
 		select {
 		case <-p.ctx.Done():
 			return
 		case msg := <-p.transport.Messages(messages.PriceMessageName):
-			if msg.Error != nil {
-				p.log.WithError(msg.Error).Error("Unable to read prices from the transport layer")
-				continue
-			}
-			price, ok := msg.Message.(*messages.Price)
-			if !ok {
-				p.log.Error("Unexpected value returned from the transport layer")
-				continue
-			}
-			err := p.collectPrice(price)
-			if err != nil {
-				p.log.
-					WithError(err).
-					WithFields(price.Price.Fields(p.signer)).
-					Warn("Received invalid price")
-			} else {
-				p.log.
-					WithFields(price.Price.Fields(p.signer)).
-					Info("Price received")
-			}
+			p.handlePriceMessage(msg)
+		case msg := <-p.transport.Messages(messages.PriceV1MessageName):
+			p.handlePriceMessage(msg)
 		}
+	}
+}
+
+func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
+	if msg.Error != nil {
+		p.log.WithError(msg.Error).Error("Unable to read prices from the transport layer")
+		return
+	}
+	price, ok := msg.Message.(*messages.Price)
+	if !ok {
+		p.log.Error("Unexpected value returned from the transport layer")
+		return
+	}
+	err := p.collectPrice(price)
+	if err != nil {
+		p.log.
+			WithError(err).
+			WithFields(price.Price.Fields(p.signer)).
+			Warn("Received invalid price")
+	} else {
+		p.log.
+			WithFields(price.Price.Fields(p.signer)).
+			Info("Price received")
 	}
 }
 

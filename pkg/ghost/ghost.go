@@ -171,12 +171,14 @@ func (g *Ghost) broadcast(goferPair provider.Pair) error {
 	}
 
 	// Broadcast price to P2P network:
-	message, err := createPriceMessage(price, tick)
+	msg, err := createPriceMessage(price, tick)
 	if err != nil {
 		return err
 	}
-	err = g.transport.Broadcast(messages.PriceMessageName, message)
-	if err != nil {
+	if err := g.transport.Broadcast(messages.PriceMessageName, msg.AsV0()); err != nil {
+		return err
+	}
+	if err := g.transport.Broadcast(messages.PriceMessageName, msg.AsV1()); err != nil {
 		return err
 	}
 

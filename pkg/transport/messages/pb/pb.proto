@@ -17,6 +17,25 @@ syntax = "proto3";
 
 option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/messages/pb";
 
+message Price {
+  // Price:
+  string wat = 1; // asset name
+  bytes val = 2; // big.Int encoded as bytes
+  int64 age = 3; // timestamp
+
+  // Ethereum Signature:
+  bytes vrs = 4; // v, r, s combined into one byte array
+
+  // Starknet Signature:
+  bytes starkR = 5;
+  bytes starkS = 6;
+  bytes starkPK = 7;
+
+  // Additional data:
+  bytes trace = 8;
+  string version = 9;
+}
+
 message Event {
   message Signature {
     bytes signer = 1;

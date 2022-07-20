@@ -66,7 +66,10 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 		Feeds:  fed,
 		Logger: log,
 	},
-		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+		map[string]transport.Message{
+			messages.PriceMessageName:   (*messages.Price)(nil),
+			messages.PriceV1MessageName: (*messages.Price)(nil),
+		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)

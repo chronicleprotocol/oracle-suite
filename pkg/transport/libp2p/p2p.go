@@ -201,7 +201,7 @@ func New(cfg Config) (*P2P, error) {
 			internal.MessageLogger(),
 			internal.RateLimiter(rateLimiterConfig(cfg)),
 			internal.PeerScoring(peerScoreParams, thresholds, func(topic string) *pubsub.TopicScoreParams {
-				if topic == messages.PriceMessageName {
+				if topic == messages.PriceMessageName || topic == messages.PriceV1MessageName {
 					return priceTopicScoreParams
 				}
 				if topic == messages.EventMessageName {
