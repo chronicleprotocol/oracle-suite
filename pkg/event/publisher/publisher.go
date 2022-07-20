@@ -27,8 +27,8 @@ import (
 
 const LoggerTag = "EVENT_PUBLISHER"
 
-// EventPublisher collects event messages from listeners and publishes them
-// using transport.
+// EventPublisher collects event messages from event providers and publishes
+// them using transport interface.
 //
 // An event message could be anything Oracle could sign.
 type EventPublisher struct {
@@ -36,14 +36,14 @@ type EventPublisher struct {
 	waitCh chan error
 
 	signers   []Signer
-	listeners []Listener
+	listeners []EventProvider
 	transport transport.Transport
 	log       log.Logger
 }
 
 // Config is the configuration for the EventPublisher.
 type Config struct {
-	Listeners []Listener
+	Listeners []EventProvider
 	// Signer is a list of Signers used to sign events.
 	Signers []Signer
 	// Transport is used to send events to the Oracle network.
@@ -53,7 +53,8 @@ type Config struct {
 	Logger log.Logger
 }
 
-type Listener interface {
+// EventProvider providers events to EventPublisher.
+type EventProvider interface {
 	Start(ctx context.Context) error
 	Events() chan *messages.Event
 }

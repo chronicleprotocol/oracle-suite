@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ethereum
+package teleportevm
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func Test_teleportListener(t *testing.T) {
 	defer cancelFunc()
 
 	cli := &mocks.EthClient{}
-	w := NewTeleportListener(TeleportListenerConfig{
+	w := NewTeleportListener(TeleportEventProviderConfig{
 		Client:      cli,
 		Addresses:   []common.Address{teleportTestAddress},
 		Interval:    time.Millisecond * 100,
