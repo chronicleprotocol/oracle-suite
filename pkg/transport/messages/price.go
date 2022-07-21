@@ -31,7 +31,10 @@ import (
 const PriceMessageName = "price/v0"
 const PriceV1MessageName = "price/v1"
 
-var ErrUnknownMessageVersion = errors.New("unknown message version")
+const priceMessageMaxSize = 1 * 1024 * 1024 // 1MB
+
+var ErrPriceMessageTooLarge = errors.New("price message too large")
+var ErrUnknownPriceMessageVersion = errors.New("unknown message version")
 
 type Price struct {
 	Price   *oracle.Price   `json:"price"`
@@ -79,15 +82,28 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		if len(data) > eventMessageMaxSize {
+			return nil, ErrEventMessageTooLarge
+		}
 		return data, nil
 	case 0:
-		return p.Marshall()
+		data, err := p.Marshall()
+		if err != nil {
+			return nil, err
+		}
+		if len(data) > eventMessageMaxSize {
+			return nil, ErrPriceMessageTooLarge
+		}
+		return data, nil
 	}
-	return nil, ErrUnknownMessageVersion
+	return nil, ErrUnknownPriceMessageVersion
 }
 
 // UnmarshallBinary implements the transport.Message interface.
 func (p *Price) UnmarshallBinary(data []byte) error {
+	if len(data) > eventMessageMaxSize {
+		return ErrPriceMessageTooLarge
+	}
 	switch p.messageVersion {
 	case 1:
 		msg := &pb.Price{}
@@ -113,7 +129,7 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 			return err
 		}
 	default:
-		return ErrUnknownMessageVersion
+		return ErrUnknownPriceMessageVersion
 	}
 	if p.Price.Val == nil {
 		p.Price.Val = big.NewInt(0)

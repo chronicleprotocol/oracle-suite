@@ -28,6 +28,8 @@ const EventMessageName = "event/v0"
 
 const eventMessageMaxSize = 1 * 1024 * 1024 // 1MB
 
+var ErrEventMessageTooLarge = errors.New("event message too large")
+
 type EventSignature struct {
 	Signer    []byte
 	Signature []byte
@@ -72,7 +74,7 @@ func (e *Event) MarshallBinary() ([]byte, error) {
 		return nil, err
 	}
 	if len(data) > eventMessageMaxSize {
-		return nil, errors.New("invalid event message, message too large")
+		return nil, ErrEventMessageTooLarge
 	}
 	return data, nil
 }
@@ -80,7 +82,7 @@ func (e *Event) MarshallBinary() ([]byte, error) {
 // UnmarshallBinary implements the transport.Message interface.
 func (e *Event) UnmarshallBinary(data []byte) error {
 	if len(data) > eventMessageMaxSize {
-		return errors.New("invalid event message, message too large")
+		return ErrEventMessageTooLarge
 	}
 	msg := &pb.Event{}
 	if err := proto.Unmarshal(data, msg); err != nil {

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
@@ -122,6 +123,36 @@ func TestPrice_Marshalling(t *testing.T) {
 				Version:        "0.0.1",
 			}).AsV1(),
 			wantErr: false,
+		},
+		// Too large message:
+		{
+			price: &Price{
+				messageVersion: 0,
+				Price:          &oracle.Price{},
+				Trace:          nil,
+				Version:        strings.Repeat("a", priceMessageMaxSize+1),
+			},
+			wantErr: true,
+		},
+		// Too large V0 message:
+		{
+			price: (&Price{
+				messageVersion: 0,
+				Price:          &oracle.Price{},
+				Trace:          nil,
+				Version:        strings.Repeat("a", priceMessageMaxSize+1),
+			}).AsV0(),
+			wantErr: true,
+		},
+		// Too large V1 message:
+		{
+			price: (&Price{
+				messageVersion: 0,
+				Price:          &oracle.Price{},
+				Trace:          nil,
+				Version:        strings.Repeat("a", priceMessageMaxSize+1),
+			}).AsV1(),
+			wantErr: true,
 		},
 	}
 	for n, tt := range tests {

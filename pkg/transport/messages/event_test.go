@@ -50,7 +50,7 @@ func TestEvent_Marshalling(t *testing.T) {
 		},
 		{
 			event: Event{
-				Type: strings.Repeat("a", 1*1024*1024),
+				Type: strings.Repeat("a", eventMessageMaxSize+1),
 			},
 			wantErr: true,
 		},
