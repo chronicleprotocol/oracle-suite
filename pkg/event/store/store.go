@@ -113,7 +113,7 @@ func (e *EventStore) eventCollectorRoutine() {
 		select {
 		case <-e.ctx.Done():
 			return
-		case msg := <-e.transport.Messages(messages.EventMessageName):
+		case msg := <-e.transport.Messages(messages.EventV1MessageName):
 			if msg.Error != nil {
 				e.log.WithError(msg.Error).Error("Unable to read events from the transport layer")
 				continue

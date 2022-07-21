@@ -63,7 +63,7 @@ func newTestInstances() (*Agent, *Client) {
 	log := null.New()
 	sig := &mocks.Signer{}
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{
-		messages.PriceMessageName:   (*messages.Price)(nil),
+		messages.PriceV0MessageName: (*messages.Price)(nil),
 		messages.PriceV1MessageName: (*messages.Price)(nil),
 	})
 	_ = tra.Start(ctx)

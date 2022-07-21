@@ -24,7 +24,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 )
 
-const EventMessageName = "event/v0"
+const EventV1MessageName = "event/v1"
 
 const eventMessageMaxSize = 1 * 1024 * 1024 // 1MB
 

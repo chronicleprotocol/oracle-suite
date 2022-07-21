@@ -40,7 +40,7 @@ func TestStore(t *testing.T) {
 	defer ctxCancel()
 
 	sig := &mocks.Signer{}
-	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)})
+	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)})
 	_ = tra.Start(ctx)
 
 	ps, err := New(Config{
@@ -58,10 +58,10 @@ func TestStore(t *testing.T) {
 	sig.On("Recover", testutil.PriceXXXYYY1.Price.Signature(), mock.Anything).Return(&testutil.Address1, nil)
 	sig.On("Recover", testutil.PriceXXXYYY2.Price.Signature(), mock.Anything).Return(&testutil.Address2, nil)
 
-	assert.NoError(t, tra.Broadcast(messages.PriceMessageName, testutil.PriceAAABBB1))
-	assert.NoError(t, tra.Broadcast(messages.PriceMessageName, testutil.PriceAAABBB2))
-	assert.NoError(t, tra.Broadcast(messages.PriceMessageName, testutil.PriceXXXYYY1))
-	assert.NoError(t, tra.Broadcast(messages.PriceMessageName, testutil.PriceXXXYYY2))
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB1))
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB2))
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceXXXYYY1))
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceXXXYYY2))
 
 	// PriceStore fetches prices asynchronously, so we wait up to 1 second:
 	var aaabbb, xxxyyy []*messages.Price

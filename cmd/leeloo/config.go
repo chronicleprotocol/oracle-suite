@@ -65,7 +65,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Feeds:  fed,
 		Logger: log,
 	},
-		map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)},
+		map[string]transport.Message{messages.EventV1MessageName: (*messages.Event)(nil)},
 	)
 	if err != nil {
 		return nil, fmt.Errorf(`transort config error: %w`, err)

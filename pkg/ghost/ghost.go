@@ -175,10 +175,10 @@ func (g *Ghost) broadcast(goferPair provider.Pair) error {
 	if err != nil {
 		return err
 	}
-	if err := g.transport.Broadcast(messages.PriceMessageName, msg.AsV0()); err != nil {
+	if err := g.transport.Broadcast(messages.PriceV0MessageName, msg.AsV0()); err != nil {
 		return err
 	}
-	if err := g.transport.Broadcast(messages.PriceMessageName, msg.AsV1()); err != nil {
+	if err := g.transport.Broadcast(messages.PriceV0MessageName, msg.AsV1()); err != nil {
 		return err
 	}
 

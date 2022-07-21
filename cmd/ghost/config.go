@@ -82,7 +82,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 		Logger: log,
 	},
 		map[string]transport.Message{
-			messages.PriceMessageName:   (*messages.Price)(nil),
+			messages.PriceV0MessageName: (*messages.Price)(nil),
 			messages.PriceV1MessageName: (*messages.Price)(nil),
 		},
 	)

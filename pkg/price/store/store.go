@@ -173,7 +173,7 @@ func (p *PriceStore) priceCollectorRoutine() {
 		select {
 		case <-p.ctx.Done():
 			return
-		case msg := <-p.transport.Messages(messages.PriceMessageName):
+		case msg := <-p.transport.Messages(messages.PriceV0MessageName):
 			p.handlePriceMessage(msg)
 		case msg := <-p.transport.Messages(messages.PriceV1MessageName):
 			p.handlePriceMessage(msg)

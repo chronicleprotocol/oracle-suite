@@ -65,7 +65,7 @@ func (n *API) PublishPrice(arg *PublishPriceArg, _ *Nothing) error {
 		WithFields(arg.Price.Price.Fields(n.signer)).
 		Info("Publish price")
 
-	if err := n.transport.Broadcast(messages.PriceMessageName, arg.Price.AsV0()); err != nil {
+	if err := n.transport.Broadcast(messages.PriceV0MessageName, arg.Price.AsV0()); err != nil {
 		return err
 	}
 	if err := n.transport.Broadcast(messages.PriceV1MessageName, arg.Price.AsV1()); err != nil {

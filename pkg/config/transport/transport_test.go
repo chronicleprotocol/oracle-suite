@@ -55,7 +55,7 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 		assert.Len(t, cfg.BootstrapAddrs, 0)
 		assert.Len(t, cfg.DirectPeersAddrs, 0)
 		assert.Len(t, cfg.BlockedAddrs, 0)
-		assert.Equal(t, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)}, cfg.Topics)
+		assert.Equal(t, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)}, cfg.Topics)
 		assert.Equal(t, true, cfg.Discovery)
 		assert.Equal(t, "spire", cfg.AppName)
 		assert.Equal(t, feeds, cfg.FeedersAddrs)
@@ -70,7 +70,7 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 		Feeds:  feeds,
 		Logger: logger,
 	},
-		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+		map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)},
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, tra)
@@ -106,7 +106,7 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 		assert.Equal(t, bootstrapAddrs, cfg.BootstrapAddrs)
 		assert.Equal(t, directPeersAddrs, cfg.DirectPeersAddrs)
 		assert.Equal(t, blockedAddrs, cfg.BlockedAddrs)
-		assert.Equal(t, map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)}, cfg.Topics)
+		assert.Equal(t, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)}, cfg.Topics)
 		assert.Equal(t, false, cfg.Discovery)
 		assert.Equal(t, "spire", cfg.AppName)
 		assert.Equal(t, feeds, cfg.FeedersAddrs)
@@ -121,7 +121,7 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 		Feeds:  feeds,
 		Logger: logger,
 	},
-		map[string]transport.Message{messages.PriceMessageName: (*messages.Price)(nil)},
+		map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)},
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, tra)

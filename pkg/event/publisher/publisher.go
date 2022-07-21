@@ -138,7 +138,7 @@ func (l *EventPublisher) broadcast(evt *messages.Event) {
 			"from":        l.transport.ID(),
 		}).
 		Info("Event published")
-	err := l.transport.Broadcast(messages.EventMessageName, evt)
+	err := l.transport.Broadcast(messages.EventV1MessageName, evt)
 	if err != nil {
 		l.log.
 			WithError(err).

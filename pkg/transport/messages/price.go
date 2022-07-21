@@ -28,7 +28,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 )
 
-const PriceMessageName = "price/v0"
+const PriceV0MessageName = "price/v0"
 const PriceV1MessageName = "price/v1"
 
 const priceMessageMaxSize = 1 * 1024 * 1024 // 1MB

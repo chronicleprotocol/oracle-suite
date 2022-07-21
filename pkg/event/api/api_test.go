@@ -35,7 +35,7 @@ import (
 
 func TestEventAPI(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	loc := local.New([]byte("test"), 4, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	loc := local.New([]byte("test"), 4, map[string]transport.Message{messages.EventV1MessageName: (*messages.Event)(nil)})
 	mem := store.NewMemoryStorage(time.Minute)
 	evs, err := store.New(store.Config{
 		EventTypes: []string{"event1", "event2"},
@@ -61,7 +61,7 @@ func TestEventAPI(t *testing.T) {
 		require.NoError(t, <-api.Wait())
 	}()
 
-	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
+	require.NoError(t, loc.Broadcast(messages.EventV1MessageName, &messages.Event{
 		Type:        "event1",
 		ID:          []byte("id1"),
 		Index:       []byte("idx1"),
@@ -70,7 +70,7 @@ func TestEventAPI(t *testing.T) {
 		Data:        map[string][]byte{"data_key": []byte("val")},
 		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
-	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
+	require.NoError(t, loc.Broadcast(messages.EventV1MessageName, &messages.Event{
 		Type:        "event1",
 		ID:          []byte("id2"),
 		Index:       []byte("idx1"),
@@ -79,7 +79,7 @@ func TestEventAPI(t *testing.T) {
 		Data:        map[string][]byte{"data_key": []byte("val")},
 		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
-	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
+	require.NoError(t, loc.Broadcast(messages.EventV1MessageName, &messages.Event{
 		Type:        "event1",
 		ID:          []byte("id3"),
 		Index:       []byte("idx2"), // different index
@@ -88,7 +88,7 @@ func TestEventAPI(t *testing.T) {
 		Data:        map[string][]byte{"data_key": []byte("val")},
 		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
-	require.NoError(t, loc.Broadcast(messages.EventMessageName, &messages.Event{
+	require.NoError(t, loc.Broadcast(messages.EventV1MessageName, &messages.Event{
 		Type:        "event2", // different type
 		ID:          []byte("id4"),
 		Index:       []byte("idx1"),

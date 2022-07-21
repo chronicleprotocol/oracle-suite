@@ -50,7 +50,7 @@ func (t testSigner) Sign(event *messages.Event) (bool, error) {
 
 func TestEventPublisher(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	loc := local.New([]byte("test"), 10, map[string]transport.Message{messages.EventMessageName: (*messages.Event)(nil)})
+	loc := local.New([]byte("test"), 10, map[string]transport.Message{messages.EventV1MessageName: (*messages.Event)(nil)})
 	lis := &testListener{ch: make(chan *messages.Event, 10)}
 	sig := &testSigner{}
 
@@ -93,8 +93,8 @@ func TestEventPublisher(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	rMsg1 := <-loc.Messages(messages.EventMessageName)
-	rMsg2 := <-loc.Messages(messages.EventMessageName)
+	rMsg1 := <-loc.Messages(messages.EventV1MessageName)
+	rMsg2 := <-loc.Messages(messages.EventV1MessageName)
 
 	assert.Equal(t, []byte("signer"), rMsg1.Message.(*messages.Event).Signatures["test"].Signer)
 	assert.Equal(t, []byte("signer"), rMsg2.Message.(*messages.Event).Signatures["test"].Signer)
