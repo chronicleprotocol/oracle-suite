@@ -43,7 +43,7 @@ type Price struct {
 
 	// messageVersion is the version of the message. The value 0 corresponds to
 	// the price/v0 and 1 to the price/v1 message. Both messages contain the
-	// data but the price/v1 uses protobuf to encode the data. After full
+	// same data but the price/v1 uses protobuf to encode the data. After full
 	// migration to the price/v1 message, the price/v0 must be removed
 	// along with this field.
 	messageVersion uint8
