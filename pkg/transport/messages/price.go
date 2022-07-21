@@ -31,20 +31,19 @@ import (
 const PriceMessageName = "price/v0"
 const PriceV1MessageName = "price/v1"
 
-var ErrPriceMalformedMessage = errors.New("malformed price message")
 var ErrUnknownMessageVersion = errors.New("unknown message version")
 
 type Price struct {
-	// MessageVersion is the version of the message. The value 0 corresponds to
+	Price   *oracle.Price   `json:"price"`
+	Trace   json.RawMessage `json:"trace"` // TODO: allow data in any format, not just JSON
+	Version string          `json:"version,omitempty"`
+
+	// messageVersion is the version of the message. The value 0 corresponds to
 	// the price/v0 and 1 to the price/v1 message. Both messages contain the
 	// data but the price/v1 uses protobuf to encode the data. After full
 	// migration to the price/v1 message, the price/v0 must be removed
 	// along with this field.
-	MessageVersion uint8 `json:"-"`
-
-	Price   *oracle.Price   `json:"price"`
-	Trace   json.RawMessage `json:"trace"`
-	Version string          `json:"version,omitempty"`
+	messageVersion uint8
 }
 
 func (p *Price) Marshall() ([]byte, error) {
@@ -56,19 +55,15 @@ func (p *Price) Unmarshall(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if p.Price == nil {
-		return ErrPriceMalformedMessage
-	}
 	return nil
 }
 
 // MarshallBinary implements the transport.Message interface.
 func (p *Price) MarshallBinary() ([]byte, error) {
-	switch p.MessageVersion {
+	switch p.messageVersion {
 	case 1:
-		data, err := proto.Marshal(&pb.Price{
+		pbPrice := &pb.Price{
 			Wat:     p.Price.Wat,
-			Val:     p.Price.Val.Bytes(),
 			Age:     p.Price.Age.Unix(),
 			Vrs:     ethereum.SignatureFromVRS(p.Price.V, p.Price.R, p.Price.S).Bytes(),
 			StarkR:  p.Price.StarkR,
@@ -76,7 +71,11 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 			StarkPK: p.Price.StarkPK,
 			Trace:   p.Trace,
 			Version: p.Version,
-		})
+		}
+		if p.Price.Val != nil {
+			pbPrice.Val = p.Price.Val.Bytes()
+		}
+		data, err := proto.Marshal(pbPrice)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +88,7 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 
 // UnmarshallBinary implements the transport.Message interface.
 func (p *Price) UnmarshallBinary(data []byte) error {
-	switch p.MessageVersion {
+	switch p.messageVersion {
 	case 1:
 		msg := &pb.Price{}
 		if err := proto.Unmarshal(data, msg); err != nil {
@@ -110,29 +109,44 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 		p.Trace = msg.Trace
 		p.Version = msg.Version
 	case 0:
-		return p.Unmarshall(data)
+		if err := p.Unmarshall(data); err != nil {
+			return err
+		}
+	default:
+		return ErrUnknownMessageVersion
 	}
-	return ErrUnknownMessageVersion
+	if p.Price.Val == nil {
+		p.Price.Val = big.NewInt(0)
+	}
+	if len(p.Price.StarkS) == 0 {
+		p.Price.StarkS = nil
+	}
+	if len(p.Price.StarkR) == 0 {
+		p.Price.StarkR = nil
+	}
+	if len(p.Price.StarkPK) == 0 {
+		p.Price.StarkPK = nil
+	}
+	return nil
 }
 
 func (p *Price) AsV0() *Price {
 	c := p.copy()
-	c.MessageVersion = 0
+	c.messageVersion = 0
 	return c
 }
 
 func (p *Price) AsV1() *Price {
 	c := p.copy()
-	c.MessageVersion = 1
+	c.messageVersion = 1
 	return c
 }
 
 func (p *Price) copy() *Price {
 	c := &Price{
-		MessageVersion: p.MessageVersion,
+		messageVersion: p.messageVersion,
 		Price: &oracle.Price{
 			Wat:     p.Price.Wat,
-			Val:     new(big.Int).Set(p.Price.Val),
 			Age:     p.Price.Age,
 			V:       p.Price.V,
 			R:       p.Price.R,
@@ -144,15 +158,24 @@ func (p *Price) copy() *Price {
 		Trace:   p.Trace,
 		Version: p.Version,
 	}
+	if p.Price.Val != nil {
+		c.Price.Val = new(big.Int).Set(p.Price.Val)
+	}
 	if p.Trace != nil {
 		c.Trace = make([]byte, len(p.Trace))
 		copy(c.Trace, p.Trace)
 	}
-	c.Price.StarkS = make([]byte, len(p.Price.StarkS))
-	c.Price.StarkR = make([]byte, len(p.Price.StarkR))
-	c.Price.StarkPK = make([]byte, len(p.Price.StarkPK))
-	copy(c.Price.StarkS, p.Price.StarkS)
-	copy(c.Price.StarkR, p.Price.StarkR)
-	copy(c.Price.StarkPK, p.Price.StarkPK)
+	if p.Price.StarkS != nil {
+		c.Price.StarkS = make([]byte, len(p.Price.StarkS))
+		copy(c.Price.StarkS, p.Price.StarkS)
+	}
+	if p.Price.StarkR != nil {
+		c.Price.StarkR = make([]byte, len(p.Price.StarkR))
+		copy(c.Price.StarkR, p.Price.StarkR)
+	}
+	if p.Price.StarkPK != nil {
+		c.Price.StarkPK = make([]byte, len(p.Price.StarkPK))
+		copy(c.Price.StarkPK, p.Price.StarkPK)
+	}
 	return c
 }
