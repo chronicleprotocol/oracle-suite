@@ -47,13 +47,12 @@ type Ghost struct {
 	ctx    context.Context
 	waitCh chan error
 
-	gofer      provider.Provider
-	signer     ethereum.Signer
-	transport  transport.Transport
-	interval   time.Duration
-	pairs      []string
-	goferPairs map[provider.Pair]string
-	log        log.Logger
+	priceProvider provider.Provider
+	signer        ethereum.Signer
+	transport     transport.Transport
+	interval      time.Duration
+	pairs         []provider.Pair
+	log           log.Logger
 }
 
 // Config is the configuration for the Ghost.
@@ -63,7 +62,7 @@ type Config struct {
 	// Signer is an instance of the ethereum.Signer which will be used to
 	// sign prices.
 	Signer ethereum.Signer
-	// Transport is a implementation of transport used to send prices to
+	// Transport is an implementation of transport used to send prices to
 	// relayers.
 	Transport transport.Transport
 	// Interval describes how often we should send prices to the network.
@@ -88,15 +87,18 @@ func NewGhost(cfg Config) (*Ghost, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
+	pairs, err := provider.NewPairs(cfg.Pairs...)
+	if err != nil {
+		return nil, err
+	}
 	g := &Ghost{
-		waitCh:     make(chan error),
-		gofer:      cfg.PriceProvider,
-		signer:     cfg.Signer,
-		transport:  cfg.Transport,
-		interval:   cfg.Interval,
-		pairs:      cfg.Pairs,
-		goferPairs: make(map[provider.Pair]string),
-		log:        cfg.Logger.WithField("tag", LoggerTag),
+		waitCh:        make(chan error),
+		priceProvider: cfg.PriceProvider,
+		signer:        cfg.Signer,
+		transport:     cfg.Transport,
+		interval:      cfg.Interval,
+		pairs:         pairs,
+		log:           cfg.Logger.WithField("tag", LoggerTag),
 	}
 	return g, nil
 }
@@ -110,27 +112,6 @@ func (g *Ghost) Start(ctx context.Context) error {
 	}
 	g.log.Infof("Starting")
 	g.ctx = ctx
-
-	// Unfortunately, the Provider stores pairs in the AAA/BBB format but Ghost
-	// (and oracle contract) stores them in AAABBB format. Because of this we
-	// need to make this wired mapping:
-	for _, pair := range g.pairs {
-		goferPairs, err := g.gofer.Pairs()
-		if err != nil {
-			return err
-		}
-		found := false
-		for _, goferPair := range goferPairs {
-			if goferPair.Base+goferPair.Quote == pair {
-				g.goferPairs[goferPair] = pair
-				found = true
-				break
-			}
-		}
-		if !found {
-			return ErrUnableToFindAsset{AssetName: pair}
-		}
-	}
 
 	err := g.broadcasterLoop()
 	if err != nil {
@@ -147,12 +128,11 @@ func (g *Ghost) Wait() chan error {
 }
 
 // broadcast sends price for single pair to the network. This method uses
-// current price from the Provider so it must be updated beforehand.
-func (g *Ghost) broadcast(goferPair provider.Pair) error {
+// current price from the Provider, so it must be updated beforehand.
+func (g *Ghost) broadcast(pair provider.Pair) error {
 	var err error
 
-	pair := g.goferPairs[goferPair]
-	tick, err := g.gofer.Price(goferPair)
+	tick, err := g.priceProvider.Price(pair)
 	if err != nil {
 		return err
 	}
@@ -161,7 +141,7 @@ func (g *Ghost) broadcast(goferPair provider.Pair) error {
 	}
 
 	// Create price:
-	price := &oracle.Price{Wat: pair, Age: tick.Time}
+	price := &oracle.Price{Wat: pair.Base + pair.Quote, Age: tick.Time}
 	price.SetFloat64Price(tick.Price)
 
 	// Sign price:
@@ -201,24 +181,22 @@ func (g *Ghost) broadcasterLoop() error {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				// TODO: fetch all prices before broadcast is called
-
 				// Send prices to the network:
 				//
 				// Signing may be slow, especially with high KDF so this is why
 				// we're using goroutines here.
 				wg.Add(1)
 				go func() {
-					for assetPair := range g.goferPairs {
-						err := g.broadcast(assetPair)
+					for _, pair := range g.pairs {
+						err := g.broadcast(pair)
 						if err != nil {
 							g.log.
-								WithFields(log.Fields{"assetPair": assetPair}).
+								WithFields(log.Fields{"assetPair": pair}).
 								WithError(err).
 								Warn("Unable to broadcast price")
 						} else {
 							g.log.
-								WithFields(log.Fields{"assetPair": assetPair}).
+								WithFields(log.Fields{"assetPair": pair}).
 								Info("Price broadcast")
 						}
 					}
