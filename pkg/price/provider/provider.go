@@ -108,3 +108,7 @@ type Price struct {
 	Prices     []*Price
 	Error      string
 }
+
+type PriceHook interface {
+	Check(map[Pair]*Price) error
+}

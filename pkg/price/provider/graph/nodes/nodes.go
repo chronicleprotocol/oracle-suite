@@ -15,7 +15,9 @@
 
 package nodes
 
-import "github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+import (
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
+)
 
 // Node represents generics node in a graph.
 type Node interface {

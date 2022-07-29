@@ -5,11 +5,13 @@ COPY . .
 ENV CGO_ENABLED=0 \
     GOSUMDB=off
 
-RUN rm -rf dist \
-    && mkdir dist \
-    && go mod vendor \
-    && go build -o dist/gofer ./cmd/gofer \
-    && go build -o dist/rpc-splitter ./cmd/rpc-splitter
+# NOTE splitting each command into its own RUN statement allows better insight
+# when a specific command fails
+RUN rm -rf dist
+RUN mkdir dist
+RUN go mod vendor
+RUN go build -o dist/gofer ./cmd/gofer
+RUN go build -o dist/rpc-splitter ./cmd/rpc-splitter
 
 FROM golang:1-alpine
 RUN apk --no-cache add ca-certificates git bash

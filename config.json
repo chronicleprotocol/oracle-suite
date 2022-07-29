@@ -365,7 +365,10 @@
           [{ "origin": "curve", "pair": "RETH/WSTETH" },{ "origin": ".", "pair": "WSTETH/ETH" }]
         ],
         "params": {
-          "minimumSuccessfulSources": 3
+          "minimumSuccessfulSources": 3,
+          "postPriceHook": {
+              "circuitContract": "0xa3105dee5ec73a7003482b1a8968dc88666f3589"
+          }
         }
       },
       "RETH/USD": {

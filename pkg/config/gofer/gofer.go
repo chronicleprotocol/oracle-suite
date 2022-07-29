@@ -16,6 +16,7 @@
 package gofer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -87,7 +88,8 @@ type PriceModel struct {
 }
 
 type MedianPriceModel struct {
-	MinSourceSuccess int `json:"minimumSuccessfulSources"`
+	MinSourceSuccess int                    `json:"minimumSuccessfulSources"`
+	PostPriceHook    map[string]interface{} `json:"postPriceHook"`
 }
 
 type Source struct {
@@ -134,6 +136,27 @@ func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (pro
 		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
 	}
 	return gof, nil
+}
+
+func (c *Gofer) ConfigurePriceHook(ctx context.Context, cli ethereum.Client) (provider.PriceHook, error) {
+	m := provider.NewHookParams()
+	for name, model := range c.PriceModels {
+		switch model.Method {
+		case "median":
+			var params MedianPriceModel
+			if model.Params != nil {
+				err := json.Unmarshal(model.Params, &params)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if len(params.PostPriceHook) > 0 {
+				m[name] = params.PostPriceHook
+			}
+		default:
+		}
+	}
+	return provider.NewPostPriceHook(ctx, cli, m)
 }
 
 // ConfigureGofer returns a new async gofer instance.

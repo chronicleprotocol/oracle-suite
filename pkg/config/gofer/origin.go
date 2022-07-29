@@ -209,7 +209,7 @@ func NewHandler(
 		if err != nil {
 			return nil, err
 		}
-		h, err := origins.NewRockerPool(cli, contracts, averageFromBlocks)
+		h, err := origins.NewRocketPool(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}

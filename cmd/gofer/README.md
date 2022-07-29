@@ -129,6 +129,8 @@ Price model for each asset pair consists of three keys: `method`, `sources` and 
       the `params` field:
         - `minimumSuccessfulSources` - minimum number of successfully retrieved sources to consider calculated median
           price as reliable.
+        - `postPriceHook` - In some cases a check should be done after the median price has been obtained. E.g. in the case of `rETH`, a circuit breaker value is checked against the obtained median, and if the deviation is high enough, a price error will be set.
+
 
 ### Origins configuration
 

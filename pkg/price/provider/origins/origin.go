@@ -328,7 +328,10 @@ func buildOriginURL(template, configURL, defaultURL string, a ...interface{}) st
 func reduceEtherAverageFloat(r [][]byte) *big.Float {
 	total := new(big.Float).SetInt64(0)
 	for _, resp := range r {
-		price := new(big.Int).SetBytes(resp)
+		// TODO(jamesr) Always uint256, so even if resp is larger, truncate.
+		// However, this assumes that we only care about the first 32 bytes.
+		// You might want the last 32... perhaps revisit this.
+		price := new(big.Int).SetBytes(resp[0:32])
 		total = new(big.Float).Add(
 			total,
 			new(big.Float).Quo(new(big.Float).SetInt(price), new(big.Float).SetUint64(ether)),

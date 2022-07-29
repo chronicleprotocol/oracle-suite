@@ -79,7 +79,7 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 		return nil, err
 	}
 	if indirect {
-		return nil, fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String())
+		return nil, fmt.Errorf("cannot use indirect pair to retrieve price: %s", pair.String())
 	}
 	var priceFloat *big.Float
 	{
@@ -108,6 +108,7 @@ func (s BalancerV2) callOne(pair Pair) (*Price, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		priceFloat = new(big.Float).Mul(reduceEtherAverageFloat(resp), priceFloat)
 	}
 
