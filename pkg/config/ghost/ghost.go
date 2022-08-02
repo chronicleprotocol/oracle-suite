@@ -27,7 +27,7 @@ import (
 
 //nolint
 var ghostFactory = func(cfg ghost.Config) (*ghost.Ghost, error) {
-	return ghost.NewGhost(cfg)
+	return ghost.New(cfg)
 }
 
 type Ghost struct {
