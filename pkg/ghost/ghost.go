@@ -57,6 +57,8 @@ type Ghost struct {
 
 // Config is the configuration for the Ghost.
 type Config struct {
+	// Pairs is a list supported pairs.
+	Pairs []string
 	// PriceProvider is an instance of the provider.Provider.
 	PriceProvider provider.Provider
 	// Signer is an instance of the ethereum.Signer which will be used to
@@ -70,11 +72,9 @@ type Config struct {
 	// Logger is a current logger interface used by the Ghost. The Logger
 	// helps to monitor asynchronous processes.
 	Logger log.Logger
-	// Pairs is a list supported pairs.
-	Pairs []string
 }
 
-func NewGhost(cfg Config) (*Ghost, error) {
+func New(cfg Config) (*Ghost, error) {
 	if cfg.PriceProvider == nil {
 		return nil, errors.New("price provider must not be nil")
 	}
@@ -112,12 +112,7 @@ func (g *Ghost) Start(ctx context.Context) error {
 	}
 	g.log.Infof("Starting")
 	g.ctx = ctx
-
-	err := g.broadcasterLoop()
-	if err != nil {
-		return err
-	}
-
+	go g.broadcasterRoutine()
 	go g.contextCancelHandler()
 	return nil
 }
@@ -158,56 +153,49 @@ func (g *Ghost) broadcast(pair provider.Pair) error {
 	if err := g.transport.Broadcast(messages.PriceV0MessageName, msg.AsV0()); err != nil {
 		return err
 	}
-	if err := g.transport.Broadcast(messages.PriceV0MessageName, msg.AsV1()); err != nil {
+	if err := g.transport.Broadcast(messages.PriceV1MessageName, msg.AsV1()); err != nil {
 		return err
 	}
-
 	return err
 }
 
-// broadcasterLoop creates an asynchronous loop which fetches prices from exchanges and then
+// broadcasterRoutine creates an asynchronous loop which fetches prices from exchanges and then
 // sends them to the network at a specified interval.
-func (g *Ghost) broadcasterLoop() error {
+func (g *Ghost) broadcasterRoutine() {
 	if g.interval == 0 {
-		return nil
+		return
 	}
-
+	var wg sync.WaitGroup
 	ticker := time.NewTicker(g.interval)
-	wg := sync.WaitGroup{}
-	go func() {
-		for {
-			select {
-			case <-g.ctx.Done():
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				// Send prices to the network:
-				//
-				// Signing may be slow, especially with high KDF so this is why
-				// we're using goroutines here.
-				wg.Add(1)
-				go func() {
-					for _, pair := range g.pairs {
-						err := g.broadcast(pair)
-						if err != nil {
-							g.log.
-								WithFields(log.Fields{"assetPair": pair}).
-								WithError(err).
-								Warn("Unable to broadcast price")
-						} else {
-							g.log.
-								WithFields(log.Fields{"assetPair": pair}).
-								Info("Price broadcast")
-						}
+	for {
+		select {
+		case <-g.ctx.Done():
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			// Send prices to the network:
+			// Signing may be slow, especially with high KDF so this is why
+			// we are using goroutines here.
+			wg.Add(1)
+			go func() {
+				for _, pair := range g.pairs {
+					err := g.broadcast(pair)
+					if err != nil {
+						g.log.
+							WithFields(log.Fields{"assetPair": pair}).
+							WithError(err).
+							Warn("Unable to broadcast price")
+					} else {
+						g.log.
+							WithFields(log.Fields{"assetPair": pair}).
+							Info("Price broadcast")
 					}
-					wg.Done()
-				}()
-			}
-			wg.Wait()
+				}
+				wg.Done()
+			}()
 		}
-	}()
-
-	return nil
+		wg.Wait()
+	}
 }
 
 func (g *Ghost) contextCancelHandler() {
