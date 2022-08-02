@@ -34,16 +34,16 @@ type Local struct {
 
 	id     []byte
 	waitCh chan error
-	subs   map[string]subscription
+	subs   map[string]*subscription
 }
 
 type subscription struct {
 	// typ is the structure type to which the message must be unmarshalled.
 	typ reflect.Type
-	// msgs is a channel used to broadcast raw message data.
-	msgs chan []byte
-	// status is a channel used to broadcast unmarshalled messages.
-	status chan transport.ReceivedMessage
+	// rawMsgs is a channel used to broadcast raw message data.
+	rawMsgs chan []byte
+	// msgs is a channel used to broadcast unmarshalled messages.
+	msgs chan transport.ReceivedMessage
 }
 
 // New returns a new instance of the Local structure. The created transport
@@ -56,14 +56,16 @@ func New(id []byte, queue int, topics map[string]transport.Message) *Local {
 	l := &Local{
 		id:     id,
 		waitCh: make(chan error),
-		subs:   make(map[string]subscription),
+		subs:   make(map[string]*subscription),
 	}
 	for topic, typ := range topics {
-		l.subs[topic] = subscription{
-			typ:    reflect.TypeOf(typ).Elem(),
-			msgs:   make(chan []byte, queue),
-			status: make(chan transport.ReceivedMessage),
+		sub := &subscription{
+			typ:     reflect.TypeOf(typ).Elem(),
+			rawMsgs: make(chan []byte, queue),
+			msgs:    make(chan transport.ReceivedMessage),
 		}
+		l.subs[topic] = sub
+		go l.unmarshallRoutine(sub)
 	}
 	return l
 }
@@ -76,8 +78,6 @@ func (l *Local) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	l.mu.RLock()
-	defer l.mu.RUnlock()
 	l.ctx = ctx
 	go l.contextCancelHandler()
 	return nil
@@ -95,14 +95,12 @@ func (l *Local) ID() []byte {
 
 // Broadcast implements the transport.Transport interface.
 func (l *Local) Broadcast(topic string, message transport.Message) error {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
 	if sub, ok := l.subs[topic]; ok {
 		b, err := message.MarshallBinary()
 		if err != nil {
 			return err
 		}
-		sub.msgs <- b
+		sub.rawMsgs <- b
 		return nil
 	}
 	return ErrNotSubscribed
@@ -113,22 +111,27 @@ func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	if sub, ok := l.subs[topic]; ok {
-		go func() {
-			select {
-			case <-l.ctx.Done():
-				return
-			case msg := <-sub.msgs:
-				message := reflect.New(sub.typ).Interface().(transport.Message)
-				sub.status <- transport.ReceivedMessage{
-					Message: message,
-					Author:  l.id,
-					Error:   message.UnmarshallBinary(msg),
-				}
-			}
-		}()
-		return sub.status
+		return sub.msgs
 	}
 	return nil
+}
+
+func (l *Local) unmarshallRoutine(sub *subscription) {
+	for {
+		msg, ok := <-sub.rawMsgs
+		if !ok {
+			return
+		}
+		l.mu.RLock()
+		message := reflect.New(sub.typ).Interface().(transport.Message)
+		err := message.UnmarshallBinary(msg)
+		sub.msgs <- transport.ReceivedMessage{
+			Message: message,
+			Author:  l.id,
+			Error:   err,
+		}
+		l.mu.RUnlock()
+	}
 }
 
 // contextCancelHandler handles context cancellation.
@@ -138,7 +141,7 @@ func (l *Local) contextCancelHandler() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for _, sub := range l.subs {
-		close(sub.status)
+		close(sub.msgs)
 	}
-	l.subs = make(map[string]subscription)
+	l.subs = nil
 }

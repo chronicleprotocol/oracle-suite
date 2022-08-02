@@ -18,7 +18,6 @@ package ghost
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -34,14 +33,6 @@ import (
 )
 
 const LoggerTag = "GHOST"
-
-type ErrUnableToFindAsset struct {
-	AssetName string
-}
-
-func (e ErrUnableToFindAsset) Error() string {
-	return fmt.Sprintf("unable to find the %s in Provider price models", e.AssetName)
-}
 
 type Ghost struct {
 	ctx    context.Context

@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"sort"
 	"testing"
@@ -30,7 +31,6 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	priceMocks "github.com/chronicleprotocol/oracle-suite/pkg/price/provider/mocks"
@@ -41,7 +41,7 @@ import (
 )
 
 var (
-	PriceAAABBB1 = &provider.Price{
+	PriceAAABBB = &provider.Price{
 		Type:       "median",
 		Parameters: nil,
 		Pair: provider.Pair{
@@ -56,7 +56,7 @@ var (
 		Prices:    nil,
 		Error:     "",
 	}
-	PriceXXXYYY1 = &provider.Price{
+	PriceXXXYYY = &provider.Price{
 		Type:       "median",
 		Parameters: nil,
 		Pair: provider.Pair{
@@ -71,65 +71,229 @@ var (
 		Prices:    nil,
 		Error:     "",
 	}
+	InvalidPriceAAABBB = &provider.Price{
+		Type:       "median",
+		Parameters: nil,
+		Pair: provider.Pair{
+			Base:  "AAA",
+			Quote: "BBB",
+		},
+		Price:     0,
+		Bid:       0,
+		Ask:       0,
+		Volume24h: 0,
+		Time:      time.Unix(0, 0),
+		Prices:    nil,
+		Error:     "err",
+	}
+	PriceAAABBBHash = errutil.Must(hex.DecodeString("9315c7118c32ce6c778bf691147c554afd2dc816b5c6bd191ac03784f69aa004"))
+	PriceXXXYYYHash = errutil.Must(hex.DecodeString("8dd1c8d47ec9eafda294cfc8c0c8d4041a13d7a89536a89eb6685a79d9fa6bc4"))
 )
 
-func TestGhost(t *testing.T) {
+func TestGhost_Broadcast(t *testing.T) {
+	tests := []struct {
+		name    string
+		prices  int
+		mocks   func(pro *priceMocks.Provider, sig *ethereumMocks.Signer)
+		asserts func(t *testing.T, pricesV0, pricesV1 []*messages.Price)
+	}{
+		{
+			name:   "valid-prices",
+			prices: 2,
+			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Signer) {
+				pro.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return(PriceAAABBB, nil).Times(1)
+				pro.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY, nil).Times(1)
+				sig.On("Signature", PriceAAABBBHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+				sig.On("Signature", PriceXXXYYYHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+			},
+			asserts: func(t *testing.T, pricesV0, pricesV1 []*messages.Price) {
+				require.Len(t, pricesV0, 2)
+				require.Len(t, pricesV1, 2)
+				assertPrice(t, PriceAAABBB, pricesV0[0])
+				assertPrice(t, PriceXXXYYY, pricesV0[1])
+				assertPrice(t, PriceAAABBB, pricesV1[0])
+				assertPrice(t, PriceXXXYYY, pricesV1[1])
+			},
+		},
+		{
+			name:   "invalid-price",
+			prices: 1,
+			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Signer) {
+				pro.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return(InvalidPriceAAABBB, nil).Times(1)
+				pro.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY, nil).Times(1)
+				sig.On("Signature", PriceXXXYYYHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+			},
+			asserts: func(t *testing.T, pricesV0, pricesV1 []*messages.Price) {
+				require.Len(t, pricesV0, 1)
+				require.Len(t, pricesV1, 1)
+				assertPrice(t, PriceXXXYYY, pricesV0[0])
+				assertPrice(t, PriceXXXYYY, pricesV1[0])
+			},
+		},
+		{
+			name:   "price-unavailable",
+			prices: 1,
+			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Signer) {
+				pro.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return((*provider.Price)(nil), errors.New("err")).Times(1)
+				pro.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY, nil).Times(1)
+				sig.On("Signature", PriceXXXYYYHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+			},
+			asserts: func(t *testing.T, pricesV0, pricesV1 []*messages.Price) {
+				require.Len(t, pricesV0, 1)
+				require.Len(t, pricesV1, 1)
+				assertPrice(t, PriceXXXYYY, pricesV0[0])
+				assertPrice(t, PriceXXXYYY, pricesV1[0])
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer ctxCancel()
+
+			pro := &priceMocks.Provider{}
+			sig := &ethereumMocks.Signer{}
+			tra := local.New([]byte("test"), 0, map[string]transport.Message{
+				messages.PriceV0MessageName: (*messages.Price)(nil),
+				messages.PriceV1MessageName: (*messages.Price)(nil),
+			})
+			_ = tra.Start(ctx)
+			defer func() {
+				<-tra.Wait()
+			}()
+
+			gho, err := New(Config{
+				Pairs:         []string{"AAA/BBB", "XXX/YYY"},
+				PriceProvider: pro,
+				Signer:        sig,
+				Transport:     tra,
+				Interval:      time.Second,
+			})
+			require.NoError(t, err)
+			require.NoError(t, gho.Start(ctx))
+			defer func() {
+				<-gho.Wait()
+			}()
+
+			tt.mocks(pro, sig)
+
+			// Wait for two messages.
+			var pricesV0, pricesV1 []*messages.Price
+			for {
+				select {
+				case msg := <-tra.Messages(messages.PriceV0MessageName):
+					price := msg.Message.(*messages.Price)
+					pricesV0 = append(pricesV0, price)
+				case msg := <-tra.Messages(messages.PriceV1MessageName):
+					price := msg.Message.(*messages.Price)
+					pricesV1 = append(pricesV1, price)
+				}
+				if len(pricesV0) >= tt.prices && len(pricesV1) >= tt.prices {
+					break
+				}
+			}
+			ctxCancel()
+			sort.Slice(pricesV0, func(i, j int) bool {
+				return pricesV0[i].Price.Wat < pricesV0[j].Price.Wat
+			})
+			sort.Slice(pricesV1, func(i, j int) bool {
+				return pricesV1[i].Price.Wat < pricesV1[j].Price.Wat
+			})
+
+			tt.asserts(t, pricesV0, pricesV1)
+		})
+	}
+}
+
+func TestGhost_InvalidConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     Config
+		wantErr bool
+	}{
+		{
+			name: "minimal-valid-config",
+			cfg: Config{
+				PriceProvider: &priceMocks.Provider{},
+				Signer:        &ethereumMocks.Signer{},
+				Transport:     local.New([]byte("test"), 0, nil),
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid-pair",
+			cfg: Config{
+				PriceProvider: &priceMocks.Provider{},
+				Signer:        &ethereumMocks.Signer{},
+				Transport:     local.New([]byte("test"), 0, nil),
+				Pairs:         []string{"AAABBB"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing-price-provider",
+			cfg: Config{
+				PriceProvider: nil,
+				Signer:        &ethereumMocks.Signer{},
+				Transport:     local.New([]byte("test"), 0, nil),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing-signer",
+			cfg: Config{
+				PriceProvider: &priceMocks.Provider{},
+				Signer:        nil,
+				Transport:     local.New([]byte("test"), 0, nil),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing-transport",
+			cfg: Config{
+				PriceProvider: &priceMocks.Provider{},
+				Signer:        &ethereumMocks.Signer{},
+				Transport:     nil,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := New(tt.cfg)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGhost_Start(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer ctxCancel()
 
-	pri := &priceMocks.Provider{}
+	pro := &priceMocks.Provider{}
 	sig := &ethereumMocks.Signer{}
-	tra := local.New([]byte("test"), 0, map[string]transport.Message{
-		messages.PriceV0MessageName: (*messages.Price)(nil),
-		messages.PriceV1MessageName: (*messages.Price)(nil),
-	})
+	tra := local.New([]byte("test"), 0, map[string]transport.Message{})
 	_ = tra.Start(ctx)
+	defer func() {
+		<-tra.Wait()
+	}()
 
-	ps, err := New(Config{
-		Pairs:         []string{"AAA/BBB", "XXX/YYY"},
-		PriceProvider: pri,
+	gho, err := New(Config{
+		Pairs:         []string{},
+		PriceProvider: pro,
 		Signer:        sig,
 		Transport:     tra,
 		Interval:      time.Second,
-		Logger:        null.New(),
 	})
 	require.NoError(t, err)
-	require.NoError(t, ps.Start(ctx))
-
-	pri.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return(PriceAAABBB1, nil)
-	pri.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY1, nil)
-	sig.On("Signature", errutil.Must(hex.DecodeString("9315c7118c32ce6c778bf691147c554afd2dc816b5c6bd191ac03784f69aa004"))).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
-	sig.On("Signature", errutil.Must(hex.DecodeString("8dd1c8d47ec9eafda294cfc8c0c8d4041a13d7a89536a89eb6685a79d9fa6bc4"))).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
-
-	// Wait for two messages. They should be sent after 2 seconds.
-	var pricesV0, pricesV1 []*messages.Price
-	for {
-		select {
-		case msg := <-tra.Messages(messages.PriceV0MessageName):
-			price := msg.Message.(*messages.Price)
-			pricesV0 = append(pricesV0, price)
-		case msg := <-tra.Messages(messages.PriceV1MessageName):
-			price := msg.Message.(*messages.Price)
-			pricesV1 = append(pricesV1, price)
-		}
-		if len(pricesV0) == 2 && len(pricesV1) == 2 {
-			break
-		}
-	}
-	sort.Slice(pricesV0, func(i, j int) bool {
-		return pricesV0[i].Price.Wat < pricesV0[j].Price.Wat
-	})
-	sort.Slice(pricesV1, func(i, j int) bool {
-		return pricesV1[i].Price.Wat < pricesV1[j].Price.Wat
-	})
-
-	require.Len(t, pricesV0, 2)
-	require.Len(t, pricesV1, 2)
-
-	assertPrice(t, PriceAAABBB1, pricesV0[0])
-	assertPrice(t, PriceXXXYYY1, pricesV0[1])
-	assertPrice(t, PriceAAABBB1, pricesV1[0])
-	assertPrice(t, PriceXXXYYY1, pricesV1[1])
+	require.Error(t, gho.Start(nil)) // Start without context should fail.
+	require.NoError(t, gho.Start(ctx))
+	require.Error(t, gho.Start(ctx)) // Second start should fail.
+	ctxCancel()
 }
 
 func assertPrice(t *testing.T, expected *provider.Price, actual *messages.Price) {
