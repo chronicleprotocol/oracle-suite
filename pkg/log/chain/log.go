@@ -16,9 +16,11 @@
 package chain
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 // New creates a new logger that can chain multiple loggers.
@@ -30,6 +32,32 @@ func New(loggers ...log.Logger) log.Logger {
 
 type logger struct {
 	loggers []log.Logger
+}
+
+var _ log.LoggerService = (*logger)(nil)
+
+func (c *logger) Start(ctx context.Context) error {
+	for _, l := range c.loggers {
+		if srv, ok := l.(supervisor.Service); ok {
+			if err := srv.Start(ctx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *logger) Wait() chan error {
+	ch := make(chan error)
+	for _, l := range c.loggers {
+		if srv, ok := l.(supervisor.Service); ok {
+			go func() {
+				ch <- <-srv.Wait()
+				close(ch)
+			}()
+		}
+	}
+	return ch
 }
 
 // Level implements the log.Logger interface.

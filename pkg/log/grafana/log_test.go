@@ -325,9 +325,9 @@ func TestLogger(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			ctx, ctxCancel := context.WithCancel(context.Background())
+			_, ctxCancel := context.WithCancel(context.Background())
 			r := int32(0)
-			l, _ := New(ctx, log.Debug, Config{
+			l, _ := New(log.Debug, Config{
 				Metrics:          tt.metrics,
 				Interval:         5,
 				GraphiteEndpoint: "https://example.com/metrics",

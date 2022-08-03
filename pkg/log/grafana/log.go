@@ -84,16 +84,12 @@ type Metric struct {
 // send them to Grafana Cloud using the Graphite endpoint. It starts
 // a background goroutine that will be sending metrics to the Grafana Cloud
 // server as often as described in Config.Interval parameter.
-func New(ctx context.Context, level log.Level, cfg Config) (log.Logger, error) {
-	if ctx == nil {
-		return nil, fmt.Errorf("context is nil")
-	}
+func New(level log.Level, cfg Config) (log.Logger, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
 	l := &logger{
 		shared: &shared{
-			ctx:              ctx,
 			metrics:          cfg.Metrics,
 			logger:           cfg.Logger.WithField("tag", LoggerTag),
 			interval:         cfg.Interval,
@@ -105,11 +101,13 @@ func New(ctx context.Context, level log.Level, cfg Config) (log.Logger, error) {
 		level:  level,
 		fields: log.Fields{},
 	}
-	go l.pushRoutine()
 	return l, nil
 }
 
 type logger struct {
+	ctx    context.Context
+	waitCh chan error
+
 	*shared
 	level  log.Level
 	fields log.Fields
@@ -117,7 +115,6 @@ type logger struct {
 
 type shared struct {
 	mu               sync.Mutex
-	ctx              context.Context
 	logger           log.Logger
 	metrics          []Metric
 	interval         uint
@@ -356,8 +353,26 @@ func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
 		Debug("New metric point")
 }
 
+var _ log.LoggerService = (*logger)(nil)
+
+func (c *logger) Start(ctx context.Context) error {
+	if ctx == nil {
+		return fmt.Errorf("context is nil")
+	}
+	c.ctx = ctx
+	c.waitCh = make(chan error)
+	go c.pushRoutine()
+	return nil
+}
+
+func (c *logger) Wait() chan error {
+	return c.waitCh
+}
+
 // pushRoutine pushes metrics in interval defined in c.interval.
 func (c *logger) pushRoutine() {
+	defer c.logger.Info("Stopped")
+	defer close(c.waitCh)
 	defer c.pushMetrics()
 	ticker := time.NewTicker(time.Duration(c.interval) * time.Second)
 	for {
@@ -394,6 +409,11 @@ func (c *logger) pushMetrics() {
 	// Grafana is complete.
 	once.Do(c.mu.Unlock)
 	reqBody, err := json.Marshal(metrics)
+	defer func() {
+		if err != nil {
+			c.waitCh <- err
+		}
+	}()
 	if err != nil {
 		c.logger.
 			WithError(err).

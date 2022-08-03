@@ -500,7 +500,6 @@ func (s *server) call(
 	method string,
 	args ...interface{},
 ) error {
-
 	if reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return fmt.Errorf("call result parameter must be pointer")
 	}

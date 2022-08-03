@@ -16,7 +16,6 @@
 package logger
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -33,7 +32,7 @@ import (
 )
 
 var grafanaLoggerFactory = func(lvl log.Level, cfg grafana.Config) (log.Logger, error) {
-	return grafana.New(context.Background(), lvl, cfg)
+	return grafana.New(lvl, cfg)
 }
 
 type Dependencies struct {

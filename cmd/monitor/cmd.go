@@ -29,6 +29,7 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 type options struct {
@@ -110,11 +111,20 @@ func NewMedianCmd(opts *options) *cobra.Command {
 				}
 
 				log.
-					WithField("val", val).
+					WithField("val", val.String()).
 					WithField("wat", contract.Wat).
 					WithField("symbol", contract.Symbol).
 					WithField("addr", addr.Hex()).
 					Info("current median price")
+			}
+
+			if srv, ok := log.(supervisor.Service); ok {
+				ctx, cancelFn := context.WithCancel(ctx)
+				cancelFn()
+				if err := srv.Start(ctx); err != nil {
+					return err
+				}
+				return <-srv.Wait()
 			}
 
 			return nil

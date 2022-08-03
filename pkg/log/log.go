@@ -16,6 +16,7 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -92,4 +93,10 @@ type Logger interface {
 	Warn(args ...interface{})
 	Error(args ...interface{})
 	Panic(args ...interface{})
+}
+
+type LoggerService interface {
+	Logger
+	Start(ctx context.Context) error
+	Wait() chan error
 }
