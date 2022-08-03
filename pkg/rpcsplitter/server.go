@@ -533,7 +533,7 @@ func (s *server) call(
 						WithField("method", method).
 						WithField("args", args).
 						WithField("duration", time.Since(t)).
-						Info("Call")
+						Debug("Call")
 					ch <- res
 				}
 			}()
