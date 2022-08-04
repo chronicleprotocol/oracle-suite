@@ -38,8 +38,8 @@ var ErrUnknownPriceMessageVersion = errors.New("unknown message version")
 
 type Price struct {
 	Price   *oracle.Price   `json:"price"`
-	Trace   json.RawMessage `json:"trace"` // TODO: allow data in any format, not just JSON
-	Version string          `json:"version,omitempty"`
+	Trace   json.RawMessage `json:"trace"`             // TODO: allow data in any format, not just JSON
+	Version string          `json:"version,omitempty"` // TODO: this should move to some meta field e.g. `feedVersion`
 
 	// messageVersion is the version of the message. The value 0 corresponds to
 	// the price/v0 and 1 to the price/v1 message. Both messages contain the

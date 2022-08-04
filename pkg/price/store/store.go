@@ -200,6 +200,7 @@ func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
 	} else {
 		p.log.
 			WithFields(price.Price.Fields(p.signer)).
+			WithField("version", price.Version).
 			Info("Price received")
 	}
 }
