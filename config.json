@@ -236,7 +236,7 @@
           },
           "contracts": {
             "AAVE/WETH": "0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f",
-            "BAT/WETH": "0xa70d458a4d9bc0e6571565faee18a48da5c0d593",
+            "BAT/WETH": "0xb6909b960dbbe7392d405429eb2b3649752b4838",
             "SNX/WETH": "0x43ae24960e5534731fc831386c07755a2dc33d47",
             "COMP/WETH": "0xcffdded873554f362ac02f8fb1f02e5ada10516f",
             "WETH/USDC": "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
