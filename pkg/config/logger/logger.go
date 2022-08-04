@@ -19,10 +19,8 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"reflect"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
@@ -100,9 +98,6 @@ func (c *Logger) configureGrafanaLogger(d Dependencies) (log.Logger, error) {
 			Tags:          cm.Tags,
 			TransformFunc: scalingFunc(cm.ScaleFactor),
 		}
-		if cm.Type == "semver" {
-			gm.ParserFunc = ToFloatVersion
-		}
 
 		// Compile the regular expression for a message:
 		gm.MatchMessage, err = regexp.Compile(cm.MatchMessage)
@@ -164,50 +159,4 @@ func scalingFunc(sf float64) func(v float64) float64 {
 		return nil
 	}
 	return func(v float64) float64 { return v * sf }
-}
-
-func ToFloatVersion(value reflect.Value) (float64, bool) {
-	if !value.IsValid() {
-		return 0, false
-	}
-	if value.Type().Kind() == reflect.String {
-		r := regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(.*)$`)
-		ret := r.FindStringSubmatch(value.String())
-		if ret == nil {
-			return 0, false
-		}
-
-		var vMajor, vMinor, vPatch float64
-		var err error
-		if ret[1] != "" {
-			vMajor, err = strconv.ParseFloat(ret[1], 64)
-			if err != nil {
-				return 0, false
-			}
-		} else {
-			vMajor = 0
-		}
-		if ret[2] != "" {
-			vMinor, err = strconv.ParseFloat(ret[2], 64)
-			if err != nil {
-				return 0, false
-			}
-		} else {
-			vMinor = 0
-		}
-		if ret[3] != "" {
-			vPatch, err = strconv.ParseFloat(ret[3], 64)
-			if err != nil {
-				return 0, false
-			}
-		} else {
-			vPatch = 0
-		}
-		v := vMajor*1e6 + vMinor*1e3 + vPatch
-		if len(ret[4]) > 0 {
-			return -v, err == nil
-		}
-		return v, err == nil
-	}
-	return 0, false
 }

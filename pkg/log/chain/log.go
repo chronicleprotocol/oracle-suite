@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 // New creates a new logger that can chain multiple loggers.
@@ -38,7 +37,7 @@ var _ log.LoggerService = (*logger)(nil)
 
 func (c *logger) Start(ctx context.Context) error {
 	for _, l := range c.loggers {
-		if srv, ok := l.(supervisor.Service); ok {
+		if srv, ok := l.(log.LoggerService); ok {
 			if err := srv.Start(ctx); err != nil {
 				return err
 			}
@@ -50,10 +49,9 @@ func (c *logger) Start(ctx context.Context) error {
 func (c *logger) Wait() chan error {
 	ch := make(chan error)
 	for _, l := range c.loggers {
-		if srv, ok := l.(supervisor.Service); ok {
+		if srv, ok := l.(log.LoggerService); ok {
 			go func() {
 				ch <- <-srv.Wait()
-				close(ch)
 			}()
 		}
 	}

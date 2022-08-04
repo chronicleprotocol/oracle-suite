@@ -105,15 +105,15 @@ func New(level log.Level, cfg Config) (log.Logger, error) {
 }
 
 type logger struct {
-	ctx    context.Context
-	waitCh chan error
-
 	*shared
 	level  log.Level
 	fields log.Fields
 }
 
 type shared struct {
+	ctx    context.Context
+	waitCh chan error
+
 	mu               sync.Mutex
 	logger           log.Logger
 	metrics          []Metric
@@ -356,9 +356,13 @@ func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
 var _ log.LoggerService = (*logger)(nil)
 
 func (c *logger) Start(ctx context.Context) error {
+	if c.ctx != nil {
+		return fmt.Errorf("service can be started only once")
+	}
 	if ctx == nil {
 		return fmt.Errorf("context is nil")
 	}
+	c.logger.Info("Starting")
 	c.ctx = ctx
 	c.waitCh = make(chan error)
 	go c.pushRoutine()
@@ -409,11 +413,6 @@ func (c *logger) pushMetrics() {
 	// Grafana is complete.
 	once.Do(c.mu.Unlock)
 	reqBody, err := json.Marshal(metrics)
-	defer func() {
-		if err != nil {
-			c.waitCh <- err
-		}
-	}()
 	if err != nil {
 		c.logger.
 			WithError(err).
