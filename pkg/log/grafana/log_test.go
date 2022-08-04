@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
@@ -73,7 +74,7 @@ func TestLogger(t *testing.T) {
 		// Value form version string:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key", ParserFunc: ToFloatVersion},
+				{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key", ParserFunc: loggerConfig.ToFloatVersion},
 			},
 			want: []want{
 				{name: "test", value: 1002003},
@@ -85,7 +86,7 @@ func TestLogger(t *testing.T) {
 		// Value form version string:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key", ParserFunc: ToFloatVersion},
+				{MatchMessage: regexp.MustCompile("foo"), Name: "test", Value: "key", ParserFunc: loggerConfig.ToFloatVersion},
 			},
 			want: []want{
 				{name: "test", value: -1002003},
