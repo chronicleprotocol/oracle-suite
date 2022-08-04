@@ -103,5 +103,8 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if g, ok := gof.(supervisor.Service); ok {
 		sup.Watch(g)
 	}
+	if l, ok := log.(supervisor.Service); ok {
+		sup.Watch(l)
+	}
 	return sup, nil
 }

@@ -91,5 +91,8 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	}
 	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, evs, api, sysmon.New(time.Minute, log))
+	if l, ok := log.(supervisor.Service); ok {
+		sup.Watch(l)
+	}
 	return sup, nil
 }

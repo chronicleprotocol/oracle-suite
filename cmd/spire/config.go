@@ -95,6 +95,9 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	}
 	sup := supervisor.New(ctx, log)
 	sup.Watch(tra, dat, age, sysmon.New(time.Minute, log))
+	if l, ok := log.(supervisor.Service); ok {
+		sup.Watch(l)
+	}
 	return sup, nil
 }
 
@@ -122,5 +125,8 @@ func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supe
 	}
 	sup := supervisor.New(ctx, log)
 	sup.Watch(cli)
+	if l, ok := log.(supervisor.Service); ok {
+		sup.Watch(l)
+	}
 	return sup, cli, nil
 }

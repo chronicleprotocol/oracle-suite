@@ -118,13 +118,13 @@ func NewMedianCmd(opts *options) *cobra.Command {
 					Info("current median price")
 			}
 
-			if srv, ok := log.(supervisor.Service); ok {
+			if l, ok := log.(supervisor.Service); ok {
 				ctx, cancelFn := context.WithCancel(ctx)
 				cancelFn()
-				if err := srv.Start(ctx); err != nil {
+				if err := l.Start(ctx); err != nil {
 					return err
 				}
-				return <-srv.Wait()
+				return <-l.Wait()
 			}
 
 			return nil
