@@ -530,52 +530,6 @@ func toFloat(value reflect.Value) (float64, bool) {
 	return 0, false
 }
 
-func ToFloatVersion(value reflect.Value) (float64, bool) {
-	if !value.IsValid() {
-		return 0, false
-	}
-	if value.Type().Kind() == reflect.String {
-		r := regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(.*)$`)
-		ret := r.FindStringSubmatch(value.String())
-		if ret == nil {
-			return 0, false
-		}
-
-		var vMajor, vMinor, vPatch float64
-		var err error
-		if ret[1] != "" {
-			vMajor, err = strconv.ParseFloat(ret[1], 64)
-			if err != nil {
-				return 0, false
-			}
-		} else {
-			vMajor = 0
-		}
-		if ret[2] != "" {
-			vMinor, err = strconv.ParseFloat(ret[2], 64)
-			if err != nil {
-				return 0, false
-			}
-		} else {
-			vMinor = 0
-		}
-		if ret[3] != "" {
-			vPatch, err = strconv.ParseFloat(ret[3], 64)
-			if err != nil {
-				return 0, false
-			}
-		} else {
-			vPatch = 0
-		}
-		v := vMajor*1e6 + vMinor*1e3 + vPatch
-		if len(ret[4]) > 0 {
-			return -v, err == nil
-		}
-		return v, err == nil
-	}
-	return 0, false
-}
-
 func toString(value reflect.Value) (string, bool) {
 	if !value.IsValid() {
 		return "", false
