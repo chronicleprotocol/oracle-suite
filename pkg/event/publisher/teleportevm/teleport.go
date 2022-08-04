@@ -36,10 +36,10 @@ const LoggerTag = "ETHEREUM_TELEPORT"
 const retryAttempts = 3               // The maximum number of attempts to call Client in case of an error.
 const retryInterval = 5 * time.Second // The delay between retry attempts.
 
-// teleportTopic0 is Keccak256("TeleportGUID((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
-var teleportTopic0 = ethereum.HexToHash("0x9f692a9304834fdefeb4f9cd17d1493600af19c70af547480cccf4a8a4a7752c")
+// teleportTopic0 is Keccak256("TeleportInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
+var teleportTopic0 = ethereum.HexToHash("0x61aedca97129bac4264ec6356bd1f66431e65ab80e2d07b7983647d72776f545")
 
-// wormholeTopic0 is Keccak256("WormholeGUID(bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
+// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 // TODO: This is a temporary, to remove after complete transition to TeleportGUID.
 var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
 
