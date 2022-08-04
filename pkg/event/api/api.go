@@ -103,6 +103,11 @@ func New(cfg Config) (*EventAPI, error) {
 		ReadTimeout:  defaultTimeout,
 		WriteTimeout: defaultTimeout,
 	})
+	api.srv.Use(&middleware.CORS{
+		Origin:  func(*http.Request) string { return "*" },
+		Headers: func(*http.Request) string { return "Content-Type" },
+		Methods: func(*http.Request) string { return "GET" },
+	})
 	api.srv.Use(&middleware.Logger{Log: api.log})
 	return api, nil
 }
