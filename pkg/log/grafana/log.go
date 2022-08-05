@@ -353,26 +353,6 @@ func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
 		Debug("New metric point")
 }
 
-var _ log.LoggerService = (*logger)(nil)
-
-func (c *logger) Start(ctx context.Context) error {
-	if c.ctx != nil {
-		return fmt.Errorf("service can be started only once")
-	}
-	if ctx == nil {
-		return fmt.Errorf("context is nil")
-	}
-	c.logger.Info("Starting")
-	c.ctx = ctx
-	c.waitCh = make(chan error)
-	go c.pushRoutine()
-	return nil
-}
-
-func (c *logger) Wait() chan error {
-	return c.waitCh
-}
-
 // pushRoutine pushes metrics in interval defined in c.interval.
 func (c *logger) pushRoutine() {
 	defer c.logger.Info("Stopped")

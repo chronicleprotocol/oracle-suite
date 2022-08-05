@@ -30,32 +30,10 @@ func New(loggers ...log.Logger) log.Logger {
 }
 
 type logger struct {
+	ctx    context.Context
+	waitCh chan error
+
 	loggers []log.Logger
-}
-
-var _ log.LoggerService = (*logger)(nil)
-
-func (c *logger) Start(ctx context.Context) error {
-	for _, l := range c.loggers {
-		if srv, ok := l.(log.LoggerService); ok {
-			if err := srv.Start(ctx); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (c *logger) Wait() chan error {
-	ch := make(chan error)
-	for _, l := range c.loggers {
-		if srv, ok := l.(log.LoggerService); ok {
-			go func() {
-				ch <- <-srv.Wait()
-			}()
-		}
-	}
-	return ch
 }
 
 // Level implements the log.Logger interface.
