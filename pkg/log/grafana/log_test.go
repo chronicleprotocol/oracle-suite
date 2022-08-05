@@ -300,7 +300,7 @@ func TestLogger(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			_, ctxCancel := context.WithCancel(context.Background())
+			ctx, ctxCancel := context.WithCancel(context.Background())
 			r := int32(0)
 			l, _ := New(log.Debug, Config{
 				Metrics:          tt.metrics,
@@ -331,6 +331,9 @@ func TestLogger(t *testing.T) {
 				})},
 				Logger: null.New(),
 			})
+			if l, ok := l.(log.LoggerService); ok {
+				require.NoError(t, l.Start(ctx))
+			}
 
 			// Execute logs:
 			func() {

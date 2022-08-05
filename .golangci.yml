@@ -45,7 +45,7 @@ output:
   # Example: "checkstyle:report.json,colored-line-number"
   #
   # Default: colored-line-number
-  format: colored-line-number
+  format: github-actions
 
 # all available settings of specific linters
 linters-settings:
