@@ -49,7 +49,6 @@ type grafanaLogger struct {
 }
 
 type grafanaMetric struct {
-	Type         string              `json:"type"`
 	MatchMessage string              `json:"matchMessage"`
 	MatchFields  map[string]string   `json:"matchFields"`
 	Value        string              `json:"value"`
