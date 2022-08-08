@@ -11,4 +11,4 @@ start_rpcsplitter() {
 #start_rpcsplitter
 
 printenv
-go test -v -parallel 1 -cpu 1 ./
+go test -v -parallel 1 -cpu 1 -p 1 ./
