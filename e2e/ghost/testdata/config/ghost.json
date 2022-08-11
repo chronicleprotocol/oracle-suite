@@ -26,7 +26,7 @@
   "ghost": {
     "interval": 1,
     "pairs": [
-      "BTCUSD"
+      "BTC/USD"
     ]
   },
   "spire": {

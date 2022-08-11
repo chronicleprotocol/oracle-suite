@@ -93,21 +93,20 @@ func buildTransport(ctx context.Context, configPath string) (*spire.Client, erro
 	return cli, cli.Start(ctx)
 }
 
-func waitForSpire(ctx context.Context, client *spire.Client, assetPair, feeder string) ([]*messages.Price, error) {
-	var spireResponse []*messages.Price
+func waitForSpire(ctx context.Context, client *spire.Client, assetPair, feeder string) (*messages.Price, error) {
 	for ctx.Err() == nil {
 		time.Sleep(time.Second)
 
-		prices, err := client.PullPrices(assetPair, feeder)
+		price, err := client.PullPrice(assetPair, feeder)
 		if err == nil {
-			return prices, nil
+			return price, nil
 		}
 		if err.Error() == "reading body unexpected EOF" {
 			continue
 		}
 		return nil, err
 	}
-	return spireResponse, nil
+	return nil, nil
 }
 
 func waitForPort(ctx context.Context, host string, port int) {

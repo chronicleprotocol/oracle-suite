@@ -58,10 +58,10 @@ func TestPairsPrice(t *testing.T) {
 
 	price, err := waitForSpire(ctx, cli, "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
-	require.Len(t, price, 1)
+	require.NotNil(t, price)
 
-	require.Equal(t, "1000000000000000000", price[0].Price.Val.String())
-	require.Equal(t, "BTCUSD", price[0].Price.Wat)
+	require.Equal(t, "1000000000000000000", price.Price.Val.String())
+	require.Equal(t, "BTCUSD", price.Price.Wat)
 
 	// Next price round
 	// Setup price for BTC/USD
@@ -80,10 +80,10 @@ func TestPairsPrice(t *testing.T) {
 
 	price, err = waitForSpire(ctx, cli, "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
-	require.Len(t, price, 1)
+	require.NotNil(t, price)
 
-	require.Equal(t, "2000000000000000000", price[0].Price.Val.String())
-	require.Equal(t, "BTCUSD", price[0].Price.Wat)
+	require.Equal(t, "2000000000000000000", price.Price.Val.String())
+	require.Equal(t, "BTCUSD", price.Price.Wat)
 
 	// Next price round
 	// Setup price for BTC/USD
@@ -102,10 +102,10 @@ func TestPairsPrice(t *testing.T) {
 
 	price, err = waitForSpire(ctx, cli, "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
-	require.Len(t, price, 1)
+	require.NotNil(t, price)
 
-	require.Equal(t, "3000000000000000000", price[0].Price.Val.String())
-	require.Equal(t, "BTCUSD", price[0].Price.Wat)
+	require.Equal(t, "3000000000000000000", price.Price.Val.String())
+	require.Equal(t, "BTCUSD", price.Price.Wat)
 }
 
 func TestPairsInvalidPrice(t *testing.T) {
@@ -150,11 +150,11 @@ func TestPairsInvalidPrice(t *testing.T) {
 	cli, err := buildTransport(ctx, "./testdata/config/spire_client.json")
 	require.NoError(t, err)
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(25 * time.Second)
 
 	price, err := waitForSpire(ctx, cli, "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
-	require.Len(t, price, 0)
+	require.Nil(t, price)
 }
 
 func TestPairsMinPrice(t *testing.T) {
@@ -203,8 +203,8 @@ func TestPairsMinPrice(t *testing.T) {
 
 	price, err := waitForSpire(ctx, cli, "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
-	require.Len(t, price, 1)
+	require.NotNil(t, price)
 
-	require.Equal(t, "1000000000000000000", price[0].Price.Val.String())
-	require.Equal(t, "BTCUSD", price[0].Price.Wat)
+	require.Equal(t, "1000000000000000000", price.Price.Val.String())
+	require.Equal(t, "BTCUSD", price.Price.Wat)
 }
