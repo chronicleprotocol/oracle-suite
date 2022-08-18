@@ -22,8 +22,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
-var _ log.LoggerService = (*logger)(nil)
-
+// Start implements the supervisor.Service interface.
 func (c *logger) Start(ctx context.Context) error {
 	c.logger.Info("Starting")
 	if c.ctx != nil {
@@ -33,11 +32,13 @@ func (c *logger) Start(ctx context.Context) error {
 		return fmt.Errorf("context is nil")
 	}
 	c.ctx = ctx
-	c.waitCh = make(chan error)
 	go c.pushRoutine()
 	return nil
 }
 
+// Wait implements the supervisor.Service interface.
 func (c *logger) Wait() chan error {
 	return c.waitCh
 }
+
+var _ log.LoggerService = (*logger)(nil)

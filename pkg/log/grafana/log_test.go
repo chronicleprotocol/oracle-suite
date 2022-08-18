@@ -301,6 +301,7 @@ func TestLogger(t *testing.T) {
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
 			ctx, ctxCancel := context.WithCancel(context.Background())
+			defer ctxCancel()
 			r := int32(0)
 			l, _ := New(log.Debug, Config{
 				Metrics:          tt.metrics,
@@ -340,7 +341,6 @@ func TestLogger(t *testing.T) {
 				defer func() { recover() }()
 				tt.logs(l)
 			}()
-			ctxCancel()
 
 			// Wait for result:
 			for n := 0; n < 10 && atomic.LoadInt32(&r) == 0; n++ {

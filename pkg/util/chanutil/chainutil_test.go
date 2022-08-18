@@ -13,33 +13,39 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package chanutil
 
 import (
-	"context"
-	"os"
-	"os/signal"
+	"testing"
+	"time"
 
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-func NewRunCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:     "run",
-		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"agent"},
-		Short:   "Starts bootstrap node",
-		Long:    ``,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, err := PrepareSupervisor(ctx, opts)
-			if err != nil {
-				return err
-			}
-			if err = sup.Start(ctx); err != nil {
-				return err
-			}
-			return <-sup.Wait()
-		},
+func TestMerge(t *testing.T) {
+	ch1 := make(chan int)
+	ch2 := make(chan int)
+	ch3 := make(chan int)
+
+	go func() {
+		for i := 0; i < 2; i++ {
+			ch1 <- i
+			ch2 <- i
+			ch3 <- i
+		}
+		close(ch1)
+		close(ch2)
+		close(ch3)
+	}()
+
+	ch := Merge(ch1, ch2, ch3)
+	n := 0
+	for range ch {
+		n++
 	}
+
+	time.Sleep(time.Millisecond * 100)
+	_, ok := <-ch
+	assert.False(t, ok) // Channel should be closed.
+	assert.Equal(t, n, 6)
 }

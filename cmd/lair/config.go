@@ -89,7 +89,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
-	sup := supervisor.New(ctx, log)
+	sup := supervisor.New(log)
 	sup.Watch(tra, evs, api, sysmon.New(time.Minute, log))
 	if l, ok := log.(supervisor.Service); ok {
 		sup.Watch(l)

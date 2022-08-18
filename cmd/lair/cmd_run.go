@@ -36,7 +36,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(); err != nil {
+			if err = sup.Start(ctx); err != nil {
 				return err
 			}
 			return <-sup.Wait()

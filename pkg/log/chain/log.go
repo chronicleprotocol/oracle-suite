@@ -23,8 +23,13 @@ import (
 )
 
 // New creates a new logger that can chain multiple loggers.
+//
+// If provided loggers implement the log.LoggerService interface, then
+// they must not be started. To start them, use the Start method of the
+// chain logger.
 func New(loggers ...log.Logger) log.Logger {
 	return &logger{
+		waitCh:  make(chan error),
 		loggers: loggers,
 	}
 }
@@ -37,9 +42,9 @@ type logger struct {
 }
 
 // Level implements the log.Logger interface.
-func (c *logger) Level() log.Level {
+func (l *logger) Level() log.Level {
 	lvl := log.Panic
-	for _, l := range c.loggers {
+	for _, l := range l.loggers {
 		if l.Level() > lvl {
 			lvl = l.Level()
 		}
@@ -48,63 +53,63 @@ func (c *logger) Level() log.Level {
 }
 
 // WithField implements the log.Logger interface.
-func (c *logger) WithField(key string, value interface{}) log.Logger {
-	loggers := make([]log.Logger, len(c.loggers))
-	for n, l := range c.loggers {
+func (l *logger) WithField(key string, value interface{}) log.Logger {
+	loggers := make([]log.Logger, len(l.loggers))
+	for n, l := range l.loggers {
 		loggers[n] = l.WithField(key, value)
 	}
 	return &logger{loggers: loggers}
 }
 
 // WithFields implements the log.Logger interface.
-func (c *logger) WithFields(fields log.Fields) log.Logger {
-	loggers := make([]log.Logger, len(c.loggers))
-	for n, l := range c.loggers {
+func (l *logger) WithFields(fields log.Fields) log.Logger {
+	loggers := make([]log.Logger, len(l.loggers))
+	for n, l := range l.loggers {
 		loggers[n] = l.WithFields(fields)
 	}
 	return &logger{loggers: loggers}
 }
 
 // WithError implements the log.Logger interface.
-func (c *logger) WithError(err error) log.Logger {
-	loggers := make([]log.Logger, len(c.loggers))
-	for n, l := range c.loggers {
+func (l *logger) WithError(err error) log.Logger {
+	loggers := make([]log.Logger, len(l.loggers))
+	for n, l := range l.loggers {
 		loggers[n] = l.WithError(err)
 	}
 	return &logger{loggers: loggers}
 }
 
 // Debugf implements the log.Logger interface.
-func (c *logger) Debugf(format string, args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Debugf(format string, args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Debugf(format, args...)
 	}
 }
 
 // Infof implements the log.Logger interface.
-func (c *logger) Infof(format string, args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Infof(format string, args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Infof(format, args...)
 	}
 }
 
 // Warnf implements the log.Logger interface.
-func (c *logger) Warnf(format string, args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Warnf(format string, args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Warnf(format, args...)
 	}
 }
 
 // Errorf implements the log.Logger interface.
-func (c *logger) Errorf(format string, args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Errorf(format string, args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Errorf(format, args...)
 	}
 }
 
 // Panicf implements the log.Logger interface.
-func (c *logger) Panicf(format string, args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Panicf(format string, args ...interface{}) {
+	for _, l := range l.loggers {
 		func() {
 			defer func() { recover() }() //nolint:errcheck // same panic is thrown below
 			l.Panicf(format, args...)
@@ -114,36 +119,36 @@ func (c *logger) Panicf(format string, args ...interface{}) {
 }
 
 // Debug implements the log.Logger interface.
-func (c *logger) Debug(args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Debug(args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Debug(args...)
 	}
 }
 
 // Info implements the log.Logger interface.
-func (c *logger) Info(args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Info(args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Info(args...)
 	}
 }
 
 // Warn implements the log.Logger interface.
-func (c *logger) Warn(args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Warn(args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Warn(args...)
 	}
 }
 
 // Error implements the log.Logger interface.
-func (c *logger) Error(args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Error(args ...interface{}) {
+	for _, l := range l.loggers {
 		l.Error(args...)
 	}
 }
 
 // Panic implements the log.Logger interface.
-func (c *logger) Panic(args ...interface{}) {
-	for _, l := range c.loggers {
+func (l *logger) Panic(args ...interface{}) {
+	for _, l := range l.loggers {
 		func() {
 			defer func() { recover() }() //nolint:errcheck // same panic is thrown below
 			l.Panic(args...)

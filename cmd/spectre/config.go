@@ -95,7 +95,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
-	sup := supervisor.New(ctx, log)
+	sup := supervisor.New(log)
 	sup.Watch(tra, pst, spe, sysmon.New(time.Minute, log))
 	if l, ok := log.(supervisor.Service); ok {
 		sup.Watch(l)

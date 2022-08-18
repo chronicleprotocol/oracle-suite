@@ -54,7 +54,7 @@ func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervis
 	if _, ok := tra.(*libp2p.P2P); !ok {
 		return nil, errors.New("spire-bootstrap works only with the libp2p transport")
 	}
-	sup := supervisor.New(ctx, log)
+	sup := supervisor.New(log)
 	sup.Watch(tra, sysmon.New(time.Minute, log))
 	if l, ok := log.(supervisor.Service); ok {
 		sup.Watch(l)

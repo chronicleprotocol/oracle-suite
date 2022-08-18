@@ -90,6 +90,7 @@ func New(level log.Level, cfg Config) (log.Logger, error) {
 	}
 	l := &logger{
 		shared: &shared{
+			waitCh:           make(chan error),
 			metrics:          cfg.Metrics,
 			logger:           cfg.Logger.WithField("tag", LoggerTag),
 			interval:         cfg.Interval,

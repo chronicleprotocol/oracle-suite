@@ -20,40 +20,44 @@ import (
 	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-var _ log.LoggerService = (*logger)(nil)
-
-func (c *logger) Start(ctx context.Context) error {
-	if c.ctx != nil {
+// Start implements the supervisor.Service interface.
+func (l *logger) Start(ctx context.Context) error {
+	if l.ctx != nil {
 		return fmt.Errorf("service can be started only once")
 	}
 	if ctx == nil {
 		return fmt.Errorf("context is nil")
 	}
-	c.ctx = ctx
-	for _, l := range c.loggers {
-		if srv, ok := l.(log.LoggerService); ok {
+	l.ctx = ctx
+	for _, lg := range l.loggers {
+		if srv, ok := lg.(log.LoggerService); ok {
 			if err := srv.Start(ctx); err != nil {
 				return err
 			}
 		}
 	}
+	go l.contextCancelHandler()
 	return nil
 }
 
-func (c *logger) Wait() chan error {
-	c.waitCh = make(chan error)
-	for _, l := range c.loggers {
-		if srv, ok := l.(log.LoggerService); ok {
-			go func() {
-				c.waitCh <- <-srv.Wait()
-			}()
+// Wait implements the supervisor.Service interface.
+func (l *logger) Wait() chan error {
+	chs := make([]chan error, 0, len(l.loggers)+1)
+	chs = append(chs, l.waitCh)
+	for _, lg := range l.loggers {
+		if srv, ok := lg.(log.LoggerService); ok {
+			chs = append(chs, srv.Wait())
 		}
 	}
-	go func() {
-		<-c.ctx.Done()
-		close(c.waitCh)
-	}()
-	return c.waitCh
+	return chanutil.Merge(chs...)
 }
+
+func (l *logger) contextCancelHandler() {
+	<-l.ctx.Done()
+	close(l.waitCh)
+}
+
+var _ log.LoggerService = (*logger)(nil)

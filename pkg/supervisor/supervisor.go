@@ -19,7 +19,10 @@ import (
 	"context"
 	"reflect"
 
+	"golang.org/x/xerrors"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 const LoggerTag = "SUPERVISOR"
@@ -40,27 +43,26 @@ type Service interface {
 type Supervisor struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
-	started   bool
 	waitCh    chan error
 	services  []Service
 	log       log.Logger
 }
 
 // New returns a new instance of *Supervisor.
-func New(ctx context.Context, logger log.Logger) *Supervisor {
-	ctx, ctxCancel := context.WithCancel(ctx)
+func New(logger log.Logger) *Supervisor {
+	if logger == nil {
+		logger = null.New()
+	}
 	return &Supervisor{
-		ctx:       ctx,
-		ctxCancel: ctxCancel,
-		waitCh:    make(chan error),
-		log:       logger.WithField("tag", LoggerTag),
+		waitCh: make(chan error),
+		log:    logger.WithField("tag", LoggerTag),
 	}
 }
 
 // Watch add one or more services to a supervisor. Services must be added
 // before invoking the Start method, otherwise it panics.
 func (s *Supervisor) Watch(services ...Service) {
-	if s.started {
+	if s.ctx != nil {
 		s.log.Panic("Supervisor was already started")
 	}
 	s.services = append(s.services, services...)
@@ -68,11 +70,14 @@ func (s *Supervisor) Watch(services ...Service) {
 
 // Start starts all watched services. It can be invoked only once, otherwise
 // it panics.
-func (s *Supervisor) Start() error {
-	if s.started {
-		s.log.Panic("Supervisor was already started")
+func (s *Supervisor) Start(ctx context.Context) error {
+	if s.ctx != nil {
+		return xerrors.New("service can be started only once")
 	}
-	s.started = true
+	if ctx == nil {
+		return xerrors.New("context must not be nil")
+	}
+	s.ctx, s.ctxCancel = context.WithCancel(ctx)
 	for _, srv := range s.services {
 		s.log.
 			WithField("service", serviceName(srv)).
@@ -110,11 +115,8 @@ func (s *Supervisor) serviceMonitor() {
 		for i, srv := range s.services {
 			c[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(srv.Wait())}
 		}
-		n, v, _ := reflect.Select(c)
-
-		// Remove stopped service from the service list:
+		n, v, ok := reflect.Select(c)
 		name := serviceName(s.services[n])
-		s.services = append(s.services[:n], s.services[n+1:]...)
 
 		// If service failed, cancel the context to stop the others:
 		if !v.IsNil() {
@@ -123,7 +125,7 @@ func (s *Supervisor) serviceMonitor() {
 				WithField("service", name).
 				Error("Service crashed")
 			if err == nil {
-				err = v.Interface().(error) // TODO(mdobak): consider using multierror
+				err = v.Interface().(error) // TODO(mdobak): Consider using multierror.
 			}
 			s.ctxCancel()
 			continue
@@ -132,6 +134,13 @@ func (s *Supervisor) serviceMonitor() {
 		s.log.
 			WithField("service", name).
 			Debug("Service stopped")
+
+		// Remove service from list if channel is closed:
+		// TODO(mdobak): If service is not removed from the list, there is no need
+		//               rebuild select cases above.
+		if !ok {
+			s.services = append(s.services[:n], s.services[n+1:]...)
+		}
 	}
 	if err != nil {
 		s.waitCh <- err

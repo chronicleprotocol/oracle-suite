@@ -13,33 +13,27 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package chanutil
 
-import (
-	"context"
-	"os"
-	"os/signal"
+import "sync"
 
-	"github.com/spf13/cobra"
-)
-
-func NewRunCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:     "run",
-		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"agent"},
-		Short:   "Starts bootstrap node",
-		Long:    ``,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, err := PrepareSupervisor(ctx, opts)
-			if err != nil {
-				return err
+// Merge merges multiple channels into a single channel. The returned channel
+// will be closed when all the given channels are closed.
+func Merge[T any](chs ...chan T) chan T {
+	var wg sync.WaitGroup
+	wg.Add(len(chs))
+	ch := make(chan T)
+	for _, c := range chs {
+		go func(c <-chan T) {
+			for v := range c {
+				ch <- v
 			}
-			if err = sup.Start(ctx); err != nil {
-				return err
-			}
-			return <-sup.Wait()
-		},
+			wg.Done()
+		}(c)
 	}
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+	return ch
 }

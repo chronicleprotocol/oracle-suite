@@ -95,6 +95,7 @@ type Logger interface {
 	Panic(args ...interface{})
 }
 
+// LoggerService is a logger that needs to be started to be used.
 type LoggerService interface {
 	Logger
 	Start(ctx context.Context) error
