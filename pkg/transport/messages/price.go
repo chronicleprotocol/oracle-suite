@@ -104,6 +104,12 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 	if len(data) > eventMessageMaxSize {
 		return ErrPriceMessageTooLarge
 	}
+	switch json.Valid(data) {
+	case true:
+		p.messageVersion = 0
+	case false:
+		p.messageVersion = 1
+	}
 	switch p.messageVersion {
 	case 1:
 		msg := &pb.Price{}

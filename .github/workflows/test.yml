@@ -76,3 +76,24 @@ jobs:
       - name: Run E2E Test (Starknet)
         working-directory: ./e2e/teleport
         run: go test -run ^TestStarknet$
+  test-e2e-ghost:
+    name: E2E Tests Ghost
+    strategy:
+      matrix:
+        go-version: [ 1.18.x ]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Download vendors
+        run: go mod vendor
+      - name: Start Smocker instance for testing
+        run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
+      - name: Run E2E Test (Ghost)
+        working-directory: ./e2e/ghost
+        run: go test -v -p 1 ./

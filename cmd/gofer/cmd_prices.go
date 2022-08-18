@@ -34,7 +34,7 @@ func NewPricesCmd(opts *options) *cobra.Command {
 		Long:    `Return prices for given PAIRs.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, gof, mar, err := PrepareClientServices(ctx, opts)
+			sup, gof, mar, hook, err := PrepareClientServices(ctx, opts)
 			if err != nil {
 				return err
 			}
@@ -61,6 +61,10 @@ func NewPricesCmd(opts *options) *cobra.Command {
 				return err
 			}
 			prices, err := gof.Prices(pairs...)
+			if err != nil {
+				return err
+			}
+			err = hook.Check(prices)
 			if err != nil {
 				return err
 			}

@@ -161,7 +161,7 @@ func TestPrice_Marshalling(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
-				price := &Price{messageVersion: tt.price.messageVersion}
+				price := &Price{}
 				err := price.UnmarshallBinary(msg)
 
 				require.NoError(t, err)

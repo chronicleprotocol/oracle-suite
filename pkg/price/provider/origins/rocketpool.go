@@ -28,22 +28,23 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
-type RockerPool struct {
-	ethClient ethereum.Client
-	addrs     ContractAddresses
-	abi       abi.ABI
-	blocks    []int64
+type RocketPool struct {
+	ethClient  ethereum.Client
+	addrs      ContractAddresses
+	abi        abi.ABI
+	circuitABI abi.ABI
+	blocks     []int64
 }
 
 //go:embed rocketpool_abi.json
 var rocketPoolABI string
 
-func NewRockerPool(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*RockerPool, error) {
+func NewRocketPool(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*RocketPool, error) {
 	a, err := abi.JSON(strings.NewReader(rocketPoolABI))
 	if err != nil {
 		return nil, err
 	}
-	return &RockerPool{
+	return &RocketPool{
 		ethClient: cli,
 		addrs:     addrs,
 		abi:       a,
@@ -51,11 +52,11 @@ func NewRockerPool(cli ethereum.Client, addrs ContractAddresses, blocks []int64)
 	}, nil
 }
 
-func (s RockerPool) PullPrices(pairs []Pair) []FetchResult {
+func (s RocketPool) PullPrices(pairs []Pair) []FetchResult {
 	return callSinglePairOrigin(&s, pairs)
 }
 
-func (s RockerPool) callOne(pair Pair) (*Price, error) {
+func (s RocketPool) callOne(pair Pair) (*Price, error) {
 	contract, inverted, err := s.addrs.AddressByPair(pair)
 	if err != nil {
 		return nil, err
@@ -76,6 +77,7 @@ func (s RockerPool) callOne(pair Pair) (*Price, error) {
 		return nil, err
 	}
 	price, _ := reduceEtherAverageFloat(resp).Float64()
+
 	return &Price{
 		Pair:      pair,
 		Price:     price,

@@ -40,30 +40,34 @@ type Config struct {
 func PrepareClientServices(
 	ctx context.Context,
 	opts *options,
-) (*supervisor.Supervisor, provider.Provider, marshal.Marshaller, error) {
+) (*supervisor.Supervisor, provider.Provider, marshal.Marshaller, provider.PriceHook, error) {
 
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`config error: %w`, err)
+		return nil, nil, nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
 	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
 		AppName:    "gofer",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+		return nil, nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+		return nil, nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
 	gof, err := opts.Config.Gofer.ConfigureGofer(cli, log, opts.NoRPC)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`gofer config error: %w`, err)
+		return nil, nil, nil, nil, fmt.Errorf(`gofer config error: %w`, err)
+	}
+	hook, err := opts.Config.Gofer.ConfigurePriceHook(ctx, cli)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf(`price hook config error: %w`, err)
 	}
 	mar, err := marshal.NewMarshal(opts.Format.format)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`invalid format option: %w`, err)
+		return nil, nil, nil, nil, fmt.Errorf(`invalid format option: %w`, err)
 	}
 	sup := supervisor.New(log)
 	if g, ok := gof.(supervisor.Service); ok {
@@ -72,7 +76,7 @@ func PrepareClientServices(
 	if l, ok := log.(supervisor.Service); ok {
 		sup.Watch(l)
 	}
-	return sup, gof, mar, nil
+	return sup, gof, mar, hook, nil
 }
 
 func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {

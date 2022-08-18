@@ -1,0 +1,153 @@
+{
+  "transport": {
+    "libp2p": {
+      "privKeySeed": "8c8eba62d853d3abdd7f3298341a622a8a9df37c3aba788028c646bdd915227c",
+      "listenAddrs": ["/ip4/0.0.0.0/tcp/30100"],
+      "bootstrapAddrs": [],
+      "directPeersAddrs": [],
+      "blockedAddrs": [],
+      "disableDiscovery": false
+    },
+    "ssb": {
+      "caps": "./caps.json",
+      "key": "./ssb.json"
+    }
+  },
+  "ethereum": {
+    "from": "2d800d93b065ce011af83f316cef9f0d005b0aa4",
+    "keystore": "./e2e/ghost/testdata/keys",
+    "password": "./e2e/ghost/testdata/keys/pass",
+    "rpc": "http://127.0.0.1:9989"
+  },
+  "feeds": [
+    "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
+    "0xE3CED0F62F7EB2856D37BED128D2B195712D2644"
+  ],
+  "ghost": {
+    "interval": 1,
+    "pairs": [
+      "BTC/USD"
+    ]
+  },
+  "spire": {
+    "transport": "libp2p",
+    "rpc": {
+      "address": "127.0.0.1:9100"
+    },
+    "pairs": [
+      "BTCUSD"
+    ]
+  },
+  "gofer": {
+    "rpc": {
+      "disable": false,
+      "address": "127.0.0.1:9000"
+    },
+    "origins": {
+      "binance": {
+        "type": "binance",
+        "name": "binance",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "bitstamp": {
+        "type": "bitstamp",
+        "name": "bitstamp",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "bitfinex": {
+        "type": "bitfinex",
+        "name": "bitfinex",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "bittrex": {
+        "type": "bittrex",
+        "name": "bittrex",
+        "url": "http://127.0.0.1:8080",
+        "params": {
+          "symbolAliases": {
+            "REP": "REPV2"
+          }
+        }
+      },
+      "coinbasepro": {
+        "type": "coinbasepro",
+        "name": "coinbasepro",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "kraken": {
+        "type": "kraken",
+        "name": "kraken",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "gemini": {
+        "type": "gemini",
+        "name": "gemini",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "huobi": {
+        "type": "huobi",
+        "name": "huobi",
+        "url": "http://127.0.0.1:8080",
+        "params": {}
+      },
+      "poloniex": {
+        "type": "poloniex",
+        "name": "poloniex",
+        "params": {
+          "symbolAliases": {
+            "REP": "REPV2"
+          }
+        }
+      }
+    },
+    "priceModels": {
+      "BTC/USD": {
+        "method": "median",
+        "sources": [
+          [{ "origin": "bitstamp", "pair": "BTC/USD" }],
+          [{ "origin": "bittrex", "pair": "BTC/USD" }],
+          [{ "origin": "coinbasepro", "pair": "BTC/USD" }],
+          [{ "origin": "gemini", "pair": "BTC/USD" }],
+          [{ "origin": "kraken", "pair": "BTC/USD" }]
+        ],
+        "params": {
+          "minimumSuccessfulSources": 3
+        },
+        "ttl": 1
+      }
+    }
+  },
+  "logger": {
+    "grafana": {
+      "enable": false,
+      "interval": 60,
+      "endpoint": "https://graphite-us-central1.grafana.net/metrics",
+      "apiKey": "API_KEY",
+      "metrics": [
+        {
+          "matchMessage": "Event received",
+          "matchFields": {
+            "x-appName": "lair"
+          },
+          "name": "${x-appName}.${x-hostID}.event_received",
+          "tags": {
+            "sys": ["oracle"],
+            "service": ["${x-appName}"],
+            "metric": ["event_received"],
+            "hostID": ["${x-hostID}"],
+            "eventID": ["${id}"],
+            "eventType": ["${type}"],
+            "eventIndex": ["${index}"],
+            "eventFrom": ["${from}"]
+          }
+        }
+      ]
+    }
+  }
+}
