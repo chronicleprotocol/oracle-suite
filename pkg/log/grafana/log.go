@@ -429,6 +429,25 @@ func (c *logger) pushMetrics() {
 	}
 }
 
+// Start implements the supervisor.Service interface.
+func (c *logger) Start(ctx context.Context) error {
+	c.logger.Info("Starting")
+	if c.ctx != nil {
+		return fmt.Errorf("service can be started only once")
+	}
+	if ctx == nil {
+		return fmt.Errorf("context is nil")
+	}
+	c.ctx = ctx
+	go c.pushRoutine()
+	return nil
+}
+
+// Wait implements the supervisor.Service interface.
+func (c *logger) Wait() chan error {
+	return c.waitCh
+}
+
 // match checks if log message and log fields matches metric definition.
 func match(metric Metric, msg string, fields reflect.Value) bool {
 	for path, rx := range metric.MatchFields {

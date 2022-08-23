@@ -305,7 +305,7 @@ func TestLogger(t *testing.T) {
 			r := int32(0)
 			l, _ := New(log.Debug, Config{
 				Metrics:          tt.metrics,
-				Interval:         5,
+				Interval:         1,
 				GraphiteEndpoint: "https://example.com/metrics",
 				GraphiteAPIKey:   "test",
 				HTTPClient: &http.Client{Transport: RoundTripFunc(func(req *http.Request) *http.Response {
@@ -323,7 +323,7 @@ func TestLogger(t *testing.T) {
 					sort.Slice(data, func(i, j int) bool { return data[i].Name < data[j].Name })
 					for n, w := range tt.want {
 						assert.Equal(t, w.name, data[n].Name)
-						assert.Equal(t, uint(5), data[n].Interval)
+						assert.Equal(t, uint(1), data[n].Interval)
 						assert.Equal(t, w.value, data[n].Value)
 						assert.Greater(t, data[n].Time, int64(0))
 					}
@@ -343,8 +343,8 @@ func TestLogger(t *testing.T) {
 			}()
 
 			// Wait for result:
-			for n := 0; n < 10 && atomic.LoadInt32(&r) == 0; n++ {
-				time.Sleep(time.Millisecond * 100)
+			for n := 0; n < 3 && atomic.LoadInt32(&r) == 0; n++ {
+				time.Sleep(time.Second * 1)
 			}
 			require.Equal(t, int32(1), atomic.LoadInt32(&r), "logs has not been sent")
 		})
