@@ -44,11 +44,19 @@ func (s *service) Start(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
 		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.started = false
-		s.mu.Unlock()
 		close(s.waitCh)
 	}()
 	return nil
+}
+
+func (s *service) Errors(n int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := 0; i < n; i++ {
+		s.waitCh <- errors.New("err")
+	}
 }
 
 func (s *service) Wait() chan error {
@@ -129,7 +137,7 @@ func TestSupervisor_OneFail(t *testing.T) {
 	assert.True(t, s2.Started())
 	assert.True(t, s3.Started())
 
-	s2.waitCh <- errors.New("err")
+	s2.Errors(1)
 	time.Sleep(100 * time.Millisecond)
 
 	select {
@@ -162,15 +170,13 @@ func TestSupervisor_MultipleErrors(t *testing.T) {
 	assert.True(t, s2.Started())
 	assert.True(t, s3.Started())
 
-	s2.waitCh <- errors.New("err1")
-	s2.waitCh <- errors.New("err2")
-	s2.waitCh <- errors.New("err3")
+	s2.Errors(3)
 
 	time.Sleep(100 * time.Millisecond)
 
 	select {
 	case err := <-s.Wait():
-		require.Equal(t, "err1", err.Error())
+		require.Equal(t, "err", err.Error())
 	default:
 		require.Fail(t, "Wait() channel should not be blocked")
 	}
