@@ -39,10 +39,6 @@ const retryInterval = 5 * time.Second // The delay between retry attempts.
 // teleportTopic0 is Keccak256("TeleportInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var teleportTopic0 = ethereum.HexToHash("0x61aedca97129bac4264ec6356bd1f66431e65ab80e2d07b7983647d72776f545")
 
-// wormholeTopic0 is Keccak256("WormholeInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
-// TODO: This is a temporary, to remove after complete transition to TeleportGUID.
-var wormholeTopic0 = ethereum.HexToHash("0x46d7dfb96bf7f7e8bb35ab641ff4632753a1411e3c8b30bec93e045e22f576de")
-
 // Client is a Ethereum compatible client.
 type Client interface {
 	BlockNumber(ctx context.Context) (uint64, error)
@@ -127,7 +123,7 @@ func (tp *TeleportEventProvider) fetchLogsRoutine(ctx context.Context) {
 	}
 }
 
-// fetchLogs fetches WormholeGUID events from the blockchain and converts them
+// fetchLogs fetches TeleportGUID events from the blockchain and converts them
 // into event messages. The converted messages are sent to the eventCh channel.
 func (tp *TeleportEventProvider) fetchLogs(ctx context.Context) {
 	rangeFrom, rangeTo, err := tp.nextBlockRange(ctx)
@@ -140,58 +136,56 @@ func (tp *TeleportEventProvider) fetchLogs(ctx context.Context) {
 	if rangeFrom == tp.lastBlock {
 		return // There is no new blocks to fetch.
 	}
-	for _, topic0 := range []common.Hash{teleportTopic0, wormholeTopic0} {
-		for _, delta := range tp.blocksDelta {
-			for _, address := range tp.addresses {
-				if ctx.Err() != nil {
-					return
-				}
-				if delta > rangeFrom {
-					delta = rangeFrom // To prevent overflow.
-				}
-				from := rangeFrom - delta
-				to := rangeTo - delta
+	for _, delta := range tp.blocksDelta {
+		for _, address := range tp.addresses {
+			if ctx.Err() != nil {
+				return
+			}
+			if delta > rangeFrom {
+				delta = rangeFrom // To prevent overflow.
+			}
+			from := rangeFrom - delta
+			to := rangeTo - delta
+			tp.log.
+				WithFields(log.Fields{
+					"from":    from,
+					"to":      to,
+					"address": address.String(),
+				}).
+				Info("Fetching logs")
+			logs, err := tp.filterLogs(ctx, address, from, to, teleportTopic0)
+			if errors.Is(err, context.Canceled) {
+				continue
+			}
+			if err != nil {
 				tp.log.
-					WithFields(log.Fields{
-						"from":    from,
-						"to":      to,
-						"address": address.String(),
-					}).
-					Info("Fetching logs")
-				logs, err := tp.filterLogs(ctx, address, from, to, topic0)
-				if errors.Is(err, context.Canceled) {
+					WithError(err).
+					Error("Unable to fetch logs")
+				continue
+			}
+			for _, l := range logs {
+				if l.Removed {
 					continue
 				}
+				if l.Address != address {
+					// This should never happen. All logs returned by
+					// eth_filterLogs should be emitted by the specified
+					// contract. If it happens, there is a bug somewhere.
+					tp.log.
+						WithFields(log.Fields{
+							"expected": address.String(),
+							"actual":   l.Address.String(),
+						}).
+						Panic("Log emitted by wrong contract")
+				}
+				msg, err := logToMessage(l)
 				if err != nil {
 					tp.log.
 						WithError(err).
-						Error("Unable to fetch logs")
+						Error("Unable to convert log to event")
 					continue
 				}
-				for _, l := range logs {
-					if l.Removed {
-						continue
-					}
-					if l.Address != address {
-						// This should never happen. All logs returned by
-						// eth_filterLogs should be emitted by the specified
-						// contract. If it happens, there is a bug somewhere.
-						tp.log.
-							WithFields(log.Fields{
-								"expected": address.String(),
-								"actual":   l.Address.String(),
-							}).
-							Panic("Log emitted by wrong contract")
-					}
-					msg, err := logToMessage(l)
-					if err != nil {
-						tp.log.
-							WithError(err).
-							Error("Unable to convert log to event")
-						continue
-					}
-					tp.eventCh <- msg
-				}
+				tp.eventCh <- msg
 			}
 		}
 	}
