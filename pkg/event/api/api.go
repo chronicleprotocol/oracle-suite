@@ -95,11 +95,12 @@ func New(cfg Config) (*EventAPI, error) {
 		log: cfg.Logger.WithField("tag", LoggerTag),
 	}
 	api.srv = httpserver.New(&http.Server{
-		Addr:         cfg.Address,
-		Handler:      http.HandlerFunc(api.handler),
-		IdleTimeout:  defaultTimeout,
-		ReadTimeout:  defaultTimeout,
-		WriteTimeout: defaultTimeout,
+		Addr:              cfg.Address,
+		Handler:           http.HandlerFunc(api.handler),
+		IdleTimeout:       defaultTimeout,
+		ReadTimeout:       defaultTimeout,
+		WriteTimeout:      defaultTimeout,
+		ReadHeaderTimeout: defaultTimeout,
 	})
 	api.srv.Use(&middleware.CORS{
 		Origin:  func(*http.Request) string { return "*" },

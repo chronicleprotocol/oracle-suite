@@ -64,11 +64,12 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	}
 	return &Agent{
 		srv: httpserver.New(&http.Server{
-			Addr:         cfg.Address,
-			Handler:      rpcSrv,
-			IdleTimeout:  defaultHTTPTimeout,
-			ReadTimeout:  defaultHTTPTimeout,
-			WriteTimeout: defaultHTTPTimeout,
+			Addr:              cfg.Address,
+			Handler:           rpcSrv,
+			IdleTimeout:       defaultHTTPTimeout,
+			ReadTimeout:       defaultHTTPTimeout,
+			WriteTimeout:      defaultHTTPTimeout,
+			ReadHeaderTimeout: defaultHTTPTimeout,
 		}),
 		log: logger,
 	}, nil
