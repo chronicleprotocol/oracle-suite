@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/rpc"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
@@ -30,6 +31,9 @@ import (
 )
 
 const AgentLoggerTag = "SPIRE_AGENT"
+
+// defaultHTTPTimeout is the default timeout for the HTTP server.
+const defaultHTTPTimeout = 3 * time.Second
 
 type Agent struct {
 	ctx context.Context
@@ -59,7 +63,13 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 		return nil, err
 	}
 	return &Agent{
-		srv: httpserver.New(&http.Server{Addr: cfg.Address, Handler: rpcSrv}),
+		srv: httpserver.New(&http.Server{
+			Addr:         cfg.Address,
+			Handler:      rpcSrv,
+			IdleTimeout:  defaultHTTPTimeout,
+			ReadTimeout:  defaultHTTPTimeout,
+			WriteTimeout: defaultHTTPTimeout,
+		}),
 		log: logger,
 	}, nil
 }

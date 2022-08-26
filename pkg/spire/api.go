@@ -27,7 +27,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const defaultTimeout = time.Minute
+const defaultRPCTimeout = time.Minute
 
 type Nothing = struct{}
 
@@ -76,7 +76,7 @@ func (n *API) PublishPrice(arg *PublishPriceArg, _ *Nothing) error {
 }
 
 func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
 	defer ctxCancel()
 
 	n.log.
@@ -117,7 +117,7 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 }
 
 func (n *API) PullPrice(arg *PullPriceArg, resp *PullPriceResp) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
 	defer ctxCancel()
 
 	n.log.
