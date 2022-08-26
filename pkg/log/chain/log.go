@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
 // New creates a new logger that can chain multiple loggers.
@@ -29,16 +30,19 @@ import (
 // chain logger.
 func New(loggers ...log.Logger) log.Logger {
 	return &logger{
-		waitCh:  make(chan error),
+		shared:  &shared{waitCh: make(chan error)},
 		loggers: loggers,
 	}
 }
 
 type logger struct {
+	*shared
+	loggers []log.Logger
+}
+
+type shared struct {
 	ctx    context.Context
 	waitCh chan error
-
-	loggers []log.Logger
 }
 
 // Level implements the log.Logger interface.
@@ -58,7 +62,7 @@ func (l *logger) WithField(key string, value interface{}) log.Logger {
 	for n, l := range l.loggers {
 		loggers[n] = l.WithField(key, value)
 	}
-	return &logger{loggers: loggers}
+	return &logger{shared: l.shared, loggers: loggers}
 }
 
 // WithFields implements the log.Logger interface.
@@ -67,7 +71,7 @@ func (l *logger) WithFields(fields log.Fields) log.Logger {
 	for n, l := range l.loggers {
 		loggers[n] = l.WithFields(fields)
 	}
-	return &logger{loggers: loggers}
+	return &logger{shared: l.shared, loggers: loggers}
 }
 
 // WithError implements the log.Logger interface.
@@ -76,7 +80,7 @@ func (l *logger) WithError(err error) log.Logger {
 	for n, l := range l.loggers {
 		loggers[n] = l.WithError(err)
 	}
-	return &logger{loggers: loggers}
+	return &logger{shared: l.shared, loggers: loggers}
 }
 
 // Debugf implements the log.Logger interface.
@@ -156,3 +160,42 @@ func (l *logger) Panic(args ...interface{}) {
 	}
 	panic(fmt.Sprint(args...))
 }
+
+// Start implements the supervisor.Service interface.
+func (l *logger) Start(ctx context.Context) error {
+	if l.ctx != nil {
+		return fmt.Errorf("service can be started only once")
+	}
+	if ctx == nil {
+		return fmt.Errorf("context is nil")
+	}
+	l.ctx = ctx
+	for _, lg := range l.loggers {
+		if srv, ok := lg.(log.LoggerService); ok {
+			if err := srv.Start(ctx); err != nil {
+				return err
+			}
+		}
+	}
+	go l.contextCancelHandler()
+	return nil
+}
+
+// Wait implements the supervisor.Service interface.
+func (l *logger) Wait() chan error {
+	chs := make([]chan error, 0, len(l.loggers)+1)
+	chs = append(chs, l.waitCh)
+	for _, lg := range l.loggers {
+		if srv, ok := lg.(log.LoggerService); ok {
+			chs = append(chs, srv.Wait())
+		}
+	}
+	return chanutil.Merge(chs...)
+}
+
+func (l *logger) contextCancelHandler() {
+	<-l.ctx.Done()
+	close(l.waitCh)
+}
+
+var _ log.LoggerService = (*logger)(nil)
