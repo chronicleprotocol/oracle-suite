@@ -50,8 +50,7 @@ const defaultTimeout = 3 * time.Second
 //
 // Events are returned in JSON format.
 type EventAPI struct {
-	ctx    context.Context
-	waitCh chan error
+	ctx context.Context
 
 	srv *httpserver.HTTPServer
 	es  *store.EventStore
@@ -92,9 +91,8 @@ func New(cfg Config) (*EventAPI, error) {
 		cfg.Logger = null.New()
 	}
 	api := &EventAPI{
-		waitCh: make(chan error),
-		es:     cfg.EventStore,
-		log:    cfg.Logger.WithField("tag", LoggerTag),
+		es:  cfg.EventStore,
+		log: cfg.Logger.WithField("tag", LoggerTag),
 	}
 	api.srv = httpserver.New(&http.Server{
 		Addr:         cfg.Address,
@@ -132,7 +130,7 @@ func (e *EventAPI) Start(ctx context.Context) error {
 
 // Wait waits until the context is canceled or until an error occurs.
 func (e *EventAPI) Wait() chan error {
-	return e.waitCh
+	return e.srv.Wait()
 }
 
 // handler is the HTTP handler for the EventAPI.
@@ -197,11 +195,8 @@ func mapEvents(es []*messages.Event) []*jsonEvent {
 }
 
 func (e *EventAPI) contextCancelHandler() {
-	var err error
-	defer func() { e.waitCh <- err }()
 	defer e.log.Info("Stopped")
 	<-e.ctx.Done()
-	err = <-e.srv.Wait()
 }
 
 func decodeHex(h string) ([]byte, error) {
