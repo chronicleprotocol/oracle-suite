@@ -38,6 +38,8 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 	signer := &mocks.Signer{}
 	logger := null.New()
 
+	signer.On("Address").Return(ethereum.EmptyAddress)
+
 	config := Transport{
 		P2P: P2P{
 			PrivKeySeed:      "",
@@ -51,6 +53,7 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 
 	p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
 		assert.NotNil(t, cfg.PeerPrivKey)
+		assert.Nil(t, cfg.MessagePrivKey)
 		assert.Len(t, cfg.ListenAddrs, 0)
 		assert.Len(t, cfg.BootstrapAddrs, 0)
 		assert.Len(t, cfg.DirectPeersAddrs, 0)
@@ -89,6 +92,8 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 	directPeersAddrs := []string{"/ip4/1.1.1.2/tcp/8000/p2p/abc"}
 	blockedAddrs := []string{"/ip4/1.1.1.3/tcp/8000/p2p/abc"}
 
+	signer.On("Address").Return(ethereum.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881"))
+
 	config := Transport{
 		P2P: P2P{
 			PrivKeySeed:      privKeySeed,
@@ -102,6 +107,7 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 
 	p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
 		assert.NotNil(t, cfg.PeerPrivKey)
+		assert.NotNil(t, cfg.MessagePrivKey)
 		assert.Equal(t, listenAddrs, cfg.ListenAddrs)
 		assert.Equal(t, bootstrapAddrs, cfg.BootstrapAddrs)
 		assert.Equal(t, directPeersAddrs, cfg.DirectPeersAddrs)
