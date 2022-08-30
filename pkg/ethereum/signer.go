@@ -52,5 +52,6 @@ type Signer interface {
 	// Signature signs the hash of the given data and returns it.
 	Signature(data []byte) (Signature, error)
 	// Recover returns the wallet address that created the given signature.
+	// TODO: Move Recover to a separate interface.
 	Recover(signature Signature, data []byte) (*Address, error)
 }

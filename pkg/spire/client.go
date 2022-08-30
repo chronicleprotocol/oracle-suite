@@ -92,6 +92,9 @@ func (c *Client) PullPrice(assetPair string, feeder string) (*messages.Price, er
 }
 
 func (c *Client) contextCancelHandler() {
+	defer func() { close(c.waitCh) }()
 	<-c.ctx.Done()
-	c.waitCh <- c.rpc.Close()
+	if err := c.rpc.Close(); err != nil {
+		c.waitCh <- err
+	}
 }
