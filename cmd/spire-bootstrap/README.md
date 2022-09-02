@@ -82,7 +82,7 @@ is `config.json` in the current working directory. You can change the config fil
         - `[]metrics` - List of metric definitions
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
-            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `${path}`, where
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`, where
               path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
               format `${path}`, where path is the dot-separated path to the field.
@@ -98,6 +98,13 @@ is `config.json` in the current working directory. You can change the config fil
                 - `max` - Use higher value.
                 - `min` - Use lower value.
                 - `replace` (default) - Replace the value with a newer one.
+
+### Environment variables
+
+It is possible to use environment variables in the configuration file. Environment variables can be used anywhere in the
+configuration file. The syntax is similar as in the shell: `${ENV:ENV_VAR}`. Note, that the environment variable name
+must be prefixed with `ENV:`. If the environment variable is not set, the error will be returned during the application
+startup. To escape the dollar sign, use `\$` or `$$`. The latter syntax is not supported inside variables.
 
 ## Commands
 

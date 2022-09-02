@@ -129,8 +129,9 @@ Price model for each asset pair consists of three keys: `method`, `sources` and 
       the `params` field:
         - `minimumSuccessfulSources` - minimum number of successfully retrieved sources to consider calculated median
           price as reliable.
-        - `postPriceHook` - In some cases a check should be done after the median price has been obtained. E.g. in the case of `rETH`, a circuit breaker value is checked against the obtained median, and if the deviation is high enough, a price error will be set.
-
+        - `postPriceHook` - In some cases a check should be done after the median price has been obtained. E.g. in the
+          case of `rETH`, a circuit breaker value is checked against the obtained median, and if the deviation is high
+          enough, a price error will be set.
 
 ### Origins configuration
 
@@ -180,7 +181,8 @@ Example:
         - `[]metrics` - List of metric definitions
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
-            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `${path}`, where
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`,
+              where
               path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
               format `${path}`, where path is the dot-separated path to the field.
@@ -201,6 +203,13 @@ Example:
       RPC endpoint.
     - `origins` - [Origins configuration](#origins-configuration)
     - `priceModels` - [Price models configuration](#price-models-configuration)
+
+### Environment variables
+
+It is possible to use environment variables in the configuration file. Environment variables can be used anywhere in the
+configuration file. The syntax is similar as in the shell: `${ENV:ENV_VAR}`. Note, that the environment variable name
+must be prefixed with `ENV:`. If the environment variable is not set, the error will be returned during the application
+startup. To escape the dollar sign, use `\$` or `$$`. The latter syntax is not supported inside variables. 
 
 ## Commands
 
