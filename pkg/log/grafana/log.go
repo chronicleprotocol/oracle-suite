@@ -31,6 +31,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/dump"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/interpolate"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
@@ -459,15 +460,11 @@ func match(metric Metric, msg string, fields reflect.Value) bool {
 	return metric.MatchMessage == nil || metric.MatchMessage.MatchString(msg)
 }
 
-// varRegexp matches vars in format: ${foo}
-var varRegexp = regexp.MustCompile(`\$\{[^}]+}`)
-
 // replaceVars replaces vars provided as ${field} with values from log fields.
 func replaceVars(s string, fields reflect.Value) (string, bool) {
 	valid := true
-	return varRegexp.ReplaceAllStringFunc(s, func(s string) string {
-		path := s[2 : len(s)-1]
-		name, ok := toString(byPath(fields, path))
+	return interpolate.Parse(s).Interpolate(func(s string) string {
+		name, ok := toString(byPath(fields, s))
 		if !ok {
 			valid = false
 			return ""
