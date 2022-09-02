@@ -21,7 +21,30 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/interpolate"
 )
+
+var getEnv = os.LookupEnv
+
+func LoadFile(fileName string) (b []byte, err error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("could not open file %s: %w", fileName, err)
+	}
+	defer func() {
+		if errClose := f.Close(); err == nil && errClose != nil {
+			err = errClose
+		}
+	}()
+	b, err = ioutil.ReadAll(f)
+	return b, err
+}
 
 func ParseFile(out interface{}, path string) error {
 	p, err := filepath.Abs(path)
@@ -41,24 +64,57 @@ func ParseFile(out interface{}, path string) error {
 }
 
 func Parse(out interface{}, config []byte) error {
-	err := json.Unmarshal(config, out)
-	if err != nil {
-		return err
+	if err := json.Unmarshal(config, out); err != nil {
+		return fmt.Errorf("failed to parse JSON config: %w", err)
 	}
-	return nil
+	return replaceEnvVars(out)
 }
 
-func LoadFile(fileName string) (b []byte, err error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, err
+func replaceEnvVars(v interface{}) error {
+	var err error
+	recur(reflect.ValueOf(v), func(s string) string {
+		return interpolate.Parse(s).Interpolate(func(key string) string {
+			if err != nil {
+				return ""
+			}
+			if !strings.HasPrefix(key, "ENV:") {
+				err = fmt.Errorf("environment variable %s does not start with ENV", key)
+				return ""
+			}
+			env, ok := getEnv(key[4:])
+			if !ok {
+				err = fmt.Errorf("environment variable %s not found", key[4:])
+				return ""
+			}
+			return env
+		})
+	})
+	return err
+}
+
+func recur(rv reflect.Value, fn func(rv string) string) {
+	switch rv.Kind() {
+	case reflect.Struct:
+		for n := 0; n < rv.NumField(); n++ {
+			recur(rv.Field(n), fn)
 		}
-		return nil, fmt.Errorf("could not open file %s: %w", fileName, err)
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < rv.Len(); i++ {
+			recur(rv.Index(i), fn)
+		}
+	case reflect.Map:
+		for _, k := range rv.MapKeys() {
+			if rv.MapIndex(k).Kind() == reflect.String {
+				rv.SetMapIndex(k, reflect.ValueOf(fn(rv.MapIndex(k).String())))
+				continue
+			}
+			recur(rv.MapIndex(k), fn)
+		}
+	case reflect.Ptr, reflect.Interface:
+		recur(rv.Elem(), fn)
+	case reflect.String:
+		if rv.CanAddr() {
+			rv.SetString(fn(rv.String()))
+		}
 	}
-	defer func() {
-		err = f.Close()
-	}()
-	b, err = ioutil.ReadAll(f)
-	return b, err
 }
