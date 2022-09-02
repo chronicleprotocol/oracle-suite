@@ -25,11 +25,13 @@ import (
 //
 // The syntax is similar to shell variable expansion. The following rules apply:
 //
-//  - Variables are enclosed in ${...} and may contain any character.
-//  - To include a literal $ in the output, escape it with a backslash or
-//    another $. For example, \$ and $$ are both interpreted as a literal $.
-//    The latter does not work inside a variable.
-//  - If a variable is not closed, it is treated as a literal.
+// - Variables are enclosed in ${...} and may contain any character.
+//
+// - To include a literal $ in the output, escape it with a backslash or
+// another $. For example, \$ and $$ are both interpreted as a literal $.
+// The latter does not work inside a variable.
+//
+// - If a variable is not closed, it is treated as a literal.
 func Parse(s string) String {
 	return parse(tokenize(s))
 }
@@ -116,7 +118,7 @@ func (p *parser) nextToken() []byte {
 	if p.pos >= len(p.tokens) {
 		return nil
 	}
-	p.pos += 1
+	p.pos++
 	return p.tokens[p.pos-1]
 }
 
@@ -201,7 +203,6 @@ func (p *tokenizer) tokenize() {
 			}
 			p.state = stateVariable
 			continue
-
 		}
 		if b, ok := p.nextLiteral(); ok {
 			p.appendLiteral(b)
@@ -230,7 +231,7 @@ func (p *tokenizer) nextLiteral() (byte, bool) {
 	if p.pos >= len(p.input) {
 		return 0, false
 	}
-	p.pos += 1
+	p.pos++
 	return p.input[p.pos-1], true
 }
 
