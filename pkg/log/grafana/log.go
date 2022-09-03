@@ -79,6 +79,9 @@ type Metric struct {
 	TransformFunc func(float64) float64
 	// ParserFunc is going to be applied to transform the value reflection to an actual float64 value
 	ParserFunc func(reflect.Value) (float64, bool)
+
+	parsedName interpolate.String
+	parsedTags map[string][]interpolate.String
 }
 
 // New creates a new logger that can extract parameters from log messages and
@@ -88,6 +91,17 @@ type Metric struct {
 func New(level log.Level, cfg Config) (log.Logger, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
+	}
+	// Parse names and tags in advance to improve performance.
+	for n, _ := range cfg.Metrics {
+		m := &cfg.Metrics[n]
+		m.parsedName = interpolate.Parse(m.Name)
+		m.parsedTags = make(map[string][]interpolate.String)
+		for k, v := range m.Tags {
+			for _, s := range v {
+				m.parsedTags[k] = append(m.parsedTags[k], interpolate.Parse(s))
+			}
+		}
 	}
 	l := &logger{
 		shared: &shared{
@@ -282,14 +296,14 @@ func (c *logger) collect(msg string, fields log.Fields) {
 		var mv metricValue
 		mk.time = roundTime(time.Now().Unix(), c.interval)
 		mv.value = 1
-		mk.name, ok = replaceVars(metric.Name, rfields)
+		mk.name, ok = replaceVars(metric.parsedName, rfields)
 		if !ok {
 			c.logger.
 				WithField("path", metric.Name).
 				Warn("Invalid path in the name field")
 			continue
 		}
-		for t, vs := range metric.Tags {
+		for t, vs := range metric.parsedTags {
 			for _, v := range vs {
 				rt, ok := replaceVars(v, rfields)
 				if !ok {
@@ -461,9 +475,9 @@ func match(metric Metric, msg string, fields reflect.Value) bool {
 }
 
 // replaceVars replaces vars provided as ${field} with values from log fields.
-func replaceVars(s string, fields reflect.Value) (string, bool) {
+func replaceVars(s interpolate.String, fields reflect.Value) (string, bool) {
 	valid := true
-	return interpolate.Parse(s).Interpolate(func(s string) string {
+	return s.Interpolate(func(s string) string {
 		name, ok := toString(byPath(fields, s))
 		if !ok {
 			valid = false
