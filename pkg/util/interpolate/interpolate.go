@@ -31,14 +31,14 @@ import (
 // The latter does not work inside a variable.
 //
 // - If a variable is not closed, it is treated as a literal.
-func Parse(s string) String {
+func Parse(s string) Parsed {
 	p := &parser{in: s}
 	p.parse()
 	return p.res
 }
 
-// String is a parsed string.
-type String []part
+// Parsed is a parsed string.
+type Parsed []part
 
 const (
 	litType = iota
@@ -51,7 +51,7 @@ type part struct {
 }
 
 // Interpolate replaces variables in the string based on the mapping function.
-func (s String) Interpolate(mapping func(name string) string) string {
+func (s Parsed) Interpolate(mapping func(name string) string) string {
 	var buf strings.Builder
 	for _, v := range s {
 		switch v.typ {
@@ -73,7 +73,7 @@ var (
 
 type parser struct {
 	in     string
-	res    String
+	res    Parsed
 	pos    int
 	litBuf strings.Builder
 	varBuf strings.Builder
@@ -150,14 +150,12 @@ func (p *parser) nextToken(s string) bool {
 // are not added immediately, but buffered until appendBuffer is called.
 func (p *parser) appendLiteral(s string) {
 	p.litBuf.WriteString(s)
-	return
 }
 
 // appendByte appends the given byte as a literal to the result. Literals are
 // not added immediately, but buffered until appendBuffer is called.
 func (p *parser) appendByte(b byte) {
 	p.litBuf.WriteByte(b)
-	return
 }
 
 // appendVariable appends the given string as a variable name to the result.

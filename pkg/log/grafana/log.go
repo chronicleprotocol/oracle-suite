@@ -80,8 +80,8 @@ type Metric struct {
 	// ParserFunc is going to be applied to transform the value reflection to an actual float64 value
 	ParserFunc func(reflect.Value) (float64, bool)
 
-	parsedName interpolate.String
-	parsedTags map[string][]interpolate.String
+	parsedName interpolate.Parsed
+	parsedTags map[string][]interpolate.Parsed
 }
 
 // New creates a new logger that can extract parameters from log messages and
@@ -93,10 +93,10 @@ func New(level log.Level, cfg Config) (log.Logger, error) {
 		cfg.Logger = null.New()
 	}
 	// Parse names and tags in advance to improve performance.
-	for n, _ := range cfg.Metrics {
+	for n := range cfg.Metrics {
 		m := &cfg.Metrics[n]
 		m.parsedName = interpolate.Parse(m.Name)
-		m.parsedTags = make(map[string][]interpolate.String)
+		m.parsedTags = make(map[string][]interpolate.Parsed)
 		for k, v := range m.Tags {
 			for _, s := range v {
 				m.parsedTags[k] = append(m.parsedTags[k], interpolate.Parse(s))
@@ -475,7 +475,7 @@ func match(metric Metric, msg string, fields reflect.Value) bool {
 }
 
 // replaceVars replaces vars provided as ${field} with values from log fields.
-func replaceVars(s interpolate.String, fields reflect.Value) (string, bool) {
+func replaceVars(s interpolate.Parsed, fields reflect.Value) (string, bool) {
 	valid := true
 	return s.Interpolate(func(s string) string {
 		name, ok := toString(byPath(fields, s))
