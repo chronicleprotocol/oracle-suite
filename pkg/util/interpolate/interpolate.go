@@ -42,7 +42,7 @@ type Parsed []part
 
 const (
 	litType = iota
-	partVar
+	varType
 )
 
 type part struct {
@@ -57,7 +57,7 @@ func (s Parsed) Interpolate(mapping func(name string) string) string {
 		switch v.typ {
 		case litType:
 			buf.WriteString(v.val)
-		case partVar:
+		case varType:
 			buf.WriteString(mapping(v.val))
 		}
 	}
@@ -72,8 +72,8 @@ var (
 )
 
 type parser struct {
-	in     string
 	res    Parsed
+	in     string
 	pos    int
 	litBuf strings.Builder
 	varBuf strings.Builder
@@ -161,7 +161,7 @@ func (p *parser) appendByte(b byte) {
 // appendVariable appends the given string as a variable name to the result.
 func (p *parser) appendVariable(s string) {
 	p.appendBuffer()
-	p.res = append(p.res, part{typ: partVar, val: s})
+	p.res = append(p.res, part{typ: varType, val: s})
 }
 
 // appendBuffer checks if literal buffer is not empty and appends it to the result.
