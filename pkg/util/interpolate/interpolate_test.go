@@ -17,6 +17,7 @@ package interpolate
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,10 @@ func TestParse(t *testing.T) {
 		str  string
 		want string
 	}{
+		{
+			str:  "",
+			want: "",
+		},
 		{
 			str:  "foo",
 			want: "foo",
@@ -64,6 +69,14 @@ func TestParse(t *testing.T) {
 			want: "\\[foo]_\\[bar]",
 		},
 		{
+			str:  "$$",
+			want: "$",
+		},
+		{
+			str:  "\\",
+			want: "\\",
+		},
+		{
 			str:  "${",
 			want: "${",
 		},
@@ -72,8 +85,16 @@ func TestParse(t *testing.T) {
 			want: "}",
 		},
 		{
+			str:  "${\\",
+			want: "${\\",
+		},
+		{
 			str:  "${foo",
 			want: "${foo",
+		},
+		{
+			str:  "${foo$$bar${baz\\}",
+			want: "${foo$bar${baz}",
 		},
 	}
 	for n, tt := range tests {
@@ -85,6 +106,7 @@ func TestParse(t *testing.T) {
 
 func FuzzParse(f *testing.F) {
 	for _, s := range []string{
+		"",
 		"foo",
 		"${bar}",
 		"${bar\\}foo}",
@@ -94,13 +116,39 @@ func FuzzParse(f *testing.F) {
 		"\\${foo}_\\${bar}",
 		"$$${foo}_$$${bar}",
 		"\\\\${foo}_\\\\${bar}",
+		"$$",
+		"\\",
 		"${",
 		"}",
+		"${\\",
 		"${foo",
+		"${foo$$bar${baz}",
 	} {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
 		Parse(s).Interpolate(func(name string) string { return "[" + name + "]" })
+	})
+}
+
+func BenchmarkParse(b *testing.B) {
+	b.Run("parser", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			Parse("${foo}_${bar}").Interpolate(func(name string) string { return "[" + name + "]" })
+		}
+	})
+	b.Run("preparsed", func(b *testing.B) {
+		s := Parse("${foo}_${bar}")
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			s.Interpolate(func(name string) string { return "[" + name + "]" })
+		}
+	})
+	b.Run("regexp", func(b *testing.B) {
+		rx := regexp.MustCompile(`\$\{[^}]+}`)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			rx.ReplaceAllStringFunc("${foo}_${bar}", func(s string) string { return "[" + s[2:len(s)-1] + "]" })
+		}
 	})
 }

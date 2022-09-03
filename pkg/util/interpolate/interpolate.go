@@ -16,7 +16,6 @@
 package interpolate
 
 import (
-	"bytes"
 	"strings"
 )
 
@@ -33,218 +32,144 @@ import (
 //
 // - If a variable is not closed, it is treated as a literal.
 func Parse(s string) String {
-	return parse(tokenize(s))
+	p := &parser{in: s}
+	p.parse()
+	return p.res
 }
 
 // String is a parsed string.
-type String []any
+type String []part
+
+const (
+	litType = iota
+	partVar
+)
+
+type part struct {
+	typ int
+	val string
+}
 
 // Interpolate replaces variables in the string based on the mapping function.
 func (s String) Interpolate(mapping func(name string) string) string {
 	var buf strings.Builder
 	for _, v := range s {
-		switch v := v.(type) {
-		case partLiteral:
-			buf.WriteString(string(v))
-		case partVariable:
-			buf.WriteString(mapping(string(v)))
+		switch v.typ {
+		case litType:
+			buf.WriteString(v.val)
+		case partVar:
+			buf.WriteString(mapping(v.val))
 		}
 	}
 	return buf.String()
 }
 
-type partLiteral string
-type partVariable string
-
 var (
-	tokenEscapedDollar = []byte("$$")
-	tokenBackslash     = []byte("\\")
-	tokenVarBegin      = []byte("${")
-	tokenVarEnd        = []byte("}")
+	tokenEscapedDollar = "$$"
+	tokenBackslash     = "\\"
+	tokenVarBegin      = "${"
+	tokenVarEnd        = "}"
 )
 
-func parse(t [][]byte) String {
-	p := &parser{tokens: t}
-	p.parse()
-	return p.result
-}
-
 type parser struct {
-	result String
-	tokens [][]byte
+	in     string
+	res    String
 	pos    int
+	litBuf strings.Builder
+	varBuf strings.Builder
 }
 
 func (p *parser) parse() {
-	for {
-		t := p.nextToken()
+	for p.hasNext() {
 		switch {
-		case t == nil:
-			return
-		case bytes.Equal(t, tokenEscapedDollar):
-			p.appendLiteral([]byte("$"))
-		case bytes.Equal(t, tokenVarBegin):
-			p.parseVar()
+		case p.nextToken(tokenBackslash):
+			p.parseBackslash()
+		case p.nextToken(tokenEscapedDollar):
+			p.appendByte('$')
+		case p.nextToken(tokenVarBegin):
+			p.parseVariable()
 		default:
-			p.appendLiteral(t)
+			p.appendByte(p.nextByte())
 		}
 	}
+	p.appendBuffer()
 }
 
-func (p *parser) parseVar() {
-	var (
-		varName []byte
-		literal []byte
-	)
-	literal = tokenVarBegin
-	for {
-		t := p.nextToken()
-		literal = append(literal, t...)
+func (p *parser) parseBackslash() {
+	if !p.hasNext() {
+		p.appendLiteral(tokenBackslash)
+		return
+	}
+	p.appendByte(p.nextByte())
+}
+
+func (p *parser) parseVariable() {
+	pos := p.pos
+	p.varBuf.Reset()
+	for p.hasNext() {
 		switch {
-		case t == nil:
-			// If the variable is not closed, treat the whole thing as a literal.
-			p.appendLiteral(literal)
+		case p.nextToken(tokenVarEnd):
+			p.appendVariable(p.varBuf.String())
 			return
-		case bytes.Equal(t, tokenVarEnd):
-			p.appendVariable(varName)
-			return
+		case p.nextToken(tokenBackslash):
+			if !p.hasNext() {
+				continue
+			}
+			p.varBuf.WriteByte(p.nextByte())
 		default:
-			varName = append(varName, t...)
+			p.varBuf.WriteByte(p.nextByte())
 		}
 	}
+	// Variable not closed. Treat the whole thing as a literal.
+	p.appendLiteral(tokenVarBegin)
+	p.pos = pos
 }
 
-func (p *parser) nextToken() []byte {
-	if p.pos >= len(p.tokens) {
-		return nil
-	}
+// hasNext returns true if there are more bytes to read.
+func (p *parser) hasNext() bool {
+	return p.pos < len(p.in)
+}
+
+// nextByte returns the next byte and advances the position.
+func (p *parser) nextByte() byte {
 	p.pos++
-	return p.tokens[p.pos-1]
+	return p.in[p.pos-1]
 }
 
-func (p *parser) appendLiteral(v []byte) {
-	if len(p.result) == 0 {
-		p.result = String{partLiteral(v)}
-		return
+// nextToken returns true if the next token matches the given string and advances
+// the position.
+func (p *parser) nextToken(s string) bool {
+	if strings.HasPrefix(p.in[p.pos:], s) {
+		p.pos += len(s)
+		return true
 	}
-	// If the last part is a literal, append to it. Having smaller number of
-	// parts is better for performance.
-	if last, ok := p.result[len(p.result)-1].(partLiteral); ok {
-		p.result[len(p.result)-1] = last + partLiteral(v)
-		return
+	return false
+}
+
+// appendLiteral appends the given string as a literal to the result. Literals
+// are not added immediately, but buffered until appendBuffer is called.
+func (p *parser) appendLiteral(s string) {
+	p.litBuf.WriteString(s)
+	return
+}
+
+// appendByte appends the given byte as a literal to the result. Literals are
+// not added immediately, but buffered until appendBuffer is called.
+func (p *parser) appendByte(b byte) {
+	p.litBuf.WriteByte(b)
+	return
+}
+
+// appendVariable appends the given string as a variable name to the result.
+func (p *parser) appendVariable(s string) {
+	p.appendBuffer()
+	p.res = append(p.res, part{typ: partVar, val: s})
+}
+
+// appendBuffer checks if literal buffer is not empty and appends it to the result.
+func (p *parser) appendBuffer() {
+	if p.litBuf.Len() > 0 {
+		p.res = append(p.res, part{typ: litType, val: p.litBuf.String()})
+		p.litBuf.Reset()
 	}
-	p.result = append(p.result, partLiteral(v))
-}
-
-func (p *parser) appendVariable(v []byte) {
-	p.result = append(p.result, partVariable(v))
-}
-
-func tokenize(s string) [][]byte {
-	p := &tokenizer{input: []byte(s)}
-	p.tokenize()
-	return p.tokens
-}
-
-const (
-	stateLiteral = iota
-	stateVariable
-	stateEscapedInLiteral
-	stateEscapedInVariable
-)
-
-type tokenizer struct {
-	input  []byte
-	state  int
-	pos    int
-	tokens [][]byte
-	// Buffer for literal values. The bytes are added to it every time
-	// a value that is not a token is encountered. The buffer is appended
-	// to the tokens slice when a token is encountered.
-	literal []byte
-}
-
-func (p *tokenizer) tokenize() {
-	for {
-		switch p.state {
-		case stateLiteral:
-			if t, ok := p.nextToken(tokenEscapedDollar); ok {
-				p.appendToken(t)
-				continue
-			}
-			if _, ok := p.nextToken(tokenBackslash); ok {
-				p.state = stateEscapedInLiteral
-				continue
-			}
-			if t, ok := p.nextToken(tokenVarBegin); ok {
-				p.appendToken(t)
-				p.state = stateVariable
-				continue
-			}
-		case stateVariable:
-			if _, ok := p.nextToken(tokenBackslash); ok {
-				p.state = stateEscapedInVariable
-				continue
-			}
-			if t, ok := p.nextToken(tokenVarEnd); ok {
-				p.appendToken(t)
-				p.state = stateLiteral
-				continue
-			}
-		case stateEscapedInLiteral:
-			if b, ok := p.nextLiteral(); ok {
-				p.appendLiteral(b)
-			}
-			p.state = stateLiteral
-			continue
-		case stateEscapedInVariable:
-			if b, ok := p.nextLiteral(); ok {
-				p.appendLiteral(b)
-			}
-			p.state = stateVariable
-			continue
-		}
-		if b, ok := p.nextLiteral(); ok {
-			p.appendLiteral(b)
-			continue
-		}
-		break
-	}
-	if len(p.literal) != 0 {
-		p.tokens = append(p.tokens, p.literal)
-		p.literal = nil
-	}
-}
-
-func (p *tokenizer) nextToken(token []byte) ([]byte, bool) {
-	if p.pos+len(token) > len(p.input) {
-		return nil, false
-	}
-	ok := bytes.Equal(p.input[p.pos:p.pos+len(token)], token)
-	if ok {
-		p.pos += len(token)
-	}
-	return token, ok
-}
-
-func (p *tokenizer) nextLiteral() (byte, bool) {
-	if p.pos >= len(p.input) {
-		return 0, false
-	}
-	p.pos++
-	return p.input[p.pos-1], true
-}
-
-func (p *tokenizer) appendToken(token []byte) {
-	// If literal buffer is not empty, it needs to be appended as a token first.
-	if len(p.literal) != 0 {
-		p.tokens = append(p.tokens, p.literal, token)
-		p.literal = nil
-		return
-	}
-	p.tokens = append(p.tokens, token)
-}
-
-func (p *tokenizer) appendLiteral(b byte) {
-	p.literal = append(p.literal, b)
 }
