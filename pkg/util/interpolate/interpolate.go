@@ -32,7 +32,7 @@ import (
 //
 // - If a variable is not closed, it is treated as a literal.
 func Parse(s string) Parsed {
-	p := &parser{in: s}
+	p := parser{in: s, res: make([]part, 0, 1)}
 	p.parse()
 	return p.res
 }
@@ -89,7 +89,7 @@ func (p *parser) parse() {
 		case p.nextToken(tokenVarBegin):
 			p.parseVariable()
 		default:
-			p.appendByte(p.nextByte())
+			p.appendLiteral(p.nextBytesUntilAnyOf("\\$"))
 		}
 	}
 	p.appendBuffer()
@@ -117,7 +117,7 @@ func (p *parser) parseVariable() {
 			}
 			p.varBuf.WriteByte(p.nextByte())
 		default:
-			p.varBuf.WriteByte(p.nextByte())
+			p.varBuf.WriteString(p.nextBytesUntilAnyOf("\\}"))
 		}
 	}
 	// Variable not closed. Treat the whole thing as a literal.
@@ -134,6 +134,22 @@ func (p *parser) hasNext() bool {
 func (p *parser) nextByte() byte {
 	p.pos++
 	return p.in[p.pos-1]
+}
+
+// nextBytesUntilAnyOf returns the next bytes until any of the given characters
+// is encountered but not less than one. Only ASCII characters are supported.
+func (p *parser) nextBytesUntilAnyOf(s string) string {
+	pos := p.pos
+	p.pos++
+	for p.pos < len(p.in) {
+		for n := 0; n < len(s); n++ {
+			if p.in[p.pos] == s[n] {
+				return p.in[pos:p.pos]
+			}
+		}
+		p.pos++
+	}
+	return p.in[pos:p.pos]
 }
 
 // nextToken returns true if the next token matches the given string and advances

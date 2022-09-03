@@ -37,6 +37,10 @@ func TestParse(t *testing.T) {
 			want: "foo",
 		},
 		{
+			str:  "foo_${bar}_baz",
+			want: "foo_[bar]_baz",
+		},
+		{
 			str:  "${bar}",
 			want: "[bar]",
 		},
@@ -96,6 +100,10 @@ func TestParse(t *testing.T) {
 			str:  "${foo$$bar${baz\\}",
 			want: "${foo$bar${baz}",
 		},
+		{
+			str:  "$0${$",
+			want: "$0${$",
+		},
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
@@ -123,6 +131,7 @@ func FuzzParse(f *testing.F) {
 		"${\\",
 		"${foo",
 		"${foo$$bar${baz}",
+		"$0${$",
 	} {
 		f.Add(s)
 	}
@@ -132,13 +141,15 @@ func FuzzParse(f *testing.F) {
 }
 
 func BenchmarkParse(b *testing.B) {
+	testString := "before_${foo}_${bar}_after"
+
 	b.Run("parser", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Parse("${foo}_${bar}").Interpolate(func(name string) string { return "[" + name + "]" })
+			Parse(testString).Interpolate(func(name string) string { return "[" + name + "]" })
 		}
 	})
 	b.Run("preparsed", func(b *testing.B) {
-		s := Parse("${foo}_${bar}")
+		s := Parse(testString)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			s.Interpolate(func(name string) string { return "[" + name + "]" })
@@ -148,7 +159,7 @@ func BenchmarkParse(b *testing.B) {
 		rx := regexp.MustCompile(`\$\{[^}]+}`)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			rx.ReplaceAllStringFunc("${foo}_${bar}", func(s string) string { return "[" + s[2:len(s)-1] + "]" })
+			rx.ReplaceAllStringFunc(testString, func(s string) string { return "[" + s[2:len(s)-1] + "]" })
 		}
 	})
 }
