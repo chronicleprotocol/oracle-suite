@@ -44,8 +44,17 @@ func (f *Felt) UnmarshalJSON(p []byte) error {
 	if len(p) < 2 || p[0] != '"' || p[len(p)-1] != '"' {
 		return fmt.Errorf("unable to parse felt: %s", string(p))
 	}
-	f.Int = new(big.Int)
+
 	p = p[1 : len(p)-1]
+	return f.UnmarshalText(p)
+}
+
+func (f Felt) MarshalText() ([]byte, error) {
+	return []byte(f.Text(16)), nil
+}
+
+func (f *Felt) UnmarshalText(p []byte) error {
+	f.Int = new(big.Int)
 
 	// Empty string is treated as zero.
 	if len(p) == 0 {
