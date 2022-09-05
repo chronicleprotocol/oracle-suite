@@ -127,10 +127,10 @@ type logger struct {
 }
 
 type shared struct {
+	mu     sync.Mutex
 	ctx    context.Context
 	waitCh chan error
 
-	mu               sync.Mutex
 	logger           log.Logger
 	metrics          []Metric
 	interval         uint

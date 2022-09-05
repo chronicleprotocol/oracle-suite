@@ -76,7 +76,7 @@ func TestNode_MessagePrivKey(t *testing.T) {
 	msg := <-s.Next()
 	assert.Equal(t, id, msg.GetFrom())
 	// The public key extracted form a message must be different
-	// than peer's public key:
+	// from peer's public key:
 	assert.NotEqual(t, n.Host().ID(), msg.GetFrom())
 }
 

@@ -114,24 +114,19 @@ func TestParse(t *testing.T) {
 
 func FuzzParse(f *testing.F) {
 	for _, s := range []string{
+		// Literals:
 		"",
 		"foo",
-		"${bar}",
-		"${bar\\}foo}",
-		"foo_${bar}",
-		"${foo}_${bar}",
-		"$${foo}_$${bar}",
-		"\\${foo}_\\${bar}",
-		"$$${foo}_$$${bar}",
-		"\\\\${foo}_\\\\${bar}",
+		string([]byte{0}),
+		// Sample inputs:
+		"${foo}",
+		"$${foo}",
+		"\\${foo}",
+		// Tokens:
 		"$$",
 		"\\",
 		"${",
 		"}",
-		"${\\",
-		"${foo",
-		"${foo$$bar${baz}",
-		"$0${$",
 	} {
 		f.Add(s)
 	}

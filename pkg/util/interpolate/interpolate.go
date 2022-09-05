@@ -19,6 +19,9 @@ import (
 	"strings"
 )
 
+// Parsed is a parsed string.
+type Parsed []part
+
 // Parse parses the string and returns a parsed representation. The variables
 // may be interpolated later using the Interpolate method.
 //
@@ -32,22 +35,9 @@ import (
 //
 // - If a variable is not closed, it is treated as a literal.
 func Parse(s string) Parsed {
-	p := parser{in: s, res: make([]part, 0, 1)}
+	p := parser{in: s, out: make([]part, 0, 1)}
 	p.parse()
-	return p.res
-}
-
-// Parsed is a parsed string.
-type Parsed []part
-
-const (
-	litType = iota
-	varType
-)
-
-type part struct {
-	typ int
-	val string
+	return p.out
 }
 
 // Interpolate replaces variables in the string based on the mapping function.
@@ -64,6 +54,26 @@ func (s Parsed) Interpolate(mapping func(name string) string) string {
 	return buf.String()
 }
 
+// HasVars returns true if the string contain at least one variable.
+func (s Parsed) HasVars() bool {
+	for _, v := range s {
+		if v.typ == varType {
+			return true
+		}
+	}
+	return false
+}
+
+const (
+	litType = iota
+	varType
+)
+
+type part struct {
+	typ int
+	val string
+}
+
 var (
 	tokenEscapedDollar = "$$"
 	tokenBackslash     = "\\"
@@ -72,8 +82,8 @@ var (
 )
 
 type parser struct {
-	res    Parsed
 	in     string
+	out    Parsed
 	pos    int
 	litBuf strings.Builder
 	varBuf strings.Builder
@@ -89,6 +99,7 @@ func (p *parser) parse() {
 		case p.nextToken(tokenVarBegin):
 			p.parseVariable()
 		default:
+			// Add all characters to the first character that may start the token.
 			p.appendLiteral(p.nextBytesUntilAnyOf("\\$"))
 		}
 	}
@@ -117,6 +128,7 @@ func (p *parser) parseVariable() {
 			}
 			p.varBuf.WriteByte(p.nextByte())
 		default:
+			// Add all characters to the first character that may start the token.
 			p.varBuf.WriteString(p.nextBytesUntilAnyOf("\\}"))
 		}
 	}
@@ -162,6 +174,12 @@ func (p *parser) nextToken(s string) bool {
 	return false
 }
 
+// appendVariable appends the given string as a variable name to the result.
+func (p *parser) appendVariable(s string) {
+	p.appendBuffer()
+	p.out = append(p.out, part{typ: varType, val: s})
+}
+
 // appendLiteral appends the given string as a literal to the result. Literals
 // are not added immediately, but buffered until appendBuffer is called.
 func (p *parser) appendLiteral(s string) {
@@ -174,16 +192,10 @@ func (p *parser) appendByte(b byte) {
 	p.litBuf.WriteByte(b)
 }
 
-// appendVariable appends the given string as a variable name to the result.
-func (p *parser) appendVariable(s string) {
-	p.appendBuffer()
-	p.res = append(p.res, part{typ: varType, val: s})
-}
-
 // appendBuffer checks if literal buffer is not empty and appends it to the result.
 func (p *parser) appendBuffer() {
 	if p.litBuf.Len() > 0 {
-		p.res = append(p.res, part{typ: litType, val: p.litBuf.String()})
+		p.out = append(p.out, part{typ: litType, val: p.litBuf.String()})
 		p.litBuf.Reset()
 	}
 }
