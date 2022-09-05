@@ -31,8 +31,8 @@ var ghostFactory = func(cfg ghost.Config) (*ghost.Ghost, error) {
 }
 
 type Ghost struct {
-	Interval int      `json:"interval"`
-	Pairs    []string `json:"pairs"`
+	Interval int      `yaml:"interval"`
+	Pairs    []string `yaml:"pairs"`
 }
 
 type Dependencies struct {

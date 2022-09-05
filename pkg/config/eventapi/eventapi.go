@@ -36,26 +36,26 @@ var eventAPIFactory = func(cfg api.Config) (*api.EventAPI, error) {
 }
 
 type EventAPI struct {
-	ListenAddr string  `json:"listenAddr"`
-	Storage    storage `json:"storage"`
+	ListenAddr string  `yaml:"listenAddr"`
+	Storage    storage `yaml:"storage"`
 }
 
 type storage struct {
-	Type   string        `json:"type"`
-	Memory storageMemory `json:"memory"`
-	Redis  storageRedis  `json:"redis"`
+	Type   string        `yaml:"type"`
+	Memory storageMemory `yaml:"memory"`
+	Redis  storageRedis  `yaml:"redis"`
 }
 
 type storageMemory struct {
-	TTL int `json:"ttl"`
+	TTL int `yaml:"ttl"`
 }
 
 type storageRedis struct {
-	TTL         int    `json:"ttl"`
-	Address     string `json:"address"`
-	Password    string `json:"password"`
-	DB          int    `json:"db"`
-	MemoryLimit int64  `json:"memoryLimit"`
+	TTL         int    `yaml:"ttl"`
+	Address     string `yaml:"address"`
+	Password    string `yaml:"password"`
+	DB          int    `yaml:"db"`
+	MemoryLimit int64  `yaml:"memoryLimit"`
 }
 
 type Dependencies struct {

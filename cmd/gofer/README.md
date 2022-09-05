@@ -37,9 +37,9 @@ make
 
 ### Price models configuration
 
-To start working with Gofer, you have to define price models first. Price models are defined in a JSON file. By default,
-the default config file location is `gofer.json` in the current directory. You can change the config file location using
-the `--config` flag.
+To start working with Gofer, you have to define price models first. Price models are defined in a JSON or YAML file. By
+default, the default config file location is `gofer.json` in the current directory. You can change the config file
+location using the `--config` flag.
 
 Simple price model for the `BTC/USD` asset pair may look like this:
 

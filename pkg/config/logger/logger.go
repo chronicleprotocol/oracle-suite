@@ -37,25 +37,25 @@ type Dependencies struct {
 }
 
 type Logger struct {
-	Grafana grafanaLogger `json:"grafana"`
+	Grafana grafanaLogger `yaml:"grafana"`
 }
 
 type grafanaLogger struct {
-	Enable   bool            `json:"enable"`
-	Interval int             `json:"interval"`
-	Endpoint string          `json:"endpoint"`
-	APIKey   string          `json:"apiKey"`
-	Metrics  []grafanaMetric `json:"metrics"`
+	Enable   bool            `yaml:"enable"`
+	Interval int             `yaml:"interval"`
+	Endpoint string          `yaml:"endpoint"`
+	APIKey   string          `yaml:"apiKey"`
+	Metrics  []grafanaMetric `yaml:"metrics"`
 }
 
 type grafanaMetric struct {
-	MatchMessage string              `json:"matchMessage"`
-	MatchFields  map[string]string   `json:"matchFields"`
-	Value        string              `json:"value"`
-	ScaleFactor  float64             `json:"scaleFactor"`
-	Name         string              `json:"name"`
-	Tags         map[string][]string `json:"tags"`
-	OnDuplicate  string              `json:"onDuplicate"`
+	MatchMessage string              `yaml:"matchMessage"`
+	MatchFields  map[string]string   `yaml:"matchFields"`
+	Value        string              `yaml:"value"`
+	ScaleFactor  float64             `yaml:"scaleFactor"`
+	Name         string              `yaml:"name"`
+	Tags         map[string][]string `yaml:"tags"`
+	OnDuplicate  string              `yaml:"onDuplicate"`
 }
 
 func (c *Logger) Configure(d Dependencies) (log.Logger, error) {

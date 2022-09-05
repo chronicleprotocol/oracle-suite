@@ -16,13 +16,13 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/interpolate"
 )
@@ -46,6 +46,8 @@ func LoadFile(fileName string) (b []byte, err error) {
 	return b, err
 }
 
+// ParseFile parses the given YAML config file from the byte slice and assigns
+// decoded values into the out value.
 func ParseFile(out interface{}, path string) error {
 	p, err := filepath.Abs(path)
 	if err != nil {
@@ -55,7 +57,11 @@ func ParseFile(out interface{}, path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load JSON config file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if errClose := f.Close(); err == nil && errClose != nil {
+			err = errClose
+		}
+	}()
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return fmt.Errorf("failed to load JSON config file: %w", err)
@@ -63,58 +69,60 @@ func ParseFile(out interface{}, path string) error {
 	return Parse(out, b)
 }
 
+// Parse parses the given YAML config from the byte slice and assigns decoded
+// values into the out value.
 func Parse(out interface{}, config []byte) error {
-	if err := json.Unmarshal(config, out); err != nil {
-		return fmt.Errorf("failed to parse JSON config: %w", err)
+	n := yaml.Node{}
+	if err := yaml.Unmarshal(config, &n); err != nil {
+		return fmt.Errorf("failed to parse YAML config: %w", err)
 	}
-	return replaceEnvVars(out)
+	if err := yamlReplaceEnvVars(&n); err != nil {
+		return fmt.Errorf("failed to parse YAML config: %w", err)
+	}
+	if err := n.Decode(out); err != nil {
+		return fmt.Errorf("failed to parse YAML config: %w", err)
+	}
+	return nil
 }
 
-func replaceEnvVars(v interface{}) error {
-	var err error
-	recur(reflect.ValueOf(v), func(s string) string {
-		return interpolate.Parse(s).Interpolate(func(key string) string {
-			if err != nil {
-				return ""
-			}
-			if !strings.HasPrefix(key, "ENV:") {
-				err = fmt.Errorf("environment variable %s does not start with ENV", key)
-				return ""
-			}
-			env, ok := getEnv(key[4:])
-			if !ok {
-				err = fmt.Errorf("environment variable %s not found", key[4:])
-				return ""
-			}
-			return env
-		})
+// yamlReplaceEnvVars replaces recursively all environment variables in the
+// given YAML node.
+func yamlReplaceEnvVars(n *yaml.Node) error {
+	return yamlVisitScalarNodes(n, func(n *yaml.Node) error {
+		var err error
+		parsed := interpolate.Parse(n.Value)
+		if parsed.HasVars() {
+			n.Value = parsed.Interpolate(func(key string) string {
+				if !strings.HasPrefix(key, "ENV:") {
+					err = fmt.Errorf("environment variable %s is not prefixed with ENV", key)
+					return ""
+				}
+				env, ok := getEnv(key[4:])
+				if !ok {
+					err = fmt.Errorf("environment variable %s not set", key[4:])
+					return ""
+				}
+				return env
+			})
+			// Removing the style and tag will make the YAML decoder more
+			// forgiving. Otherwise, it will complain about type mismatches.
+			n.Style = 0
+			n.Tag = ""
+		}
+		return err
 	})
-	return err
 }
 
-func recur(rv reflect.Value, fn func(rv string) string) {
-	switch rv.Kind() {
-	case reflect.Struct:
-		for n := 0; n < rv.NumField(); n++ {
-			recur(rv.Field(n), fn)
-		}
-	case reflect.Slice, reflect.Array:
-		for i := 0; i < rv.Len(); i++ {
-			recur(rv.Index(i), fn)
-		}
-	case reflect.Map:
-		for _, k := range rv.MapKeys() {
-			if rv.MapIndex(k).Kind() == reflect.String {
-				rv.SetMapIndex(k, reflect.ValueOf(fn(rv.MapIndex(k).String())))
-				continue
+func yamlVisitScalarNodes(n *yaml.Node, fn func(n *yaml.Node) error) error {
+	switch n.Kind {
+	default:
+		for _, c := range n.Content {
+			if err := yamlVisitScalarNodes(c, fn); err != nil {
+				return err
 			}
-			recur(rv.MapIndex(k), fn)
 		}
-	case reflect.Ptr, reflect.Interface:
-		recur(rv.Elem(), fn)
-	case reflect.String:
-		if rv.CanAddr() {
-			rv.SetString(fn(rv.String()))
-		}
+	case yaml.ScalarNode:
+		return fn(n)
 	}
+	return nil
 }

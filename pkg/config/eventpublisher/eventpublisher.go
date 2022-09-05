@@ -41,28 +41,28 @@ var eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublishe
 }
 
 type EventPublisher struct {
-	Listeners listeners `json:"listeners"`
+	Listeners listeners `yaml:"listeners"`
 }
 
 type listeners struct {
-	TeleportEVM      []teleportEVMListener      `json:"teleportEVM"`
-	TeleportStarknet []teleportStarknetListener `json:"teleportStarknet"`
+	TeleportEVM      []teleportEVMListener      `yaml:"teleportEVM"`
+	TeleportStarknet []teleportStarknetListener `yaml:"teleportStarknet"`
 }
 
 type teleportEVMListener struct {
-	Ethereum    ethereumConfig.Ethereum `json:"ethereum"`
-	Interval    int64                   `json:"interval"`
-	BlocksDelta []int                   `json:"blocksDelta"`
-	BlocksLimit int                     `json:"blocksLimit"`
-	Addresses   []common.Address        `json:"addresses"`
+	Ethereum    ethereumConfig.Ethereum `yaml:"ethereum"`
+	Interval    int64                   `yaml:"interval"`
+	BlocksDelta []int                   `yaml:"blocksDelta"`
+	BlocksLimit int                     `yaml:"blocksLimit"`
+	Addresses   []common.Address        `yaml:"addresses"`
 }
 
 type teleportStarknetListener struct {
-	Sequencer   string                 `json:"sequencer"`
-	Interval    int64                  `json:"interval"`
-	BlocksDelta []int                  `json:"blocksDelta"`
-	BlocksLimit int                    `json:"blocksLimit"`
-	Addresses   []*starknetClient.Felt `json:"addresses"`
+	Sequencer   string                 `yaml:"sequencer"`
+	Interval    int64                  `yaml:"interval"`
+	BlocksDelta []int                  `yaml:"blocksDelta"`
+	BlocksLimit int                    `yaml:"blocksLimit"`
+	Addresses   []*starknetClient.Felt `yaml:"addresses"`
 }
 
 type Dependencies struct {

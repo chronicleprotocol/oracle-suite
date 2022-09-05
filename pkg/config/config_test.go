@@ -28,6 +28,9 @@ func TestParse(t *testing.T) {
 		if v == "nil" {
 			return "", false
 		}
+		if v == "num" {
+			return "1", true
+		}
 		return "env:" + v, true
 	}
 	defer func() { getEnv = os.LookupEnv }()
@@ -48,6 +51,11 @@ func TestParse(t *testing.T) {
 			want:   &struct{ Foo string }{Foo: "bar_env:env"},
 		},
 		{
+			config: `{"foo_${ENV:env}": "bar"}`,
+			out:    map[string]string{},
+			want:   map[string]string{"foo_env:env": "bar"},
+		},
+		{
 			config: `{"foo": {"bar": "baz_${ENV:env}"}}`,
 			out:    &struct{ Foo map[string]string }{},
 			want:   &struct{ Foo map[string]string }{Foo: map[string]string{"bar": "baz_env:env"}},
@@ -58,12 +66,12 @@ func TestParse(t *testing.T) {
 			want:   &struct{ Foo []string }{Foo: []string{"bar_env:env"}},
 		},
 		{
-			config:  `{"foo": ["bar_${env}"]}`,
-			out:     &struct{ Foo []string }{},
-			wantErr: true,
+			config: `{"foo": "${ENV:num}"}`,
+			out:    &struct{ Foo int }{},
+			want:   &struct{ Foo int }{Foo: 1},
 		},
 		{
-			config:  `{"foo": ["bar_${nil}"]}`,
+			config:  `{"foo": ["bar_${env}"]}`,
 			out:     &struct{ Foo []string }{},
 			wantErr: true,
 		},

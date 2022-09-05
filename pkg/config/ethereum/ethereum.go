@@ -74,13 +74,13 @@ var ethClientFactory = func(
 }
 
 type Ethereum struct {
-	From            string      `json:"from"`
-	Keystore        string      `json:"keystore"`
-	Password        string      `json:"password"`
-	RPC             interface{} `json:"rpc"`
-	Timeout         int         `json:"timeout"`
-	GracefulTimeout int         `json:"gracefulTimeout"`
-	MaxBlocksBehind int         `json:"maxBlocksBehind"`
+	From            string      `yaml:"from"`
+	Keystore        string      `yaml:"keystore"`
+	Password        string      `yaml:"password"`
+	RPC             interface{} `yaml:"rpc"`
+	Timeout         int         `yaml:"timeout"`
+	GracefulTimeout int         `yaml:"gracefulTimeout"`
+	MaxBlocksBehind int         `yaml:"maxBlocksBehind"`
 }
 
 func (c *Ethereum) ConfigureSigner() (ethereum.Signer, error) {

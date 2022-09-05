@@ -29,6 +29,7 @@ make
 
 To start working with Spire, you have to create configuration file first. By default, the default config file location
 is `config.json` in the current working directory. You can change the config file location using the `--config` flag.
+Spire supports JSON and YAML configuration files.
 
 ### Example configuration
 

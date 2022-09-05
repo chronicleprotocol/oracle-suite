@@ -39,13 +39,13 @@ var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
 }
 
 type Spire struct {
-	RPC           RPC      `json:"rpc"` // Old configuration format, to remove in the future.
-	RPCListenAddr string   `json:"rpcListenAddr"`
-	Pairs         []string `json:"pairs"`
+	RPC           RPC      `yaml:"rpc"` // Old configuration format, to remove in the future.
+	RPCListenAddr string   `yaml:"rpcListenAddr"`
+	Pairs         []string `yaml:"pairs"`
 }
 
 type RPC struct {
-	Address string `json:"address"`
+	Address string `yaml:"address"`
 }
 
 type AgentDependencies struct {

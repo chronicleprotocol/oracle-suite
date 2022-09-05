@@ -43,28 +43,28 @@ var p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
 }
 
 type Transport struct {
-	Transport string      `json:"transport"`
-	P2P       P2P         `json:"libp2p"`
-	SSB       Scuttlebutt `json:"ssb"`
+	Transport string      `yaml:"transport"`
+	P2P       P2P         `yaml:"libp2p"`
+	SSB       Scuttlebutt `yaml:"ssb"`
 }
 
 type P2P struct {
-	PrivKeySeed      string   `json:"privKeySeed"`
-	ListenAddrs      []string `json:"listenAddrs"`
-	BootstrapAddrs   []string `json:"bootstrapAddrs"`
-	DirectPeersAddrs []string `json:"directPeersAddrs"`
-	BlockedAddrs     []string `json:"blockedAddrs"`
-	DisableDiscovery bool     `json:"disableDiscovery"`
+	PrivKeySeed      string   `yaml:"privKeySeed"`
+	ListenAddrs      []string `yaml:"listenAddrs"`
+	BootstrapAddrs   []string `yaml:"bootstrapAddrs"`
+	DirectPeersAddrs []string `yaml:"directPeersAddrs"`
+	BlockedAddrs     []string `yaml:"blockedAddrs"`
+	DisableDiscovery bool     `yaml:"disableDiscovery"`
 }
 
 type Scuttlebutt struct {
-	Caps string `json:"caps"`
+	Caps string `yaml:"caps"`
 }
 
 type Caps struct {
-	Shs    string `json:"shs"`
-	Sign   string `json:"sign"`
-	Invite string `json:"invite,omitempty"`
+	Shs    string `yaml:"shs"`
+	Sign   string `yaml:"sign"`
+	Invite string `yaml:"invite,omitempty"`
 }
 
 type Dependencies struct {

@@ -17,12 +17,13 @@ package gofer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
@@ -64,38 +65,38 @@ func (e ErrCyclicReference) Error() string {
 }
 
 type Gofer struct {
-	RPC           RPC                   `json:"rpc"` // Old configuration format, to remove in the future.
-	RPCListenAddr string                `json:"rpcListenAddr"`
-	Origins       map[string]Origin     `json:"origins"`
-	PriceModels   map[string]PriceModel `json:"priceModels"`
+	RPC           RPC                   `yaml:"rpc"` // Old configuration format, to remove in the future.
+	RPCListenAddr string                `yaml:"rpcListenAddr"`
+	Origins       map[string]Origin     `yaml:"origins"`
+	PriceModels   map[string]PriceModel `yaml:"priceModels"`
 }
 
 type RPC struct {
-	Address string `json:"address"`
+	Address string `yaml:"address"`
 }
 
 type Origin struct {
-	Type   string          `json:"type"`
-	URL    string          `json:"url"` // TODO: Move it to the params field.
-	Params json.RawMessage `json:"params"`
+	Type   string    `yaml:"type"`
+	URL    string    `yaml:"url"` // TODO: Move it to the params field.
+	Params yaml.Node `yaml:"params"`
 }
 
 type PriceModel struct {
-	Method  string          `json:"method"`
-	Sources [][]Source      `json:"sources"`
-	Params  json.RawMessage `json:"params"`
-	TTL     int             `json:"ttl"`
+	Method  string     `yaml:"method"`
+	Sources [][]Source `yaml:"sources"`
+	Params  yaml.Node  `yaml:"params"`
+	TTL     int        `yaml:"ttl"`
 }
 
 type MedianPriceModel struct {
-	MinSourceSuccess int                    `json:"minimumSuccessfulSources"`
-	PostPriceHook    map[string]interface{} `json:"postPriceHook"`
+	MinSourceSuccess int                    `yaml:"minimumSuccessfulSources"`
+	PostPriceHook    map[string]interface{} `yaml:"postPriceHook"`
 }
 
 type Source struct {
-	Origin string `json:"origin"`
-	Pair   string `json:"pair"`
-	TTL    int    `json:"ttl"`
+	Origin string `yaml:"origin"`
+	Pair   string `yaml:"pair"`
+	TTL    int    `yaml:"ttl"`
 }
 
 // ConfigureRPCAgent returns a new rpc.Agent instance.
@@ -144,11 +145,9 @@ func (c *Gofer) ConfigurePriceHook(ctx context.Context, cli ethereum.Client) (pr
 		switch model.Method {
 		case "median":
 			var params MedianPriceModel
-			if model.Params != nil {
-				err := json.Unmarshal(model.Params, &params)
-				if err != nil {
-					return nil, err
-				}
+			err := model.Params.Decode(&params)
+			if err != nil {
+				return nil, err
 			}
 			if len(params.PostPriceHook) > 0 {
 				m[name] = params.PostPriceHook
@@ -237,11 +236,8 @@ func (c *Gofer) buildRoots(graphs map[provider.Pair]nodes.Aggregator) error {
 		switch model.Method {
 		case "median":
 			var params MedianPriceModel
-			if model.Params != nil {
-				err := json.Unmarshal(model.Params, &params)
-				if err != nil {
-					return err
-				}
+			if err := model.Params.Decode(&params); err != nil {
+				return err
 			}
 			graphs[modelPair] = nodes.NewMedianAggregatorNode(modelPair, params.MinSourceSuccess)
 		default:

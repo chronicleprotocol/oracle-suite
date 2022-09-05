@@ -39,15 +39,15 @@ var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
 }
 
 type Spectre struct {
-	Interval    int64                 `json:"interval"`
-	Medianizers map[string]Medianizer `json:"medianizers"`
+	Interval    int64                 `yaml:"interval"`
+	Medianizers map[string]Medianizer `yaml:"medianizers"`
 }
 
 type Medianizer struct {
-	Contract         string  `json:"oracle"`
-	OracleSpread     float64 `json:"oracleSpread"`
-	OracleExpiration int64   `json:"oracleExpiration"`
-	MsgExpiration    int64   `json:"msgExpiration"`
+	Contract         string  `yaml:"oracle"`
+	OracleSpread     float64 `yaml:"oracleSpread"`
+	OracleExpiration int64   `yaml:"oracleExpiration"`
+	MsgExpiration    int64   `yaml:"msgExpiration"`
 }
 
 type Dependencies struct {

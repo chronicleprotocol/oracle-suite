@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
@@ -28,6 +30,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func yamlNode(t *testing.T, config string) yaml.Node {
+	var node yaml.Node
+	err := yaml.Unmarshal([]byte(config), &node)
+	require.NoError(t, err)
+	return node
+}
 
 func TestConfig_buildGraphs_ValidConfig(t *testing.T) {
 	config := Gofer{
@@ -43,7 +52,7 @@ func TestConfig_buildGraphs_ValidConfig(t *testing.T) {
 						{Origin: "bc2", Pair: "B/C"},
 					},
 				},
-				Params: []byte(`{"minimumSuccessfulSources": 3}`),
+				Params: yamlNode(t, `{"minimumSuccessfulSources": 3}`),
 			},
 			"A/C": {
 				Method: "median",
@@ -57,7 +66,7 @@ func TestConfig_buildGraphs_ValidConfig(t *testing.T) {
 						{Origin: ".", Pair: "B/C"},
 					},
 				},
-				Params: []byte(`{"minimumSuccessfulSources": 3}`),
+				Params: yamlNode(t, `{"minimumSuccessfulSources": 3}`),
 			},
 		},
 	}
@@ -122,7 +131,7 @@ func TestConfig_buildGraphs_CyclicConfig(t *testing.T) {
 						{Origin: ".", Pair: "B/C"},
 					},
 				},
-				Params: []byte(`{"minimumSuccessfulSources": 3}`),
+				Params: yamlNode(t, `{"minimumSuccessfulSources": 3}`),
 			},
 			"A/C": {
 				Method: "median",
@@ -132,7 +141,7 @@ func TestConfig_buildGraphs_CyclicConfig(t *testing.T) {
 						{Origin: ".", Pair: "B/C"},
 					},
 				},
-				Params: []byte(`{"minimumSuccessfulSources": 3}`),
+				Params: yamlNode(t, `{"minimumSuccessfulSources": 3}`),
 			},
 			"B/C": {
 				Method: "median",
@@ -142,7 +151,7 @@ func TestConfig_buildGraphs_CyclicConfig(t *testing.T) {
 						{Origin: ".", Pair: "A/C"},
 					},
 				},
-				Params: []byte(`{"minimumSuccessfulSources": 3}`),
+				Params: yamlNode(t, `{"minimumSuccessfulSources": 3}`),
 			},
 		},
 	}
@@ -295,7 +304,7 @@ func TestConfig_buildGraphs_UpdatedOriginURL(t *testing.T) {
 			"ab": {
 				Type:   "binance",
 				URL:    url,
-				Params: []byte(`{}`),
+				Params: yamlNode(t, `{}`),
 			},
 		},
 		PriceModels: map[string]PriceModel{

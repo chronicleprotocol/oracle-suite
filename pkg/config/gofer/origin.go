@@ -16,8 +16,9 @@
 package gofer
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 
@@ -29,45 +30,33 @@ import (
 // which prices will be averaged.
 var averageFromBlocks = []int64{0, 10, 20}
 
-func parseParamsSymbolAliases(params json.RawMessage) (origins.SymbolAliases, error) {
-	if params == nil {
-		return nil, fmt.Errorf("invalid origin parameters")
-	}
-
+func parseParamsSymbolAliases(params yaml.Node) (origins.SymbolAliases, error) {
 	var res struct {
-		SymbolAliases origins.SymbolAliases `json:"symbolAliases"`
+		SymbolAliases origins.SymbolAliases `yaml:"symbolAliases"`
 	}
-	err := json.Unmarshal(params, &res)
+	err := params.Decode(&res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal origin symbol aliases from params: %w", err)
 	}
 	return res.SymbolAliases, nil
 }
 
-func parseParamsAPIKey(params json.RawMessage) (string, error) {
-	if params == nil {
-		return "", fmt.Errorf("invalid origin parameters")
-	}
-
+func parseParamsAPIKey(params yaml.Node) (string, error) {
 	var res struct {
-		APIKey string `json:"apiKey"`
+		APIKey string `yaml:"apiKey"`
 	}
-	err := json.Unmarshal(params, &res)
+	err := params.Decode(&res)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal origin symbol aliases from params: %w", err)
 	}
 	return res.APIKey, nil
 }
 
-func parseParamsContracts(params json.RawMessage) (origins.ContractAddresses, error) {
-	if params == nil {
-		return nil, fmt.Errorf("invalid origin parameters")
-	}
-
+func parseParamsContracts(params yaml.Node) (origins.ContractAddresses, error) {
 	var res struct {
-		Contracts origins.ContractAddresses `json:"contracts"`
+		Contracts origins.ContractAddresses `yaml:"contracts"`
 	}
-	err := json.Unmarshal(params, &res)
+	err := params.Decode(&res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal origin symbol aliases from params: %w", err)
 	}
@@ -80,7 +69,7 @@ func NewHandler(
 	wp query.WorkerPool,
 	cli pkgEthereum.Client,
 	baseURL string,
-	params json.RawMessage,
+	params yaml.Node,
 ) (origins.Handler, error) {
 	aliases, err := parseParamsSymbolAliases(params)
 	if err != nil {

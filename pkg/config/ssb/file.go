@@ -27,9 +27,9 @@ import (
 )
 
 type Caps struct {
-	Shs    string `json:"shs"`
-	Sign   string `json:"sign,omitempty"`
-	Invite string `json:"invite,omitempty"`
+	Shs    string `yaml:"shs"`
+	Sign   string `yaml:"sign,omitempty"`
+	Invite string `yaml:"invite,omitempty"`
 }
 
 func LoadCapsFromConfigFile(fileName string) (Caps, error) {
@@ -38,7 +38,7 @@ func LoadCapsFromConfigFile(fileName string) (Caps, error) {
 		return Caps{}, err
 	}
 	var c struct {
-		Caps Caps `json:"caps"`
+		Caps Caps `yaml:"caps"`
 	}
 	return c.Caps, json.Unmarshal(b, &c)
 }
@@ -53,10 +53,10 @@ func LoadCapsFile(fileName string) (Caps, error) {
 }
 
 type connections map[string][]struct {
-	Port      int    `json:"port"`
-	Transform string `json:"transform,omitempty"`
-	Scope     string `json:"scope,omitempty"`
-	Host      string `json:"host,omitempty"`
+	Port      int    `yaml:"port"`
+	Transform string `yaml:"transform,omitempty"`
+	Scope     string `yaml:"scope,omitempty"`
+	Host      string `yaml:"host,omitempty"`
 }
 
 func (c connections) hostPort() string {
@@ -73,14 +73,14 @@ func (c connections) hostPort() string {
 
 type Config struct {
 	Connections struct {
-		Incoming connections `json:"incoming"`
-		Outgoing connections `json:"outgoing"`
-	} `json:"connections"`
-	Caps    Caps `json:"caps"`
+		Incoming connections `yaml:"incoming"`
+		Outgoing connections `yaml:"outgoing"`
+	} `yaml:"connections"`
+	Caps    Caps `yaml:"caps"`
 	Logging struct {
-		Level string `json:"level"`
-	} `json:"logging"`
-	Master []string `json:"master"`
+		Level string `yaml:"level"`
+	} `yaml:"logging"`
+	Master []string `yaml:"master"`
 }
 
 func (c Config) Address() (net.Addr, error) {
