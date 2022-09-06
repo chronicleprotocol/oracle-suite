@@ -88,11 +88,15 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 		if err != nil {
 			return nil, err
 		}
+		var mPK crypto.PrivKey
+		if d.Signer != nil && d.Signer.Address() != ethereum.EmptyAddress {
+			mPK = ethkey.NewPrivKey(d.Signer)
+		}
 		cfg := libp2p.Config{
 			Mode:             libp2p.ClientMode,
 			PeerPrivKey:      peerPrivKey,
 			Topics:           t,
-			MessagePrivKey:   ethkey.NewPrivKey(d.Signer),
+			MessagePrivKey:   mPK,
 			ListenAddrs:      c.P2P.ListenAddrs,
 			BootstrapAddrs:   c.P2P.BootstrapAddrs,
 			DirectPeersAddrs: c.P2P.DirectPeersAddrs,

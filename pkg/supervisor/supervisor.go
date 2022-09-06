@@ -63,7 +63,7 @@ func New(logger log.Logger) *Supervisor {
 // before invoking the Start method, otherwise it panics.
 func (s *Supervisor) Watch(services ...Service) {
 	if s.ctx != nil {
-		s.log.Panic("Supervisor was already started")
+		s.log.Panic("supervisor was already started")
 	}
 	s.services = append(s.services, services...)
 }
