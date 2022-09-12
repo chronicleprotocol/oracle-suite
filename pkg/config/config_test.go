@@ -71,6 +71,11 @@ func TestParse(t *testing.T) {
 			want:   &struct{ Foo int }{Foo: 1},
 		},
 		{
+			config: "foo:\n  - bar_${ENV:env}\n  - baz_${ENV:env}\n",
+			out:    &struct{ Foo []string }{},
+			want:   &struct{ Foo []string }{Foo: []string{"bar_env:env", "baz_env:env"}},
+		},
+		{
 			config:  `{"foo": ["bar_${env}"]}`,
 			out:     &struct{ Foo []string }{},
 			wantErr: true,
