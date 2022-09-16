@@ -41,7 +41,7 @@ type Message interface {
 
 // Transport implements a mechanism for exchanging messages between Oracles.
 type Transport interface {
-	supervisor.Supervisor
+	supervisor.Service
 
 	// ID returns an identity used to sign messages.
 	ID() []byte
