@@ -134,7 +134,7 @@ func (e *EventAPI) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (e *EventAPI) Wait() chan error {
+func (e *EventAPI) Wait() <-chan error {
 	return e.srv.Wait()
 }
 

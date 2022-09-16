@@ -93,7 +93,7 @@ func (s *Agent) Start(ctx context.Context) error {
 }
 
 // Wait waits until agent's context is cancelled.
-func (s *Agent) Wait() chan error {
+func (s *Agent) Wait() <-chan error {
 	return s.srv.Wait()
 }
 

@@ -140,7 +140,7 @@ func (s *Spectre) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (s *Spectre) Wait() chan error {
+func (s *Spectre) Wait() <-chan error {
 	return s.waitCh
 }
 

@@ -34,7 +34,7 @@ type Service interface {
 	// Wait returns a channel that is blocked while service is running.
 	// When the service is stopped, the channel will be closed. If an error
 	// occurs, an error will be sent to the channel before closing it.
-	Wait() chan error
+	Wait() <-chan error
 }
 
 // Supervisor manages long-running services that implement the Service
@@ -97,7 +97,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 // If an error occurs in any of the services, it will be sent to the
 // channel before closing it. If multiple service crash, only the first
 // error is returned.
-func (s *Supervisor) Wait() chan error {
+func (s *Supervisor) Wait() <-chan error {
 	return s.waitCh
 }
 

@@ -102,7 +102,7 @@ func (l *EventPublisher) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (l *EventPublisher) Wait() chan error {
+func (l *EventPublisher) Wait() <-chan error {
 	return l.waitCh
 }
 

@@ -34,6 +34,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
 const LoggerTag = "P2P"
@@ -74,11 +75,12 @@ var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
 // P2P is the wrapper for the Node that implements the transport.Transport
 // interface.
 type P2P struct {
-	id     peer.ID
-	node   *internal.Node
-	mode   Mode
-	topics map[string]transport.Message
-	msgCh  map[string]chan transport.ReceivedMessage
+	id        peer.ID
+	node      *internal.Node
+	mode      Mode
+	topics    map[string]transport.Message
+	msgCh     map[string]chan transport.ReceivedMessage
+	msgFanOut map[string]*chanutil.FanOut[transport.ReceivedMessage]
 }
 
 // Config is the configuration for the P2P transport.
@@ -256,7 +258,9 @@ func (p *P2P) Start(ctx context.Context) error {
 	}
 	if p.mode == ClientMode {
 		for topic := range p.topics {
+			msgCh := make(chan transport.ReceivedMessage)
 			p.msgCh[topic] = make(chan transport.ReceivedMessage)
+			p.msgFanOut[topic] = chanutil.NewFanOut(msgCh)
 			err := p.subscribe(topic)
 			if err != nil {
 				return err
@@ -267,7 +271,7 @@ func (p *P2P) Start(ctx context.Context) error {
 }
 
 // Wait implements the transport.Transport interface.
-func (p *P2P) Wait() chan error {
+func (p *P2P) Wait() <-chan error {
 	return p.node.Wait()
 }
 
@@ -290,8 +294,11 @@ func (p *P2P) Broadcast(topic string, message transport.Message) error {
 }
 
 // Messages implements the transport.Transport interface.
-func (p *P2P) Messages(topic string) chan transport.ReceivedMessage {
-	return p.msgCh[topic]
+func (p *P2P) Messages(topic string) <-chan transport.ReceivedMessage {
+	if fo, ok := p.msgFanOut[topic]; ok {
+		return fo.Chan()
+	}
+	return nil
 }
 
 func (p *P2P) subscribe(topic string) error {

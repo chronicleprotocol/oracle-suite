@@ -459,7 +459,7 @@ func (c *logger) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (c *logger) Wait() chan error {
+func (c *logger) Wait() <-chan error {
 	return c.waitCh
 }
 

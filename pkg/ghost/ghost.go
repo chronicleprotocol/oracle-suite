@@ -109,7 +109,7 @@ func (g *Ghost) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (g *Ghost) Wait() chan error {
+func (g *Ghost) Wait() <-chan error {
 	return g.waitCh
 }
 

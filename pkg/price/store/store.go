@@ -120,7 +120,7 @@ func (p *PriceStore) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (p *PriceStore) Wait() chan error {
+func (p *PriceStore) Wait() <-chan error {
 	return p.waitCh
 }
 
@@ -169,13 +169,15 @@ func (p *PriceStore) isPairSupported(pair string) bool {
 }
 
 func (p *PriceStore) priceCollectorRoutine() {
+	priceV0Ch := p.transport.Messages(messages.PriceV0MessageName)
+	priceV1Ch := p.transport.Messages(messages.PriceV1MessageName)
 	for {
 		select {
 		case <-p.ctx.Done():
 			return
-		case msg := <-p.transport.Messages(messages.PriceV0MessageName):
+		case msg := <-priceV0Ch:
 			p.handlePriceMessage(msg)
-		case msg := <-p.transport.Messages(messages.PriceV1MessageName):
+		case msg := <-priceV1Ch:
 			p.handlePriceMessage(msg)
 		}
 	}

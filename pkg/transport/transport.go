@@ -15,10 +15,9 @@
 
 package transport
 
-import "context"
+import "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 
-// ReceivedMessage contains a Message received from Transport with
-// an additional data.
+// ReceivedMessage contains a Message received from Transport.
 type ReceivedMessage struct {
 	// Message contains the message content. It is nil when the Error field
 	// is not nil.
@@ -28,28 +27,29 @@ type ReceivedMessage struct {
 	// Data contains an optional data associated with the message. A type of
 	// the data is different depending on a transport implementation.
 	Data interface{}
-	// Error contains an optional error returned by transport.
+	// Error contains an optional error returned by transport layer.
 	Error error
 }
 
+// Message is a message that can be sent over transport.
 type Message interface {
+	// MarshallBinary serializes the message into a byte slice.
 	MarshallBinary() ([]byte, error)
+	// UnmarshallBinary deserializes the message from a byte slice.
 	UnmarshallBinary([]byte) error
 }
 
-// Transport is the interface for different implementations of a
-// publish–subscribe messaging solutions for the Oracle network.
+// Transport implements a mechanism for exchanging messages between Oracles.
 type Transport interface {
+	supervisor.Supervisor
+
 	// ID returns an identity used to sign messages.
 	ID() []byte
 	// Broadcast sends a message with a given topic.
 	Broadcast(topic string, message Message) error
-	// Messages returns a channel that will deliver incoming messages.
-	// In case of an error, error will be returned in a ReceivedMessage
-	// structure.
-	Messages(topic string) chan ReceivedMessage
-	// Start starts listening for messages.
-	Start(ctx context.Context) error
-	// Wait waits until the context is canceled or until an error occurs.
-	Wait() chan error
+	// Messages returns a channel for incoming messages. A new channel is
+	// created for each call, therefore this method should not be used in
+	// loops. In case of an error, an error will be returned in the
+	// ReceivedMessage structure.
+	Messages(topic string) <-chan ReceivedMessage
 }

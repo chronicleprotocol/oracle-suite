@@ -25,9 +25,8 @@ import (
 
 // New creates a new logger that can chain multiple loggers.
 //
-// If provided loggers implement the log.LoggerService interface, then
-// they must not be started. To start them, use the Start method of the
-// chain logger.
+// If the provided loggers implement the log.LoggerService interface, they must
+// not be started. To start them, use the Start method of the chain logger.
 func New(loggers ...log.Logger) log.Logger {
 	return &logger{
 		shared:  &shared{waitCh: make(chan error)},
@@ -42,7 +41,7 @@ type logger struct {
 
 type shared struct {
 	ctx    context.Context
-	waitCh chan error
+	waitCh <-chan error
 }
 
 // Level implements the log.Logger interface.
@@ -170,6 +169,7 @@ func (l *logger) Start(ctx context.Context) error {
 		return fmt.Errorf("context is nil")
 	}
 	l.ctx = ctx
+	// Start all chained loggers that implement the log.LoggerService interface.
 	for _, lg := range l.loggers {
 		if srv, ok := lg.(log.LoggerService); ok {
 			if err := srv.Start(ctx); err != nil {
@@ -177,25 +177,35 @@ func (l *logger) Start(ctx context.Context) error {
 			}
 		}
 	}
-	go l.contextCancelHandler()
+	// Merge all wait channels from chained loggers to one wait channel.
+	fi := chanutil.NewFanIn[error]()
+	for _, t := range l.loggers {
+		if s, ok := t.(log.LoggerService); ok {
+			_ = fi.Add(s.Wait())
+		}
+	}
+	// Add additional wait channel that is closed when the context is done.
+	// It is important to add this channel because there is no guarantee that
+	// any of chained loggers implement the log.LoggerService interface. In
+	// that case, there would be no wait channel to wait for and fan-in channel
+	// will be closed immediately.
+	ch := make(chan error)
+	_ = fi.Add(ch)
+	l.waitCh = fi.Chan()
+	fi.AutoClose()
+	go l.contextCancelHandler(ch)
+
 	return nil
 }
 
 // Wait implements the supervisor.Service interface.
-func (l *logger) Wait() chan error {
-	chs := make([]chan error, 0, len(l.loggers)+1)
-	chs = append(chs, l.waitCh)
-	for _, lg := range l.loggers {
-		if srv, ok := lg.(log.LoggerService); ok {
-			chs = append(chs, srv.Wait())
-		}
-	}
-	return chanutil.Merge(chs...)
+func (l *logger) Wait() <-chan error {
+	return l.waitCh
 }
 
-func (l *logger) contextCancelHandler() {
+func (l *logger) contextCancelHandler(ch chan error) {
 	<-l.ctx.Done()
-	close(l.waitCh)
+	close(ch)
 }
 
 var _ log.LoggerService = (*logger)(nil)

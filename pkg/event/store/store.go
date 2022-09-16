@@ -99,7 +99,7 @@ func (e *EventStore) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (e *EventStore) Wait() chan error {
+func (e *EventStore) Wait() <-chan error {
 	return e.waitCh
 }
 
@@ -109,11 +109,12 @@ func (e *EventStore) Events(ctx context.Context, typ string, idx []byte) ([]*mes
 }
 
 func (e *EventStore) eventCollectorRoutine() {
+	msgCh := e.transport.Messages(messages.EventV1MessageName)
 	for {
 		select {
 		case <-e.ctx.Done():
 			return
-		case msg := <-e.transport.Messages(messages.EventV1MessageName):
+		case msg := <-msgCh:
 			if msg.Error != nil {
 				e.log.WithError(msg.Error).Error("Unable to read events from the transport layer")
 				continue

@@ -59,7 +59,7 @@ func (s *service) Errors(n int) {
 	}
 }
 
-func (s *service) Wait() chan error {
+func (s *service) Wait() <-chan error {
 	return s.waitCh
 }
 

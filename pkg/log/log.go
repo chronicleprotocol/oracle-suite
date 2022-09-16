@@ -99,5 +99,5 @@ type Logger interface {
 type LoggerService interface {
 	Logger
 	Start(ctx context.Context) error
-	Wait() chan error
+	Wait() <-chan error
 }

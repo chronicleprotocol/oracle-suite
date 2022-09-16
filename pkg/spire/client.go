@@ -61,7 +61,7 @@ func (c *Client) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (c *Client) Wait() chan error {
+func (c *Client) Wait() <-chan error {
 	return c.waitCh
 }
 

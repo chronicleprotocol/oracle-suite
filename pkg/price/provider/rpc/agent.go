@@ -104,7 +104,7 @@ func (s *Agent) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (s *Agent) Wait() chan error {
+func (s *Agent) Wait() <-chan error {
 	return s.waitCh
 }
 

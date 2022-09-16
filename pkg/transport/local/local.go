@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
 var ErrNotSubscribed = errors.New("topic is not subscribed")
@@ -29,29 +30,30 @@ var ErrNotSubscribed = errors.New("topic is not subscribed")
 // Local is a simple implementation of the transport.Transport interface
 // using local channels.
 type Local struct {
-	mu  sync.RWMutex
-	ctx context.Context
-
-	id     []byte
+	mu     sync.RWMutex
+	ctx    context.Context
 	waitCh chan error
-	subs   map[string]*subscription
+
+	id   []byte
+	subs map[string]*subscription
 }
 
 type subscription struct {
 	// typ is the structure type to which the message must be unmarshalled.
 	typ reflect.Type
-	// rawMsgs is a channel used to broadcast raw message data.
-	rawMsgs chan []byte
-	// msgs is a channel used to broadcast unmarshalled messages.
-	msgs chan transport.ReceivedMessage
+	// rawMsgCh is a channel used to broadcast raw message data.
+	rawMsgCh chan []byte
+	// msgCh is a channel used to broadcast unmarshalled messages.
+	msgCh chan transport.ReceivedMessage
+	// msgFanOut is a fan-out demultiplexer for the msgCh channel.
+	msgFanOut *chanutil.FanOut[transport.ReceivedMessage]
 }
 
-// New returns a new instance of the Local structure. The created transport
-// can as many unread messages before it is blocked as defined in the queue
-// arg. The list of supported subscriptions must be given as a map in the
-// topics argument, where the key is the subscription's topic name, and the
-// map value is the message type messages given as a nil pointer,
-// e.g: (*Message)(nil).
+// New returns a new instance of the Local structure. The created transport can
+// queue as many unread messages as defined in the queue argument. The list of
+// supported subscriptions must be given as a map in the topics argument, where
+// the key is the name of the subscription topic, and the value of the map is
+// type of the message given as a nil pointer, e.g.: (*Message)(nil).
 func New(id []byte, queue int, topics map[string]transport.Message) *Local {
 	l := &Local{
 		id:     id,
@@ -59,10 +61,12 @@ func New(id []byte, queue int, topics map[string]transport.Message) *Local {
 		subs:   make(map[string]*subscription),
 	}
 	for topic, typ := range topics {
+		msgCh := make(chan transport.ReceivedMessage)
 		sub := &subscription{
-			typ:     reflect.TypeOf(typ).Elem(),
-			rawMsgs: make(chan []byte, queue),
-			msgs:    make(chan transport.ReceivedMessage),
+			typ:       reflect.TypeOf(typ).Elem(),
+			rawMsgCh:  make(chan []byte, queue),
+			msgCh:     msgCh,
+			msgFanOut: chanutil.NewFanOut(msgCh),
 		}
 		l.subs[topic] = sub
 		go l.unmarshallRoutine(sub)
@@ -84,7 +88,7 @@ func (l *Local) Start(ctx context.Context) error {
 }
 
 // Wait implements the transport.Transport interface.
-func (l *Local) Wait() chan error {
+func (l *Local) Wait() <-chan error {
 	return l.waitCh
 }
 
@@ -96,37 +100,37 @@ func (l *Local) ID() []byte {
 // Broadcast implements the transport.Transport interface.
 func (l *Local) Broadcast(topic string, message transport.Message) error {
 	if sub, ok := l.subs[topic]; ok {
-		b, err := message.MarshallBinary()
+		rawMsg, err := message.MarshallBinary()
 		if err != nil {
 			return err
 		}
-		sub.rawMsgs <- b
+		sub.rawMsgCh <- rawMsg
 		return nil
 	}
 	return ErrNotSubscribed
 }
 
 // Messages implements the transport.Transport interface.
-func (l *Local) Messages(topic string) chan transport.ReceivedMessage {
+func (l *Local) Messages(topic string) <-chan transport.ReceivedMessage {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	if sub, ok := l.subs[topic]; ok {
-		return sub.msgs
+		return sub.msgFanOut.Chan()
 	}
 	return nil
 }
 
 func (l *Local) unmarshallRoutine(sub *subscription) {
 	for {
-		msg, ok := <-sub.rawMsgs
+		rawMsg, ok := <-sub.rawMsgCh
 		if !ok {
 			return
 		}
 		l.mu.RLock()
-		message := reflect.New(sub.typ).Interface().(transport.Message)
-		err := message.UnmarshallBinary(msg)
-		sub.msgs <- transport.ReceivedMessage{
-			Message: message,
+		msg := reflect.New(sub.typ).Interface().(transport.Message)
+		err := msg.UnmarshallBinary(rawMsg)
+		sub.msgCh <- transport.ReceivedMessage{
+			Message: msg,
 			Author:  l.id,
 			Error:   err,
 		}
@@ -141,7 +145,7 @@ func (l *Local) contextCancelHandler() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for _, sub := range l.subs {
-		close(sub.msgs)
+		close(sub.msgCh)
 	}
 	l.subs = nil
 }

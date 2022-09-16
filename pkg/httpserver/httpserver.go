@@ -113,7 +113,7 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (s *HTTPServer) Wait() chan error {
+func (s *HTTPServer) Wait() <-chan error {
 	return s.waitCh
 }
 

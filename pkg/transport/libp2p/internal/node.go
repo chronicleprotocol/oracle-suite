@@ -156,7 +156,7 @@ func (n *Node) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (n *Node) Wait() chan error {
+func (n *Node) Wait() <-chan error {
 	return n.waitCh
 }
 

@@ -55,7 +55,7 @@ func (s *Sysmon) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (s *Sysmon) Wait() chan error {
+func (s *Sysmon) Wait() <-chan error {
 	return s.waitCh
 }
 

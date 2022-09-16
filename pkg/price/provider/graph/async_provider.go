@@ -116,7 +116,7 @@ func (a *AsyncProvider) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (a *AsyncProvider) Wait() chan error {
+func (a *AsyncProvider) Wait() <-chan error {
 	return a.waitCh
 }
 

@@ -64,7 +64,7 @@ func (g *Provider) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (g *Provider) Wait() chan error {
+func (g *Provider) Wait() <-chan error {
 	return g.waitCh
 }
 
