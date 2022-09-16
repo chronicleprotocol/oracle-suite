@@ -41,7 +41,7 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 	signer.On("Address").Return(ethereum.EmptyAddress)
 
 	config := Transport{
-		P2P: P2P{
+		P2P: LibP2PConfig{
 			PrivKeySeed:      "",
 			ListenAddrs:      nil,
 			BootstrapAddrs:   nil,
@@ -95,7 +95,7 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 	signer.On("Address").Return(ethereum.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881"))
 
 	config := Transport{
-		P2P: P2P{
+		P2P: LibP2PConfig{
 			PrivKeySeed:      privKeySeed,
 			ListenAddrs:      listenAddrs,
 			BootstrapAddrs:   bootstrapAddrs,
@@ -138,7 +138,7 @@ func TestTransport_P2P_InvalidSeed(t *testing.T) {
 	defer func() { p2pTransportFactory = prevP2PTransportFactory }()
 
 	config := Transport{
-		P2P: P2P{
+		P2P: LibP2PConfig{
 			PrivKeySeed:      "invalid",
 			ListenAddrs:      nil,
 			BootstrapAddrs:   nil,
