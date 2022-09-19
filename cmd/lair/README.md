@@ -169,7 +169,8 @@ Lair supports JSON and YAML configuration files.
 It is possible to use environment variables anywhere in the configuration file. The syntax is similar as in the
 shell: `${ENV:ENV_VAR}`. Note, that the environment variable name must be prefixed with `ENV:`. If the environment
 variable is not set, the error will be returned during the application startup. To escape the dollar sign, use `\$`
-or `$$`. The latter syntax is not supported inside variables.
+or `$$`. The latter syntax is not supported inside variables. It is possible to define default values for environment
+variables. To do so, use the following syntax: `${ENV:ENV_VAR:=default}`.
 
 ## API
 
