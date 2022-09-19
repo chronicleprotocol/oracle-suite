@@ -242,18 +242,18 @@ func New(cfg Config) (*P2P, error) {
 	}
 
 	return &P2P{
-		id:     id,
-		node:   n,
-		mode:   cfg.Mode,
-		topics: cfg.Topics,
-		msgCh:  map[string]chan transport.ReceivedMessage{},
+		id:        id,
+		node:      n,
+		mode:      cfg.Mode,
+		topics:    cfg.Topics,
+		msgCh:     map[string]chan transport.ReceivedMessage{},
+		msgFanOut: map[string]*chanutil.FanOut[transport.ReceivedMessage]{},
 	}, nil
 }
 
 // Start implements the transport.Transport interface.
 func (p *P2P) Start(ctx context.Context) error {
-	err := p.node.Start(ctx)
-	if err != nil {
+	if err := p.node.Start(ctx); err != nil {
 		return fmt.Errorf("P2P transport error, unable to start node: %w", err)
 	}
 	if p.mode == ClientMode {
@@ -261,8 +261,7 @@ func (p *P2P) Start(ctx context.Context) error {
 			msgCh := make(chan transport.ReceivedMessage)
 			p.msgCh[topic] = make(chan transport.ReceivedMessage)
 			p.msgFanOut[topic] = chanutil.NewFanOut(msgCh)
-			err := p.subscribe(topic)
-			if err != nil {
+			if err := p.subscribe(topic); err != nil {
 				return err
 			}
 		}

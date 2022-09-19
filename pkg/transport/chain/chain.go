@@ -16,6 +16,7 @@
 package chain
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
@@ -23,15 +24,15 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-// Chain is a transport.Transport implementation that chains multiple
-// transports together.
+// Chain is a transport implementation that chains multiple transports
+// together.
 type Chain struct {
 	ctx    context.Context
 	waitCh <-chan error
 	ts     []transport.Transport
 }
 
-// New returns a new instance of the Chain structure.
+// New creates a new Chain instance.
 func New(ts ...transport.Transport) *Chain {
 	fi := chanutil.NewFanIn[error]()
 	for _, t := range ts {
@@ -46,7 +47,11 @@ func New(ts ...transport.Transport) *Chain {
 
 // ID implements the transport.Transport interface.
 func (m *Chain) ID() []byte {
-	return []byte("chain")
+	var ids [][]byte
+	for _, t := range m.ts {
+		ids = append(ids, t.ID())
+	}
+	return bytes.Join(ids, []byte{','})
 }
 
 // Broadcast implements the transport.Transport interface.

@@ -194,8 +194,8 @@ func Discovery(bootstrapAddrs []multiaddr.Multiaddr) Options {
 					WithField("bootstrapAddrs", bootstrapAddrs).
 					Info("Starting KAD-DHT discovery")
 				for _, addr := range addrs {
-					// bootstrap nodes aren't protected by KAD-DHT so we have
-					// do it manually
+					// Bootstrap nodes are not protected by KAD-DHT, so we have
+					// done it manually.
 					n.connmgr.Protect(addr.ID, "bootstrap")
 					n.peerstore.AddAddrs(addr.ID, addr.Addrs, peerstore.PermanentAddrTTL)
 				}

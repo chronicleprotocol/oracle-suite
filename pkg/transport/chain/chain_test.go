@@ -53,7 +53,7 @@ func TestChain_Broadcast(t *testing.T) {
 	tm := &testMsg{Val: "bar"}
 
 	// Because two local transports are used, the message should be received
-	// twice. Because each call to the Messages method must create a new
+	// twice. Also, because each call to the Messages method must create a new
 	// fan-out channel, the total number of messages received should be 4.
 	m1 := l.Messages("foo")
 	m2 := l.Messages("foo")

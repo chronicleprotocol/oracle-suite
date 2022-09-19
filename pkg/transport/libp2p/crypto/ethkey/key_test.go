@@ -44,7 +44,7 @@ func TestAddressToPeerID(t *testing.T) {
 }
 
 func TestPeerIDToAddress(t *testing.T) {
-	id, _ := peer.Decode("1Afqz6rrwVr8odEg5huvMdMjikRnLs1k1MK")
+	id, _ := peer.Decode("1Afqz6rsuyYpr7Dpp12PbftE22nYH3k2Fw5")
 
 	assert.Equal(
 		t,

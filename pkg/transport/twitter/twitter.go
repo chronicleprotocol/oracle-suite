@@ -106,13 +106,13 @@ type Config struct {
 	Topics map[string]transport.Message
 	// Accounts is a list of Twitter accounts to fetch tweets from.
 	Accounts []string
-	// FetchTweetsInterval is a time interval between fetching tweets from
-	// Twitter accounts.
-	FetchTweetsInterval time.Duration
 	// PostTweetsInterval is a time interval between posting tweets to Twitter.
 	// Transport may post more than one tweet per interval if MaximumDataSize
 	// or MaximumTweetLength is reached.
 	PostTweetsInterval time.Duration
+	// FetchTweetsInterval is a time interval between fetching tweets from
+	// Twitter accounts.
+	FetchTweetsInterval time.Duration
 	// QueueSize is a size of the queue for messages. After reaching the limit
 	// the transport will block until the queue is not empty.
 	QueueSize uint
