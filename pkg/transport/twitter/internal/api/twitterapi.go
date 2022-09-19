@@ -22,7 +22,8 @@ type Signer interface {
 	Sign(req *http.Request) error
 }
 
-// API is a Twitter API client.
+// API is a Twitter API client. It implements minimal functionality required
+// for the transport.
 type API struct {
 	Signer Signer
 	Client http.Client

@@ -98,11 +98,11 @@ func verifyData(data []byte) ([]byte, error) {
 // block size during decoding. The next 3 black and white blocks are used
 // to store the number of bits per channel.
 func writeMetaBlocks(rgb []uint8, bpc uint) {
-	copy(rgb, []uint8{0, 0, 0, 255, 255, 255})
+	copy(rgb, []uint8{0, 0, 0, 0xff, 0xff, 0xff})
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			if (bpc-1)&(1<<uint(i)) != 0 {
-				rgb[6+i*3+j] = 255
+				rgb[6+i*3+j] = 0xff
 			}
 		}
 	}
@@ -113,7 +113,7 @@ func readMetaBlocks(rgb []uint8) uint {
 	var bpc uint
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
-			if rgb[6+i*3+j] >= 128 {
+			if rgb[6+i*3+j] >= 0x80 {
 				bpc |= 1 << uint(i)
 			}
 		}
@@ -163,7 +163,7 @@ func drawImage(rgb []uint8, bs uint) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, xy, xy))
 	for y := 0; y < xy; y += int(bs) {
 		for x := 0; x < xy; x += int(bs) {
-			c := color.RGBA{A: 255}
+			c := color.RGBA{A: 0xff}
 			if bn < len(rgb) {
 				c.R = rgb[bn]
 			}
@@ -204,6 +204,7 @@ func readImage(rgb []uint8, img image.Image, bs uint) {
 					sb += uint64(b >> 8)
 				}
 			}
+			// Average the RGB values.
 			rgb[bn] = uint8(sr / ba)
 			rgb[bn+1] = uint8(sg / ba)
 			rgb[bn+2] = uint8(sb / ba)
@@ -219,7 +220,7 @@ func measureBlockSize(img image.Image) uint {
 	bs := 0                 // block size
 	for x := 0; x < xy; x++ {
 		r, g, b, _ := img.At(x, 0).RGBA()
-		if r>>8 >= 128 && g>>8 >= 128 && b>>8 >= 128 {
+		if r>>8 >= 0x80 && g>>8 >= 0x80 && b>>8 >= 0x80 {
 			bs = x
 			break
 		}
