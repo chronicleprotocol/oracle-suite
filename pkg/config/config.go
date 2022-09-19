@@ -92,14 +92,17 @@ func yamlReplaceEnvVars(n *yaml.Node) error {
 		var err error
 		parsed := interpolate.Parse(n.Value)
 		if parsed.HasVars() {
-			n.Value = parsed.Interpolate(func(key string) string {
-				if !strings.HasPrefix(key, "ENV:") {
-					err = fmt.Errorf("environment variable %s is not prefixed with ENV", key)
+			n.Value = parsed.Interpolate(func(v interpolate.Variable) string {
+				if !strings.HasPrefix(v.Name, "ENV:") {
+					err = fmt.Errorf("environment variable %s is not prefixed with ENV", v.Name)
 					return ""
 				}
-				env, ok := getEnv(key[4:])
+				env, ok := getEnv(v.Name[4:])
 				if !ok {
-					err = fmt.Errorf("environment variable %s not set", key[4:])
+					if v.HasDefault {
+						return v.Default
+					}
+					err = fmt.Errorf("environment variable %s not set", v.Name[4:])
 					return ""
 				}
 				return env

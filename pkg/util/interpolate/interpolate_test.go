@@ -37,12 +37,20 @@ func TestParse(t *testing.T) {
 			want: "foo",
 		},
 		{
-			str:  "foo_${bar}_baz",
-			want: "foo_[bar]_baz",
-		},
-		{
 			str:  "${bar}",
 			want: "[bar]",
+		},
+		{
+			str:  "${bar:=baz}",
+			want: "[baz]",
+		},
+		{
+			str:  "${bar\\:=baz}",
+			want: "[bar:=baz]",
+		},
+		{
+			str:  "foo_${bar}_baz",
+			want: "foo_[bar]_baz",
 		},
 		{
 			str:  "${bar\\}foo}",
@@ -107,7 +115,12 @@ func TestParse(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			assert.Equal(t, tt.want, Parse(tt.str).Interpolate(func(name string) string { return "[" + name + "]" }))
+			assert.Equal(t, tt.want, Parse(tt.str).Interpolate(func(variable Variable) string {
+				if variable.Default != "" {
+					return "[" + variable.Default + "]"
+				}
+				return "[" + variable.Name + "]"
+			}))
 		})
 	}
 }
@@ -120,6 +133,7 @@ func FuzzParse(f *testing.F) {
 		string([]byte{0}),
 		// Sample inputs:
 		"${foo}",
+		"${foo:=bar}",
 		"$${foo}",
 		"\\${foo}",
 		// Tokens:
@@ -127,11 +141,12 @@ func FuzzParse(f *testing.F) {
 		"\\",
 		"${",
 		"}",
+		":=",
 	} {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
-		Parse(s).Interpolate(func(name string) string { return "[" + name + "]" })
+		Parse(s).Interpolate(func(variable Variable) string { return "[" + variable.Name + "]" })
 	})
 }
 
@@ -140,14 +155,14 @@ func BenchmarkParse(b *testing.B) {
 
 	b.Run("parser", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Parse(testString).Interpolate(func(name string) string { return "[" + name + "]" })
+			Parse(testString).Interpolate(func(variable Variable) string { return "[" + variable.Name + "]" })
 		}
 	})
 	b.Run("preparsed", func(b *testing.B) {
 		s := Parse(testString)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			s.Interpolate(func(name string) string { return "[" + name + "]" })
+			s.Interpolate(func(variable Variable) string { return "[" + variable.Name + "]" })
 		}
 	})
 	b.Run("regexp", func(b *testing.B) {
