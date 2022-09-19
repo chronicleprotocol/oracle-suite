@@ -23,9 +23,9 @@ import (
 type Parsed []part
 
 type Variable struct {
-	Name       string
-	Default    string
-	HasDefault bool
+	Name       string // Name of the variable.
+	Default    string // Default value if the variable is not set.
+	HasDefault bool   // True if the variable has a default value.
 }
 
 // Parse parses the string and returns a parsed representation. The variables
@@ -34,6 +34,8 @@ type Variable struct {
 // The syntax is similar to shell variable expansion. The following rules apply:
 //
 // - Variables are enclosed in ${...} and may contain any character.
+//
+// - Variables may have a default value separated by :=, eq. ${VAR:=default}.
 //
 // - To include a literal $ in the output, escape it with a backslash or
 // another $. For example, \$ and $$ are both interpreted as a literal $.
