@@ -85,7 +85,7 @@ func TestImcoderJPEG(t *testing.T) {
 		{8, 1, 0},
 		{16, 2, 10},
 		{16, 3, 40},
-		{8, 4, 80},
+		{16, 4, 80},
 	}
 
 	for _, tt := range tests {

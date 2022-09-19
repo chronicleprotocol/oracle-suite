@@ -106,7 +106,7 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 			AccessToken:          c.Twitter.AccessToken,
 			AccessSecret:         c.Twitter.AccessSecret,
 			Topics:               t,
-			PostTweetsInterval:   time.Minute,
+			PostTweetsInterval:   time.Minute * 2,
 			FetchTweetsInterval:  time.Second * 15,
 			QueueSize:            1024,
 			MaximumDataSize:      100000,
@@ -215,6 +215,7 @@ func twitterMiddleware(t transport.Transport) transport.Transport {
 		return func(topic string, msg transport.Message) error {
 			switch mt := msg.(type) {
 			case *messages.Price:
+				msg.(*messages.Price).Trace = nil
 				msg = &TweeterPrice{Price: mt}
 			}
 			return next(topic, msg)
@@ -232,6 +233,9 @@ func priceLimiterMiddleware(t transport.Transport) transport.Transport {
 				return nil
 			}
 			if price, ok := msg.(*messages.Price); ok {
+				if price.Price.Age.IsZero() {
+					return nil
+				}
 				prev, ok := prices[price.Price.Wat]
 				if !ok {
 					prices[price.Price.Wat] = price

@@ -17,9 +17,8 @@ package supervisor
 
 import (
 	"context"
+	"errors"
 	"reflect"
-
-	"golang.org/x/xerrors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -72,10 +71,10 @@ func (s *Supervisor) Watch(services ...Service) {
 // it panics.
 func (s *Supervisor) Start(ctx context.Context) error {
 	if s.ctx != nil {
-		return xerrors.New("service can be started only once")
+		return errors.New("service can be started only once")
 	}
 	if ctx == nil {
-		return xerrors.New("context must not be nil")
+		return errors.New("context must not be nil")
 	}
 	s.ctx, s.ctxCancel = context.WithCancel(ctx)
 	for _, srv := range s.services {

@@ -280,7 +280,8 @@ func dataLength(rgbLen int, bpc uint) int {
 
 func imageXY(rgbLen int, bs uint) int {
 	xy := 1
-	for xy*xy < rgbLen {
+	bn := divRoundUp(rgbLen, 3)
+	for xy*xy < bn {
 		xy++
 	}
 	return xy * int(bs)

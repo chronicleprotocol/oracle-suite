@@ -341,6 +341,7 @@ func (t *Twitter) postTweetsRoutine() {
 						dataLen = 0
 						tweetLen = 0
 						m.data = nil
+						continue
 					}
 					if len(msg.tweet) > 0 {
 						tweets = append(tweets, msg.tweet)
@@ -470,8 +471,10 @@ func (c *mosaic) encode(opts imcoder.Options, typ ImageType) ([]byte, error) {
 	// Step 2: Compress data.
 	var compressed bytes.Buffer
 	zw := zlib.NewWriter(&compressed)
-	defer zw.Close()
 	if _, err := zw.Write(bin); err != nil {
+		return nil, err
+	}
+	if err := zw.Close(); err != nil {
 		return nil, err
 	}
 	// Step 3: Encode compressed data to an image.
@@ -527,8 +530,10 @@ func (c *mosaic) decode(data []byte) error {
 	if err != nil {
 		return err
 	}
-	defer zr.Close()
 	if _, err := io.Copy(&bin, zr); err != nil {
+		return err
+	}
+	if err := zr.Close(); err != nil {
 		return err
 	}
 	// Step 4: Decode Protobuf.
