@@ -68,23 +68,22 @@ func (o *OAuth) Sign(req *http.Request) error {
 
 // randomNonce generates random nonce as described in RFC5849 section 3.3.
 func (o *OAuth) randomNonce() ([]byte, error) {
-	n := o.nonce
-	if n == nil {
-		n = make([]byte, 32)
-		if _, err := rand.Read(n); err != nil {
-			return nil, fmt.Errorf("failed to generate nonce: %w", err)
-		}
+	if o.nonce != nil {
+		return o.nonce, nil
+	}
+	n := make([]byte, 32)
+	if _, err := rand.Read(n); err != nil {
+		return nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}
 	return n, nil
 }
 
 // timestamp returns the current timestamp as described in RFC5849 section 3.3.
 func (o *OAuth) timestamp() int64 {
-	t := o.time
-	if o.time.IsZero() {
-		o.time = time.Now()
+	if !o.time.IsZero() {
+		return o.time.Unix()
 	}
-	return t.Unix()
+	return time.Now().Unix()
 }
 
 // signatureBase prepares signature base string as described in RFC5849 section 3.4.1.
