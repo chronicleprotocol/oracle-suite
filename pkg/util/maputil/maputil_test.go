@@ -16,6 +16,7 @@
 package maputil
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,5 +28,29 @@ func TestKeys(t *testing.T) {
 	})
 	t.Run("case-2", func(t *testing.T) {
 		assert.ElementsMatch(t, []int{1, 2}, Keys(map[int]int{1: 1, 2: 2}))
+	})
+}
+
+func TestSortKeys(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		m := map[string]string{"b": "b", "a": "a"}
+		assert.Equal(t, []string{"a", "b"}, SortKeys(m, sort.Strings))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		m := map[int]int{2: 2, 1: 1}
+		assert.Equal(t, []int{1, 2}, SortKeys(m, sort.Ints))
+	})
+}
+
+func TestCopy(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		m := map[string]string{"a": "a", "b": "b"}
+		assert.Equal(t, m, Copy(m))
+		assert.NotSame(t, m, Copy(m))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		m := map[int]int{1: 1, 2: 2}
+		assert.Equal(t, m, Copy(m))
+		assert.NotSame(t, m, Copy(m))
 	})
 }

@@ -23,3 +23,20 @@ func Keys[T1 comparable, T2 any](m map[T1]T2) []T1 {
 	}
 	return keys
 }
+
+// SortKeys returns the slice of keys for the given map, sorted using given
+// sorting function.
+func SortKeys[T1 comparable, T2 any](m map[T1]T2, sort func([]T1)) []T1 {
+	keys := Keys(m)
+	sort(keys)
+	return keys
+}
+
+// Copy returns a shallow copy of the given map.
+func Copy[T1 comparable, T2 any](m map[T1]T2) map[T1]T2 {
+	newMap := make(map[T1]T2, len(m))
+	for k, v := range m {
+		newMap[k] = v
+	}
+	return newMap
+}
