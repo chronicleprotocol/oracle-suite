@@ -17,6 +17,7 @@ package transport
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
@@ -99,16 +100,21 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 	switch strings.ToLower(c.Transport) {
 	case Twitter:
 		cfg := twitter.Config{
-			Topics:              t,
-			Accounts:            c.Twitter.Accounts,
-			QueueSize:           1024,
-			PostTweetsInterval:  time.Minute,
-			FetchTweetsInterval: time.Second * 5,
-			ConsumerKey:         c.Twitter.ConsumerKey,
-			ConsumerSecret:      c.Twitter.ConsumerSecret,
-			AccessToken:         c.Twitter.AccessToken,
-			AccessSecret:        c.Twitter.AccessSecret,
-			MaximumSize:         100000,
+			Accounts:             c.Twitter.Accounts,
+			ConsumerKey:          c.Twitter.ConsumerKey,
+			ConsumerSecret:       c.Twitter.ConsumerSecret,
+			AccessToken:          c.Twitter.AccessToken,
+			AccessSecret:         c.Twitter.AccessSecret,
+			Topics:               t,
+			PostTweetsInterval:   time.Minute,
+			FetchTweetsInterval:  time.Second * 15,
+			QueueSize:            1024,
+			MaximumDataSize:      100000,
+			MaximumTweetLength:   250,
+			MosaicType:           twitter.ImageTypeJPEG,
+			MosaicBitsPerChannel: 2,
+			MosaicBlockSize:      16,
+			Logger:               d.Logger,
 		}
 		tw, err := twitter.New(cfg)
 		if err != nil {
@@ -205,7 +211,7 @@ func (t *TweeterPrice) Tweet() string {
 
 func twitterMiddleware(t transport.Transport) transport.Transport {
 	m := middleware.New(t)
-	m.Use(middleware.BroadcastMiddlewareFunc(func(next middleware.BroadcastFunc) middleware.BroadcastFunc {
+	m.Use(middleware.BroadcastMiddlewareFunc(func(_ context.Context, next middleware.BroadcastFunc) middleware.BroadcastFunc {
 		return func(topic string, msg transport.Message) error {
 			switch mt := msg.(type) {
 			case *messages.Price:
@@ -219,7 +225,7 @@ func twitterMiddleware(t transport.Transport) transport.Transport {
 
 func priceLimiterMiddleware(t transport.Transport) transport.Transport {
 	m := middleware.New(t)
-	m.Use(middleware.BroadcastMiddlewareFunc(func(next middleware.BroadcastFunc) middleware.BroadcastFunc {
+	m.Use(middleware.BroadcastMiddlewareFunc(func(_ context.Context, next middleware.BroadcastFunc) middleware.BroadcastFunc {
 		prices := make(map[string]*messages.Price)
 		return func(topic string, msg transport.Message) error {
 			if topic == messages.PriceV0MessageName {
