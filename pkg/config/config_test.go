@@ -76,6 +76,16 @@ func TestParse(t *testing.T) {
 			want:   &struct{ Foo []string }{Foo: []string{"bar_env:env", "baz_env:env"}},
 		},
 		{
+			config: `{"foo": "bar_${ENV:nil:=baz}"}`,
+			out:    &struct{ Foo string }{},
+			want:   &struct{ Foo string }{Foo: "bar_baz"},
+		},
+		{
+			config:  `{"foo": ["bar_${nil}"]}`,
+			out:     &struct{ Foo []string }{},
+			wantErr: true,
+		},
+		{
 			config:  `{"foo": ["bar_${env}"]}`,
 			out:     &struct{ Foo []string }{},
 			wantErr: true,
