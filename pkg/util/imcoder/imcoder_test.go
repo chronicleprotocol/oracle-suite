@@ -16,7 +16,9 @@
 package imcoder
 
 import (
+	"bytes"
 	"fmt"
+	"image/jpeg"
 	"math/rand"
 	"testing"
 
@@ -64,6 +66,45 @@ func TestImcoder(t *testing.T) {
 			dec, err := Decode(img)
 			require.NoError(t, err)
 			assert.Equal(t, data[:tt.dataLength], dec)
+		})
+	}
+}
+
+func TestImcoderJPEG(t *testing.T) {
+	data := make([]byte, 1024*10)
+	rand.Read(data)
+
+	tests := []struct {
+		blockSize   uint
+		bitsPerChan uint
+		quality     int
+	}{
+		// Lowest supported values that should work with JPEG. Images with
+		// bitsPerChan > 4 are not possible to encode even with the highest
+		// quality.
+		{8, 1, 0},
+		{16, 2, 10},
+		{16, 3, 40},
+		{8, 4, 80},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%d-%d-%d", tt.blockSize, tt.bitsPerChan, tt.quality), func(t *testing.T) {
+			opts := Options{BlockSize: tt.blockSize, BitsPerChan: tt.bitsPerChan}
+			img, err := Encode(data, opts)
+
+			// Encode to JPEG
+			buf := new(bytes.Buffer)
+			require.NoError(t, jpeg.Encode(buf, img, &jpeg.Options{Quality: tt.quality}))
+
+			// Decode JPEG
+			img, err = jpeg.Decode(buf)
+			require.NoError(t, err)
+
+			require.NoError(t, err)
+			dec, err := Decode(img)
+			require.NoError(t, err)
+			assert.Equal(t, data, dec)
 		})
 	}
 }
