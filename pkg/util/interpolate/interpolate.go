@@ -35,7 +35,7 @@ type Variable struct {
 //
 // - Variables are enclosed in ${...} and may contain any character.
 //
-// - Variables may have a default value separated by :=, eq. ${VAR:=default}.
+// - Variables may have a default value separated by -, eq. ${VAR-default}.
 //
 // - To include a literal $ in the output, escape it with a backslash or
 // another $. For example, \$ and $$ are both interpreted as a literal $.
