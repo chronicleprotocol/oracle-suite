@@ -13,19 +13,77 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.5
-      - name: Prepare
-        id: prep
-        run: |
-          VERSION=noop
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          elif [[ $GITHUB_REF == refs/heads/* ]]; then
-            VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
-            if [[ "${{ github.event.repository.default_branch }}" == "$VERSION" ]]; then
-              VERSION=dev
-            fi
-          fi
-          echo ::set-output name=version::${VERSION}
+      - name: Docker Oracle-suite full metadata
+        id: metaoraclesuite
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/oracle-suite
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Docker Gofer metadata
+        id: metagofer
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/gofer
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Docker Spire metadata
+        id: metaspire
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/spire
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Docker Ghost metadata
+        id: metaghost
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/ghost
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Docker Spectre metadata
+        id: metaspectre
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/spectre
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Docker Leeloo metadata
+        id: metaleeloo
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/leeloo
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Docker Lair metadata
+        id: metalair
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/lair
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
@@ -48,58 +106,65 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/oracle-suite:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metaoraclesuite.outputs.tags }}
+          labels: ${{ steps.metaoraclesuite.outputs.labels }}
 
       - name: Docker image for Gofer
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile.gofer
+          file: ./Dockerfile-gofer
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/gofer:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metagofer.outputs.tags }}
+          labels: ${{ steps.metagofer.outputs.labels }}
 
       - name: Docker image for Spire
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile.spire
+          file: ./Dockerfile-spire
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/spire:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metaspire.outputs.tags }}
+          labels: ${{ steps.metaspire.outputs.labels }}
           
       - name: Docker image for Ghost
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile.ghost
+          file: ./Dockerfile-ghost
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/ghost:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metaghost.outputs.tags }}
+          labels: ${{ steps.metaghost.outputs.labels }}
 
       - name: Docker image for Spectre
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile.spectre
+          file: ./Dockerfile-spectre
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/spectre:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metaspectre.outputs.tags }}
+          labels: ${{ steps.metaspectre.outputs.labels }}
 
       - name: Docker image for LeeLoo
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile.leeloo
+          file: ./Dockerfile-leeloo
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/leeloo:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metaleeloo.outputs.tags }}
+          labels: ${{ steps.metaleeloo.outputs.labels }}
 
       - name: Docker image for Lair
         uses: docker/build-push-action@v2.7.0
         with:
           context: .
-          file: ./Dockerfile.lair
+          file: ./Dockerfile-lair
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/chronicleprotocol/lair:${{ steps.prep.outputs.version }}
+          tags: ${{ steps.metalair.outputs.tags }}
+          labels: ${{ steps.metalair.outputs.labels }}
