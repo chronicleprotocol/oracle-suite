@@ -83,7 +83,7 @@ type part struct {
 	variable Variable
 }
 
-var (
+const (
 	tokenEscapedDollar = "$$"
 	tokenBackslash     = "\\"
 	tokenVarBegin      = "${"
