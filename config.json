@@ -1,7 +1,7 @@
 {
   "transport": {
     "libp2p": {
-      "privKeySeed": "${CFG_LIBP2P_PRIV_KEY_SEED-}",
+      "privKeySeed": "${CFG_LIBP2P_PK_SEED-}",
       "listenAddrs": ["${CFG_LIBP2P_LISTEN_ADDR-/ip4/0.0.0.0/tcp/8000}"],
       "bootstrapAddrs": [
         "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
@@ -17,10 +17,10 @@
     }
   },
   "ethereum": {
-    "from": "${CFG_ETHEREUM_FROM-}",
-    "keystore": "${CFG_ETHEREUM_KEYSTORE-}",
-    "password": "${CFG_ETHEREUM_PASSWORD-}",
-    "rpc": "${CFG_ETHEREUM_RPC-}"
+    "from": "${CFG_ETH_FROM-}",
+    "keystore": "${CFG_ETH_KEYS-}",
+    "password": "${CFG_ETH_PASS-}",
+    "rpc": "${CFG_ETH_RPC-}"
   },
   "feeds": [
     "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
@@ -228,7 +228,7 @@
         "type": "openexchangerates",
         "name": "openexchangerates",
         "params": {
-          "apiKey": "${CFG_OPENEXCHANGERATES_API_KEY-}",
+          "apiKey": "${CFG_OPENEXCHANGERATES_KEY-}",
         }
       },
       "uniswap": {
@@ -828,10 +828,10 @@
   "lair": {
     "listenAddr": "${CFG_LAIR_LISTEN_ADDR-127.0.0.1:8082}",
     "storage": {
-      "type": "${CFG_LAIR_STORAGE_TYPE-redis}",
+      "type": "${CFG_LAIR_STORAGE_-redis}",
       "redis": {
         "address": "${CFG_LAIR_REDIS_ADDR-127.0.0.1:7001}",
-        "password": "${CFG_LAIR_PASSWORD-password}",
+        "password": "${CFG_LAIR_PASS-password}",
         "db": "${CFG_LAIR_REDIS_DB-0}"
       }
     }
