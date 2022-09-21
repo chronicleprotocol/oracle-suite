@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -93,16 +92,12 @@ func yamlReplaceEnvVars(n *yaml.Node) error {
 		parsed := interpolate.Parse(n.Value)
 		if parsed.HasVars() {
 			n.Value = parsed.Interpolate(func(v interpolate.Variable) string {
-				if !strings.HasPrefix(v.Name, "ENV:") {
-					err = fmt.Errorf("environment variable %s is not prefixed with ENV", v.Name)
-					return ""
-				}
-				env, ok := getEnv(v.Name[4:])
+				env, ok := getEnv(v.Name)
 				if !ok {
 					if v.HasDefault {
 						return v.Default
 					}
-					err = fmt.Errorf("environment variable %s not set", v.Name[4:])
+					err = fmt.Errorf("environment variable %s not set", v.Name)
 					return ""
 				}
 				return env
