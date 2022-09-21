@@ -88,7 +88,7 @@ var (
 	tokenBackslash     = "\\"
 	tokenVarBegin      = "${"
 	tokenVarEnd        = "}"
-	tokenDefaultVal    = ":="
+	tokenDefaultVal    = "-"
 )
 
 type parser struct {
@@ -149,7 +149,7 @@ func (p *parser) parseVariable() {
 			return
 		default:
 			// Add all characters to the first character that may start the token.
-			p.varBuf.WriteString(p.nextBytesUntilAnyOf(":\\}"))
+			p.varBuf.WriteString(p.nextBytesUntilAnyOf("-\\}"))
 		}
 	}
 	// Variable not closed. Treat the whole thing as a literal.

@@ -41,12 +41,12 @@ func TestParse(t *testing.T) {
 			want: "[bar]",
 		},
 		{
-			str:  "${bar:=baz}",
+			str:  "${bar-baz}",
 			want: "[baz]",
 		},
 		{
-			str:  "${bar\\:=baz}",
-			want: "[bar:=baz]",
+			str:  "${bar\\-baz}",
+			want: "[bar-baz]",
 		},
 		{
 			str:  "foo_${bar}_baz",
@@ -133,7 +133,7 @@ func FuzzParse(f *testing.F) {
 		string([]byte{0}),
 		// Sample inputs:
 		"${foo}",
-		"${foo:=bar}",
+		"${foo-bar}",
 		"$${foo}",
 		"\\${foo}",
 		// Tokens:
@@ -141,7 +141,7 @@ func FuzzParse(f *testing.F) {
 		"\\",
 		"${",
 		"}",
-		":=",
+		"-",
 	} {
 		f.Add(s)
 	}
