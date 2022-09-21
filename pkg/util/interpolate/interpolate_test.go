@@ -49,6 +49,10 @@ func TestParse(t *testing.T) {
 			want: "[bar-baz]",
 		},
 		{
+			str:  "${bar$$baz}",
+			want: "[bar$$baz]",
+		},
+		{
 			str:  "foo_${bar}_baz",
 			want: "foo_[bar]_baz",
 		},
