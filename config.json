@@ -1,8 +1,8 @@
 {
   "transport": {
     "libp2p": {
-      "privKeySeed": "${APP_LIBP2P_PRIV_KEY_SEED-}",
-      "listenAddrs": ["${APP_LIBP2P_LISTEN_ADDR-/ip4/0.0.0.0/tcp/8000}"],
+      "privKeySeed": "${CFG_LIBP2P_PRIV_KEY_SEED-}",
+      "listenAddrs": ["${CFG_LIBP2P_LISTEN_ADDR-/ip4/0.0.0.0/tcp/8000}"],
       "bootstrapAddrs": [
         "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
         "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
@@ -17,10 +17,10 @@
     }
   },
   "ethereum": {
-    "from": "${APP_ETHEREUM_FROM-}",
-    "keystore": "${APP_ETHEREUM_KEYSTORE-}",
-    "password": "${APP_ETHEREUM_PASSWORD-}",
-    "rpc": "${APP_ETHEREUM_RPC-}"
+    "from": "${CFG_ETHEREUM_FROM-}",
+    "keystore": "${CFG_ETHEREUM_KEYSTORE-}",
+    "password": "${CFG_ETHEREUM_PASSWORD-}",
+    "rpc": "${CFG_ETHEREUM_RPC-}"
   },
   "feeds": [
     "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
@@ -179,7 +179,7 @@
   "spire": {
     "transport": "libp2p",
     "rpc": {
-      "address": "${APP_SPIRE_RPC_ADDR-127.0.0.1:9100}"
+      "address": "${CFG_SPIRE_RPC_ADDR-127.0.0.1:9100}"
     },
     "pairs": [
       "AAVEUSD",
@@ -214,8 +214,8 @@
   },
   "gofer": {
     "rpc": {
-      "disable": "${APP_GOFER_RPC_DISABLE-false}",
-      "address": "${APP_GOFER_RPC_ADDR-127.0.0.1:9000}"
+      "disable": "${CFG_GOFER_RPC_DISABLE-false}",
+      "address": "${CFG_GOFER_RPC_ADDR-127.0.0.1:9000}"
     },
     "origins": {
       "binance_us": {
@@ -228,7 +228,7 @@
         "type": "openexchangerates",
         "name": "openexchangerates",
         "params": {
-          "apiKey": "${APP_OPENEXCHANGERATES_API_KEY-}",
+          "apiKey": "${CFG_OPENEXCHANGERATES_API_KEY-}",
         }
       },
       "uniswap": {
@@ -826,13 +826,13 @@
     }
   },
   "lair": {
-    "listenAddr": "${APP_LAIR_LISTEN_ADDR-127.0.0.1:8082}",
+    "listenAddr": "${CFG_LAIR_LISTEN_ADDR-127.0.0.1:8082}",
     "storage": {
-      "type": "${APP_LAIR_STORAGE_TYPE-redis}",
+      "type": "${CFG_LAIR_STORAGE_TYPE-redis}",
       "redis": {
-        "address": "${APP_LAIR_REDIS_ADDR-127.0.0.1:7001}",
-        "password": "${APP_LAIR_PASSWORD-password}",
-        "db": "${APP_LAIR_REDIS_DB-0}"
+        "address": "${CFG_LAIR_REDIS_ADDR-127.0.0.1:7001}",
+        "password": "${CFG_LAIR_PASSWORD-password}",
+        "db": "${CFG_LAIR_REDIS_DB-0}"
       }
     }
   }
