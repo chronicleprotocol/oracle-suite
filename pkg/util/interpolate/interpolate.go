@@ -22,12 +22,20 @@ import (
 // Parsed is a parsed string.
 type Parsed []part
 
+type Variable struct {
+	Name       string // Name of the variable.
+	Default    string // Default value if the variable is not set.
+	HasDefault bool   // True if the variable has a default value.
+}
+
 // Parse parses the string and returns a parsed representation. The variables
 // may be interpolated later using the Interpolate method.
 //
 // The syntax is similar to shell variable expansion. The following rules apply:
 //
 // - Variables are enclosed in ${...} and may contain any character.
+//
+// - Variables may have a default value separated by -, eq. ${VAR-default}.
 //
 // - To include a literal $ in the output, escape it with a backslash or
 // another $. For example, \$ and $$ are both interpreted as a literal $.
@@ -41,14 +49,14 @@ func Parse(s string) Parsed {
 }
 
 // Interpolate replaces variables in the string based on the mapping function.
-func (s Parsed) Interpolate(mapping func(name string) string) string {
+func (s Parsed) Interpolate(mapping func(variable Variable) string) string {
 	var buf strings.Builder
 	for _, v := range s {
 		switch v.typ {
 		case litType:
-			buf.WriteString(v.val)
+			buf.WriteString(v.literal)
 		case varType:
-			buf.WriteString(mapping(v.val))
+			buf.WriteString(mapping(v.variable))
 		}
 	}
 	return buf.String()
@@ -70,15 +78,17 @@ const (
 )
 
 type part struct {
-	typ int
-	val string
+	typ      int
+	literal  string
+	variable Variable
 }
 
-var (
+const (
 	tokenEscapedDollar = "$$"
 	tokenBackslash     = "\\"
 	tokenVarBegin      = "${"
 	tokenVarEnd        = "}"
+	tokenDefaultVal    = "-"
 )
 
 type parser struct {
@@ -87,6 +97,7 @@ type parser struct {
 	pos    int
 	litBuf strings.Builder
 	varBuf strings.Builder
+	defBuf strings.Builder
 }
 
 func (p *parser) parse() {
@@ -116,25 +127,54 @@ func (p *parser) parseBackslash() {
 
 func (p *parser) parseVariable() {
 	pos := p.pos
+	def := false
 	p.varBuf.Reset()
+	p.defBuf.Reset()
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenVarEnd):
-			p.appendVariable(p.varBuf.String())
-			return
 		case p.nextToken(tokenBackslash):
 			if !p.hasNext() {
 				continue
 			}
 			p.varBuf.WriteByte(p.nextByte())
+		case p.nextToken(tokenDefaultVal):
+			def = true
+			p.parseDefault()
+		case p.nextToken(tokenVarEnd):
+			p.appendVariable(Variable{
+				Name:       p.varBuf.String(),
+				Default:    p.defBuf.String(),
+				HasDefault: def,
+			})
+			return
 		default:
 			// Add all characters to the first character that may start the token.
-			p.varBuf.WriteString(p.nextBytesUntilAnyOf("\\}"))
+			p.varBuf.WriteString(p.nextBytesUntilAnyOf("-\\}"))
 		}
 	}
 	// Variable not closed. Treat the whole thing as a literal.
 	p.appendLiteral(tokenVarBegin)
 	p.pos = pos
+}
+
+func (p *parser) parseDefault() {
+	for p.hasNext() {
+		switch {
+		case p.nextToken(tokenBackslash):
+			if !p.hasNext() {
+				continue
+			}
+			p.defBuf.WriteByte(p.nextByte())
+		case p.nextToken(tokenVarEnd):
+			// Move the position back so that the closing token is not
+			// consumed and can be parsed by the parent parser.
+			p.pos -= len(tokenVarEnd)
+			return
+		default:
+			// Add all characters to the first character that may start the token.
+			p.defBuf.WriteString(p.nextBytesUntilAnyOf("\\}"))
+		}
+	}
 }
 
 // hasNext returns true if there are more bytes to read.
@@ -175,9 +215,9 @@ func (p *parser) nextToken(s string) bool {
 }
 
 // appendVariable appends the given string as a variable name to the result.
-func (p *parser) appendVariable(s string) {
+func (p *parser) appendVariable(v Variable) {
 	p.appendBuffer()
-	p.out = append(p.out, part{typ: varType, val: s})
+	p.out = append(p.out, part{typ: varType, variable: v})
 }
 
 // appendLiteral appends the given string as a literal to the result. Literals
@@ -195,7 +235,7 @@ func (p *parser) appendByte(b byte) {
 // appendBuffer checks if literal buffer is not empty and appends it to the result.
 func (p *parser) appendBuffer() {
 	if p.litBuf.Len() > 0 {
-		p.out = append(p.out, part{typ: litType, val: p.litBuf.String()})
+		p.out = append(p.out, part{typ: litType, literal: p.litBuf.String()})
 		p.litBuf.Reset()
 	}
 }

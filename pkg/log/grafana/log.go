@@ -477,9 +477,12 @@ func match(metric Metric, msg string, fields reflect.Value) bool {
 // replaceVars replaces vars provided as ${field} with values from log fields.
 func replaceVars(s interpolate.Parsed, fields reflect.Value) (string, bool) {
 	valid := true
-	return s.Interpolate(func(s string) string {
-		name, ok := toString(byPath(fields, s))
+	return s.Interpolate(func(v interpolate.Variable) string {
+		name, ok := toString(byPath(fields, v.Name))
 		if !ok {
+			if v.HasDefault {
+				return v.Default
+			}
 			valid = false
 			return ""
 		}
