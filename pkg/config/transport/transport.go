@@ -17,14 +17,11 @@ package transport
 
 import (
 	"bytes"
-	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
-	"math/big"
 	"strings"
 	"time"
 
@@ -33,11 +30,9 @@ import (
 	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/middleware"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/twitter"
 )
@@ -84,6 +79,10 @@ type TwitterConfig struct {
 	ConsumerSecret string   `yaml:"consumerSecret"`
 	AccessToken    string   `yaml:"accessToken"`
 	AccessSecret   string   `yaml:"accessSecret"`
+	PostInterval   int      `yaml:"postInterval"`
+	FetchInterval  int      `yaml:"fetchInterval"`
+	MaximumAge     int      `yaml:"maximumAge"`
+	MinimumSpread  float64  `yaml:"minimumSpread"`
 }
 
 type Dependencies struct {
@@ -99,6 +98,24 @@ type BootstrapDependencies struct {
 func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (transport.Transport, error) {
 	switch strings.ToLower(c.Transport) {
 	case Twitter:
+		if len(c.Twitter.ConsumerKey) == 0 {
+			return nil, errors.New("twitter consumer key is required")
+		}
+		if len(c.Twitter.ConsumerSecret) == 0 {
+			return nil, errors.New("twitter consumer secret is required")
+		}
+		if len(c.Twitter.AccessToken) == 0 {
+			return nil, errors.New("twitter access token is required")
+		}
+		if len(c.Twitter.AccessSecret) == 0 {
+			return nil, errors.New("twitter access secret is required")
+		}
+		if c.Twitter.PostInterval < 0 {
+			return nil, errors.New("twitter post interval must be positive")
+		}
+		if c.Twitter.FetchInterval < 0 {
+			return nil, errors.New("twitter fetch interval must be positive")
+		}
 		cfg := twitter.Config{
 			Accounts:             c.Twitter.Accounts,
 			ConsumerKey:          c.Twitter.ConsumerKey,
@@ -106,8 +123,8 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 			AccessToken:          c.Twitter.AccessToken,
 			AccessSecret:         c.Twitter.AccessSecret,
 			Topics:               t,
-			PostTweetsInterval:   time.Minute * 2,
-			FetchTweetsInterval:  time.Second * 15,
+			PostTweetsInterval:   time.Second * time.Duration(c.Twitter.PostInterval),
+			FetchTweetsInterval:  time.Second * time.Duration(c.Twitter.FetchInterval),
 			QueueSize:            1024,
 			MaximumDataSize:      100000,
 			MaximumTweetLength:   250,
@@ -120,7 +137,10 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 		if err != nil {
 			return nil, err
 		}
-		return priceLimiterMiddleware(twitterMiddleware(tw)), nil
+		mw := middleware.New(tw)
+		mw.Use(newMsgLimitMiddleware(c.Twitter.MaximumAge, c.Twitter.MinimumSpread))
+		mw.Use(middleware.BroadcastMiddlewareFunc(twitterPriceMiddleware))
+		return mw, nil
 	case LibSSB:
 		return nil, errors.New("ssb not yet implemented")
 	case LibP2P:
@@ -198,77 +218,4 @@ func (c *Transport) generatePrivKey() (crypto.PrivKey, error) {
 		return nil, fmt.Errorf("invalid privKeySeed value, failed to generate key: %w", err)
 	}
 	return privKey, nil
-}
-
-type TweeterPrice struct {
-	*messages.Price
-}
-
-func (t *TweeterPrice) Tweet() string {
-	f, _ := new(big.Float).SetInt(t.Price.Price.Val).Float64()
-	return fmt.Sprintf("%s: %f", t.Price.Price.Wat, f/oracle.PriceMultiplier)
-}
-
-func twitterMiddleware(t transport.Transport) transport.Transport {
-	m := middleware.New(t)
-	m.Use(middleware.BroadcastMiddlewareFunc(func(_ context.Context, next middleware.BroadcastFunc) middleware.BroadcastFunc {
-		return func(topic string, msg transport.Message) error {
-			switch mt := msg.(type) {
-			case *messages.Price:
-				msg.(*messages.Price).Trace = nil
-				msg = &TweeterPrice{Price: mt}
-			}
-			return next(topic, msg)
-		}
-	}))
-	return m
-}
-
-func priceLimiterMiddleware(t transport.Transport) transport.Transport {
-	m := middleware.New(t)
-	m.Use(middleware.BroadcastMiddlewareFunc(func(_ context.Context, next middleware.BroadcastFunc) middleware.BroadcastFunc {
-		prices := make(map[string]*messages.Price)
-		return func(topic string, msg transport.Message) error {
-			if topic == messages.PriceV0MessageName {
-				return nil
-			}
-			if price, ok := msg.(*messages.Price); ok {
-				if price.Price.Age.IsZero() {
-					return nil
-				}
-				prev, ok := prices[price.Price.Wat]
-				if !ok {
-					prices[price.Price.Wat] = price
-					return next(topic, msg)
-				}
-				if time.Since(prev.Price.Age) > time.Minute*10 {
-					prices[price.Price.Wat] = price
-					return next(topic, msg)
-				}
-				if spread(price.Price.Val, prev.Price.Val) > 1 {
-					prices[price.Price.Wat] = price
-					return next(topic, msg)
-				}
-				return nil
-			}
-			return next(topic, msg)
-		}
-	}))
-	return m
-}
-
-func spread(a, b *big.Int) float64 {
-	if a.Sign() == 0 || b.Sign() == 0 {
-		return math.Inf(1)
-	}
-
-	oldPriceF := new(big.Float).SetInt(a)
-	newPriceF := new(big.Float).SetInt(b)
-
-	x := new(big.Float).Sub(newPriceF, oldPriceF)
-	x = new(big.Float).Quo(x, oldPriceF)
-	x = new(big.Float).Mul(x, big.NewFloat(100))
-	xf, _ := x.Float64()
-
-	return math.Abs(xf)
 }
