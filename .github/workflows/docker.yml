@@ -3,9 +3,6 @@ name: Publish Docker Images
 # and pushes the image to https://hub.docker.com/r/interchainio/simapp/tags
 on:
   workflow_dispatch: # Allow manual trigger
-  pull_request:
-    branches:
-      - master
   push:
     branches:
       - master
