@@ -228,7 +228,7 @@
         "type": "openexchangerates",
         "name": "openexchangerates",
         "params": {
-          "apiKey": "${CFG_OPENEXCHANGERATES_KEY-}",
+          "apiKey": "${CFG_OPENEXCHANGERATES_KEY-}"
         }
       },
       "uniswap": {
