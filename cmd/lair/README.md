@@ -131,15 +131,13 @@ Lair supports JSON and YAML configuration files.
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
             - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`,
-              where
-              path is the dot-separated path to the field.
+              where path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
             - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not
-              applied (
-              default: 0).
+              applied (default: 0).
             - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
               options are:
                 - `sum` - Add values.
