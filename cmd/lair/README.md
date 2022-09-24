@@ -158,6 +158,7 @@ Lair supports JSON and YAML configuration files.
                   about one week)
                 - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
                   number, e.g. `0.0.0.0:8080`.
+                - `username` (`string`) - Redis server username for ACL.
                 - `password` (`string`) - Redis server password.
                 - `db` (`int`) - Redis server database number.
                 - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.

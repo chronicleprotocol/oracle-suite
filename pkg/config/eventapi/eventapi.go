@@ -53,6 +53,7 @@ type storageMemory struct {
 type storageRedis struct {
 	TTL                   int    `yaml:"ttl"`
 	Address               string `yaml:"address"`
+	Username              string `yaml:"username"`
 	Password              string `yaml:"password"`
 	DB                    int    `yaml:"db"`
 	MemoryLimit           int64  `yaml:"memoryLimit"`
@@ -101,6 +102,7 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 		r, err := redis.NewRedisStorage(redis.Config{
 			TTL:                   time.Duration(ttl) * time.Second,
 			Address:               c.Storage.Redis.Address,
+			Username:              c.Storage.Redis.Username,
 			Password:              c.Storage.Redis.Password,
 			DB:                    c.Storage.Redis.DB,
 			MemoryLimit:           c.Storage.Redis.MemoryLimit,

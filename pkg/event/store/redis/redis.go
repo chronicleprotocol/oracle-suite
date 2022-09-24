@@ -56,6 +56,8 @@ type Config struct {
 	TTL time.Duration
 	// Address specifies Redis server address as "host:port".
 	Address string
+	// Username specifies Redis username for the ACL.
+	Username string
 	// Password specifies Redis server password.
 	Password string
 	// DB is the Redis database number.
@@ -79,6 +81,7 @@ type Config struct {
 func NewRedisStorage(cfg Config) (*Storage, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Address,
+		Username: cfg.Username,
 		Password: cfg.Password,
 		DB:       cfg.DB,
 	}
