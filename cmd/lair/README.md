@@ -164,6 +164,10 @@ Lair supports JSON and YAML configuration files.
                 - `tls` (`bool`) - Enables TLS connection to Redis server. (default: `false`)
                 - `tlsServerName` (`string`) - Server name used to verify the hostname on the returned certificates from
                   the server. Ignored if empty. (default: `""`)
+                - `tlsCertFile` (`string`) - Path to the PEM encoded certificate file. (default: `""`)
+                - `tlsKeyFile` (`string`) - Path to the PEM encoded private key file. (default: `""`)
+                - `tlsRootCAFile` (`string`) - Path to the PEM encoded root certificate file. (default: `""`)
+                - `tlsInsecureSkipVerify` (`bool`) - Disables TLS certificate verification. (default: `false`)
             - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
                 - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
                   about one week)
