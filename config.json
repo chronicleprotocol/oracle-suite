@@ -837,7 +837,7 @@
         "tlsServerName": "${CFG_LAIR_REDIS_TLS_SERVER_NAME-}",
         "tlsCertFile": "${CFG_LAIR_REDIS_TLS_CERT_FILE-}",
         "tlsKeyFile": "${CFG_LAIR_REDIS_TLS_KEY_FILE-}",
-        "tlsRootCAFile": "${CFG_LAIR_REDIS_TLS_ROOT_CA_FILE-}"
+        "tlsRootCAFile": "${CFG_LAIR_REDIS_TLS_ROOT_CA_FILE-}",
         "tlsInsecureSkipVerify": "${CFG_LAIR_REDIS_TLS_INSECURE-false}"
       }
     }
