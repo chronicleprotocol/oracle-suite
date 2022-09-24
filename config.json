@@ -834,7 +834,11 @@
         "password": "${CFG_LAIR_PASS-}",
         "db": "${CFG_LAIR_REDIS_DB-0}",
         "tls": "${CFG_LAIR_REDIS_TLS-false}",
-        "tlsServerName": "${CFG_LAIR_REDIS_TLS_SERVER_NAME-}"
+        "tlsServerName": "${CFG_LAIR_REDIS_TLS_SERVER_NAME-}",
+        "tlsCertFile": "${CFG_LAIR_REDIS_TLS_CERT_FILE-}",
+        "tlsKeyFile": "${CFG_LAIR_REDIS_TLS_KEY_FILE-}",
+        "tlsRootCAFile": "${CFG_LAIR_REDIS_TLS_ROOT_CA_FILE-}"
+        "tlsInsecureSkipVerify": "${CFG_LAIR_REDIS_TLS_INSECURE-false}"
       }
     }
   }
