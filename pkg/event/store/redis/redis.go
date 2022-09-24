@@ -73,7 +73,7 @@ func NewRedisStorage(cfg Config) (*Storage, error) {
 		DB:       cfg.DB,
 	}
 	if cfg.TLS {
-		opts.TLSConfig = &tls.Config{}
+		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		if cfg.TLSServerName != "" {
 			opts.TLSConfig.ServerName = cfg.TLSServerName
 		}
