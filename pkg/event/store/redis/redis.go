@@ -18,6 +18,7 @@ package redis
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"strconv"
@@ -57,15 +58,27 @@ type Config struct {
 	Password string
 	// DB is the Redis database number.
 	DB int
+	// TLS specifies whether to use TLS for Redis connection.
+	TLS bool
+	// TLSServerName specifies the server name used to verify
+	// the hostname on the returned certificates from the server.
+	TLSServerName string
 }
 
 // NewRedisStorage returns a new instance of Redis.
 func NewRedisStorage(cfg Config) (*Storage, error) {
-	cli := redis.NewClient(&redis.Options{
+	opts := &redis.Options{
 		Addr:     cfg.Address,
 		Password: cfg.Password,
 		DB:       cfg.DB,
-	})
+	}
+	if cfg.TLS {
+		opts.TLSConfig = &tls.Config{}
+		if cfg.TLSServerName != "" {
+			opts.TLSConfig.ServerName = cfg.TLSServerName
+		}
+	}
+	cli := redis.NewClient(opts)
 	// go-redis default timeout is 5 seconds, so using background context should be ok
 	res := cli.Ping(context.Background())
 	if res.Err() != nil {

@@ -90,7 +90,8 @@ Lair supports JSON and YAML configuration files.
       "redis": {
         "address": "127.0.0.1:7001",
         "password": "password",
-        "db": 0
+        "db": 0,
+        "tls": true 
       }
     }
   }
@@ -129,13 +130,15 @@ Lair supports JSON and YAML configuration files.
         - `[]metrics` - List of metric definitions
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
-            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`, where
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`,
+              where
               path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
-            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not applied (
+            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not
+              applied (
               default: 0).
             - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
               options are:
@@ -160,6 +163,9 @@ Lair supports JSON and YAML configuration files.
                 - `password` (`string`) - Redis server password.
                 - `db` (`int`) - Redis server database number.
                 - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
+                - `tls` (`bool`) - Enables TLS connection to Redis server. (default: `false`)
+                - `tlsServerName` (`string`) - Server name used to verify the hostname on the returned certificates from
+                  the server. Ignored if empty. (default: `""`)
             - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
                 - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
                   about one week)
@@ -167,7 +173,7 @@ Lair supports JSON and YAML configuration files.
 ### Environment variables
 
 It is possible to use environment variables anywhere in the configuration file. The syntax is similar as in the
-shell: `${ENV_VAR}`. If the environment  variable is not set, the error will be returned during the application
+shell: `${ENV_VAR}`. If the environment variable is not set, the error will be returned during the application
 startup. To escape the dollar sign, use `\$` or `$$`. The latter syntax is not supported inside variables. It is
 possible to define default values for environment variables. To do so, use the following syntax: `${ENV_VAR-default}`.
 

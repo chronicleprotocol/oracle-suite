@@ -51,11 +51,13 @@ type storageMemory struct {
 }
 
 type storageRedis struct {
-	TTL         int    `yaml:"ttl"`
-	Address     string `yaml:"address"`
-	Password    string `yaml:"password"`
-	DB          int    `yaml:"db"`
-	MemoryLimit int64  `yaml:"memoryLimit"`
+	TTL           int    `yaml:"ttl"`
+	Address       string `yaml:"address"`
+	Password      string `yaml:"password"`
+	DB            int    `yaml:"db"`
+	MemoryLimit   int64  `yaml:"memoryLimit"`
+	TLS           bool   `yaml:"tls"`
+	TLSServerName string `yaml:"tlsServerName"`
 }
 
 type Dependencies struct {
@@ -93,11 +95,13 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 			ttl = c.Storage.Redis.TTL
 		}
 		r, err := redis.NewRedisStorage(redis.Config{
-			TTL:         time.Duration(ttl) * time.Second,
-			Address:     c.Storage.Redis.Address,
-			Password:    c.Storage.Redis.Password,
-			DB:          c.Storage.Redis.DB,
-			MemoryLimit: c.Storage.Redis.MemoryLimit,
+			TTL:           time.Duration(ttl) * time.Second,
+			Address:       c.Storage.Redis.Address,
+			Password:      c.Storage.Redis.Password,
+			DB:            c.Storage.Redis.DB,
+			MemoryLimit:   c.Storage.Redis.MemoryLimit,
+			TLS:           c.Storage.Redis.TLS,
+			TLSServerName: c.Storage.Redis.TLSServerName,
 		})
 		if err != nil {
 			return nil, fmt.Errorf(`eventapi config: unable to connect to the Redis server: %w`, err)

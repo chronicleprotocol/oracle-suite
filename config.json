@@ -832,7 +832,9 @@
       "redis": {
         "address": "${CFG_LAIR_REDIS_ADDR-127.0.0.1:7001}",
         "password": "${CFG_LAIR_PASS-password}",
-        "db": "${CFG_LAIR_REDIS_DB-0}"
+        "db": "${CFG_LAIR_REDIS_DB-0}",
+        "tls": "${CFG_LAIR_REDIS_TLS-false}",
+        "tlsServerName": "${CFG_LAIR_REDIS_TLS_SERVER_NAME-}"
       }
     }
   }
