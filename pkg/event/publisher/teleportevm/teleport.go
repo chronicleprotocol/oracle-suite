@@ -27,225 +27,273 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/retry"
 )
 
 const TeleportEventType = "teleport_evm"
 const LoggerTag = "ETHEREUM_TELEPORT"
-const retryAttempts = 3               // The maximum number of attempts to call Client in case of an error.
 const retryInterval = 5 * time.Second // The delay between retry attempts.
 
 // teleportTopic0 is Keccak256("TeleportInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var teleportTopic0 = ethereum.HexToHash("0x61aedca97129bac4264ec6356bd1f66431e65ab80e2d07b7983647d72776f545")
 
-// Client is a Ethereum compatible client.
-type Client interface {
-	BlockNumber(ctx context.Context) (uint64, error)
-	FilterLogs(ctx context.Context, q geth.FilterQuery) ([]types.Log, error)
-}
-
-// TeleportEventProviderConfig contains a configuration options for New.
-type TeleportEventProviderConfig struct {
+// Config contains a configuration options for EventProvider.
+type Config struct {
 	// Client is an instance of Ethereum RPC client.
-	Client Client
+	Client ethereum.Client
 	// Addresses is a list of contracts from which logs will be fetched.
 	Addresses []ethereum.Address
 	// Interval specifies how often provider should check for new logs.
 	Interval time.Duration
-	// BlocksDelta is a list of distances between the latest block on the
-	// blockchain and blocks from which logs are to be taken. The purpose of
-	// this field is to ensure that older events are resent from time to time.
-	BlocksDelta []int
-	// BlocksLimit specifies how from many blocks logs can be fetched at once.
-	BlocksLimit int
-	// Logger is a current logger interface used by the TeleportEventProvider.
+	// PrefetchPeriod specifies how far back in time provider should prefetch
+	// logs. It is used only during the initial start of the provider.
+	PrefetchPeriod time.Duration
+	// BlockLimit specifies how from many blocks logs can be fetched at once.
+	BlockLimit uint64
+	// BlockConfirmations specifies how many blocks should be confirmed before
+	// fetching logs.
+	BlockConfirmations uint64
+	// Logger is a current logger interface used by the EventProvider.
 	// The Logger is used to monitor asynchronous processes.
 	Logger log.Logger
 }
 
-// TeleportEventProvider listens to TeleportGUID events on Ethereum compatible
+// EventProvider listens to TeleportGUID events on Ethereum compatible
 // blockchains.
 //
 // https://github.com/makerdao/dss-teleport
-type TeleportEventProvider struct {
+type EventProvider struct {
 	eventCh chan *messages.Event
 
-	// lastBlock is a number of last block from which events were fetched.
-	// it is used in the nextBlockRange function.
-	lastBlock uint64
+	// Configuration parameters copied from Config:
+	client         ethereum.Client
+	addresses      []common.Address
+	interval       time.Duration
+	prefetchPeriod time.Duration
+	blockLimit     uint64
+	blockConfirms  uint64
+	log            log.Logger
 
-	// Configuration parameters copied from TeleportEventProviderConfig:
-	client      Client
-	interval    time.Duration
-	addresses   []common.Address
-	blocksDelta []uint64
-	blocksLimit uint64
-	log         log.Logger
+	// Used in tests only:
+	disablePrefetchEventsRoutine bool
+	disableFetchEventsRoutine    bool
 }
 
-// New returns a new instance of the TeleportEventProvider struct.
-func New(cfg TeleportEventProviderConfig) *TeleportEventProvider {
-	return &TeleportEventProvider{
-		eventCh:     make(chan *messages.Event),
-		client:      cfg.Client,
-		interval:    cfg.Interval,
-		addresses:   cfg.Addresses,
-		blocksDelta: intsToUint64s(cfg.BlocksDelta),
-		blocksLimit: uint64(cfg.BlocksLimit),
-		log:         cfg.Logger.WithField("tag", LoggerTag),
+// New returns a new instance of the EventProvider struct.
+func New(cfg Config) (*EventProvider, error) {
+	if cfg.Interval == 0 {
+		return nil, errors.New("interval is not set")
 	}
+	if len(cfg.Addresses) == 0 {
+		return nil, errors.New("no addresses provided")
+	}
+	if cfg.BlockLimit <= 0 {
+		return nil, errors.New("block limit must be greater than 0")
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
+	return &EventProvider{
+		eventCh:        make(chan *messages.Event),
+		client:         cfg.Client,
+		interval:       cfg.Interval,
+		addresses:      cfg.Addresses,
+		prefetchPeriod: cfg.PrefetchPeriod,
+		blockLimit:     cfg.BlockLimit,
+		blockConfirms:  cfg.BlockConfirmations,
+		log:            cfg.Logger.WithField("tag", LoggerTag),
+	}, nil
 }
 
-// Events implements the publisher.Listener interface.
-func (tp *TeleportEventProvider) Events() chan *messages.Event {
-	return tp.eventCh
+// Events implements the publisher.EventPublisher interface.
+func (ep *EventProvider) Events() chan *messages.Event {
+	return ep.eventCh
 }
 
-// Start implements the publisher.Listener interface.
-func (tp *TeleportEventProvider) Start(ctx context.Context) error {
-	go tp.fetchLogsRoutine(ctx)
+// Start implements the publisher.EventPublisher interface.
+func (ep *EventProvider) Start(ctx context.Context) error {
+	if !ep.disablePrefetchEventsRoutine {
+		go ep.prefetchEventsRoutine(ctx)
+	}
+	if !ep.disableFetchEventsRoutine {
+		go ep.fetchEventsRoutine(ctx)
+	}
 	return nil
 }
 
-// fetchLogsRoutine periodically fetches logs from the blockchain.
-func (tp *TeleportEventProvider) fetchLogsRoutine(ctx context.Context) {
-	t := time.NewTicker(tp.interval)
+// prefetchEventsRoutine fetches TeleportGUID events from the past but not
+// older than defined in the prefetch period. It is used to fetch logs that
+// were emitted before the provider was started.
+func (ep *EventProvider) prefetchEventsRoutine(ctx context.Context) {
+	if ep.prefetchPeriod == 0 {
+		return
+	}
+	latestBlock, ok := ep.getBlockNumber(ctx)
+	if !ok {
+		return // Context was canceled.
+	}
+	for d := ep.blockConfirms; ctx.Err() == nil; d += ep.blockLimit {
+		var from, to uint64
+		// Because all integer are unsigned, we need to check against
+		// underflow.
+		if d+ep.blockLimit-1 > latestBlock {
+			from = 0
+		} else {
+			from = latestBlock - (d + ep.blockLimit - 1)
+		}
+		to = latestBlock - d
+		ep.handleEvents(ctx, from, to)
+		ts, ok := ep.getBlockTimestamp(ctx, to)
+		if !ok {
+			return // Context was canceled.
+		}
+		if from == 0 || time.Since(ts) > ep.prefetchPeriod {
+			return
+		}
+	}
+}
+
+// fetchEventsRoutine periodically fetches new TeleportGUID logs from the
+// blockchain.
+func (ep *EventProvider) fetchEventsRoutine(ctx context.Context) {
+	latestBlock, ok := ep.getBlockNumber(ctx)
+	if !ok {
+		return // Context was canceled.
+	}
+	t := time.NewTicker(ep.interval)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			close(tp.eventCh)
+			close(ep.eventCh)
 			return
 		case <-t.C:
-			tp.fetchLogs(ctx)
+			currentBlock, ok := ep.getBlockNumber(ctx)
+			if !ok {
+				return // Context was canceled.
+			}
+			if currentBlock <= latestBlock {
+				continue
+			}
+			for _, b := range splitBlockRanges(latestBlock+1, currentBlock, ep.blockLimit) {
+				from := b[0] - ep.blockConfirms
+				to := b[1] - ep.blockConfirms
+				ep.handleEvents(ctx, from, to)
+			}
+			latestBlock = currentBlock
 		}
 	}
 }
 
-// fetchLogs fetches TeleportGUID events from the blockchain and converts them
-// into event messages. The converted messages are sent to the eventCh channel.
-func (tp *TeleportEventProvider) fetchLogs(ctx context.Context) {
-	rangeFrom, rangeTo, err := tp.nextBlockRange(ctx)
-	if err != nil {
-		tp.log.
-			WithError(err).
-			Error("Unable to get latest block number")
-		return
-	}
-	if rangeFrom == tp.lastBlock {
-		return // There is no new blocks to fetch.
-	}
-	for _, delta := range tp.blocksDelta {
-		for _, address := range tp.addresses {
-			if ctx.Err() != nil {
-				return
-			}
-			if delta > rangeFrom {
-				delta = rangeFrom // To prevent overflow.
-			}
-			from := rangeFrom - delta
-			to := rangeTo - delta
-			tp.log.
-				WithFields(log.Fields{
-					"from":    from,
-					"to":      to,
-					"address": address.String(),
-				}).
-				Info("Fetching logs")
-			logs, err := tp.filterLogs(ctx, address, from, to, teleportTopic0)
-			if errors.Is(err, context.Canceled) {
+// handleEvents fetches TeleportGUID events from the given block range and
+// sends them to the eventCh channel.
+func (ep *EventProvider) handleEvents(ctx context.Context, from, to uint64) {
+	for _, address := range ep.addresses {
+		ep.log.
+			WithFields(log.Fields{
+				"from":    from,
+				"to":      to,
+				"address": address.String(),
+			}).
+			Info("Fetching logs")
+		logs, ok := ep.filterLogs(ctx, address, from, to, teleportTopic0)
+		if !ok {
+			return // Context was canceled.
+		}
+		for _, l := range logs {
+			if l.Removed {
 				continue
 			}
+			if l.Address != address {
+				// This should never happen. All logs returned by
+				// eth_filterLogs should be emitted by the specified
+				// contract. If it happens, there is a bug somewhere.
+				ep.log.
+					WithFields(log.Fields{
+						"expected": address.String(),
+						"actual":   l.Address.String(),
+					}).
+					Panic("Log emitted by wrong contract")
+			}
+			evt, err := logToMessage(l)
 			if err != nil {
-				tp.log.
+				ep.log.
 					WithError(err).
-					Error("Unable to fetch logs")
+					Error("Unable to convert log to event")
 				continue
 			}
-			for _, l := range logs {
-				if l.Removed {
-					continue
-				}
-				if l.Address != address {
-					// This should never happen. All logs returned by
-					// eth_filterLogs should be emitted by the specified
-					// contract. If it happens, there is a bug somewhere.
-					tp.log.
-						WithFields(log.Fields{
-							"expected": address.String(),
-							"actual":   l.Address.String(),
-						}).
-						Panic("Log emitted by wrong contract")
-				}
-				msg, err := logToMessage(l)
-				if err != nil {
-					tp.log.
-						WithError(err).
-						Error("Unable to convert log to event")
-					continue
-				}
-				tp.eventCh <- msg
-			}
+			ep.eventCh <- evt
 		}
 	}
-	tp.lastBlock = rangeTo
-}
-
-// nextBlockRange returns the range of blocks from which logs should be
-// fetched.
-func (tp *TeleportEventProvider) nextBlockRange(ctx context.Context) (uint64, uint64, error) {
-	// Get the latest block number.
-	to, err := tp.getBlockNumber(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	// Set "from" to the next block and check if "from" is greater than "to",
-	// if so, then there are no new blocks to fetch.
-	from := tp.lastBlock + 1
-	if from > to {
-		return to, to, nil
-	}
-	// Limit the number of blocks to fetch.
-	if to-from > tp.blocksLimit {
-		from = to - tp.blocksLimit + 1
-	}
-	return from, to, nil
 }
 
 // getBlockNumber returns the latest block number on the blockchain.
-func (tp *TeleportEventProvider) getBlockNumber(ctx context.Context) (uint64, error) {
+//
+// The method will try to fetch blocks indefinitely in case of an error.
+// The only way to stop this method from trying again is to cancel the
+// context. In that case, the method will return false as a second return
+// value.
+func (ep *EventProvider) getBlockNumber(ctx context.Context) (uint64, bool) {
 	var err error
-	var res uint64
-	err = retry.Retry(
+	var res *big.Int
+	retry.TryForever(
 		ctx,
 		func() error {
-			res, err = tp.client.BlockNumber(ctx)
+			res, err = ep.client.BlockNumber(ctx)
 			return err
 		},
-		retryAttempts,
 		retryInterval,
 	)
-	if err != nil {
-		return 0, err
+	if res == nil || ctx.Err() != nil {
+		return 0, false
 	}
-	return res, nil
+	return res.Uint64(), true
+}
+
+// getBlockNumber returns the latest block number on the blockchain.
+//
+// The method will try to fetch blocks indefinitely in case of an error.
+// The only way to stop this method from trying again is to cancel the
+// context. In that case, the method will return false as a second return
+// value.
+func (ep *EventProvider) getBlockTimestamp(ctx context.Context, block uint64) (time.Time, bool) {
+	var err error
+	var res *types.Block
+	retry.TryForever(
+		ctx,
+		func() error {
+			res, err = ep.client.Block(ethereum.WithBlockNumber(ctx, new(big.Int).SetUint64(block)))
+			return err
+		},
+		retryInterval,
+	)
+	if res == nil || ctx.Err() != nil {
+		return time.Time{}, false
+	}
+	return time.Unix(int64(res.Time()), 0), true
 }
 
 // filterLogs fetches TeleportGUID events from the blockchain.
-func (tp *TeleportEventProvider) filterLogs(
+//
+// The method will try to fetch blocks indefinitely in case of an error.
+// The only way to stop this method from trying again is to cancel the
+// context. In that case, the method will return false as a second return
+// value.
+func (ep *EventProvider) filterLogs(
 	ctx context.Context,
 	addr common.Address,
 	from, to uint64,
 	topic0 common.Hash,
-) ([]types.Log, error) {
+) ([]types.Log, bool) {
 
 	var err error
 	var res []types.Log
-	err = retry.Retry(
+	retry.TryForever(
 		ctx,
 		func() error {
-			res, err = tp.client.FilterLogs(ctx, geth.FilterQuery{
+			res, err = ep.client.FilterLogs(ctx, geth.FilterQuery{
 				FromBlock: new(big.Int).SetUint64(from),
 				ToBlock:   new(big.Int).SetUint64(to),
 				Addresses: []common.Address{addr},
@@ -253,20 +301,35 @@ func (tp *TeleportEventProvider) filterLogs(
 			})
 			return err
 		},
-		retryAttempts,
 		retryInterval,
 	)
-	if err != nil {
-		return nil, err
+	if res == nil || ctx.Err() != nil {
+		return nil, false
 	}
-	return res, nil
+	return res, true
 }
 
-// intsToUint64s converts int slice to uint64 slice.
-func intsToUint64s(i []int) []uint64 {
-	u := make([]uint64, len(i))
-	for n, v := range i {
-		u[n] = uint64(v)
+// splitBlockRanges splits a block range into smaller ranges of at most
+// "limit" blocks. Some RPC providers have a limit on the number of blocks
+// that can be fetched in a single request and this method is used to
+// keep the number of blocks in each request below that limit.
+func splitBlockRanges(from, to, limit uint64) [][2]uint64 {
+	if from > to {
+		return nil
 	}
-	return u
+	if to-from <= limit {
+		return [][2]uint64{{from, to}}
+	}
+	var ranges [][2]uint64
+	rangeFrom := from
+	rangeTo := from
+	for rangeTo < to {
+		rangeTo = rangeFrom + limit - 1
+		if rangeTo > to {
+			rangeTo = to
+		}
+		ranges = append(ranges, [2]uint64{rangeFrom, rangeTo})
+		rangeFrom = rangeTo + 1
+	}
+	return ranges
 }

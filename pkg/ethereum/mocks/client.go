@@ -19,6 +19,8 @@ import (
 	"context"
 	"math/big"
 
+	geth "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -31,6 +33,11 @@ type Client struct {
 func (e *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
 	args := e.Called(ctx)
 	return args.Get(0).(*big.Int), args.Error(1)
+}
+
+func (e *Client) Block(ctx context.Context) (*types.Block, error) {
+	args := e.Called(ctx)
+	return args.Get(0).(*types.Block), args.Error(1)
 }
 
 func (e *Client) Call(ctx context.Context, call ethereum.Call) ([]byte, error) {
@@ -56,4 +63,9 @@ func (e *Client) Storage(ctx context.Context, address ethereum.Address, key ethe
 func (e *Client) SendTransaction(ctx context.Context, transaction *ethereum.Transaction) (*ethereum.Hash, error) {
 	args := e.Called(ctx, transaction)
 	return args.Get(0).(*ethereum.Hash), args.Error(1)
+}
+
+func (e *Client) FilterLogs(ctx context.Context, query geth.FilterQuery) ([]types.Log, error) {
+	args := e.Called(ctx, query)
+	return args.Get(0).([]types.Log), args.Error(1)
 }

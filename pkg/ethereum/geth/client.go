@@ -82,6 +82,7 @@ type EthClient interface {
 	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 	NetworkID(ctx context.Context) (*big.Int, error)
 	BlockNumber(ctx context.Context) (uint64, error)
+	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
 	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error)
 }
 
@@ -106,6 +107,11 @@ func (e *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
 		return nil, err
 	}
 	return new(big.Int).SetUint64(n), nil
+}
+
+// Block implements the ethereum.Client interface.
+func (e *Client) Block(ctx context.Context) (*types.Block, error) {
+	return e.ethClient.BlockByNumber(ctx, pkgEthereum.BlockNumberFromContext(ctx))
 }
 
 // Call implements the ethereum.Client interface.
@@ -260,6 +266,11 @@ func (e *Client) SendTransaction(ctx context.Context, transaction *pkgEthereum.T
 		return &hash, e.ethClient.SendTransaction(ctx, stx)
 	}
 	return nil, ErrInvalidSignedTxType
+}
+
+// FilterLogs implements the ethereum.Client interface.
+func (e *Client) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
+	return e.ethClient.FilterLogs(ctx, query)
 }
 
 func isRevertResp(resp []byte) error {

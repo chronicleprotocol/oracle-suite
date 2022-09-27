@@ -27,7 +27,7 @@ import (
 func TestRetry_noerror(t *testing.T) {
 	n := time.Now()
 
-	require.NoError(t, Retry(context.Background(), func() error {
+	require.NoError(t, Try(context.Background(), func() error {
 		return nil
 	}, 3, time.Millisecond*100))
 
@@ -38,7 +38,7 @@ func TestRetry_error(t *testing.T) {
 	n := time.Now()
 	c := 0
 
-	require.Error(t, Retry(context.Background(), func() error {
+	require.Error(t, Try(context.Background(), func() error {
 		c++
 		return errors.New("error")
 	}, 3, time.Millisecond*100))
@@ -52,7 +52,7 @@ func TestRetry_ctxCancel(t *testing.T) {
 	n := time.Now()
 	time.AfterFunc(time.Millisecond*100, ctxCancel)
 
-	require.Error(t, Retry(ctx, func() error {
+	require.Error(t, Try(ctx, func() error {
 		return errors.New("error")
 	}, 3, time.Second*1))
 

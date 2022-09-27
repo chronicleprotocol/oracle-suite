@@ -26,8 +26,8 @@ import (
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/replayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportevm"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportstarknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -50,19 +50,21 @@ type listeners struct {
 }
 
 type teleportEVMListener struct {
-	Ethereum    ethereumConfig.Ethereum `yaml:"ethereum"`
-	Interval    int64                   `yaml:"interval"`
-	BlocksDelta []int                   `yaml:"blocksDelta"`
-	BlocksLimit int                     `yaml:"blocksLimit"`
-	Addresses   []common.Address        `yaml:"addresses"`
+	Ethereum           ethereumConfig.Ethereum `yaml:"ethereum"`
+	Interval           int64                   `yaml:"interval"`
+	PrefetchPeriod     int64                   `yaml:"prefetchPeriod"`
+	BlockConfirmations int64                   `yaml:"blockConfirmations"`
+	BlockLimit         int                     `yaml:"blockLimit"`
+	ReplayAfter        []int64                 `yaml:"replayAfter"`
+	Addresses          []common.Address        `yaml:"addresses"`
 }
 
 type teleportStarknetListener struct {
-	Sequencer   string                 `yaml:"sequencer"`
-	Interval    int64                  `yaml:"interval"`
-	BlocksDelta []int                  `yaml:"blocksDelta"`
-	BlocksLimit int                    `yaml:"blocksLimit"`
-	Addresses   []*starknetClient.Felt `yaml:"addresses"`
+	Sequencer      string                 `yaml:"sequencer"`
+	Interval       int64                  `yaml:"interval"`
+	PrefetchPeriod int64                  `yaml:"prefetchPeriod"`
+	ReplayAfter    []int64                `yaml:"replayAfter"`
+	Addresses      []*starknetClient.Felt `yaml:"addresses"`
 }
 
 type Dependencies struct {
@@ -81,20 +83,20 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	if d.Logger == nil {
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
-	var lis []publisher.EventProvider
-	if err := c.configureTeleportEVM(&lis, d.Logger); err != nil {
-		return nil, fmt.Errorf("eventpublisher config: %w", err)
+	var eps []publisher.EventProvider
+	if err := c.configureTeleportEVM(&eps, d.Logger); err != nil {
+		return nil, fmt.Errorf("eventpublisher config: teleport EVM: %w", err)
 	}
-	if err := c.configureTeleportStarknet(&lis, d.Logger); err != nil {
-		return nil, fmt.Errorf("eventpublisher config: %w", err)
+	if err := c.configureTeleportStarknet(&eps, d.Logger); err != nil {
+		return nil, fmt.Errorf("eventpublisher config: teleport Starknet: %w", err)
 	}
-	sig := []publisher.Signer{teleportevm.NewSigner(d.Signer, []string{
+	signer := []publisher.Signer{teleportevm.NewSigner(d.Signer, []string{
 		teleportevm.TeleportEventType,
 		teleportstarknet.TeleportEventType,
 	})}
 	cfg := publisher.Config{
-		Listeners: lis,
-		Signers:   sig,
+		Listeners: eps,
+		Signers:   signer,
 		Transport: d.Transport,
 		Logger:    d.Logger,
 	}
@@ -106,67 +108,96 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 }
 
 func (c *EventPublisher) configureTeleportEVM(lis *[]publisher.EventProvider, logger log.Logger) error {
-	clis := ethClients{}
-	for _, w := range c.Listeners.TeleportEVM {
-		cli, err := clis.configure(w.Ethereum, logger)
+	clients := ethClients{}
+	for _, cfg := range c.Listeners.TeleportEVM {
+		client, err := clients.configure(cfg.Ethereum, logger)
 		if err != nil {
 			return err
 		}
-		interval := w.Interval
+		interval := cfg.Interval
 		if interval < 1 {
 			interval = 1
 		}
-		if len(w.BlocksDelta) < 1 {
-			return fmt.Errorf("blocksDelta must contains at least one element")
+		if len(cfg.ReplayAfter) < 1 {
+			return fmt.Errorf("replayAfter cannot be empty")
 		}
-		if w.BlocksLimit <= 0 {
+		if cfg.BlockLimit <= 0 {
 			return fmt.Errorf("blocksLimit must greather than 0")
 		}
-		*lis = append(*lis, teleportevm.New(teleportevm.TeleportEventProviderConfig{
-			Client:      cli,
-			Addresses:   w.Addresses,
-			Interval:    time.Second * time.Duration(interval),
-			BlocksDelta: w.BlocksDelta,
-			BlocksLimit: w.BlocksLimit,
-			Logger:      logger,
-		}))
+		replayAfter := make([]time.Duration, len(cfg.ReplayAfter))
+		for i, r := range cfg.ReplayAfter {
+			replayAfter[i] = time.Duration(r) * time.Second
+		}
+		var ep publisher.EventProvider
+		ep, err = teleportevm.New(teleportevm.Config{
+			Client:             client,
+			Addresses:          cfg.Addresses,
+			Interval:           time.Second * time.Duration(interval),
+			PrefetchPeriod:     time.Duration(cfg.PrefetchPeriod) * time.Second,
+			BlockLimit:         uint64(cfg.BlockLimit),
+			BlockConfirmations: uint64(cfg.BlockConfirmations),
+			Logger:             logger,
+		})
+		if err != nil {
+			return err
+		}
+		ep, err = replayer.New(replayer.Config{
+			EventProvider: ep,
+			ReplayAfter:   replayAfter,
+		})
+		if err != nil {
+			return err
+		}
+		*lis = append(*lis, ep)
 	}
 	return nil
 }
 
 func (c *EventPublisher) configureTeleportStarknet(lis *[]publisher.EventProvider, logger log.Logger) error {
-	for _, w := range c.Listeners.TeleportStarknet {
-		interval := w.Interval
+	var err error
+	for _, cfg := range c.Listeners.TeleportStarknet {
+		interval := cfg.Interval
 		if interval < 1 {
 			interval = 1
 		}
-		if _, err := url.Parse(w.Sequencer); err != nil {
-			return fmt.Errorf("sequencer address is not valid url: %w", err)
+		if _, err := url.Parse(cfg.Sequencer); err != nil {
+			return fmt.Errorf("sequencer url is invalid: %w", err)
 		}
-		if len(w.BlocksDelta) < 1 {
-			return fmt.Errorf("blocksDelta must contains at least one element")
+		if len(cfg.ReplayAfter) < 1 {
+			return fmt.Errorf("replayAfter cannot be empty")
 		}
-		if w.BlocksLimit <= 0 {
-			return fmt.Errorf("blocksLimit must greather than 0")
+		replayAfter := make([]time.Duration, len(cfg.ReplayAfter))
+		for i, r := range cfg.ReplayAfter {
+			replayAfter[i] = time.Duration(r) * time.Second
 		}
-		*lis = append(*lis, teleportstarknet.New(teleportstarknet.TeleportEventProviderConfig{
-			Sequencer:   starknetClient.NewSequencer(w.Sequencer, http.Client{}),
-			Addresses:   w.Addresses,
-			Interval:    time.Second * time.Duration(interval),
-			BlocksDelta: w.BlocksDelta,
-			BlocksLimit: w.BlocksLimit,
-			Logger:      logger,
-		}))
+		var ep publisher.EventProvider
+		ep, err = teleportstarknet.New(teleportstarknet.Config{
+			Sequencer: starknetClient.NewSequencer(cfg.Sequencer, http.Client{}),
+			Addresses: cfg.Addresses,
+			Interval:  time.Second * time.Duration(interval),
+			Logger:    logger,
+		})
+		if err != nil {
+			return err
+		}
+		ep, err = replayer.New(replayer.Config{
+			EventProvider: ep,
+			ReplayAfter:   replayAfter,
+		})
+		if err != nil {
+			return err
+		}
+		*lis = append(*lis, ep)
 	}
 	return nil
 }
 
-type ethClients map[string]geth.EthClient
+type ethClients map[string]ethereum.Client
 
 // configure returns an Ethereum client for given configuration.
 // It will return the same instance of the client for the same
 // configuration.
-func (m ethClients) configure(ethereum ethereumConfig.Ethereum, logger log.Logger) (geth.EthClient, error) {
+func (m ethClients) configure(ethereum ethereumConfig.Ethereum, logger log.Logger) (ethereum.Client, error) {
 	key, err := json.Marshal(ethereum)
 	if err != nil {
 		return nil, err
@@ -174,7 +205,7 @@ func (m ethClients) configure(ethereum ethereumConfig.Ethereum, logger log.Logge
 	if c, ok := m[string(key)]; ok {
 		return c, nil
 	}
-	c, err := ethereum.ConfigureRPCClient(logger)
+	c, err := ethereum.ConfigureEthereumClient(nil, logger)
 	if err != nil {
 		return nil, err
 	}

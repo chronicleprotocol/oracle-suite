@@ -208,48 +208,144 @@ const testBlockResponse = `
 }
 `
 
-func Test_teleportListener(t *testing.T) {
+func Test_teleportListener_PrefetchBlocksRoutine(t *testing.T) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second)
 	defer cancelFunc()
 
 	cli := &mocks.Sequencer{}
-	tl := New(TeleportEventProviderConfig{
-		Sequencer:   cli,
-		Addresses:   []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
-		Interval:    time.Millisecond * 100,
-		BlocksDelta: []int{10},
-		BlocksLimit: 2,
-		Logger:      null.New(),
+	ep, err := New(Config{
+		Sequencer:      cli,
+		Addresses:      []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
+		Interval:       time.Millisecond * 100,
+		PrefetchPeriod: time.Second * 100,
+		Logger:         null.New(),
 	})
+	require.NoError(t, err)
+	ep.disablePrefetchBlocksRoutine = false
+	ep.disablePendingBlockRoutine = true
+	ep.disableAcceptedBlocksRoutine = true
 
-	txHash := starknet.HexToFelt("57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202")
+	now := time.Now().Unix()
+	block1 := dummyBlock()
+	block1.Timestamp = now
+	block2 := dummyBlock()
+	block2.Timestamp = now - 80
+	block3 := dummyBlock()
+	block3.Timestamp = now - 160
+
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block1, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191504)).Return(block1, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191503)).Return(block2, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191502)).Return(block3, nil).Once()
+
+	require.NoError(t, ep.Start(ctx))
+
+	waitForEvents(t, ctx, ep, 2)
+}
+
+func Test_teleportListener_PendingBlockRoutine(t *testing.T) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second)
+	defer cancelFunc()
+
+	cli := &mocks.Sequencer{}
+	ep, err := New(Config{
+		Sequencer:      cli,
+		Addresses:      []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
+		Interval:       time.Millisecond * 100,
+		PrefetchPeriod: time.Second * 100,
+		Logger:         null.New(),
+	})
+	require.NoError(t, err)
+	ep.disablePrefetchBlocksRoutine = true
+	ep.disablePendingBlockRoutine = false
+	ep.disableAcceptedBlocksRoutine = true
+
+	now := time.Now().Unix()
+	block1 := dummyBlock()
+	block1.Timestamp = now
+	block2 := dummyBlock()
+	block2.Timestamp = now - 80
+	block3 := dummyBlock()
+	block3.Timestamp = now - 160
+
+	cli.On("GetPendingBlock", ctx).Return(block1, nil).Once()
+	cli.On("GetPendingBlock", ctx).Return(block2, nil).Once()
+	cli.On("GetPendingBlock", ctx).Return(block3, nil).Once()
+
+	require.NoError(t, ep.Start(ctx))
+
+	waitForEvents(t, ctx, ep, 2)
+}
+
+func Test_teleportListener_AcceptedBlocksRoutine(t *testing.T) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second)
+	defer cancelFunc()
+
+	cli := &mocks.Sequencer{}
+	ep, err := New(Config{
+		Sequencer:      cli,
+		Addresses:      []*starknet.Felt{starknet.HexToFelt("0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24")},
+		Interval:       time.Millisecond * 100,
+		PrefetchPeriod: time.Second * 100,
+		Logger:         null.New(),
+	})
+	require.NoError(t, err)
+	ep.disablePrefetchBlocksRoutine = true
+	ep.disablePendingBlockRoutine = true
+	ep.disableAcceptedBlocksRoutine = false
+
+	block1 := dummyBlock()
+	block1.BlockNumber = 191504
+	block2 := dummyBlock()
+	block2.BlockNumber = 191507
+	block3 := dummyBlock()
+	block3.BlockNumber = 191507
+	block4 := dummyBlock()
+	block4.BlockNumber = 191508
+
+	// No new blocks, wait.
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block1, nil).Once()
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block1, nil).Once()
+
+	// Three new blocks.
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block2, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191505)).Return(block2, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191506)).Return(block2, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191507)).Return(block2, nil).Once()
+
+	// No new blocks, wait.
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block3, nil).Once()
+
+	// One new block.
+	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block4, nil).Once()
+	cli.On("GetBlockByNumber", ctx, uint64(191508)).Return(block2, nil).Once()
+
+	require.NoError(t, ep.Start(ctx))
+
+	waitForEvents(t, ctx, ep, 4)
+}
+
+func waitForEvents(t *testing.T, ctx context.Context, ep *EventProvider, expectedEvents int) {
+	events := 0
+loop:
+	for events < expectedEvents {
+		select {
+		case msg := <-ep.Events():
+			events++
+			assert.Equal(t, common.FromHex("0x3507a75b6cda5f180fa8e3ddf7bcb967699061a8f95549b73ecd2673dd14aa97"), msg.Data["hash"])
+		case <-ctx.Done():
+			break loop
+		}
+	}
+
+	assert.Equal(t, expectedEvents, events)
+}
+
+func dummyBlock() *starknet.Block {
 	block := &starknet.Block{}
 	err := json.Unmarshal([]byte(testBlockResponse), block)
 	if err != nil {
 		panic(err)
 	}
-
-	// Fetch the latest block to determine the latest block number:
-	cli.On("GetLatestBlock", ctx, mock.Anything, mock.Anything).Return(block, nil).Once()
-	// Because BlocksDelta is set to 10, we should fetch the block 10 blocks before the latest block.
-	// Because there were no blocks fetched previously, we are fetching also older blocks but no more
-	// that defined in thw BlocksLimit parameter.
-	cli.On("GetBlockByNumber", ctx, uint64(191504-11)).Return(block, nil).Once()
-	cli.On("GetBlockByNumber", ctx, uint64(191504-10)).Return(block, nil).Once()
-	// Finally,fetch pending block.
-	cli.On("GetPendingBlock", ctx, mock.Anything, mock.Anything).Return(block, nil).Once()
-
-	require.NoError(t, tl.Start(ctx))
-
-	events := 0
-	for {
-		msg := <-tl.Events()
-		events++
-		assert.Equal(t, txHash.Bytes(), msg.Index)
-		assert.Equal(t, common.FromHex("0x3507a75b6cda5f180fa8e3ddf7bcb967699061a8f95549b73ecd2673dd14aa97"), msg.Data["hash"])
-		if events == 3 {
-			break
-		}
-	}
-	assert.Equal(t, 3, events)
+	return block
 }

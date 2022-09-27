@@ -18,6 +18,9 @@ package ethereum
 import (
 	"context"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Transaction struct {
@@ -54,6 +57,9 @@ type Call struct {
 type Client interface {
 	// BlockNumber returns the current block number.
 	BlockNumber(ctx context.Context) (*big.Int, error)
+	// Block returns the block data. The block number can be changed by using
+	// the WithBlockNumber context.
+	Block(ctx context.Context) (*types.Block, error)
 	// Call executes a message call transaction, which is directly
 	// executed in the VM of the node, but never mined into the blockchain.
 	Call(ctx context.Context, call Call) ([]byte, error)
@@ -69,6 +75,8 @@ type Client interface {
 	// SendTransaction injects a signed transaction into the pending pool
 	// for execution.
 	SendTransaction(ctx context.Context, transaction *Transaction) (*Hash, error)
+	// FilterLogs executes a filter query.
+	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 }
 
 type contextKey string

@@ -40,11 +40,12 @@ func TestEventPublisher_Configure_Teleport(t *testing.T) {
 	log := null.New()
 
 	config := EventPublisher{Listeners: listeners{TeleportEVM: []teleportEVMListener{{
-		Ethereum:    ethereumConfig.Ethereum{RPC: "https://example.com/"},
-		Interval:    1,
-		BlocksDelta: []int{10, 60},
-		BlocksLimit: 10,
-		Addresses:   []common.Address{common.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
+		Ethereum:       ethereumConfig.Ethereum{RPC: "https://example.com/"},
+		Interval:       1,
+		PrefetchPeriod: 1,
+		BlockLimit:     1,
+		ReplayAfter:    []int64{1},
+		Addresses:      []common.Address{common.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
 	}}}}
 
 	eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublisher, error) {
