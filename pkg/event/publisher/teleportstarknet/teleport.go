@@ -66,7 +66,6 @@ type EventProvider struct {
 	addresses      []*starknet.Felt
 	interval       time.Duration
 	prefetchPeriod time.Duration
-	blockConfirms  uint64
 	log            log.Logger
 
 	// Used in tests only:

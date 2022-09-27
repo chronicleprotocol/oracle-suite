@@ -89,7 +89,7 @@ func Test_teleportEventProvider_FetchEventsRoutine(t *testing.T) {
 
 	require.NoError(t, ep.Start(ctx))
 
-	waitForEvents(t, ctx, ep, 6)
+	waitForEvents(ctx, t, ep, 6)
 }
 
 func Test_teleportEventProvider_PrefetchEventsRoutine(t *testing.T) {
@@ -145,10 +145,10 @@ func Test_teleportEventProvider_PrefetchEventsRoutine(t *testing.T) {
 
 	require.NoError(t, ep.Start(ctx))
 
-	waitForEvents(t, ctx, ep, 2)
+	waitForEvents(ctx, t, ep, 2)
 }
 
-func waitForEvents(t *testing.T, ctx context.Context, ep *EventProvider, expectedEvents int) {
+func waitForEvents(ctx context.Context, t *testing.T, ep *EventProvider, expectedEvents int) {
 	events := 0
 loop:
 	for events < expectedEvents {

@@ -240,7 +240,7 @@ func Test_teleportListener_PrefetchBlocksRoutine(t *testing.T) {
 
 	require.NoError(t, ep.Start(ctx))
 
-	waitForEvents(t, ctx, ep, 2)
+	waitForEvents(ctx, t, ep, 2)
 }
 
 func Test_teleportListener_PendingBlockRoutine(t *testing.T) {
@@ -274,7 +274,7 @@ func Test_teleportListener_PendingBlockRoutine(t *testing.T) {
 
 	require.NoError(t, ep.Start(ctx))
 
-	waitForEvents(t, ctx, ep, 2)
+	waitForEvents(ctx, t, ep, 2)
 }
 
 func Test_teleportListener_AcceptedBlocksRoutine(t *testing.T) {
@@ -322,10 +322,10 @@ func Test_teleportListener_AcceptedBlocksRoutine(t *testing.T) {
 
 	require.NoError(t, ep.Start(ctx))
 
-	waitForEvents(t, ctx, ep, 4)
+	waitForEvents(ctx, t, ep, 4)
 }
 
-func waitForEvents(t *testing.T, ctx context.Context, ep *EventProvider, expectedEvents int) {
+func waitForEvents(ctx context.Context, t *testing.T, ep *EventProvider, expectedEvents int) {
 	events := 0
 loop:
 	for events < expectedEvents {
