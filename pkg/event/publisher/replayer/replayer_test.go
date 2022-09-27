@@ -17,7 +17,6 @@ package replayer
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -47,6 +46,7 @@ func Test_Replayer(t *testing.T) {
 	ch := make(chan *messages.Event)
 	rep, err := New(Config{
 		EventProvider: eventProvider{eventsCh: ch},
+		Interval:      100 * time.Millisecond,
 		ReplayAfter:   []time.Duration{100 * time.Millisecond, 200 * time.Millisecond},
 	})
 
@@ -78,20 +78,4 @@ func Test_Replayer(t *testing.T) {
 	rep.mu.Lock()
 	assert.Equal(t, 0, rep.eventCache.list.Len())
 	rep.mu.Unlock()
-}
-
-func Test_intervalGCD(t *testing.T) {
-	tests := []struct {
-		s    []time.Duration
-		want time.Duration
-	}{
-		{[]time.Duration{1, 2, 3}, 1},
-		{[]time.Duration{2, 4, 6}, 2},
-		{[]time.Duration{3}, 3},
-	}
-	for n, tt := range tests {
-		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			assert.Equal(t, tt.want, intervalGCD(tt.s))
-		})
-	}
 }

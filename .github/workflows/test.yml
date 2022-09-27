@@ -73,6 +73,9 @@ jobs:
       - name: Run E2E Test (Ethereum)
         working-directory: ./e2e/teleport
         run: go test -run ^TestEthereum$
+      - name: Run E2E Test (Ethereum - Replay)
+        working-directory: ./e2e/teleport
+        run: go test -run ^TestEthereum_Replay$
       - name: Run E2E Test (Starknet)
         working-directory: ./e2e/teleport
         run: go test -run ^TestStarknet$

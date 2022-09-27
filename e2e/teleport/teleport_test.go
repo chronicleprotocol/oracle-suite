@@ -39,19 +39,22 @@ func TestMain(m *testing.M) {
 }
 
 func goBuild(ctx context.Context, wd, path, out string) error {
-	cmd := command(ctx, wd, "go", "build", "-o", out, path)
+	cmd := command(ctx, wd, nil, "go", "build", "-o", out, path)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 	return cmd.Wait()
 }
 
-func command(ctx context.Context, wd, bin string, params ...string) *exec.Cmd {
+func command(ctx context.Context, wd string, envs []string, bin string, params ...string) *exec.Cmd {
 	var stdoutBuf, stderrBuf bytes.Buffer
-
+	env := os.Environ()
+	for _, e := range envs {
+		env = append(env, e)
+	}
 	cmd := exec.CommandContext(ctx, bin, params...)
 	cmd.Dir = wd
-	cmd.Env = os.Environ()
+	cmd.Env = env
 	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 

@@ -118,11 +118,8 @@ func (c *EventPublisher) configureTeleportEVM(lis *[]publisher.EventProvider, lo
 		if interval < 1 {
 			interval = 1
 		}
-		if len(cfg.ReplayAfter) < 1 {
-			return fmt.Errorf("replayAfter cannot be empty")
-		}
-		if cfg.BlockLimit <= 0 {
-			return fmt.Errorf("blocksLimit must greather than 0")
+		if cfg.BlockLimit == 0 {
+			cfg.BlockLimit = 1000
 		}
 		replayAfter := make([]time.Duration, len(cfg.ReplayAfter))
 		for i, r := range cfg.ReplayAfter {
@@ -141,10 +138,13 @@ func (c *EventPublisher) configureTeleportEVM(lis *[]publisher.EventProvider, lo
 		if err != nil {
 			return err
 		}
-		ep, err = replayer.New(replayer.Config{
-			EventProvider: ep,
-			ReplayAfter:   replayAfter,
-		})
+		if len(cfg.ReplayAfter) > 0 {
+			ep, err = replayer.New(replayer.Config{
+				EventProvider: ep,
+				Interval:      time.Minute,
+				ReplayAfter:   replayAfter,
+			})
+		}
 		if err != nil {
 			return err
 		}
@@ -163,9 +163,6 @@ func (c *EventPublisher) configureTeleportStarknet(lis *[]publisher.EventProvide
 		if _, err := url.Parse(cfg.Sequencer); err != nil {
 			return fmt.Errorf("sequencer url is invalid: %w", err)
 		}
-		if len(cfg.ReplayAfter) < 1 {
-			return fmt.Errorf("replayAfter cannot be empty")
-		}
 		replayAfter := make([]time.Duration, len(cfg.ReplayAfter))
 		for i, r := range cfg.ReplayAfter {
 			replayAfter[i] = time.Duration(r) * time.Second
@@ -180,12 +177,15 @@ func (c *EventPublisher) configureTeleportStarknet(lis *[]publisher.EventProvide
 		if err != nil {
 			return err
 		}
-		ep, err = replayer.New(replayer.Config{
-			EventProvider: ep,
-			ReplayAfter:   replayAfter,
-		})
-		if err != nil {
-			return err
+		if len(cfg.ReplayAfter) > 0 {
+			ep, err = replayer.New(replayer.Config{
+				EventProvider: ep,
+				Interval:      time.Minute,
+				ReplayAfter:   replayAfter,
+			})
+			if err != nil {
+				return err
+			}
 		}
 		*lis = append(*lis, ep)
 	}

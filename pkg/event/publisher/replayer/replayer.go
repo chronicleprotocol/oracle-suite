@@ -30,6 +30,9 @@ import (
 type Config struct {
 	// EventProvider is the event provider to replay events from.
 	EventProvider publisher.EventProvider
+	// Interval specifies the interval at which the event cache is checked for
+	// events that need to be replayed.
+	Interval time.Duration
 	// ReplayAfter is a list of time durations after which events should be
 	// replayed.
 	ReplayAfter []time.Duration
@@ -43,8 +46,8 @@ type EventProvider struct {
 	eventCh       chan *messages.Event
 	eventCache    events
 	eventProvider publisher.EventProvider
-	interval      time.Duration
 	expireAfter   time.Duration
+	interval      time.Duration
 	replayAfter   []time.Duration
 }
 
@@ -56,6 +59,9 @@ func New(cfg Config) (*EventProvider, error) {
 	if len(cfg.ReplayAfter) == 0 {
 		return nil, errors.New("replayAfter must not be empty")
 	}
+	if cfg.Interval == 0 {
+		return nil, errors.New("interval must not be zero")
+	}
 	// Find the oldest replayAfter time and use it as expireAfter.
 	// The expireAfter field indicates how long an event can be kept in
 	// the cache.
@@ -65,16 +71,12 @@ func New(cfg Config) (*EventProvider, error) {
 			expireAfter = r
 		}
 	}
-	// Find the greatest common divisor of the replayAfter times and use it as
-	// the interval. This will ensure that interval is the smallest time period
-	// that is suitable for all replayAfter times.
-	interval := intervalGCD(cfg.ReplayAfter)
 	return &EventProvider{
 		eventCh:       make(chan *messages.Event),
 		eventCache:    events{list: list.New()},
 		eventProvider: cfg.EventProvider,
-		interval:      interval,
-		expireAfter:   expireAfter + interval,
+		interval:      cfg.Interval,
+		expireAfter:   expireAfter + cfg.Interval,
 		replayAfter:   cfg.ReplayAfter,
 	}, nil
 }
@@ -83,7 +85,7 @@ func New(cfg Config) (*EventProvider, error) {
 func (r *EventProvider) Start(ctx context.Context) error {
 	go r.collectEventsRoutine(ctx)
 	go r.replayEventsRoutine(ctx)
-	return nil
+	return r.eventProvider.Start(ctx)
 }
 
 // Events implements the publisher.EventPublisher interface.
@@ -171,18 +173,4 @@ func (m *events) remove() {
 		return
 	}
 	m.list.Remove(m.last)
-}
-
-// intervalGCD calculates the greatest common divisor of the given intervals.
-func intervalGCD(s []time.Duration) time.Duration {
-	a := s[0]
-	for i := 1; i < len(s); i++ {
-		b := s[i]
-		for b != 0 {
-			t := b
-			b = a % b
-			a = t
-		}
-	}
-	return a
 }
