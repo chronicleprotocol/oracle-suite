@@ -101,16 +101,27 @@ Leeloo supports JSON and YAML configuration files.
             "gracefulTimeout": 35
           },
           "interval": 60,
-          "blocksDelta": [
-            30,
-            5760,
-            11520,
-            17280,
-            23040,
-            28800,
-            34560
-          ],
+          "prefetchPeriod": 604800,
+          "blockConfirmations": 0,
           "blocksLimit": 1000,
+          "replayAfter": [
+            60,
+            3600
+          ],
+          "addresses": [
+            "0x20265780907778b4d0e9431c8ba5c7f152707f1d"
+          ]
+        }
+      ],
+      "teleportStarknet": [
+        {
+          "sequencer": "https://alpha4.starknet.io",
+          "interval": 60,
+          "prefetchPeriod": 604800,
+          "replayAfter": [
+            60,
+            3600
+          ],
           "addresses": [
             "0x20265780907778b4d0e9431c8ba5c7f152707f1d"
           ]
@@ -157,7 +168,8 @@ Leeloo supports JSON and YAML configuration files.
         - `[]metrics` - List of metric definitions
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
-            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`, where
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`,
+              where
               path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
               format `${path}`, where path is the dot-separated path to the field.
@@ -185,26 +197,31 @@ Leeloo supports JSON and YAML configuration files.
                 - `gracefulTimeout` (`int`) - if multiple RPC nodes are used, determines how far one node can be behind
                   the last known block (default: 0).
             - `interval` (`integer`) - Specifies how often (in seconds) the event listener should check for new events.
-            - `blocksDelta` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
-              events should be retrieved.
-            - `blocksLimit` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This
-              number must be large enough to ensure that no more blocks are added to the blockchain during the time
-              interval defined above.
+            - `prefetchPeriod` (`integer`) - Specifies how far (in seconds) the event listener should check for new
+              events during the initial synchronization (default: 0).
+            - `blockConfirmations` (`integer`) - Specifies how many block confirmations are required to consider an
+              event as confirmed (default: 0).
+            - `blocksLimit` (`integer`) - The number of blocks from which events can be retrieved simultaneously. Some
+              RPC
+              servers may have a limit on the number of blocks that can be retrieved at once (default: 1000).
+            - `replayAfter` (`[]integer`) - Specifies after which time (in seconds) the event listener should replay
+              events. It is used to guarantee that events are eventually delivered to subscribers even if they are not
+              online at the time the event was published (default: []).
             - `addresses` (`[]string`) - List of addresses of Teleport contracts that emits `TeleportGUID` events.
         - `[]teleportStarknet` - Configuration of teleport bridge events on Starknet.
             - `sequencer` (`string`) - Address of the sequencer endpoint.
             - `interval` (`integer`) - Specifies how often (in seconds) the event listener should check for new events.
-            - `blocksDelta` (`[]integer`) - List of numbers that specify from which blocks, relative to the newest,
-              events should be retrieved.
-            - `blocksLimit` (`integer`) - The number of blocks from which events can be retrieved simultaneously. This
-              number must be large enough to ensure that no more blocks are added to the blockchain during the time
-              interval defined above.
+            - `prefetchPeriod` (`integer`) - Specifies how far (in seconds) the event listener should check for new
+              events during the initial synchronization (default: 0).
+            - `replayAfter` (`[]integer`) - Specifies after which time (in seconds) the event listener should replay
+              events. It is used to guarantee that events are eventually delivered to subscribers even if they are not
+              online at the time the event was published (default: []).
             - `addresses` (`[]string`) - List of addresses of Teleport contracts that emits `TeleportGUID` events.
 
 ### Environment variables
 
 It is possible to use environment variables anywhere in the configuration file. The syntax is similar as in the
-shell: `${ENV_VAR}`. If the environment  variable is not set, the error will be returned during the application
+shell: `${ENV_VAR}`. If the environment variable is not set, the error will be returned during the application
 startup. To escape the dollar sign, use `\$` or `$$`. The latter syntax is not supported inside variables. It is
 possible to define default values for environment variables. To do so, use the following syntax: `${ENV_VAR-default}`.
 
@@ -212,12 +229,15 @@ possible to define default values for environment variables. To do so, use the f
 
 Currently, only the `teleport` event type is supported:
 
-- Type: `teleport`  
+- Type: `teleport_evm`  
   This type of event is used for events emitted on Ethereum compatible blockchains, like Optimism or Arbitrium. It looks
   for `TeleportGUID` events on specified contract addresses.  
   Reference:  
   [https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol](https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol)  
   [https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/teleport.go#L156](https://github.com/chronicleprotocol/oracle-suite/blob/4eed6bcfc59b7eefba171dcc0ae3f4b7188ebb4e/pkg/event/publisher/ethereum/teleport.go#L156)
+- Type: `teleport_starknet`
+  This type of event is used for events emitted on Starknet. It looks for `TeleportGUID` events on specified contract
+  addresses.
 
 ## Commands
 
