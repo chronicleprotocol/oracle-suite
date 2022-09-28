@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -59,6 +60,7 @@ type Config struct {
 //
 // https://github.com/makerdao/dss-teleport
 type EventProvider struct {
+	mu      sync.Mutex
 	eventCh chan *messages.Event
 
 	// Configuration parameters copied from Config:
@@ -135,7 +137,7 @@ func (ep *EventProvider) prefetchBlocksRoutine(ctx context.Context) {
 			return // Context wax canceled.
 		}
 		if time.Since(time.Unix(block.Timestamp, 0)) > ep.prefetchPeriod {
-			return
+			return // End of the prefetch period reached.
 		}
 		ep.processBlock(block)
 	}
@@ -196,6 +198,9 @@ func (ep *EventProvider) handleAcceptedBlocksRoutine(ctx context.Context) {
 // processBlock finds TeleportGUID events in the given block and converts them
 // into event messages. Converted messages are sent to the eventCh channel.
 func (ep *EventProvider) processBlock(block *starknet.Block) {
+	ep.mu.Lock()
+	defer ep.mu.Unlock()
+
 	isPending := block.Status == "PENDING"
 
 	// Clear list of processed pending transactions if there is a new pending block.
