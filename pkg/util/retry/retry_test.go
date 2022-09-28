@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRetry_noerror(t *testing.T) {
+func TestTry_noerror(t *testing.T) {
 	n := time.Now()
 
 	require.NoError(t, Try(context.Background(), func() error {
@@ -34,7 +34,7 @@ func TestRetry_noerror(t *testing.T) {
 	require.Less(t, time.Since(n), time.Millisecond*100)
 }
 
-func TestRetry_error(t *testing.T) {
+func TestTry_error(t *testing.T) {
 	n := time.Now()
 	c := 0
 
@@ -47,7 +47,7 @@ func TestRetry_error(t *testing.T) {
 	require.Equal(t, 3, c)
 }
 
-func TestRetry_ctxCancel(t *testing.T) {
+func TestTry_ctxCancel(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	n := time.Now()
 	time.AfterFunc(time.Millisecond*100, ctxCancel)
@@ -57,4 +57,27 @@ func TestRetry_ctxCancel(t *testing.T) {
 	}, 3, time.Second*1))
 
 	require.Less(t, time.Since(n), time.Millisecond*200)
+}
+
+func TestTryForever_noerror(t *testing.T) {
+	n := time.Now()
+
+	TryForever(context.Background(), func() error {
+		return nil
+	}, time.Millisecond*100)
+
+	require.Less(t, time.Since(n), time.Millisecond*100)
+}
+
+func TestTryForever_ctxCancel(t *testing.T) {
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	time.AfterFunc(time.Millisecond*175, ctxCancel)
+
+	tries := 0
+	TryForever(ctx, func() error {
+		tries++
+		return errors.New("error")
+	}, 50*time.Millisecond)
+
+	require.Equal(t, tries, 4)
 }
