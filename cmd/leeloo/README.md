@@ -169,8 +169,7 @@ Leeloo supports JSON and YAML configuration files.
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
             - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`,
-              where
-              path is the dot-separated path to the field.
+              where path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
               format `${path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
@@ -202,8 +201,7 @@ Leeloo supports JSON and YAML configuration files.
             - `blockConfirmations` (`integer`) - Specifies how many block confirmations are required to consider an
               event as confirmed (default: 0).
             - `blocksLimit` (`integer`) - The number of blocks from which events can be retrieved simultaneously. Some
-              RPC
-              servers may have a limit on the number of blocks that can be retrieved at once (default: 1000).
+              RPC servers may have a limit on the number of blocks that can be retrieved at once (default: 1000).
             - `replayAfter` (`[]integer`) - Specifies after which time (in seconds) the event listener should replay
               events. It is used to guarantee that events are eventually delivered to subscribers even if they are not
               online at the time the event was published (default: []).
