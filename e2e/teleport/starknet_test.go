@@ -46,14 +46,17 @@ func TestStarknet(t *testing.T) {
 	if err := cmd1.Start(); err != nil {
 		require.Fail(t, err.Error())
 	}
+	go func() {
+		time.Sleep(5 * time.Second)
+		if err := cmd2.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+		if err := cmd3.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+	}()
 	waitForPort(ctx, "localhost", 30100)
-	if err := cmd2.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30101)
-	if err := cmd3.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30102)
 
 	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_starknet&index=0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202", 2)

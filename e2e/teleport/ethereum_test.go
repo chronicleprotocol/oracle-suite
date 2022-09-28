@@ -56,14 +56,18 @@ func TestEthereum(t *testing.T) {
 	if err := cmd1.Start(); err != nil {
 		require.Fail(t, err.Error())
 	}
+	go func() {
+		time.Sleep(5 * time.Second)
+		if err := cmd2.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+		if err := cmd3.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+	}()
+
 	waitForPort(ctx, "localhost", 30100)
-	if err := cmd2.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30101)
-	if err := cmd3.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30102)
 
 	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_evm&index=0x5f4a7c89123ed655b7fce471f2f14a4b699a9edfabeef6a8d5571976907f1884", 2)
@@ -159,11 +163,9 @@ func TestEthereum_Replay(t *testing.T) {
 			require.Fail(t, err.Error())
 		}
 	}()
-
 	if err := cmd2.Start(); err != nil {
 		require.Fail(t, err.Error())
 	}
-
 	waitForPort(ctx, "localhost", 30100)
 	waitForPort(ctx, "localhost", 30101)
 

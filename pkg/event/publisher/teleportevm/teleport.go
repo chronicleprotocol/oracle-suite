@@ -150,7 +150,7 @@ func (ep *EventProvider) prefetchEventsRoutine(ctx context.Context) {
 			return // Context was canceled.
 		}
 		if from == 0 || time.Since(ts) > ep.prefetchPeriod {
-			return
+			return // End of the prefetch period.
 		}
 	}
 }
@@ -167,7 +167,6 @@ func (ep *EventProvider) fetchEventsRoutine(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			close(ep.eventCh)
 			return
 		case <-t.C:
 			currentBlock, ok := ep.getBlockNumber(ctx)
@@ -175,7 +174,7 @@ func (ep *EventProvider) fetchEventsRoutine(ctx context.Context) {
 				return // Context was canceled.
 			}
 			if currentBlock <= latestBlock {
-				continue
+				continue // There is new block yet.
 			}
 			for _, b := range splitBlockRanges(latestBlock+1, currentBlock, ep.blockLimit) {
 				from := b[0] - ep.blockConfirms
