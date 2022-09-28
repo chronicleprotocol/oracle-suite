@@ -68,6 +68,10 @@ type EventProvider struct {
 	prefetchPeriod time.Duration
 	log            log.Logger
 
+	// Internal state:
+	pendingParent *starknet.Felt
+	pendingTxs    []*starknet.Felt
+
 	// Used in tests only:
 	disablePrefetchBlocksRoutine bool
 	disablePendingBlockRoutine   bool
@@ -161,8 +165,7 @@ func (ep *EventProvider) handlePendingBlockRoutine(ctx context.Context) {
 func (ep *EventProvider) handleAcceptedBlocksRoutine(ctx context.Context) {
 	latestBlock, ok := ep.getLatestBlock(ctx)
 	if !ok {
-		// Context was canceled.
-		return
+		return // Context was canceled.
 	}
 	t := time.NewTicker(ep.interval)
 	defer t.Stop()
@@ -176,7 +179,7 @@ func (ep *EventProvider) handleAcceptedBlocksRoutine(ctx context.Context) {
 				return // Context was canceled.
 			}
 			if currentBlock.BlockNumber <= latestBlock.BlockNumber {
-				continue
+				continue // There is no new accepted blocks.
 			}
 			for bn := latestBlock.BlockNumber + 1; bn <= currentBlock.BlockNumber; bn++ {
 				block, ok := ep.getBlockByNumber(ctx, bn)
@@ -193,19 +196,46 @@ func (ep *EventProvider) handleAcceptedBlocksRoutine(ctx context.Context) {
 // processBlock finds TeleportGUID events in the given block and converts them
 // into event messages. Converted messages are sent to the eventCh channel.
 func (ep *EventProvider) processBlock(block *starknet.Block) {
+	isPending := block.Status == "PENDING"
+
+	// Clear list of processed pending transactions if there is a new pending block.
+	if isPending && (ep.pendingParent == nil || block.ParentBlockHash.Cmp(ep.pendingParent.Int) != 0) {
+		ep.pendingParent = block.ParentBlockHash
+		ep.pendingTxs = nil
+	}
+
 	for _, tx := range block.TransactionReceipts {
+		// Check if transaction from pending block was already processed.
+		// Because new transactions are constantly added to the pending block,
+		// we need to keep track of processed transactions to avoid duplicates.
+		skip := false
+		if isPending {
+			for _, txHash := range ep.pendingTxs {
+				if txHash.Cmp(tx.TransactionHash.Int) == 0 {
+					// This transaction was already processed.
+					skip = true
+					break
+				}
+			}
+			ep.pendingTxs = append(ep.pendingTxs, tx.TransactionHash)
+		}
+		if skip {
+			continue
+		}
+
+		// Handle TeleportGUID events.
 		for _, evt := range tx.Events {
 			if !ep.isTeleportEvent(evt) {
 				continue
 			}
-			msg, err := eventToMessage(block, tx, evt)
+			event, err := eventToMessage(block, tx, evt)
 			if err != nil {
 				ep.log.
 					WithError(err).
 					Error("Unable to convert event to message")
 				continue
 			}
-			ep.eventCh <- msg
+			ep.eventCh <- event
 		}
 	}
 }

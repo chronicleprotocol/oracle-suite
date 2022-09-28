@@ -18,6 +18,7 @@ package teleportstarknet
 import (
 	"context"
 	"encoding/json"
+	"math/big"
 	"testing"
 	"time"
 
@@ -260,13 +261,15 @@ func Test_teleportListener_PendingBlockRoutine(t *testing.T) {
 	ep.disablePendingBlockRoutine = false
 	ep.disableAcceptedBlocksRoutine = true
 
-	now := time.Now().Unix()
 	block1 := dummyBlock()
-	block1.Timestamp = now
+	block1.Status = "PENDING"
+	block1.ParentBlockHash = &starknet.Felt{Int: big.NewInt(1)}
 	block2 := dummyBlock()
-	block2.Timestamp = now - 80
+	block2.Status = "PENDING"
+	block2.ParentBlockHash = &starknet.Felt{Int: big.NewInt(1)}
 	block3 := dummyBlock()
-	block3.Timestamp = now - 160
+	block3.Status = "PENDING"
+	block3.ParentBlockHash = &starknet.Felt{Int: big.NewInt(2)}
 
 	cli.On("GetPendingBlock", ctx).Return(block1, nil).Once()
 	cli.On("GetPendingBlock", ctx).Return(block2, nil).Once()
