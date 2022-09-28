@@ -217,7 +217,9 @@ func (ep *EventProvider) processBlock(block *starknet.Block) {
 					break
 				}
 			}
-			ep.pendingTxs = append(ep.pendingTxs, tx.TransactionHash)
+			if !skip {
+				ep.pendingTxs = append(ep.pendingTxs, tx.TransactionHash)
+			}
 		}
 		if skip {
 			continue
