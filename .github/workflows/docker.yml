@@ -3,6 +3,9 @@ name: Publish Docker Images
 # and pushes the image to https://hub.docker.com/r/interchainio/simapp/tags
 on:
   workflow_dispatch: # Allow manual trigger
+  pull_request:
+    branches:
+      - master
   push:
     branches:
       - master
@@ -108,7 +111,7 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metaoraclesuite.outputs.tags }}
           labels: ${{ steps.metaoraclesuite.outputs.labels }}
 
@@ -118,7 +121,7 @@ jobs:
           context: .
           file: ./Dockerfile-gofer
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metagofer.outputs.tags }}
           labels: ${{ steps.metagofer.outputs.labels }}
 
@@ -128,7 +131,7 @@ jobs:
           context: .
           file: ./Dockerfile-spire
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metaspire.outputs.tags }}
           labels: ${{ steps.metaspire.outputs.labels }}
           
@@ -138,7 +141,7 @@ jobs:
           context: .
           file: ./Dockerfile-ghost
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metaghost.outputs.tags }}
           labels: ${{ steps.metaghost.outputs.labels }}
 
@@ -148,7 +151,7 @@ jobs:
           context: .
           file: ./Dockerfile-spectre
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metaspectre.outputs.tags }}
           labels: ${{ steps.metaspectre.outputs.labels }}
 
@@ -158,7 +161,7 @@ jobs:
           context: .
           file: ./Dockerfile-leeloo
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metaleeloo.outputs.tags }}
           labels: ${{ steps.metaleeloo.outputs.labels }}
 
@@ -168,6 +171,6 @@ jobs:
           context: .
           file: ./Dockerfile-lair
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metalair.outputs.tags }}
           labels: ${{ steps.metalair.outputs.labels }}
