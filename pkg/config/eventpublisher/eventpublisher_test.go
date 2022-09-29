@@ -52,7 +52,7 @@ func TestEventPublisher_Configure_Teleport(t *testing.T) {
 		assert.Equal(t, tra, cfg.Transport)
 		assert.NotNil(t, cfg.Signers)
 		assert.Equal(t, log, cfg.Logger)
-		assert.Len(t, cfg.Listeners, 1)
+		assert.Len(t, cfg.Providers, 1)
 		assert.Len(t, cfg.Signers, 1)
 		return &publisher.EventPublisher{}, nil
 	}

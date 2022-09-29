@@ -90,12 +90,12 @@ func (c *EventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, e
 	if err := c.configureTeleportStarknet(&eps, d.Logger); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: teleport Starknet: %w", err)
 	}
-	signer := []publisher.Signer{teleportevm.NewSigner(d.Signer, []string{
+	signer := []publisher.EventSigner{teleportevm.NewSigner(d.Signer, []string{
 		teleportevm.TeleportEventType,
 		teleportstarknet.TeleportEventType,
 	})}
 	cfg := publisher.Config{
-		Listeners: eps,
+		Providers: eps,
 		Signers:   signer,
 		Transport: d.Transport,
 		Logger:    d.Logger,
