@@ -7,9 +7,11 @@ RUN    export CGO_ENABLED=1 \
     && go mod vendor \
     && go build -o dist/lair ./cmd/lair
 
-FROM alpine:3.14
+FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
 WORKDIR /root
 COPY --from=builder /go/src/lair/dist/ /usr/local/bin/
 COPY --from=builder /go/src/lair/config.json /root/config.json
+EXPOSE 8082
+EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/lair"]

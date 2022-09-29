@@ -7,8 +7,9 @@ RUN    export CGO_ENABLED=1 \
     && go mod vendor \
     && go build -o dist/ghost ./cmd/ghost
 
-FROM alpine:3.14
+FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
 WORKDIR /root
 COPY --from=builder /go/src/ghost/dist/ /usr/local/bin/
+EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/ghost"]
