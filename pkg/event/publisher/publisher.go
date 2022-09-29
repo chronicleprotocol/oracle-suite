@@ -33,7 +33,7 @@ type EventPublisher struct {
 	ctx    context.Context
 	waitCh chan error
 
-	signers   []Signer
+	signers   []EventSigner
 	listeners []EventProvider
 	transport transport.Transport
 	log       log.Logger
@@ -45,8 +45,8 @@ type EventProvider interface {
 	Events() chan *messages.Event
 }
 
-// Signer signs events.
-type Signer interface {
+// EventSigner signs events.
+type EventSigner interface {
 	Sign(event *messages.Event) (bool, error)
 }
 
@@ -54,8 +54,8 @@ type Signer interface {
 type Config struct {
 	// Providers is a list of event providers.
 	Providers []EventProvider
-	// Signer is a list of Signers used to sign events.
-	Signers []Signer
+	// EventSigner is a list of Signers used to sign events.
+	Signers []EventSigner
 	// Transport is used to send events to the Oracle network.
 	Transport transport.Transport
 	// Logger is a current logger interface used by the EventPublisher.

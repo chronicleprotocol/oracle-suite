@@ -40,7 +40,7 @@ func NewSigner(signer ethereum.Signer, types []string) *Signer {
 	return &Signer{signer: signer, types: types}
 }
 
-// Sign implements the Signer interface.
+// Sign implements the publisher.EventSigner interface.
 func (l *Signer) Sign(event *messages.Event) (bool, error) {
 	supports := false
 	for _, t := range l.types {
