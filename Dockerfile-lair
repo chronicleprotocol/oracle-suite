@@ -11,4 +11,5 @@ FROM alpine:3.14
 RUN apk --no-cache add ca-certificates
 WORKDIR /root
 COPY --from=builder /go/src/lair/dist/ /usr/local/bin/
+COPY --from=builder /go/src/lair/config.json /root/config.json
 ENTRYPOINT ["/usr/local/bin/lair"]
