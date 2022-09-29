@@ -28,6 +28,9 @@ import (
 )
 
 // eventToMessage converts Starkware event to a transport message.
+//
+// Based on reference implementation provided by Starknet OCU:
+// https://github.com/makerdao/starknet-teleport-oracle/blob/b5cf7d810fa922780372a8f6b7da984667bfd9bf/scripts/oracle.ts
 func eventToMessage(b *starknet.Block, tx *starknet.TransactionReceipt, e *starknet.Event) (*messages.Event, error) {
 	guid, err := packTeleportGUID(e)
 	if err != nil {

@@ -55,7 +55,7 @@ func TestEventPublisher(t *testing.T) {
 	sig := &testSigner{}
 
 	pub, err := New(Config{
-		Listeners: []EventProvider{lis},
+		Providers: []EventProvider{lis},
 		Signers:   []Signer{sig},
 		Transport: loc,
 		Logger:    null.New(),

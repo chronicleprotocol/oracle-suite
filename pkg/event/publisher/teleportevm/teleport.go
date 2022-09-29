@@ -34,7 +34,10 @@ import (
 
 const TeleportEventType = "teleport_evm"
 const LoggerTag = "ETHEREUM_TELEPORT"
-const retryInterval = 5 * time.Second // The delay between retry attempts.
+
+// retryInterval is the interval between retry attempts in case of an error
+// while communicating with a node.
+const retryInterval = 5 * time.Second
 
 // teleportTopic0 is Keccak256("TeleportInitialized((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))")
 var teleportTopic0 = ethereum.HexToHash("0x61aedca97129bac4264ec6356bd1f66431e65ab80e2d07b7983647d72776f545")
@@ -56,7 +59,6 @@ type Config struct {
 	// fetching logs.
 	BlockConfirmations uint64
 	// Logger is a current logger interface used by the EventProvider.
-	// The Logger is used to monitor asynchronous processes.
 	Logger log.Logger
 }
 
@@ -64,6 +66,18 @@ type Config struct {
 // blockchains.
 //
 // https://github.com/makerdao/dss-teleport
+//
+// It periodically fetches new TeleportGUID events from the blockchain,
+// converts them into messages.Event and sends them to the channel provided
+// by Events method.
+//
+// During the initial start of the provider it also fetches older blocks
+// until it reaches the block that is older than the prefetch period. This is
+// done to fetch events that were emitted before the provider was started.
+//
+// In the event of an error in communication with a node, whether related to
+// network errors or the node itself, the provider will try to repeat requests
+// to the node indefinitely.
 type EventProvider struct {
 	eventCh chan *messages.Event
 
@@ -123,9 +137,9 @@ func (ep *EventProvider) Start(ctx context.Context) error {
 	return nil
 }
 
-// prefetchEventsRoutine fetches TeleportGUID events from the past but not
-// older than defined in the prefetch period. It is used to fetch logs that
-// were emitted before the provider was started.
+// prefetchEventsRoutine fetches events from older blocks until it reaches the
+// block that is older than the prefetch period. This is done to fetch events
+// that were emitted before the provider was started.
 func (ep *EventProvider) prefetchEventsRoutine(ctx context.Context) {
 	if ep.prefetchPeriod == 0 {
 		return
@@ -150,7 +164,7 @@ func (ep *EventProvider) prefetchEventsRoutine(ctx context.Context) {
 			return // Context was canceled.
 		}
 		if from == 0 || time.Since(ts) > ep.prefetchPeriod {
-			return // End of the prefetch period.
+			return // End of the prefetch period reached.
 		}
 	}
 }
@@ -174,7 +188,7 @@ func (ep *EventProvider) fetchEventsRoutine(ctx context.Context) {
 				return // Context was canceled.
 			}
 			if currentBlock <= latestBlock {
-				continue // There is new block yet.
+				continue // There is no new blocks.
 			}
 			for _, b := range splitBlockRanges(latestBlock+1, currentBlock, ep.blockLimit) {
 				from := b[0] - ep.blockConfirms
@@ -202,9 +216,6 @@ func (ep *EventProvider) handleEvents(ctx context.Context, from, to uint64) {
 			return // Context was canceled.
 		}
 		for _, l := range logs {
-			if l.Removed {
-				continue
-			}
 			if l.Address != address {
 				// This should never happen. All logs returned by
 				// eth_filterLogs should be emitted by the specified
@@ -215,6 +226,19 @@ func (ep *EventProvider) handleEvents(ctx context.Context, from, to uint64) {
 						"actual":   l.Address.String(),
 					}).
 					Panic("Log emitted by wrong contract")
+			}
+			if l.Removed {
+				// This should never happen. All logs returned by
+				// eth_filterLogs should not be removed.
+				ep.log.
+					WithFields(log.Fields{
+						"address":     l.Address.String(),
+						"blockNumber": l.BlockNumber,
+						"blockHash":   l.BlockHash.String(),
+						"txHash":      l.TxHash.String(),
+					}).
+					Warn("Received removed log")
+				continue
 			}
 			evt, err := logToMessage(l)
 			if err != nil {

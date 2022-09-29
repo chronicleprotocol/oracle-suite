@@ -19,6 +19,7 @@ import (
 	"container/list"
 	"context"
 	"errors"
+	"sort"
 	"sync"
 	"time"
 
@@ -41,6 +42,12 @@ type Config struct {
 // EventProvider replays events from the event provider at configurable time
 // periods. It is used to guarantee that events are eventually delivered to
 // subscribers even if they are not online at the time the event was published.
+//
+// It wraps another event provider and forwards all events from that provider,
+// at the same time all received events are cached. The cache is checked at the
+// configured interval, and events that are older than the configured playback
+// periods are replayed. Events are removed from the cache when they are older
+// than the oldest playback period.
 type EventProvider struct {
 	mu            sync.Mutex
 	eventCh       chan *messages.Event
@@ -65,12 +72,10 @@ func New(cfg Config) (*EventProvider, error) {
 	// Find the oldest replayAfter time and use it as expireAfter.
 	// The expireAfter field indicates how long an event can be kept in
 	// the cache.
-	expireAfter := cfg.ReplayAfter[0]
-	for _, r := range cfg.ReplayAfter {
-		if r > expireAfter {
-			expireAfter = r
-		}
-	}
+	sort.Slice(cfg.ReplayAfter, func(i, j int) bool {
+		return cfg.ReplayAfter[i] < cfg.ReplayAfter[j]
+	})
+	expireAfter := cfg.ReplayAfter[len(cfg.ReplayAfter)-1]
 	return &EventProvider{
 		eventCh:       make(chan *messages.Event),
 		eventCache:    events{list: list.New()},
@@ -115,9 +120,9 @@ func (r *EventProvider) collectEventsRoutine(ctx context.Context) {
 // replayEventsRoutine replays events from the cache at the configured time
 // periods.
 func (r *EventProvider) replayEventsRoutine(ctx context.Context) {
+	last := time.Now() // Used to calculate the time since the last replay.
 	t := time.NewTicker(r.interval)
 	defer t.Stop()
-	last := time.Now()
 	for {
 		select {
 		case <-ctx.Done():
@@ -128,14 +133,20 @@ func (r *EventProvider) replayEventsRoutine(ctx context.Context) {
 				defer r.mu.Unlock()
 				now := time.Now()
 				r.eventCache.iterate(func(evt *messages.Event) {
-					evtAge := now.Sub(evt.EventDate)
-					if evtAge > r.expireAfter {
+					age := now.Sub(evt.EventDate)
+					if age > r.expireAfter {
 						r.eventCache.remove()
 						return
 					}
-					for _, replayAfter := range r.replayAfter {
-						if evtAge >= replayAfter && evtAge < replayAfter+now.Sub(last) {
+					for _, from := range r.replayAfter {
+						to := from + now.Sub(last)
+						if age >= from && age < to {
 							r.eventCh <- evt
+						}
+						if to >= age {
+							// The replayAfter times are sorted, so we can
+							// break here.
+							break
 						}
 					}
 				})

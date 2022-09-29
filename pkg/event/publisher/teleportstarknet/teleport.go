@@ -31,7 +31,10 @@ import (
 
 const TeleportEventType = "teleport_starknet"
 const LoggerTag = "STARKNET_TELEPORT"
-const retryInterval = 6 * time.Second // The delay between retry attempts.
+
+// retryInterval is the interval between retry attempts in case of an error
+// while communicating with a Starknet node.
+const retryInterval = 5 * time.Second
 
 // Sequencer is a Starknet sequencer.
 type Sequencer interface {
@@ -46,10 +49,10 @@ type Config struct {
 	Sequencer Sequencer
 	// Addresses is a list of contracts from which events will be fetched.
 	Addresses []*starknet.Felt
-	// Interval specifies how often provider should check for new logs.
+	// Interval specifies how often provider should check for new events.
 	Interval time.Duration
 	// PrefetchPeriod specifies how far back in time provider should prefetch
-	// logs. It is used only during the initial start of the provider.
+	// events. It is used only during the initial start of the provider.
 	PrefetchPeriod time.Duration
 	// Logger is an instance of a logger. Logger is used mostly to report
 	// recoverable errors.
@@ -59,6 +62,26 @@ type Config struct {
 // EventProvider listens for TeleportGUID events on Starknet.
 //
 // https://github.com/makerdao/dss-teleport
+// https://github.com/makerdao/starknet-dai-bridge
+//
+// It periodically fetches pending block, looks for TeleportGUID events,
+// converts them into messages.Event and sends them to the channel provided
+// by Events method.
+//
+// During the initial start of the provider it also fetches older blocks
+// until it reaches the block that is older than the prefetch period. This is
+// done to fetch events that were emitted before the provider was started.
+//
+// Finally, it also listens for newly accepted blocks. This is done to make
+// sure that provider does not miss any events from the pending block. This
+// can happen if the Starknet node becomes unavailable, so it cannot fetch
+// the pending block. If at that time the pending block become accepted, the
+// events that would have been added since the time the node became unavailable
+// would be lost.
+//
+// In the event of an error in communication with a Starknet node, whether
+// related to network errors or the node itself, the provider will try to
+// repeat requests to the node indefinitely.
 type EventProvider struct {
 	mu      sync.Mutex
 	eventCh chan *messages.Event
@@ -70,7 +93,8 @@ type EventProvider struct {
 	prefetchPeriod time.Duration
 	log            log.Logger
 
-	// Internal state:
+	// Fields for tracking transactions from a pending block, used in the
+	// processBlock method:
 	pendingParent *starknet.Felt
 	pendingTxs    []*starknet.Felt
 
@@ -120,9 +144,9 @@ func (ep *EventProvider) Start(ctx context.Context) error {
 	return nil
 }
 
-// prefetchBlocksRoutine fetches blocks from the past but not older than
-// defined in the prefetch period. It is used to fetch logs that were emitted
-// before the provider was started.
+// prefetchBlocksRoutine fetches older blocks until it reaches the block that
+// is older than the prefetch period. This is done to fetch events that were
+// emitted before the provider was started.
 func (ep *EventProvider) prefetchBlocksRoutine(ctx context.Context) {
 	if ep.prefetchPeriod == 0 {
 		return
@@ -181,7 +205,7 @@ func (ep *EventProvider) handleAcceptedBlocksRoutine(ctx context.Context) {
 				return // Context was canceled.
 			}
 			if currentBlock.BlockNumber <= latestBlock.BlockNumber {
-				continue // There is no new accepted blocks.
+				continue // There is no new blocks.
 			}
 			for bn := latestBlock.BlockNumber + 1; bn <= currentBlock.BlockNumber; bn++ {
 				block, ok := ep.getBlockByNumber(ctx, bn)
@@ -203,7 +227,9 @@ func (ep *EventProvider) processBlock(block *starknet.Block) {
 
 	isPending := block.Status == "PENDING"
 
-	// Clear list of processed pending transactions if there is a new pending block.
+	// Clear list of processed pending transactions if there is a new pending
+	// block. New pending block detected when the block has a different parent
+	// than the current pending block.
 	if isPending && (ep.pendingParent == nil || block.ParentBlockHash.Cmp(ep.pendingParent.Int) != 0) {
 		ep.pendingParent = block.ParentBlockHash
 		ep.pendingTxs = nil
@@ -217,7 +243,8 @@ func (ep *EventProvider) processBlock(block *starknet.Block) {
 		if isPending {
 			for _, txHash := range ep.pendingTxs {
 				if txHash.Cmp(tx.TransactionHash.Int) == 0 {
-					// This transaction was already processed.
+					// Transaction was already processed so it should be
+					// skipped.
 					skip = true
 					break
 				}

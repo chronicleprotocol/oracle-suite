@@ -47,7 +47,7 @@ func Test_Replayer(t *testing.T) {
 	rep, err := New(Config{
 		EventProvider: eventProvider{eventsCh: ch},
 		Interval:      100 * time.Millisecond,
-		ReplayAfter:   []time.Duration{100 * time.Millisecond, 200 * time.Millisecond},
+		ReplayAfter:   []time.Duration{300 * time.Millisecond, 100 * time.Millisecond, 200 * time.Millisecond},
 	})
 
 	require.NoError(t, err)
@@ -69,12 +69,12 @@ func Test_Replayer(t *testing.T) {
 		}
 	}()
 
-	// Message should resend immediately and then replayed twice after 100ms and 200ms.
-	time.Sleep(300 * time.Millisecond)
-	assert.Equal(t, int32(3), atomic.LoadInt32(&count))
+	// Message should resend immediately and then replayed twice after 100ms, 200ms and 300ms.
+	time.Sleep(400 * time.Millisecond)
+	assert.Equal(t, int32(4), atomic.LoadInt32(&count))
 
 	// Eventually message should be removed from cache.
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	rep.mu.Lock()
 	assert.Equal(t, 0, rep.eventCache.list.Len())
 	rep.mu.Unlock()

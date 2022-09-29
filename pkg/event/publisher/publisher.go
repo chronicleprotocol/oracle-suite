@@ -27,10 +27,8 @@ import (
 
 const LoggerTag = "EVENT_PUBLISHER"
 
-// EventPublisher collects event messages from event providers and publishes
-// them using transport interface.
-//
-// An event message could be anything Oracle could sign.
+// EventPublisher collects event messages from event providers, signs them and
+// publishes them using the transport interface.
 type EventPublisher struct {
 	ctx    context.Context
 	waitCh chan error
@@ -41,26 +39,27 @@ type EventPublisher struct {
 	log       log.Logger
 }
 
-// Config is the configuration for the EventPublisher.
-type Config struct {
-	Listeners []EventProvider
-	// Signer is a list of Signers used to sign events.
-	Signers []Signer
-	// Transport is used to send events to the Oracle network.
-	Transport transport.Transport
-	// Logger is a current logger interface used by the EventPublisher. The Logger
-	// helps to monitor asynchronous processes.
-	Logger log.Logger
-}
-
-// EventProvider providers events to EventPublisher.
+// EventProvider provides events to EventPublisher.
 type EventProvider interface {
 	Start(ctx context.Context) error
 	Events() chan *messages.Event
 }
 
+// Signer signs events.
 type Signer interface {
 	Sign(event *messages.Event) (bool, error)
+}
+
+// Config is the configuration for the EventPublisher.
+type Config struct {
+	// Providers is a list of event providers.
+	Providers []EventProvider
+	// Signer is a list of Signers used to sign events.
+	Signers []Signer
+	// Transport is used to send events to the Oracle network.
+	Transport transport.Transport
+	// Logger is a current logger interface used by the EventPublisher.
+	Logger log.Logger
 }
 
 // New returns a new instance of the EventPublisher struct.
@@ -74,7 +73,7 @@ func New(cfg Config) (*EventPublisher, error) {
 	return &EventPublisher{
 		waitCh:    make(chan error),
 		transport: cfg.Transport,
-		listeners: cfg.Listeners,
+		listeners: cfg.Providers,
 		signers:   cfg.Signers,
 		log:       cfg.Logger.WithField("tag", LoggerTag),
 	}, nil
