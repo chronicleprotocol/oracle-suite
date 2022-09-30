@@ -16,6 +16,7 @@
 package eventapi
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -51,18 +52,20 @@ type storageMemory struct {
 }
 
 type storageRedis struct {
-	TTL                   int    `yaml:"ttl"`
-	Address               string `yaml:"address"`
-	Username              string `yaml:"username"`
-	Password              string `yaml:"password"`
-	DB                    int    `yaml:"db"`
-	MemoryLimit           int64  `yaml:"memoryLimit"`
-	TLS                   bool   `yaml:"tls"`
-	TLSServerName         string `yaml:"tlsServerName"`
-	TLSCertFile           string `yaml:"tlsCertFile"`
-	TLSKeyFile            string `yaml:"tlsKeyFile"`
-	TLSRootCAFile         string `yaml:"tlsRootCAFile"`
-	TLSInsecureSkipVerify bool   `yaml:"tlsInsecureSkipVerify"`
+	TTL                   int      `yaml:"ttl"`
+	Address               string   `yaml:"address"`
+	Username              string   `yaml:"username"`
+	Password              string   `yaml:"password"`
+	DB                    int      `yaml:"db"`
+	MemoryLimit           int64    `yaml:"memoryLimit"`
+	TLS                   bool     `yaml:"tls"`
+	TLSServerName         string   `yaml:"tlsServerName"`
+	TLSCertFile           string   `yaml:"tlsCertFile"`
+	TLSKeyFile            string   `yaml:"tlsKeyFile"`
+	TLSRootCAFile         string   `yaml:"tlsRootCAFile"`
+	TLSInsecureSkipVerify bool     `yaml:"tlsInsecureSkipVerify"`
+	Cluster               bool     `yaml:"cluster"`
+	ClusterAddresses      []string `yaml:"clusterAddresses"`
 }
 
 type Dependencies struct {
@@ -99,7 +102,7 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 		if c.Storage.Redis.TTL > 0 {
 			ttl = c.Storage.Redis.TTL
 		}
-		r, err := redis.NewRedisStorage(redis.Config{
+		r, err := redis.New(redis.Config{
 			TTL:                   time.Duration(ttl) * time.Second,
 			Address:               c.Storage.Redis.Address,
 			Username:              c.Storage.Redis.Username,
@@ -112,8 +115,13 @@ func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
 			TLSKeyFile:            c.Storage.Redis.TLSKeyFile,
 			TLSRootCAFile:         c.Storage.Redis.TLSRootCAFile,
 			TLSInsecureSkipVerify: c.Storage.Redis.TLSInsecureSkipVerify,
+			Cluster:               c.Storage.Redis.Cluster,
+			ClusterAddrs:          c.Storage.Redis.ClusterAddresses,
 		})
 		if err != nil {
+			return nil, fmt.Errorf("eventapi config: unable to initialize redis storage: %w", err)
+		}
+		if err := r.Ping(context.Background()); err != nil {
 			return nil, fmt.Errorf(`eventapi config: unable to connect to the Redis server: %w`, err)
 		}
 		return r, nil

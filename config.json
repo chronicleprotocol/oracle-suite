@@ -838,7 +838,9 @@
         "tlsCertFile": "${CFG_LAIR_REDIS_TLS_CERT_FILE-}",
         "tlsKeyFile": "${CFG_LAIR_REDIS_TLS_KEY_FILE-}",
         "tlsRootCAFile": "${CFG_LAIR_REDIS_TLS_ROOT_CA_FILE-}",
-        "tlsInsecureSkipVerify": "${CFG_LAIR_REDIS_TLS_INSECURE-false}"
+        "tlsInsecureSkipVerify": "${CFG_LAIR_REDIS_TLS_INSECURE-false}",
+        "cluster": "${CFG_LAIR_REDIS_CLUSTER-false}",
+        "clusterAddresses": ["${CFG_LAIR_REDIS_CLUSTER_ADDR-}"]
       }
     }
   }

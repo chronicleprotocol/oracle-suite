@@ -34,16 +34,15 @@ import (
 
 var ErrMemoryLimitExceed = errors.New("memory limit exceeded")
 
-const retryAttempts = 3               // The maximum number of attempts to call EthClient in case of an error.
-const retryInterval = 1 * time.Second // The delay between retry attempts.
-const memUsageTimeQuantum = 3600      // The length of the time window for which memory usage information is stored.
+const txRetryAttempts = 3        // Maximum number of attempts to retry a transaction.
+const memUsageTimeQuantum = 3600 // The length of the time window for which memory usage information is stored.
 
 // Storage provides storage mechanism for store.EventStore.
 // It uses a Redis database to store events.
 type Storage struct {
 	mu sync.Mutex
 
-	client   *redis.Client
+	client   redis.UniversalClient
 	ttl      time.Duration
 	memLimit int64
 }
@@ -75,30 +74,28 @@ type Config struct {
 	TLSRootCAFile string
 	// TLSInsecureSkipVerify specifies whether to skip server certificate verification.
 	TLSInsecureSkipVerify bool
+	// Cluster specifies whether the Redis server is a cluster.
+	Cluster bool
+	// ClusterAddrs specifies the Redis cluster addresses as "host:port".
+	ClusterAddrs []string
 }
 
-// NewRedisStorage returns a new instance of Redis.
-func NewRedisStorage(cfg Config) (*Storage, error) {
-	opts := &redis.Options{
-		Addr:     cfg.Address,
-		Username: cfg.Username,
-		Password: cfg.Password,
-		DB:       cfg.DB,
-	}
+// New returns a new instance of Redis.
+func New(cfg Config) (*Storage, error) {
+	var client redis.UniversalClient
+	var tlsConfig *tls.Config
+
 	if cfg.TLS {
-		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
-		if cfg.TLSInsecureSkipVerify {
-			opts.TLSConfig.InsecureSkipVerify = true
-		}
+		tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		if cfg.TLSServerName != "" {
-			opts.TLSConfig.ServerName = cfg.TLSServerName
+			tlsConfig.ServerName = cfg.TLSServerName
 		}
 		if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
 			cert, err := tls.LoadX509KeyPair(cfg.TLSCertFile, cfg.TLSKeyFile)
 			if err != nil {
 				return nil, err
 			}
-			opts.TLSConfig.Certificates = []tls.Certificate{cert}
+			tlsConfig.Certificates = []tls.Certificate{cert}
 		}
 		if cfg.TLSRootCAFile != "" {
 			caCert, err := os.ReadFile(cfg.TLSRootCAFile)
@@ -107,54 +104,73 @@ func NewRedisStorage(cfg Config) (*Storage, error) {
 			}
 			caCertPool := x509.NewCertPool()
 			caCertPool.AppendCertsFromPEM(caCert)
-			opts.TLSConfig.RootCAs = caCertPool
+			tlsConfig.RootCAs = caCertPool
 		}
+		tlsConfig.InsecureSkipVerify = cfg.TLSInsecureSkipVerify
 	}
-	cli := redis.NewClient(opts)
-	// go-redis default timeout is 5 seconds, so using background context should be ok
-	res := cli.Ping(context.Background())
-	if res.Err() != nil {
-		return nil, res.Err()
+
+	if cfg.Cluster {
+		client = redis.NewClusterClient(&redis.ClusterOptions{
+			Addrs:         cfg.ClusterAddrs,
+			Username:      cfg.Username,
+			Password:      cfg.Password,
+			TLSConfig:     tlsConfig,
+			RouteRandomly: true,
+		})
+	} else {
+		client = redis.NewClient(&redis.Options{
+			Addr:      cfg.Address,
+			Username:  cfg.Username,
+			Password:  cfg.Password,
+			DB:        cfg.DB,
+			TLSConfig: tlsConfig,
+		})
 	}
+
 	return &Storage{
-		client:   cli,
+		client:   client,
 		ttl:      cfg.TTL,
 		memLimit: cfg.MemoryLimit,
 	}, nil
+}
+
+// Ping checks if the Redis server is available.
+func (r *Storage) Ping(ctx context.Context) error {
+	if err := r.client.Ping(ctx).Err(); err != nil {
+		return err
+	}
+	if rds, ok := r.client.(*redis.ClusterClient); ok {
+		if err := rds.ForEachShard(ctx, func(ctx context.Context, shard *redis.Client) error {
+			return shard.Ping(ctx).Err()
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Add implements the store.Storage interface.
 func (r *Storage) Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	var isNew bool
-	var err error
-	err = retry(func() error {
-		isNew, err = r.add(ctx, author, evt)
-		return err
-	})
-	return isNew, err
+	return r.add(ctx, author, evt)
 }
 
 // Get implements the store.Storage interface.
 func (r *Storage) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	var evts []*messages.Event
-	var err error
-	err = retry(func() error {
-		evts, err = r.get(ctx, typ, idx)
-		return err
-	})
-	return evts, err
+	return r.get(ctx, typ, idx)
 }
 
+// add adds an event to the storage.
 func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	key := evtKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
 		return false, err
 	}
+	// Check if the memory limit is exceeded.
 	mem, err := r.getAvailMem(ctx, r.client, author)
 	if err != nil {
 		return false, err
@@ -163,28 +179,36 @@ func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (
 		return false, ErrMemoryLimitExceed
 	}
 	var isNew bool
-	err = r.client.Watch(ctx, func(tx *redis.Tx) error {
+	// If the key already exists, we need to decide whether to overwrite it.
+	// We do this by comparing the timestamps of the new and existing events.
+	// If the new event is older than the existing one, we do not overwrite it.
+	//
+	// To be able to do this, we must first get an existing event, but this may
+	// cause a race condition - the key can be updated between reading it and
+	// updating it. To avoid this, we use a Redis transaction. The following
+	// transaction watches to see if the value of the key has been changed
+	// during the transaction, if so, the transaction is canceled. In this
+	// case, the watch function will try to retry the transaction several times.
+	//
+	// The transaction is also passed to the incrMemUsage method, so that
+	// memory usage is updated only if the transaction is successful.
+	err = watch(ctx, r.client, func(tx *redis.Tx) error {
 		prevVal, err := r.client.Get(ctx, key).Result()
 		switch err {
-		case nil:
-			// If an event with the same ID exists, replace it if it is older.
+		case nil: // No error, the key exists.
 			prevEvt := &messages.Event{}
-			err = prevEvt.UnmarshallBinary([]byte(prevVal))
-			if err != nil {
+			if err := prevEvt.UnmarshallBinary([]byte(prevVal)); err != nil {
 				return err
 			}
 			if prevEvt.MessageDate.Before(evt.MessageDate) {
-				err = r.incrMemUsage(ctx, tx, author, len(val)-len(prevVal), evt.EventDate)
-				if err != nil {
+				if err := r.incrMemUsage(ctx, tx, author, len(val)-len(prevVal), evt.EventDate); err != nil {
 					return err
 				}
 				tx.Set(ctx, key, val, 0)
 				tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 			}
-		case redis.Nil:
-			// If an event with that ID does not exist, add it.
-			err = r.incrMemUsage(ctx, tx, author, len(val), evt.EventDate)
-			if err != nil {
+		case redis.Nil: // The key does not exist.
+			if err := r.incrMemUsage(ctx, tx, author, len(val), evt.EventDate); err != nil {
 				return err
 			}
 			tx.Set(ctx, key, val, 0)
@@ -198,9 +222,10 @@ func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (
 	return isNew, err
 }
 
+// get returns the events for the given type and index.
 func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
 	var evts []*messages.Event
-	err := r.scan(ctx, wildcardEvtKey(typ, idx), r.client, func(keys []string) error {
+	err := scan(ctx, r.client, wildcardEvtKey(typ, idx), func(keys []string) error {
 		vals, err := r.client.MGet(ctx, keys...).Result()
 		if err != nil {
 			return err
@@ -211,8 +236,7 @@ func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.
 				continue
 			}
 			evt := &messages.Event{}
-			err = evt.UnmarshallBinary([]byte(b))
-			if err != nil {
+			if err := evt.UnmarshallBinary([]byte(b)); err != nil {
 				continue
 			}
 			evts = append(evts, evt)
@@ -222,31 +246,40 @@ func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.
 	return evts, err
 }
 
+// incrMemUsage increments the memory usage of the author by the given amount.
+//
+// Because memory usage needs to be updated after an event expire, the memory
+// usage is stored in multiple keys with a TTL that is the same as the event
+// TTL. This allows the memory usage to be updated after the event expires.
+//
+// To reduce number of keys, the keys with similar TTL are grouped together.
+// It is done by rounding the TTL to the nearest multiple of memUsageTimeQuantum.
 func (r *Storage) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, mem int, evtDate time.Time) error {
 	if r.memLimit == 0 {
 		return nil
 	}
-	var err error
 	key := memUsageKey(author, evtDate)
-	err = c.IncrBy(ctx, key, int64(mem)).Err()
-	if err != nil {
+	if err := c.IncrBy(ctx, key, int64(mem)).Err(); err != nil {
 		return err
 	}
 	q := int64(memUsageTimeQuantum)
 	t := (evtDate.Unix()/q)*q + q
-	err = c.ExpireAt(ctx, key, time.Unix(t, 0).Add(r.ttl)).Err()
-	if err != nil {
+	if err := c.ExpireAt(ctx, key, time.Unix(t, 0).Add(r.ttl)).Err(); err != nil {
 		return err
 	}
 	return nil
 }
 
+// getAvailMem returns the available memory for the given author.
+//
+// Finds all the memory usage keys for given author and sums them up. The exact
+// mechanism of how the memory usage is stored is described in incrMemUsage.
 func (r *Storage) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte) (int64, error) {
 	if r.memLimit == 0 {
 		return 0, nil
 	}
 	var size int64
-	err := r.scan(ctx, wildcardMemUsageKey(author), c, func(keys []string) error {
+	err := scan(ctx, c, wildcardMemUsageKey(author), func(keys []string) error {
 		vals, err := c.MGet(ctx, keys...).Result()
 		if err != nil {
 			return err
@@ -270,18 +303,20 @@ func (r *Storage) getAvailMem(ctx context.Context, c redis.Cmdable, author []byt
 	return r.memLimit - size, nil
 }
 
-func (r *Storage) scan(ctx context.Context, pattern string, c redis.Cmdable, fn func(keys []string) error) error {
-	var err error
-	var keys []string
-	var cursor uint64
+// scan iterates over all keys matching the pattern and calls the callback.
+func scan(ctx context.Context, c redis.Cmdable, pattern string, fn func(keys []string) error) error {
+	var (
+		err    error
+		keys   []string
+		cursor uint64
+	)
 	for {
 		keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
 		if err != nil {
 			return err
 		}
 		if len(keys) > 0 {
-			err = fn(keys)
-			if err != nil {
+			if err = fn(keys); err != nil {
 				return err
 			}
 		}
@@ -292,12 +327,34 @@ func (r *Storage) scan(ctx context.Context, pattern string, c redis.Cmdable, fn 
 	return nil
 }
 
-func evtKey(typ string, index []byte, author []byte, id []byte) string {
-	return fmt.Sprintf("evt:%x:%x", hashIndex(typ, index), hashUnique(author, id))
+// watch starts a transaction that watches the given keys and retries the
+// transaction if it fails up txRetryAttempts times. The transaction fails
+// if the watched keys are modified by another client.
+func watch(ctx context.Context, c redis.UniversalClient, fn func(tx *redis.Tx) error, keys ...string) error {
+	for i := 0; i < txRetryAttempts; i++ {
+		err := c.Watch(ctx, fn, keys...)
+		if err == nil {
+			return nil // Success.
+		}
+		if ctx.Err() != nil {
+			return ctx.Err() // Context canceled.
+		}
+		if err == redis.TxFailedErr {
+			continue // Optimistic lock lost. Retry.
+		}
+		return err // Return any other error.
+	}
+	return redis.TxFailedErr
 }
 
-func wildcardEvtKey(typ string, index []byte) string {
-	return fmt.Sprintf("evt:%x:*", hashIndex(typ, index))
+// Helpers for generating Redis keys:
+
+func evtKey(typ string, idx []byte, author []byte, id []byte) string {
+	return fmt.Sprintf("evt:%x:%x", hashIdx(typ, idx), hashUnique(author, id))
+}
+
+func wildcardEvtKey(typ string, idx []byte) string {
+	return fmt.Sprintf("evt:%x:*", hashIdx(typ, idx))
 }
 
 func memUsageKey(author []byte, eventDate time.Time) string {
@@ -312,27 +369,6 @@ func hashUnique(author []byte, id []byte) [sha256.Size]byte {
 	return sha256.Sum256(append(author, id...))
 }
 
-func hashIndex(typ string, index []byte) [sha256.Size]byte {
-	return sha256.Sum256(append([]byte(typ), index...))
-}
-
-// retry runs the f function until it returns nil. Maximum number of retries
-// and delay between them are defined in the retryAttempts and retryInterval
-// constants.
-//
-// If error is ErrMemoryLimitExceed, it will be returned immediately.
-func retry(f func() error) (err error) {
-	for i := 0; i < retryAttempts; i++ {
-		if i > 0 {
-			time.Sleep(retryInterval)
-		}
-		err = f()
-		if errors.Is(err, ErrMemoryLimitExceed) {
-			return err
-		}
-		if err == nil {
-			return nil
-		}
-	}
-	return err
+func hashIdx(typ string, idx []byte) [sha256.Size]byte {
+	return sha256.Sum256(append([]byte(typ), idx...))
 }

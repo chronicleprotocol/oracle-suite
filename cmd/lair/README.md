@@ -154,24 +154,27 @@ Lair supports JSON and YAML configuration files.
             - `type` (`string`) - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (
               default: `memory`).
             - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
-                - `ttl` (`integer`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds
-                  about one week)
+                - `ttl` (`integer`) - Specifies how long messages should be stored in seconds (default: 604800 seconds
+                  about one week).
                 - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
                   number, e.g. `0.0.0.0:8080`.
-                - `username` (`string`) - Redis server username for ACL.
-                - `password` (`string`) - Redis server password.
-                - `db` (`int`) - Redis server database number.
+                - `username` (`string`) - Redis server username for ACL (default: `""`).
+                - `password` (`string`) - Redis server password (default: `""`).
+                - `db` (`int`) - Redis server database number. Ignored in cluster mode (default: 0).
                 - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
-                - `tls` (`bool`) - Enables TLS connection to Redis server. (default: `false`)
+                - `tls` (`bool`) - Enables TLS connection to Redis server (default: `false`).
                 - `tlsServerName` (`string`) - Server name used to verify the hostname on the returned certificates from
-                  the server. Ignored if empty. (default: `""`)
-                - `tlsCertFile` (`string`) - Path to the PEM encoded certificate file. (default: `""`)
-                - `tlsKeyFile` (`string`) - Path to the PEM encoded private key file. (default: `""`)
-                - `tlsRootCAFile` (`string`) - Path to the PEM encoded root certificate file. (default: `""`)
-                - `tlsInsecureSkipVerify` (`bool`) - Disables TLS certificate verification. (default: `false`)
+                  the server. Ignored if empty (default: `""`).
+                - `tlsCertFile` (`string`) - Path to the PEM encoded certificate file (default: `""`).
+                - `tlsKeyFile` (`string`) - Path to the PEM encoded private key file (default: `""`).
+                - `tlsRootCAFile` (`string`) - Path to the PEM encoded root certificate file (default: `""`).
+                - `tlsInsecureSkipVerify` (`bool`) - Disables TLS certificate verification (default: `false`).
+                - `cluster` (`bool`) - Enables Redis cluster mode (default: `false`).
+                - `clusterAddresses` (`[]string`) - List of Redis cluster addresses provided as the combination of IP
+                  address or host and port number, e.g. `0.0.0.0:8080`.
             - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
-                - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
-                  about one week)
+                - `ttl` (`int`) - Specifies how long messages should be stored in seconds (default: 604800 seconds -
+                  about one week).
 
 ### Environment variables
 
