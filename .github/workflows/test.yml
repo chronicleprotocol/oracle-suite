@@ -38,7 +38,7 @@ jobs:
         run: make test
         env:
           TEST_REDIS_ADDR: "127.0.0.1:6379"
-          TEST_REDIS_PASSWORD: "password123"
+          TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
   test-e2e:
     name: E2E Tests
