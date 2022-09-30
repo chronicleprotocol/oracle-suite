@@ -33,7 +33,7 @@ jobs:
           version: v1.48
           args: --timeout=10m0s
       - name: Start Redis instance
-        run: docker run -p 6379:6379 --name redis -e REDIS_PASSWORD=password123 bitnami/redis:6.2
+        run: docker run -d -p 6379:6379 --name redis -e REDIS_PASSWORD=password123 bitnami/redis:6.2
       - name: Test
         run: make test
         env:
