@@ -87,6 +87,16 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+      - name: Docker RPC Splitter metadata
+        id: metarpcsplitter
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/chronicleprotocol/rpc-splitter
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
@@ -187,5 +197,17 @@ jobs:
           push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.metalair.outputs.tags }}
           labels: ${{ steps.metalair.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker image for RPC Splitter
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile-rpc-splitter
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref_type == 'tag' }}
+          tags: ${{ steps.metarpcsplitter.outputs.tags }}
+          labels: ${{ steps.metarpcsplitter.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

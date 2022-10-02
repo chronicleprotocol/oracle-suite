@@ -38,6 +38,13 @@ builds:
       - linux
       - darwin
 
+  - main: ./cmd/rpc-splitter
+    id: "rpc-splitter"
+    binary: rpc-splitter
+    goos:
+      - linux
+      - darwin
+
 archives:
   - 
     id: "gofer"
@@ -67,4 +74,10 @@ archives:
     id: "ssb-rpc-client"
     builds:
       - ssb-rpc-client
+    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+  -
+    id: "rpc-splitter"
+    builds:
+      - rpc-splitter
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
