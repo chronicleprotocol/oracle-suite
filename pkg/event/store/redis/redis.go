@@ -20,8 +20,10 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"strconv"
 	"sync"
@@ -153,25 +155,13 @@ func (r *Storage) Ping(ctx context.Context) error {
 func (r *Storage) Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.add(ctx, author, evt)
-}
-
-// Get implements the store.Storage interface.
-func (r *Storage) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.get(ctx, typ, idx)
-}
-
-// add adds an event to the storage.
-func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
 	key := evtKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
 		return false, err
 	}
 	// Check if the memory limit is exceeded.
-	mem, err := r.getAvailMem(ctx, r.client, author)
+	mem, err := r.getAvailMem(ctx, author)
 	if err != nil {
 		return false, err
 	}
@@ -188,11 +178,11 @@ func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (
 	// updating it. To avoid this, we use a Redis transaction. The following
 	// transaction watches to see if the value of the key has been changed
 	// during the transaction, if so, the transaction is canceled. In this
-	// case, the watch function will try to retry the transaction several times.
+	// case, the redisWatch function will try to retry the transaction several times.
 	//
 	// The transaction is also passed to the incrMemUsage method, so that
 	// memory usage is updated only if the transaction is successful.
-	err = watch(ctx, r.client, func(tx *redis.Tx) error {
+	err = r.redisWatch(ctx, func(tx *redis.Tx) error {
 		prevVal, err := r.client.Get(ctx, key).Result()
 		switch err {
 		case nil: // No error, the key exists.
@@ -222,21 +212,19 @@ func (r *Storage) add(ctx context.Context, author []byte, evt *messages.Event) (
 	return isNew, err
 }
 
-// get returns the events for the given type and index.
-func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+// Get implements the store.Storage interface.
+func (r *Storage) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	var evts []*messages.Event
-	err := scan(ctx, r.client, wildcardEvtKey(typ, idx), func(keys []string) error {
-		vals, err := r.client.MGet(ctx, keys...).Result()
+	err := r.redisScan(ctx, wildcardEvtKey(typ, idx), func(keys []string) error {
+		vals, err := r.redisMGet(ctx, keys...)
 		if err != nil {
 			return err
 		}
 		for _, val := range vals {
-			b, ok := val.(string)
-			if !ok {
-				continue
-			}
 			evt := &messages.Event{}
-			if err := evt.UnmarshallBinary([]byte(b)); err != nil {
+			if err := evt.UnmarshallBinary([]byte(val)); err != nil {
 				continue
 			}
 			evts = append(evts, evt)
@@ -244,6 +232,35 @@ func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.
 		return nil
 	})
 	return evts, err
+}
+
+// getAvailMem returns the available memory for the given author.
+//
+// Finds all the memory usage keys for given author and sums them up. The exact
+// mechanism of how the memory usage is stored is described in incrMemUsage.
+func (r *Storage) getAvailMem(ctx context.Context, author []byte) (int64, error) {
+	if r.memLimit == 0 {
+		return 0, nil
+	}
+	var size int64
+	err := r.redisScan(ctx, wildcardMemUsageKey(author), func(keys []string) error {
+		vals, err := r.redisMGet(ctx, keys...)
+		if err != nil {
+			return err
+		}
+		for _, val := range vals {
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				continue
+			}
+			size += int64(i)
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return r.memLimit - size, nil
 }
 
 // incrMemUsage increments the memory usage of the author by the given amount.
@@ -255,7 +272,7 @@ func (r *Storage) get(ctx context.Context, typ string, idx []byte) ([]*messages.
 // To reduce number of keys, the keys with similar TTL are grouped together.
 // It is done by rounding the TTL to the nearest multiple of memUsageTimeQuantum.
 func (r *Storage) incrMemUsage(ctx context.Context, c redis.Cmdable, author []byte, mem int, evtDate time.Time) error {
-	if r.memLimit == 0 {
+	if r.memLimit == 0 || mem == 0 {
 		return nil
 	}
 	key := memUsageKey(author, evtDate)
@@ -270,69 +287,15 @@ func (r *Storage) incrMemUsage(ctx context.Context, c redis.Cmdable, author []by
 	return nil
 }
 
-// getAvailMem returns the available memory for the given author.
-//
-// Finds all the memory usage keys for given author and sums them up. The exact
-// mechanism of how the memory usage is stored is described in incrMemUsage.
-func (r *Storage) getAvailMem(ctx context.Context, c redis.Cmdable, author []byte) (int64, error) {
-	if r.memLimit == 0 {
-		return 0, nil
-	}
-	var size int64
-	err := scan(ctx, c, wildcardMemUsageKey(author), func(keys []string) error {
-		vals, err := c.MGet(ctx, keys...).Result()
-		if err != nil {
-			return err
-		}
-		for _, val := range vals {
-			s, ok := val.(string)
-			if !ok {
-				continue
-			}
-			i, err := strconv.Atoi(s)
-			if err != nil {
-				continue
-			}
-			size += int64(i)
-		}
-		return nil
-	})
-	if err != nil {
-		return 0, err
-	}
-	return r.memLimit - size, nil
-}
-
-// scan iterates over all keys matching the pattern and calls the callback.
-func scan(ctx context.Context, c redis.Cmdable, pattern string, fn func(keys []string) error) error {
-	var (
-		err    error
-		keys   []string
-		cursor uint64
-	)
-	for {
-		keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
-		if err != nil {
-			return err
-		}
-		if len(keys) > 0 {
-			if err = fn(keys); err != nil {
-				return err
-			}
-		}
-		if cursor == 0 {
-			break
-		}
-	}
-	return nil
-}
-
-// watch starts a transaction that watches the given keys and retries the
+// redisWatch starts a transaction that watches the given keys and retries the
 // transaction if it fails up txRetryAttempts times. The transaction fails
 // if the watched keys are modified by another client.
-func watch(ctx context.Context, c redis.UniversalClient, fn func(tx *redis.Tx) error, keys ...string) error {
+//
+// It is important, that all keys modified in the transaction must belong to
+// the same slot! Otherwise, transaction silently fails.
+func (r *Storage) redisWatch(ctx context.Context, fn func(tx *redis.Tx) error, keys ...string) error {
 	for i := 0; i < txRetryAttempts; i++ {
-		err := c.Watch(ctx, fn, keys...)
+		err := r.client.Watch(ctx, fn, keys...)
 		if err == nil {
 			return nil // Success.
 		}
@@ -347,10 +310,88 @@ func watch(ctx context.Context, c redis.UniversalClient, fn func(tx *redis.Tx) e
 	return redis.TxFailedErr
 }
 
+// redisScan iterates over all keys matching the pattern and calls the callback.
+// In cluster mode a scan is performed on each master node.
+func (r *Storage) redisScan(ctx context.Context, pattern string, fn func(keys []string) error) error {
+	scan := func(ctx context.Context, c redis.Cmdable, pattern string, fn func(keys []string) error) error {
+		var (
+			err    error
+			keys   []string
+			cursor uint64
+		)
+		for {
+			keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
+			if err != nil {
+				return err
+			}
+			if len(keys) > 0 {
+				if err = fn(keys); err != nil {
+					return err
+				}
+			}
+			if cursor == 0 {
+				break
+			}
+		}
+		return nil
+	}
+	if rds, ok := r.client.(*redis.ClusterClient); ok {
+		if err := rds.ForEachMaster(ctx, func(ctx context.Context, c *redis.Client) error {
+			return scan(ctx, c, pattern, fn)
+		}); err != nil {
+			return err
+		}
+	} else {
+		return scan(ctx, r.client, pattern, fn)
+	}
+	return nil
+}
+
+// redisMGet returns the values for the given keys. The mget does not work in
+// cluster mode when different keys belongs to different slots, for this
+// reason, in cluster mode a pipeline is used.
+func (r *Storage) redisMGet(ctx context.Context, keys ...string) ([]string, error) {
+	if _, ok := r.client.(*redis.ClusterClient); ok {
+		cmds, err := r.client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+			for _, key := range keys {
+				if err := pipe.Get(ctx, key).Err(); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		var res []string
+		for _, cmd := range cmds {
+			if err := cmd.Err(); err != nil {
+				return nil, err
+			}
+			res = append(res, cmd.(*redis.StringCmd).Val())
+		}
+		return res, nil
+	} else {
+		vals, err := r.client.MGet(ctx, keys...).Result()
+		if err != nil {
+			return nil, err
+		}
+		var res []string
+		for _, val := range vals {
+			s, ok := val.(string)
+			if !ok {
+				continue
+			}
+			res = append(res, s)
+		}
+		return res, nil
+	}
+}
+
 // Helpers for generating Redis keys:
 
 func evtKey(typ string, idx []byte, author []byte, id []byte) string {
-	return fmt.Sprintf("evt:%x:%x", hashIdx(typ, idx), hashUnique(author, id))
+	return fmt.Sprintf("evt:%x:%x:{%x}", hashIdx(typ, idx), hashUnique(author, id), hashtag(author))
 }
 
 func wildcardEvtKey(typ string, idx []byte) string {
@@ -358,7 +399,7 @@ func wildcardEvtKey(typ string, idx []byte) string {
 }
 
 func memUsageKey(author []byte, eventDate time.Time) string {
-	return fmt.Sprintf("mem:%x:%x", author, eventDate.Unix()/memUsageTimeQuantum)
+	return fmt.Sprintf("mem:%x:%x:{%x}", author, eventDate.Unix()/memUsageTimeQuantum, hashtag(author))
 }
 
 func wildcardMemUsageKey(author []byte) string {
@@ -371,4 +412,13 @@ func hashUnique(author []byte, id []byte) [sha256.Size]byte {
 
 func hashIdx(typ string, idx []byte) [sha256.Size]byte {
 	return sha256.Sum256(append([]byte(typ), idx...))
+}
+
+// hashtag calculates Redis hashtag used to ensure that keys from the same
+// author have the same slot.
+// https://redis.io/docs/reference/cluster-spec/
+func hashtag(author []byte) []byte {
+	h := make([]byte, 4)
+	binary.BigEndian.PutUint32(h, crc32.ChecksumIEEE(author))
+	return h
 }
