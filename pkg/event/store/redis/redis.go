@@ -313,36 +313,14 @@ func (r *Storage) redisWatch(ctx context.Context, fn func(tx *redis.Tx) error, k
 // redisScan iterates over all keys matching the pattern and calls the callback.
 // In cluster mode a scan is performed on each master node.
 func (r *Storage) redisScan(ctx context.Context, pattern string, fn func(keys []string) error) error {
-	scan := func(ctx context.Context, c redis.Cmdable, pattern string, fn func(keys []string) error) error {
-		var (
-			err    error
-			keys   []string
-			cursor uint64
-		)
-		for {
-			keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
-			if err != nil {
-				return err
-			}
-			if len(keys) > 0 {
-				if err = fn(keys); err != nil {
-					return err
-				}
-			}
-			if cursor == 0 {
-				break
-			}
-		}
-		return nil
-	}
 	if rds, ok := r.client.(*redis.ClusterClient); ok {
 		if err := rds.ForEachMaster(ctx, func(ctx context.Context, c *redis.Client) error {
-			return scan(ctx, c, pattern, fn)
+			return scanSingleNode(ctx, c, pattern, fn)
 		}); err != nil {
 			return err
 		}
 	} else {
-		return scan(ctx, r.client, pattern, fn)
+		return scanSingleNode(ctx, r.client, pattern, fn)
 	}
 	return nil
 }
@@ -387,6 +365,29 @@ func (r *Storage) redisMGet(ctx context.Context, keys ...string) ([]string, erro
 		res = append(res, s)
 	}
 	return res, nil
+}
+
+func scanSingleNode(ctx context.Context, c redis.Cmdable, pattern string, fn func(keys []string) error) error {
+	var (
+		err    error
+		keys   []string
+		cursor uint64
+	)
+	for {
+		keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
+		if err != nil {
+			return err
+		}
+		if len(keys) > 0 {
+			if err = fn(keys); err != nil {
+				return err
+			}
+		}
+		if cursor == 0 {
+			break
+		}
+	}
+	return nil
 }
 
 // Helpers for generating Redis keys:
