@@ -351,6 +351,7 @@ func (r *Storage) redisScan(ctx context.Context, pattern string, fn func(keys []
 // cluster mode when different keys belongs to different slots, for this
 // reason, in cluster mode a pipeline is used.
 func (r *Storage) redisMGet(ctx context.Context, keys ...string) ([]string, error) {
+	// Cluster mode:
 	if _, ok := r.client.(*redis.ClusterClient); ok {
 		cmds, err := r.client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 			for _, key := range keys {
@@ -371,21 +372,21 @@ func (r *Storage) redisMGet(ctx context.Context, keys ...string) ([]string, erro
 			res = append(res, cmd.(*redis.StringCmd).Val())
 		}
 		return res, nil
-	} else {
-		vals, err := r.client.MGet(ctx, keys...).Result()
-		if err != nil {
-			return nil, err
-		}
-		var res []string
-		for _, val := range vals {
-			s, ok := val.(string)
-			if !ok {
-				continue
-			}
-			res = append(res, s)
-		}
-		return res, nil
 	}
+	// Single node mode:
+	vals, err := r.client.MGet(ctx, keys...).Result()
+	if err != nil {
+		return nil, err
+	}
+	var res []string
+	for _, val := range vals {
+		s, ok := val.(string)
+		if !ok {
+			continue
+		}
+		res = append(res, s)
+	}
+	return res, nil
 }
 
 // Helpers for generating Redis keys:
