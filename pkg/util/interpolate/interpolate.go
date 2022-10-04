@@ -28,6 +28,12 @@ type Variable struct {
 	HasDefault bool   // True if the variable has a default value.
 }
 
+func ParsePercent(s string) Parsed {
+	p := percentParser(s)
+	p.parse()
+	return p.out
+}
+
 // Parse parses the string and returns a parsed representation. The variables
 // may be interpolated later using the Interpolate method.
 //
@@ -43,7 +49,7 @@ type Variable struct {
 //
 // - If a variable is not closed, it is treated as a literal.
 func Parse(s string) Parsed {
-	p := parser{in: s, out: make([]part, 0, 1)}
+	p := dollarParser(s)
 	p.parse()
 	return p.out
 }
@@ -84,30 +90,64 @@ type part struct {
 }
 
 const (
-	tokenEscapedDollar = "$$"
-	tokenBackslash     = "\\"
-	tokenVarBegin      = "${"
-	tokenVarEnd        = "}"
-	tokenDefaultVal    = "-"
+	tokenEscapedDollar  = "$$"
+	tokenDollarVarBegin = "${"
+	tokenVarEnd         = "}"
+	tokenDefaultVal     = "-"
+	tokenBackslash      = "\\"
 )
 
+func dollarParser(s string) parser {
+	return parser{
+		in:              s,
+		out:             make([]part, 0, 1),
+		tokenEscaped:    tokenEscapedDollar,
+		tokenBackslash:  tokenBackslash,
+		tokenVarBegin:   tokenDollarVarBegin,
+		tokenVarEnd:     tokenVarEnd,
+		tokenDefaultVal: tokenDefaultVal,
+	}
+}
+
+const (
+	tokenEscapedPercent  = "%%"
+	tokenPercentVarBegin = "%{"
+)
+
+func percentParser(s string) parser {
+	return parser{
+		in:              s,
+		out:             make([]part, 0, 1),
+		tokenEscaped:    tokenEscapedPercent,
+		tokenBackslash:  tokenBackslash,
+		tokenVarBegin:   tokenPercentVarBegin,
+		tokenVarEnd:     tokenVarEnd,
+		tokenDefaultVal: tokenDefaultVal,
+	}
+}
+
 type parser struct {
-	in     string
-	out    Parsed
-	pos    int
-	litBuf strings.Builder
-	varBuf strings.Builder
-	defBuf strings.Builder
+	in              string
+	out             Parsed
+	pos             int
+	litBuf          strings.Builder
+	varBuf          strings.Builder
+	defBuf          strings.Builder
+	tokenEscaped    string
+	tokenBackslash  string
+	tokenVarBegin   string
+	tokenVarEnd     string
+	tokenDefaultVal string
 }
 
 func (p *parser) parse() {
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenBackslash):
+		case p.nextToken(p.tokenBackslash):
 			p.parseBackslash()
-		case p.nextToken(tokenEscapedDollar):
+		case p.nextToken(p.tokenEscaped):
 			p.appendByte('$')
-		case p.nextToken(tokenVarBegin):
+		case p.nextToken(p.tokenVarBegin):
 			p.parseVariable()
 		default:
 			// Add all characters to the first character that may start the token.
@@ -119,7 +159,7 @@ func (p *parser) parse() {
 
 func (p *parser) parseBackslash() {
 	if !p.hasNext() {
-		p.appendLiteral(tokenBackslash)
+		p.appendLiteral(p.tokenBackslash)
 		return
 	}
 	p.appendByte(p.nextByte())
@@ -132,15 +172,15 @@ func (p *parser) parseVariable() {
 	p.defBuf.Reset()
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenBackslash):
+		case p.nextToken(p.tokenBackslash):
 			if !p.hasNext() {
 				continue
 			}
 			p.varBuf.WriteByte(p.nextByte())
-		case p.nextToken(tokenDefaultVal):
+		case p.nextToken(p.tokenDefaultVal):
 			def = true
 			p.parseDefault()
-		case p.nextToken(tokenVarEnd):
+		case p.nextToken(p.tokenVarEnd):
 			p.appendVariable(Variable{
 				Name:       p.varBuf.String(),
 				Default:    p.defBuf.String(),
@@ -153,22 +193,22 @@ func (p *parser) parseVariable() {
 		}
 	}
 	// Variable not closed. Treat the whole thing as a literal.
-	p.appendLiteral(tokenVarBegin)
+	p.appendLiteral(p.tokenVarBegin)
 	p.pos = pos
 }
 
 func (p *parser) parseDefault() {
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenBackslash):
+		case p.nextToken(p.tokenBackslash):
 			if !p.hasNext() {
 				continue
 			}
 			p.defBuf.WriteByte(p.nextByte())
-		case p.nextToken(tokenVarEnd):
+		case p.nextToken(p.tokenVarEnd):
 			// Move the position back so that the closing token is not
 			// consumed and can be parsed by the parent parser.
-			p.pos -= len(tokenVarEnd)
+			p.pos -= len(p.tokenVarEnd)
 			return
 		default:
 			// Add all characters to the first character that may start the token.

@@ -95,11 +95,11 @@ func New(level log.Level, cfg Config) (log.Logger, error) {
 	// Parse names and tags in advance to improve performance.
 	for n := range cfg.Metrics {
 		m := &cfg.Metrics[n]
-		m.parsedName = interpolate.Parse(m.Name)
+		m.parsedName = interpolate.ParsePercent(m.Name)
 		m.parsedTags = make(map[string][]interpolate.Parsed)
 		for k, v := range m.Tags {
 			for _, s := range v {
-				m.parsedTags[k] = append(m.parsedTags[k], interpolate.Parse(s))
+				m.parsedTags[k] = append(m.parsedTags[k], interpolate.ParsePercent(s))
 			}
 		}
 	}
