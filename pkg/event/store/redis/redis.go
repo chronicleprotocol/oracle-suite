@@ -26,6 +26,7 @@ import (
 	"hash/crc32"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,7 +35,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-var ErrMemoryLimitExceed = errors.New("memory limit exceeded")
+var ErrMemoryLimitExceed = errors.New("redis: memory limit exceeded")
 
 const txRetryAttempts = 3        // Maximum number of attempts to retry a transaction.
 const memUsageTimeQuantum = 3600 // The length of the time window for which memory usage information is stored.
@@ -158,7 +159,7 @@ func (r *Storage) Add(ctx context.Context, author []byte, evt *messages.Event) (
 	key := evtKey(evt.Type, evt.Index, author, evt.ID)
 	val, err := evt.MarshallBinary()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("redis: failed to marshal event: %w", err)
 	}
 	// Check if the memory limit is exceeded.
 	mem, err := r.getAvailMem(ctx, author)
@@ -183,15 +184,15 @@ func (r *Storage) Add(ctx context.Context, author []byte, evt *messages.Event) (
 	// The transaction is also passed to the incrMemUsage method, so that
 	// memory usage is updated only if the transaction is successful.
 	err = r.redisWatch(ctx, func(tx *redis.Tx) error {
-		prevVal, err := r.client.Get(ctx, key).Result()
-		switch err {
+		prevValCmd := r.client.Get(ctx, key)
+		switch prevValCmd.Err() {
 		case nil: // No error, the key exists.
 			prevEvt := &messages.Event{}
-			if err := prevEvt.UnmarshallBinary([]byte(prevVal)); err != nil {
-				return err
+			if err := prevEvt.UnmarshallBinary([]byte(prevValCmd.Val())); err != nil {
+				return fmt.Errorf("redis: failed to unmarshal event: %w", err)
 			}
 			if prevEvt.MessageDate.Before(evt.MessageDate) {
-				if err := r.incrMemUsage(ctx, tx, author, len(val)-len(prevVal), evt.EventDate); err != nil {
+				if err := r.incrMemUsage(ctx, tx, author, len(val)-len(prevValCmd.Val()), evt.EventDate); err != nil {
 					return err
 				}
 				tx.Set(ctx, key, val, 0)
@@ -205,7 +206,7 @@ func (r *Storage) Add(ctx context.Context, author []byte, evt *messages.Event) (
 			tx.ExpireAt(ctx, key, evt.EventDate.Add(r.ttl))
 			isNew = true
 		default:
-			return err
+			return cmdError{cmd: prevValCmd}
 		}
 		return nil
 	}, key)
@@ -276,13 +277,13 @@ func (r *Storage) incrMemUsage(ctx context.Context, c redis.Cmdable, author []by
 		return nil
 	}
 	key := memUsageKey(author, evtDate)
-	if err := c.IncrBy(ctx, key, int64(mem)).Err(); err != nil {
-		return err
+	if cmd := c.IncrBy(ctx, key, int64(mem)); cmd.Err() != nil {
+		return cmdError{cmd: cmd}
 	}
 	q := int64(memUsageTimeQuantum)
 	t := (evtDate.Unix()/q)*q + q
-	if err := c.ExpireAt(ctx, key, time.Unix(t, 0).Add(r.ttl)).Err(); err != nil {
-		return err
+	if cmd := c.ExpireAt(ctx, key, time.Unix(t, 0).Add(r.ttl)); cmd.Err() != nil {
+		return cmdError{cmd: cmd}
 	}
 	return nil
 }
@@ -333,31 +334,31 @@ func (r *Storage) redisMGet(ctx context.Context, keys ...string) ([]string, erro
 	if _, ok := r.client.(*redis.ClusterClient); ok {
 		cmds, err := r.client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 			for _, key := range keys {
-				if err := pipe.Get(ctx, key).Err(); err != nil {
-					return err
+				if cmd := pipe.Get(ctx, key); cmd.Err() != nil {
+					return cmdError{cmd: cmd}
 				}
 			}
 			return nil
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("redis: pipeline get %s: %w", strings.Join(keys, ", "), err)
 		}
 		var res []string
 		for _, cmd := range cmds {
 			if err := cmd.Err(); err != nil {
-				return nil, err
+				return nil, cmdError{cmd: cmd}
 			}
 			res = append(res, cmd.(*redis.StringCmd).Val())
 		}
 		return res, nil
 	}
 	// Single node mode:
-	vals, err := r.client.MGet(ctx, keys...).Result()
-	if err != nil {
-		return nil, err
+	cmd := r.client.MGet(ctx, keys...)
+	if cmd.Err() != nil {
+		return nil, cmdError{cmd: cmd}
 	}
 	var res []string
-	for _, val := range vals {
+	for _, val := range cmd.Val() {
 		s, ok := val.(string)
 		if !ok {
 			continue
@@ -376,7 +377,7 @@ func scanSingleNode(ctx context.Context, c redis.Cmdable, pattern string, fn fun
 	for {
 		keys, cursor, err = c.Scan(ctx, cursor, pattern, 0).Result()
 		if err != nil {
-			return err
+			return fmt.Errorf("redis: scan %s: %w", pattern, err)
 		}
 		if len(keys) > 0 {
 			if err = fn(keys); err != nil {
@@ -388,6 +389,21 @@ func scanSingleNode(ctx context.Context, c redis.Cmdable, pattern string, fn fun
 		}
 	}
 	return nil
+}
+
+// cmdError is an error caused by a Redis command.
+type cmdError struct {
+	cmd redis.Cmder
+}
+
+// Error implements the error interface.
+func (e cmdError) Error() string {
+	return fmt.Sprintf("redis: %s", e.cmd.String())
+}
+
+// Unwrap implements the errors.Unwrap interface.
+func (e cmdError) Unwrap() error {
+	return e.cmd.Err()
 }
 
 // Helpers for generating Redis keys:

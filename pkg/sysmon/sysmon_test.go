@@ -20,7 +20,7 @@ func TestSysmon(t *testing.T) {
 
 	f := int32(0)
 	l := callback.New(log.Debug, func(level log.Level, fields log.Fields, msg string) {
-		if msg == "Starting" || msg == "Stopped" {
+		if msg != "Status" {
 			return
 		}
 		assert.Equal(t, "Status", msg)
