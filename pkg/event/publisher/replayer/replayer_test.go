@@ -53,7 +53,15 @@ func Test_Replayer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, rep.Start(ctx))
 
-	evt := &messages.Event{Type: "test", EventDate: time.Now(), MessageDate: time.Now()}
+	evt := &messages.Event{
+		Type:        "test",
+		ID:          []byte("test"),
+		Index:       []byte("test"),
+		EventDate:   time.Now(),
+		MessageDate: time.Now(),
+		Data:        map[string][]byte{"test": []byte("test")},
+		Signatures:  map[string]messages.EventSignature{"test": {Signer: []byte("test"), Signature: []byte("test")}},
+	}
 	ch <- evt
 
 	var count int32
@@ -63,8 +71,13 @@ func Test_Replayer(t *testing.T) {
 			case <-ctx.Done():
 				return
 			case recv := <-rep.Events():
+				assert.Equal(t, evt.Type, recv.Type)
+				assert.Equal(t, evt.ID, recv.ID)
+				assert.Equal(t, evt.Index, recv.Index)
+				assert.Equal(t, evt.EventDate, recv.EventDate)
 				assert.Less(t, time.Since(recv.MessageDate), 100*time.Millisecond)
-				assert.Equal(t, evt, recv)
+				assert.Equal(t, evt.Data, recv.Data)
+				assert.Equal(t, evt.Signatures, recv.Signatures)
 				atomic.AddInt32(&count, 1)
 			}
 		}
