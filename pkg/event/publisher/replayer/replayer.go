@@ -141,6 +141,10 @@ func (r *EventProvider) replayEventsRoutine(ctx context.Context) {
 					for _, from := range r.replayAfter {
 						to := from + now.Sub(last)
 						if age >= from && age < to {
+							// Because the event is a pointer, we need to copy it
+							// to avoid modifying the original event which may be
+							// used somewhere else.
+							evt := evt.Copy()
 							evt.MessageDate = now
 							r.eventCh <- evt
 						}

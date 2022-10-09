@@ -25,6 +25,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEvent_Copy(t *testing.T) {
+	event := &Event{
+		Type:        "test",
+		ID:          []byte{10, 10, 10},
+		Index:       []byte{11, 11, 11},
+		EventDate:   time.Unix(12, 0),
+		MessageDate: time.Unix(13, 0),
+		Data: map[string][]byte{
+			"a": {14, 14, 14},
+			"b": {15, 15, 15},
+		},
+		Signatures: map[string]EventSignature{
+			"c": {Signer: []byte{16}, Signature: []byte{16}},
+			"d": {Signer: []byte{17}, Signature: []byte{17}},
+		},
+	}
+
+	copiedEvent := event.Copy()
+
+	assert.Equal(t, event, copiedEvent)
+	assert.NotSame(t, event, copiedEvent)
+	assert.NotSame(t, event.ID, copiedEvent.ID)
+	assert.NotSame(t, event.Index, copiedEvent.Index)
+	assert.NotSame(t, event.Data, copiedEvent.Data)
+	for k, v := range event.Data {
+		assert.NotSame(t, v, copiedEvent.Data[k])
+	}
+	assert.NotSame(t, event.Signatures, copiedEvent.Signatures)
+	for k, v := range event.Signatures {
+		assert.NotSame(t, v, copiedEvent.Signatures[k])
+		assert.NotSame(t, v.Signer, copiedEvent.Signatures[k].Signer)
+		assert.NotSame(t, v.Signature, copiedEvent.Signatures[k].Signature)
+	}
+}
+
 func TestEvent_Marshalling(t *testing.T) {
 	tests := []struct {
 		event   Event
