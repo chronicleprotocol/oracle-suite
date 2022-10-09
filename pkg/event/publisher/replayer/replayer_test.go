@@ -53,7 +53,7 @@ func Test_Replayer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, rep.Start(ctx))
 
-	evt := &messages.Event{Type: "test", EventDate: time.Now()}
+	evt := &messages.Event{Type: "test", EventDate: time.Now(), MessageDate: time.Now()}
 	ch <- evt
 
 	var count int32
@@ -63,6 +63,7 @@ func Test_Replayer(t *testing.T) {
 			case <-ctx.Done():
 				return
 			case recv := <-rep.Events():
+				assert.Less(t, time.Since(recv.MessageDate), 100*time.Millisecond)
 				assert.Equal(t, evt, recv)
 				atomic.AddInt32(&count, 1)
 			}

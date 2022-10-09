@@ -141,6 +141,7 @@ func (r *EventProvider) replayEventsRoutine(ctx context.Context) {
 					for _, from := range r.replayAfter {
 						to := from + now.Sub(last)
 						if age >= from && age < to {
+							evt.MessageDate = now
 							r.eventCh <- evt
 						}
 						if to >= age {
