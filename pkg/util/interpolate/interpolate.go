@@ -19,21 +19,6 @@ import (
 	"strings"
 )
 
-// Parsed is a parsed string.
-type Parsed []part
-
-type Variable struct {
-	Name       string // Name of the variable.
-	Default    string // Default value if the variable is not set.
-	HasDefault bool   // True if the variable has a default value.
-}
-
-func ParsePercent(s string) Parsed {
-	p := percentParser(s)
-	p.parse()
-	return p.out
-}
-
 // Parse parses the string and returns a parsed representation. The variables
 // may be interpolated later using the Interpolate method.
 //
@@ -43,15 +28,40 @@ func ParsePercent(s string) Parsed {
 //
 // - Variables may have a default value separated by -, eq. ${VAR-default}.
 //
-// - To include a literal $ in the output, escape it with a backslash or
-// another $. For example, \$ and $$ are both interpreted as a literal $.
-// The latter does not work inside a variable.
+// - To include a literal $, escape it with a backslash, eq. \$.
 //
 // - If a variable is not closed, it is treated as a literal.
 func Parse(s string) Parsed {
 	p := dollarParser(s)
 	p.parse()
 	return p.out
+}
+
+// ParsePercent parses the string and returns a parsed representation. The variables
+// may be interpolated later using the Interpolate method.
+//
+// The syntax is similar to shell variable expansion. The following rules apply:
+//
+// - Variables are enclosed in %{...} and may contain any character.
+//
+// - Variables may have a default value separated by -, eq. %{VAR-default}.
+//
+// - To include a literal %, escape it with a backslash, eq. \%.
+//
+// - If a variable is not closed, it is treated as a literal.
+func ParsePercent(s string) Parsed {
+	p := percentParser(s)
+	p.parse()
+	return p.out
+}
+
+// Parsed is a parsed string.
+type Parsed []part
+
+type Variable struct {
+	Name       string // Name of the variable.
+	Default    string // Default value if the variable is not set.
+	HasDefault bool   // True if the variable has a default value.
 }
 
 // Interpolate replaces variables in the string based on the mapping function.
@@ -90,18 +100,17 @@ type part struct {
 }
 
 const (
-	tokenEscapedDollar  = "$$"
-	tokenDollarVarBegin = "${"
-	tokenVarEnd         = "}"
-	tokenDefaultVal     = "-"
-	tokenBackslash      = "\\"
+	tokenDollarVarBegin  = "${"
+	tokenPercentVarBegin = "%{"
+	tokenVarEnd          = "}"
+	tokenDefaultVal      = "-"
+	tokenBackslash       = "\\"
 )
 
 func dollarParser(s string) parser {
 	return parser{
 		in:              s,
 		out:             make([]part, 0, 1),
-		tokenEscaped:    tokenEscapedDollar,
 		tokenBackslash:  tokenBackslash,
 		tokenVarBegin:   tokenDollarVarBegin,
 		tokenVarEnd:     tokenVarEnd,
@@ -109,16 +118,10 @@ func dollarParser(s string) parser {
 	}
 }
 
-const (
-	tokenEscapedPercent  = "%%"
-	tokenPercentVarBegin = "%{"
-)
-
 func percentParser(s string) parser {
 	return parser{
 		in:              s,
 		out:             make([]part, 0, 1),
-		tokenEscaped:    tokenEscapedPercent,
 		tokenBackslash:  tokenBackslash,
 		tokenVarBegin:   tokenPercentVarBegin,
 		tokenVarEnd:     tokenVarEnd,
@@ -133,7 +136,6 @@ type parser struct {
 	litBuf          strings.Builder
 	varBuf          strings.Builder
 	defBuf          strings.Builder
-	tokenEscaped    string
 	tokenBackslash  string
 	tokenVarBegin   string
 	tokenVarEnd     string
@@ -145,13 +147,11 @@ func (p *parser) parse() {
 		switch {
 		case p.nextToken(p.tokenBackslash):
 			p.parseBackslash()
-		case p.nextToken(p.tokenEscaped):
-			p.appendByte('$')
 		case p.nextToken(p.tokenVarBegin):
 			p.parseVariable()
 		default:
 			// Add all characters to the first character that may start the token.
-			p.appendLiteral(p.nextBytesUntilAnyOf("\\$"))
+			p.appendLiteral(p.nextBytesUntilAnyOf(p.tokenVarBegin[0], p.tokenBackslash[0]))
 		}
 	}
 	p.appendBuffer()
@@ -189,7 +189,7 @@ func (p *parser) parseVariable() {
 			return
 		default:
 			// Add all characters to the first character that may start the token.
-			p.varBuf.WriteString(p.nextBytesUntilAnyOf("-\\}"))
+			p.varBuf.WriteString(p.nextBytesUntilAnyOf(p.tokenVarEnd[0], p.tokenDefaultVal[0], p.tokenBackslash[0]))
 		}
 	}
 	// Variable not closed. Treat the whole thing as a literal.
@@ -212,7 +212,7 @@ func (p *parser) parseDefault() {
 			return
 		default:
 			// Add all characters to the first character that may start the token.
-			p.defBuf.WriteString(p.nextBytesUntilAnyOf("\\}"))
+			p.defBuf.WriteString(p.nextBytesUntilAnyOf(p.tokenVarEnd[0], p.tokenBackslash[0]))
 		}
 	}
 }
@@ -230,7 +230,7 @@ func (p *parser) nextByte() byte {
 
 // nextBytesUntilAnyOf returns the next bytes until any of the given characters
 // is encountered but not less than one. Only ASCII characters are supported.
-func (p *parser) nextBytesUntilAnyOf(s string) string {
+func (p *parser) nextBytesUntilAnyOf(s ...byte) string {
 	pos := p.pos
 	p.pos++
 	for p.pos < len(p.in) {
