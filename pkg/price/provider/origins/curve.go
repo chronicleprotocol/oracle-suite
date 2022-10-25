@@ -66,38 +66,50 @@ func (s CurveFinance) pairsToContractAddress(pair Pair) (common.Address, bool, e
 }
 
 func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
-	return callSinglePairOrigin(&s, pairs)
-}
-
-func (s CurveFinance) callOne(pair Pair) (*Price, error) {
-	contract, inverted, err := s.pairsToContractAddress(pair)
-	if err != nil {
-		return nil, err
-	}
-
-	var callData []byte
-	if !inverted {
-		callData, err = s.abi.Pack("get_dy", s.baseIndex, s.quoteIndex, s.dx)
-	} else {
-		callData, err = s.abi.Pack("get_dy", s.quoteIndex, s.baseIndex, s.dx)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack contract args for pair: %s", pair.String())
-	}
-
-	resp, err := s.ethClient.CallBlocks(
-		context.Background(),
-		pkgEthereum.Call{Address: contract, Data: callData},
-		s.blocks,
+	var (
+		frs []FetchResult
+		cds []pkgEthereum.Call
 	)
-	if err != nil {
-		return nil, err
+	for _, pair := range pairs {
+		contract, inverted, err := s.pairsToContractAddress(pair)
+		if err != nil {
+			return fetchResultListWithErrors(pairs, err)
+		}
+		var callData []byte
+		if !inverted {
+			callData, err = s.abi.Pack("get_dy", s.baseIndex, s.quoteIndex, s.dx)
+		} else {
+			callData, err = s.abi.Pack("get_dy", s.quoteIndex, s.baseIndex, s.dx)
+		}
+		if err != nil {
+			return fetchResultListWithErrors(pairs, err)
+		}
+		cds = append(cds, pkgEthereum.Call{Address: contract, Data: callData})
 	}
-
-	price, _ := reduceEtherAverageFloat(resp).Float64()
-	return &Price{
-		Pair:      pair,
-		Price:     price,
-		Timestamp: time.Now(),
-	}, nil
+	blockNumber, err := s.ethClient.BlockNumber(context.Background())
+	if err != nil {
+		return fetchResultListWithErrors(pairs, err)
+	}
+	resps := make([][][]byte, len(cds))
+	for _, blockDelta := range s.blocks {
+		ctx := pkgEthereum.WithBlockNumber(context.Background(), big.NewInt(blockNumber.Int64()-blockDelta))
+		resp, err := s.ethClient.MultiCall(ctx, cds)
+		if err != nil {
+			return fetchResultListWithErrors(pairs, err)
+		}
+		for i, r := range resp {
+			resps[i] = append(resps[i], r)
+		}
+	}
+	for i, pair := range pairs {
+		price, _ := reduceEtherAverageFloat(resps[i]).Float64()
+		frs = append(frs, FetchResult{
+			Price: Price{
+				Pair:      pair,
+				Price:     price,
+				Timestamp: time.Now(),
+			},
+		})
+	}
+	return frs
 }
