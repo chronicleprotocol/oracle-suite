@@ -89,6 +89,7 @@ type EthClient interface {
 // Client implements the ethereum.Client interface.
 type Client struct {
 	ethClient EthClient
+	chainID   *big.Int
 	signer    pkgEthereum.Signer
 }
 
@@ -178,8 +179,7 @@ func (e *Client) MultiCall(ctx context.Context, calls []pkgEthereum.Call) ([][]b
 			Data:    c.Data,
 		})
 	}
-
-	chainID, err := e.ethClient.NetworkID(ctx)
+	chainID, err := e.getChainID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,6 @@ func (e *Client) MultiCall(ctx context.Context, calls []pkgEthereum.Call) ([][]b
 	if err != nil {
 		return nil, err
 	}
-
 	return results[1].([][]byte), nil
 }
 
@@ -248,7 +247,7 @@ func (e *Client) SendTransaction(ctx context.Context, transaction *pkgEthereum.T
 		tx.MaxFee = new(big.Int).Mul(suggestedGasPrice, big.NewInt(2))
 	}
 	if tx.ChainID == nil {
-		tx.ChainID, err = e.ethClient.NetworkID(ctx)
+		tx.ChainID, err = e.getChainID(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -271,6 +270,17 @@ func (e *Client) SendTransaction(ctx context.Context, transaction *pkgEthereum.T
 // FilterLogs implements the ethereum.Client interface.
 func (e *Client) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
 	return e.ethClient.FilterLogs(ctx, query)
+}
+
+func (e *Client) getChainID(ctx context.Context) (*big.Int, error) {
+	if e.chainID == nil {
+		var err error
+		e.chainID, err = e.ethClient.NetworkID(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return e.chainID, nil
 }
 
 func isRevertResp(resp []byte) error {
