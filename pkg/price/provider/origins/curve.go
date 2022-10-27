@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/big"
+	"sort"
 	"strings"
 	"time"
 
@@ -60,12 +61,17 @@ func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses, blocks []i
 func (s CurveFinance) pairsToContractAddress(pair Pair) (common.Address, bool, error) {
 	contract, inverted, ok := s.addrs.ByPair(pair)
 	if !ok {
-		return common.Address{}, inverted, fmt.Errorf("failed to get contract address for pair: %s", pair.String())
+		return common.Address{},
+			inverted,
+			fmt.Errorf("failed to get contract address for pair: %s", pair.String())
 	}
 	return common.HexToAddress(contract), inverted, nil
 }
 
 func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].String() < pairs[j].String()
+	})
 	var (
 		frs []FetchResult
 		cds []pkgEthereum.Call
@@ -93,11 +99,21 @@ func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
 	resps := make([][][]byte, len(cds))
 	for _, blockDelta := range s.blocks {
 		ctx := pkgEthereum.WithBlockNumber(context.Background(), big.NewInt(blockNumber.Int64()-blockDelta))
-		resp, err := s.ethClient.MultiCall(ctx, cds)
+		multiCallResps, err := s.ethClient.MultiCall(ctx, cds)
 		if err != nil {
 			return fetchResultListWithErrors(pairs, err)
 		}
-		for i, r := range resp {
+		if len(multiCallResps) != len(resps) {
+			return fetchResultListWithErrors(
+				pairs,
+				fmt.Errorf(
+					"multi call response length mismatch, expected %d, got %d",
+					len(resps),
+					len(multiCallResps),
+				),
+			)
+		}
+		for i, r := range multiCallResps {
 			resps[i] = append(resps[i], r)
 		}
 	}
