@@ -67,4 +67,7 @@ func (s *PriceRETHE2ESuite) TestCircuit() {
 	s.Require().NoError(err)
 	_, _, err = callGofer("-c", s.ConfigPath, "price", "RETH/ETH")
 	s.Require().Error(err)
+
+	_, _, err = callGofer("-c", s.ConfigPath, "price", "RETH/USD")
+	s.Require().Error(err)
 }
