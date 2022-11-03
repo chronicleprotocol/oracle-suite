@@ -181,6 +181,23 @@ func TestClient_PullPrices_ByFeeder(t *testing.T) {
 	assertEqualPrices(t, testPriceAAABBB, prices[0])
 }
 
+func TestClient_PullPrices(t *testing.T) {
+	var err error
+	var prices []*messages.Price
+
+	err = spire.PublishPrice(testPriceAAABBB)
+	assert.NoError(t, err)
+
+	wait(func() bool {
+		prices, err = spire.PullPrices("", "")
+		return len(prices) != 0
+	}, time.Second)
+
+	assert.NoError(t, err)
+	assert.Len(t, prices, 1)
+	assertEqualPrices(t, testPriceAAABBB, prices[0])
+}
+
 func assertEqualPrices(t *testing.T, expected, given *messages.Price) {
 	je, _ := json.Marshal(expected)
 	jg, _ := json.Marshal(given)
