@@ -170,10 +170,11 @@ func (c *EventPublisher) configureTeleportStarknet(lis *[]publisher.EventProvide
 		}
 		var ep publisher.EventProvider
 		ep, err = teleportstarknet.New(teleportstarknet.Config{
-			Sequencer: starknetClient.NewSequencer(cfg.Sequencer, http.Client{}),
-			Addresses: cfg.Addresses,
-			Interval:  time.Second * time.Duration(interval),
-			Logger:    logger,
+			Sequencer:      starknetClient.NewSequencer(cfg.Sequencer, http.Client{}),
+			Addresses:      cfg.Addresses,
+			Interval:       time.Second * time.Duration(interval),
+			PrefetchPeriod: time.Duration(cfg.PrefetchPeriod) * time.Second,
+			Logger:         logger,
 		})
 		if err != nil {
 			return err

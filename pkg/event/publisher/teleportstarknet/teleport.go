@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/http"
 	"sync"
 	"time"
 
@@ -225,6 +226,13 @@ func (ep *EventProvider) processBlock(block *starknet.Block) {
 	ep.mu.Lock()
 	defer ep.mu.Unlock()
 
+	ep.log.
+		WithFields(log.Fields{
+			"blockNumber": block.BlockNumber,
+			"status":      block.Status,
+		}).
+		Info("Processing block")
+
 	isPending := block.Status == "PENDING"
 
 	// Clear list of processed pending transactions if there is a new pending
@@ -297,6 +305,13 @@ func (ep *EventProvider) getBlockByNumber(ctx context.Context, num uint64) (bloc
 		func() error {
 			var err error
 			block, err = ep.sequencer.GetBlockByNumber(ctx, num)
+			if err, ok := err.(starknet.HTTPError); ok && err.StatusCode == http.StatusTooManyRequests {
+				ep.log.WithError(err).Debug("Unable to get block by number")
+				return err
+			}
+			if err != nil {
+				ep.log.WithError(err).Error("Unable to get block by number")
+			}
 			return err
 		},
 		retryInterval,
@@ -316,6 +331,13 @@ func (ep *EventProvider) getLatestBlock(ctx context.Context) (block *starknet.Bl
 		func() error {
 			var err error
 			block, err = ep.sequencer.GetLatestBlock(ctx)
+			if err, ok := err.(starknet.HTTPError); ok && err.StatusCode == http.StatusTooManyRequests {
+				ep.log.WithError(err).Debug("Unable to get latest block")
+				return err
+			}
+			if err != nil {
+				ep.log.WithError(err).Error("Unable to get latest block")
+			}
 			return err
 		},
 		retryInterval,
@@ -335,6 +357,13 @@ func (ep *EventProvider) getPendingBlock(ctx context.Context) (block *starknet.B
 		func() error {
 			var err error
 			block, err = ep.sequencer.GetPendingBlock(ctx)
+			if err, ok := err.(starknet.HTTPError); ok && err.StatusCode == http.StatusTooManyRequests {
+				ep.log.WithError(err).Debug("Unable to get pending block")
+				return err
+			}
+			if err != nil {
+				ep.log.WithError(err).Error("Unable to get pending block")
+			}
 			return err
 		},
 		retryInterval,
