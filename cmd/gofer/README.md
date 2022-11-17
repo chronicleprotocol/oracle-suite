@@ -88,7 +88,6 @@ Price model for each asset pair consists of three keys: `method`, `sources` and 
         - `coinmarketcap` - [CoinMarketCap](https://coinmarketcap.com/)
         - `ddex` - [DDEX](https://ddex.net/)
         - `folgory` - [Folgory](https://folgory.com/)
-        - `ftx` - [FTX](https://ftx.com/)
         - `fx` - [exchangeratesapi.io](https://exchangeratesapi.io/) (fiat currencies)
         - `gateio` - [Gateio](https://gate.io/)
         - `gemini` - [Gemini](https://gemini.com/)

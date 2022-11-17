@@ -113,8 +113,6 @@ func NewHandler(
 		return origins.NewBaseExchangeHandler(origins.Ddex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "folgory":
 		return origins.NewBaseExchangeHandler(origins.Folgory{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
-	case "ftx":
-		return origins.NewBaseExchangeHandler(origins.Ftx{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "fx":
 		apiKey, err := parseParamsAPIKey(params)
 		if err != nil {
