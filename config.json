@@ -242,7 +242,7 @@
           },
           "contracts": {
             "AAVE/WETH": "0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f",
-            "BAT/WETH": "0xb6909b960dbbe7392d405429eb2b3649752b4838",
+            "BAT/WETH": "0xa70d458a4d9bc0e6571565faee18a48da5c0d593",
             "SNX/WETH": "0x43ae24960e5534731fc831386c07755a2dc33d47",
             "COMP/WETH": "0xcffdded873554f362ac02f8fb1f02e5ada10516f",
             "WETH/USDC": "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
@@ -259,18 +259,19 @@
         "name": "uniswapV3",
         "params": {
           "symbolAliases": {
-            "ETH": "WETH",
             "BTC": "WBTC",
+            "ETH": "WETH",
             "USD": "USDC"
           },
           "contracts": {
             "COMP/WETH": "0xea4ba4ce14fdd287f380b55419b1c5b6c3f22ab6",
-            "WETH/CRV": "0x4c83a7f819a5c37d64b4c5a2f8238ea082fa1f4e",
-            "USDC/WETH": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+            "GNO/WETH": "0xf56d08221b5942c428acc5de8f78489a97fc5599",
+            "LINK/WETH": "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8",
             "UNI/WETH": "0x1d42064fc4beb5f8aaf85f4617ae8b3b5b8bd801",
+            "USDC/WETH": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+            "WETH/CRV": "0x4c83a7f819a5c37d64b4c5a2f8238ea082fa1f4e",
             "WNXM/WETH": "0x058d79a4c6eb5b11d0248993ffa1faa168ddd3c0",
-            "YFI/WETH": "0x04916039b1f59d9745bf6e0a21f191d1e0a84287",
-            "LINK/WETH": "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8"
+            "YFI/WETH": "0x04916039b1f59d9745bf6e0a21f191d1e0a84287"
           }
         }
       },
@@ -409,7 +410,7 @@
       "GNO/USD": {
         "method": "median",
         "sources": [
-          [{ "origin": "balancerV2", "pair": "GNO/ETH" }, { "origin": ".", "pair": "ETH/USD" }],
+          [{ "origin": "balancerV2", "pair": "ETH/GNO" }, { "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "uniswapV3", "pair": "GNO/ETH" }, { "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "kraken", "pair": "GNO/BTC" }, { "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "binance", "pair": "GNO/USDT" }, { "origin": ".", "pair": "USDT/USD" }]
