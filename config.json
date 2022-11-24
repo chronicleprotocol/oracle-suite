@@ -218,17 +218,84 @@
       "address": "${CFG_GOFER_RPC_ADDR-127.0.0.1:9000}"
     },
     "origins": {
+      "balancerV2": {
+        "type": "balancerV2",
+        "name": "balancerV2",
+        "params": {
+          "symbolAliases": {
+            "ETH": "WETH"
+          },
+          "contracts": {
+            "WETH/GNO": "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b",
+            "Ref:RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+            "RETH/WETH": "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
+            "STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230",
+            "WETH/YFI": "0x186084ff790c65088ba694df11758fae4943ee9e"
+          }
+        }
+      },
       "binance_us": {
         "type": "binance",
         "name": "binance_us",
         "url": "https://www.binance.us",
         "params": {}
       },
+      "bittrex": {
+        "type": "bittrex",
+        "name": "bittrex",
+        "params": {
+          "symbolAliases": {
+            "REP": "REPV2"
+          }
+        }
+      },
+      "curve": {
+        "type": "curve",
+        "name": "curve",
+        "params": {
+          "contracts": {
+            "RETH/WSTETH": "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
+            "ETH/STETH": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
+          }
+        }
+      },
       "openexchangerates": {
         "type": "openexchangerates",
         "name": "openexchangerates",
         "params": {
-          "apiKey": "${CFG_OPENEXCHANGERATES_KEY-}"
+          "apiKey": "${GOFER_OPENEXCHANGERATES_API_KEY-}"
+        }
+      },
+      "poloniex": {
+        "type": "poloniex",
+        "name": "poloniex",
+        "params": {
+          "symbolAliases": {
+            "REP": "REPV2"
+          }
+        }
+      },
+      "rocketpool": {
+        "type": "rocketpool",
+        "name": "rocketpool",
+        "params": {
+          "contracts": {
+            "RETH/ETH": "0xae78736Cd615f374D3085123A210448E74Fc6393"
+          }
+        }
+      },
+      "sushiswap": {
+        "type": "sushiswap",
+        "name": "sushiswap",
+        "params": {
+          "symbolAliases": {
+            "ETH": "WETH",
+            "BTC": "WBTC",
+            "USD": "USDC"
+          },
+          "contracts": {
+            "YFI/WETH": "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c"
+          }
         }
       },
       "uniswap": {
@@ -241,10 +308,6 @@
             "USD": "USDC"
           },
           "contracts": {
-            "AAVE/WETH": "0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f",
-            "BAT/WETH": "0xa70d458a4d9bc0e6571565faee18a48da5c0d593",
-            "SNX/WETH": "0x43ae24960e5534731fc831386c07755a2dc33d47",
-            "COMP/WETH": "0xcffdded873554f362ac02f8fb1f02e5ada10516f",
             "WETH/USDC": "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
             "LEND/WETH": "0xab3f9bf1d81ddb224a2014e98b238638824bcf20",
             "LRC/WETH": "0x8878df9e1a7c87dcbf6d3999d997f262c05d8c70",
@@ -264,85 +327,10 @@
             "USD": "USDC"
           },
           "contracts": {
-            "COMP/WETH": "0xea4ba4ce14fdd287f380b55419b1c5b6c3f22ab6",
             "GNO/WETH": "0xf56d08221b5942c428acc5de8f78489a97fc5599",
             "LINK/WETH": "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8",
-            "UNI/WETH": "0x1d42064fc4beb5f8aaf85f4617ae8b3b5b8bd801",
             "USDC/WETH": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
-            "WETH/CRV": "0x4c83a7f819a5c37d64b4c5a2f8238ea082fa1f4e",
-            "WNXM/WETH": "0x058d79a4c6eb5b11d0248993ffa1faa168ddd3c0",
             "YFI/WETH": "0x04916039b1f59d9745bf6e0a21f191d1e0a84287"
-          }
-        }
-      },
-      "balancer": {
-        "type": "balancer",
-        "name": "balancer",
-        "params": {
-          "contracts": {
-            "BAL/USD": "0xba100000625a3754423978a60c9317c58a424e3d",
-            "AAVE/USD": "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9",
-            "WNXM/USD": "0x0d438f3b5175bebc262bf23753c1e53d03432bde"
-          }
-        }
-      },
-      "bittrex": {
-        "type": "bittrex",
-        "name": "bittrex",
-        "params": {
-          "symbolAliases": {
-            "REP": "REPV2"
-          }
-        }
-      },
-      "poloniex": {
-        "type": "poloniex",
-        "name": "poloniex",
-        "params": {
-          "symbolAliases": {
-            "REP": "REPV2"
-          }
-        }
-      },
-      "sushiswap": {
-        "type": "sushiswap",
-        "name": "sushiswap",
-        "params": {
-          "symbolAliases": {
-            "ETH": "WETH",
-            "BTC": "WBTC",
-            "USD": "USDC"
-          },
-          "contracts": {
-            "SNX/WETH": "0xa1d7b2d891e3a1f9ef4bbc5be20630c2feb1c470",
-            "CRV/WETH": "0x58dc5a51fe44589beb22e8ce67720b5bc5378009",
-            "YFI/WETH": "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c"
-          }
-        }
-      },
-      "curve": {
-        "type": "curve",
-        "name": "curve",
-        "params": {
-          "contracts": {
-            "RETH/WSTETH": "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
-            "ETH/STETH": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
-          }
-        }
-      },
-      "balancerV2": {
-        "type": "balancerV2",
-        "name": "balancerV2",
-        "params": {
-          "symbolAliases": {
-            "ETH": "WETH"
-          },
-          "contracts": {
-            "WETH/GNO": "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b",
-            "Ref:RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
-            "RETH/WETH": "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
-            "STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230",
-            "WETH/YFI": "0x186084ff790c65088ba694df11758fae4943ee9e"
           }
         }
       },
@@ -352,15 +340,6 @@
         "params": {
           "contracts": {
             "WSTETH/STETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
-          }
-        }
-      },
-      "rocketpool": {
-        "type": "rocketpool",
-        "name": "rocketpool",
-        "params": {
-          "contracts": {
-            "RETH/ETH": "0xae78736Cd615f374D3085123A210448E74Fc6393"
           }
         }
       }
