@@ -22,7 +22,7 @@ exactly, from how many sources you want to pull prices and what conditions they 
 ## Installation
 
 To install it, you'll first need Go installed on your machine. Then you can use standard Go
-command: `go get -u github.com/chronicleprotocol/oracle-suite/cmd/gofer`.
+command: `go install github.com/chronicleprotocol/oracle-suite/cmd/gofer@latest`
 
 Alternatively, you can build Gofer using `Makefile` directly from the repository. This approach is recommended if you
 wish to work on Gofer source.

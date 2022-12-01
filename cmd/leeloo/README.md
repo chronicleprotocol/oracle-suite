@@ -16,10 +16,10 @@ Leeloo is one of the components of Maker Teleport: https://forum.makerdao.com/t/
 ## Installation
 
 To install it, you'll first need Go installed on your machine. Then you can use standard Go
-command: `go get -u github.com/chronicleprotocol/oracle-suite/cmd/leeloo`.
+command: `go install github.com/chronicleprotocol/oracle-suite/cmd/leeloo@latest`
 
-Alternatively, you can build Gofer using `Makefile` directly from the repository. This approach is recommended if you
-wish to work on Gofer source.
+Alternatively, you can build Leeloo using `Makefile` directly from the repository. This approach is recommended if 
+you wish to work on Leeloo source.
 
 ```bash
 git clone https://github.com/chronicleprotocol/oracle-suite.git

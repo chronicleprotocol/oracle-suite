@@ -16,7 +16,7 @@ Lair is one of the components of Maker Teleport: https://forum.makerdao.com/t/in
 ## Installation
 
 To install it, you'll first need Go installed on your machine. Then you can use standard Go
-command: `go get -u github.com/chronicleprotocol/oracle-suite/cmd/lair`.
+command: `go install github.com/chronicleprotocol/oracle-suite/cmd/lair@latest`
 
 Alternatively, you can build Lair using `Makefile` directly from the repository. This approach is recommended if you
 wish to work on Lair source.
