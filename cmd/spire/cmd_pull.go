@@ -30,8 +30,7 @@ func NewPullCmd(opts *options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull",
 		Args:  cobra.ExactArgs(1),
-		Short: "",
-		Long:  ``,
+		Short: "Pulls data from the Spire datastore (require agent)",
 	}
 
 	cmd.AddCommand(
@@ -44,10 +43,9 @@ func NewPullCmd(opts *options) *cobra.Command {
 
 func NewPullPriceCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "price",
+		Use:   "price ASSET_PAIR FEEDER",
 		Args:  cobra.ExactArgs(2),
-		Short: "",
-		Long:  ``,
+		Short: "Pulls latest price for a given pair and feeder",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, cli, err := PrepareClientServices(ctx, opts)
@@ -91,8 +89,7 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prices",
 		Args:  cobra.ExactArgs(0),
-		Short: "",
-		Long:  ``,
+		Short: "Pulls all prices",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, cli, err := PrepareClientServices(ctx, opts)

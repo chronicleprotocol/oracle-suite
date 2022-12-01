@@ -30,8 +30,7 @@ func NewPushCmd(opts *options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "push",
 		Args:  cobra.ExactArgs(1),
-		Short: "",
-		Long:  ``,
+		Short: "Push a message to the network (require agent)",
 	}
 
 	cmd.AddCommand(NewPushPriceCmd(opts))
@@ -43,8 +42,7 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price",
 		Args:  cobra.MaximumNArgs(1),
-		Short: "",
-		Long:  ``,
+		Short: "Push a price message to the network",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, cli, err := PrepareClientServices(ctx, opts)

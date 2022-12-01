@@ -41,7 +41,7 @@ type Config struct {
 	Logger    loggerConfig.Logger       `json:"logger"`
 }
 
-func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
+func PrepareAgentServices(_ context.Context, opts *options) (*supervisor.Supervisor, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
@@ -101,7 +101,7 @@ func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Super
 	return sup, nil
 }
 
-func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supervisor, *spire.Client, error) {
+func PrepareClientServices(_ context.Context, opts *options) (*supervisor.Supervisor, *spire.Client, error) {
 	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf(`config error: %w`, err)
@@ -129,4 +129,45 @@ func PrepareClientServices(ctx context.Context, opts *options) (*supervisor.Supe
 		sup.Watch(l)
 	}
 	return sup, cli, nil
+}
+
+func PrepareStreamServices(_ context.Context, opts *options) (*supervisor.Supervisor, transport.Transport, error) {
+	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf(`config error: %w`, err)
+	}
+	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "spire",
+		BaseLogger: opts.Logger(),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf(`logger config error: %w`, err)
+	}
+	fed, err := opts.Config.Feeds.Addresses()
+	if err != nil {
+		return nil, nil, fmt.Errorf(`feeds config error: %w`, err)
+	}
+	sig, err := opts.Config.Ethereum.ConfigureSigner()
+	if err != nil {
+		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
+	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
+		Signer: sig,
+		Feeds:  fed,
+		Logger: log,
+	},
+		map[string]transport.Message{
+			messages.PriceV0MessageName: (*messages.Price)(nil),
+			messages.PriceV1MessageName: (*messages.Price)(nil),
+		},
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf(`transport config error: %w`, err)
+	}
+	sup := supervisor.New(log)
+	sup.Watch(tra)
+	if l, ok := log.(supervisor.Service); ok {
+		sup.Watch(l)
+	}
+	return sup, tra, nil
 }

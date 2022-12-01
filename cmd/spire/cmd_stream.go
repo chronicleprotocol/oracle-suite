@@ -17,28 +17,61 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/signal"
 
 	"github.com/spf13/cobra"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func NewAgentCmd(opts *options) *cobra.Command {
+func NewStreamCmd(opts *options) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "stream",
+		Args:  cobra.ExactArgs(1),
+		Short: "Streams data from the network",
+	}
+
+	cmd.AddCommand(
+		NewStreamPricesCmd(opts),
+	)
+
+	return cmd
+}
+
+func NewStreamPricesCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:     "agent",
-		Aliases: []string{"run"},
-		Args:    cobra.ExactArgs(0),
-		Short:   "Starts the Spire agent",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		Use:   "prices",
+		Args:  cobra.ExactArgs(0),
+		Short: "Prints price messages as they are received",
+		RunE: func(_ *cobra.Command, _ []string) (err error) {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, err := PrepareAgentServices(ctx, opts)
+			sup, tra, err := PrepareStreamServices(ctx, opts)
 			if err != nil {
 				return err
 			}
 			if err = sup.Start(ctx); err != nil {
 				return err
 			}
-			return <-sup.Wait()
+			defer func() {
+				if sErr := <-sup.Wait(); err == nil {
+					err = sErr
+				}
+			}()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case msg := <-tra.Messages(messages.PriceV1MessageName):
+					jsonMsg, err := json.Marshal(msg.Message)
+					if err != nil {
+						return err
+					}
+					fmt.Println(string(jsonMsg))
+				}
+			}
 		},
 	}
 }

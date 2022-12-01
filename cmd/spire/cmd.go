@@ -34,9 +34,11 @@ func NewRootCommand(opts *options) *cobra.Command {
 		Use:           "spire",
 		Version:       opts.Version,
 		Short:         "",
-		Long:          "",
 		SilenceErrors: false,
 		SilenceUsage:  true,
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd: true,
+		},
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
@@ -50,6 +52,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 
 	rootCmd.AddCommand(
 		NewAgentCmd(opts),
+		NewStreamCmd(opts),
 		NewPullCmd(opts),
 		NewPushCmd(opts),
 	)

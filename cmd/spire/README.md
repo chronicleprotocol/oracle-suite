@@ -223,6 +223,12 @@ spire pull prices
 spire pull price BTCUSD 0xFeedEthereumAddress
 ```
 
+### Streaming price messages from the network
+
+```bash
+spire stream prices
+```
+
 ## Commands
 
 ```
@@ -230,11 +236,11 @@ Usage:
   spire [command]
 
 Available Commands:
-  agent       
-  completion  generate the autocompletion script for the specified shell
+  agent       Starts the Spire agent
   help        Help about any command
-  pull        
-  push        
+  pull        Pulls data from the Spire datastore (require agent)
+  push        Push a message to the network (require agent)
+  stream      Streams data from the network
 
 Flags:
   -c, --config string                                  spire config file (default "./config.json")
@@ -244,7 +250,6 @@ Flags:
       --version                                        version for spire
 
 Use "spire [command] --help" for more information about a command.
-
 ```
 
 ## License
