@@ -172,9 +172,9 @@ linters:
     - lll
     - nakedret
     - nolintlint
-#    - rowserrcheck
+    #- rowserrcheck
     - staticcheck
-#    - structcheck
+    #- structcheck
     - stylecheck
     - typecheck
     - unconvert
@@ -198,7 +198,8 @@ linters:
   # - wsl
 
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude:
+    - '.*github.com/chronicleprotocol/oracle-suite/pkg/ethereum.*is deprecated.*'
   exclude-rules:
     - path: /mocks/
       linters:
