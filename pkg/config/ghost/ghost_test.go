@@ -45,14 +45,14 @@ func TestGhost_Configure(t *testing.T) {
 		Pairs:    pairs,
 	}
 
-	ghostFactory = func(cfg feeder.Config) (*feeder.Ghost, error) {
+	ghostFactory = func(cfg feeder.Config) (*feeder.Feeder, error) {
 		assert.Equal(t, time.Duration(interval)*time.Second, cfg.Interval)
 		assert.Equal(t, pairs, cfg.Pairs)
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, transport, cfg.Transport)
 		assert.Equal(t, logger, cfg.Logger)
 
-		return &feeder.Ghost{}, nil
+		return &feeder.Feeder{}, nil
 	}
 
 	g, err := config.Configure(Dependencies{
