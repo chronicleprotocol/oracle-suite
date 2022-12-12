@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ghost
+package feeder
 
 import (
 	"bytes"
@@ -90,7 +90,7 @@ var (
 	PriceXXXYYYHash = errutil.Must(hex.DecodeString("8dd1c8d47ec9eafda294cfc8c0c8d4041a13d7a89536a89eb6685a79d9fa6bc4"))
 )
 
-func TestGhost_Broadcast(t *testing.T) {
+func TestFeeder_Broadcast(t *testing.T) {
 	tests := []struct {
 		name    string
 		prices  int
@@ -205,7 +205,7 @@ func TestGhost_Broadcast(t *testing.T) {
 	}
 }
 
-func TestGhost_InvalidConfig(t *testing.T) {
+func TestFeeder_InvalidConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     Config
@@ -270,7 +270,7 @@ func TestGhost_InvalidConfig(t *testing.T) {
 	}
 }
 
-func TestGhost_Start(t *testing.T) {
+func TestFeeder_Start(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer ctxCancel()
 

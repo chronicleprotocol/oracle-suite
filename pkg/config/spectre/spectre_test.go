@@ -26,14 +26,13 @@ import (
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
 )
 
 func TestSpectre_Configure(t *testing.T) {
-	prevSpectreFactory := spectreFactory
+	prevSpectreFactory := relayerFactory
 	prevDatastoreFactory := priceStoreFactory
 	defer func() {
-		spectreFactory = prevSpectreFactory
+		relayerFactory = prevSpectreFactory
 		priceStoreFactory = prevDatastoreFactory
 	}()
 
@@ -56,7 +55,7 @@ func TestSpectre_Configure(t *testing.T) {
 		},
 	}
 
-	spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
+	relayerFactory = func(cfg relayer.Config) (*relayer.Spectre, error) {
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, ps, cfg.PriceStore)
 		assert.Equal(t, secToDuration(interval), cfg.Interval)
@@ -66,10 +65,10 @@ func TestSpectre_Configure(t *testing.T) {
 		assert.Equal(t, secToDuration(config.Medianizers["AAABBB"].MsgExpiration), cfg.Pairs[0].PriceExpiration)
 		assert.Equal(t, config.Medianizers["AAABBB"].OracleSpread, cfg.Pairs[0].OracleSpread)
 		assert.Equal(t, ethereum.HexToAddress(config.Medianizers["AAABBB"].Contract), cfg.Pairs[0].Median.Address())
-		return &spectre.Spectre{}, nil
+		return &relayer.Spectre{}, nil
 	}
 
-	s, err := config.ConfigureSpectre(Dependencies{
+	s, err := config.ConfigureRelayer(Dependencies{
 		Signer:         signer,
 		PriceStore:     ps,
 		EthereumClient: ethClient,

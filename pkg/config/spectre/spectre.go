@@ -19,18 +19,18 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/oracle/geth"
-	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
 //nolint
-var spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
-	return spectre.NewSpectre(cfg)
+var relayerFactory = func(cfg relayer.Config) (*relayer.Relayer, error) {
+	return relayer.New(cfg)
 }
 
 //nolint
@@ -47,7 +47,6 @@ type Medianizer struct {
 	Contract         string  `yaml:"oracle"`
 	OracleSpread     float64 `yaml:"oracleSpread"`
 	OracleExpiration int64   `yaml:"oracleExpiration"`
-	MsgExpiration    int64   `yaml:"msgExpiration"`
 }
 
 type Dependencies struct {
@@ -65,23 +64,22 @@ type PriceStoreDependencies struct {
 	Logger    log.Logger
 }
 
-func (c *Spectre) ConfigureSpectre(d Dependencies) (*spectre.Spectre, error) {
-	cfg := spectre.Config{
+func (c *Spectre) ConfigureRelayer(d Dependencies) (*relayer.Relayer, error) {
+	cfg := relayer.Config{
 		Signer:     d.Signer,
 		Interval:   time.Second * time.Duration(c.Interval),
 		PriceStore: d.PriceStore,
 		Logger:     d.Logger,
 	}
 	for name, pair := range c.Medianizers {
-		cfg.Pairs = append(cfg.Pairs, &spectre.Pair{
+		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
 			AssetPair:        name,
 			OracleSpread:     pair.OracleSpread,
 			OracleExpiration: time.Second * time.Duration(pair.OracleExpiration),
-			PriceExpiration:  time.Second * time.Duration(pair.MsgExpiration),
 			Median:           oracleGeth.NewMedian(d.EthereumClient, ethereum.HexToAddress(pair.Contract)),
 		})
 	}
-	return spectreFactory(cfg)
+	return relayerFactory(cfg)
 }
 
 func (c *Spectre) ConfigurePriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {

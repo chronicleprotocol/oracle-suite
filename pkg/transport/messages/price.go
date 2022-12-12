@@ -38,7 +38,7 @@ var ErrUnknownPriceMessageVersion = errors.New("unknown message version")
 
 type Price struct {
 	Price   *oracle.Price   `json:"price"`
-	Trace   json.RawMessage `json:"trace"`             // TODO: allow data in any format, not just JSON
+	Trace   json.RawMessage `json:"trace"`
 	Version string          `json:"version,omitempty"` // TODO: this should move to some meta field e.g. `feedVersion`
 
 	// messageVersion is the version of the message. The value 0 corresponds to
@@ -69,9 +69,6 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 			Wat:     p.Price.Wat,
 			Age:     p.Price.Age.Unix(),
 			Vrs:     ethereum.SignatureFromVRS(p.Price.V, p.Price.R, p.Price.S).Bytes(),
-			StarkR:  p.Price.StarkR,
-			StarkS:  p.Price.StarkS,
-			StarkPK: p.Price.StarkPK,
 			Trace:   p.Trace,
 			Version: p.Version,
 		}
@@ -118,15 +115,12 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 		}
 		v, r, s := ethereum.SignatureFromBytes(msg.Vrs).VRS()
 		p.Price = &oracle.Price{
-			Wat:     msg.Wat,
-			Val:     new(big.Int).SetBytes(msg.Val),
-			Age:     time.Unix(msg.Age, 0),
-			V:       v,
-			R:       r,
-			S:       s,
-			StarkR:  msg.StarkR,
-			StarkS:  msg.StarkS,
-			StarkPK: msg.StarkPK,
+			Wat: msg.Wat,
+			Val: new(big.Int).SetBytes(msg.Val),
+			Age: time.Unix(msg.Age, 0),
+			V:   v,
+			R:   r,
+			S:   s,
 		}
 		p.Trace = msg.Trace
 		p.Version = msg.Version
@@ -139,15 +133,6 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 	}
 	if p.Price.Val == nil {
 		p.Price.Val = big.NewInt(0)
-	}
-	if len(p.Price.StarkS) == 0 {
-		p.Price.StarkS = nil
-	}
-	if len(p.Price.StarkR) == 0 {
-		p.Price.StarkR = nil
-	}
-	if len(p.Price.StarkPK) == 0 {
-		p.Price.StarkPK = nil
 	}
 	return nil
 }
@@ -168,14 +153,11 @@ func (p *Price) copy() *Price {
 	c := &Price{
 		messageVersion: p.messageVersion,
 		Price: &oracle.Price{
-			Wat:     p.Price.Wat,
-			Age:     p.Price.Age,
-			V:       p.Price.V,
-			R:       p.Price.R,
-			S:       p.Price.S,
-			StarkR:  p.Price.StarkR,
-			StarkS:  p.Price.StarkS,
-			StarkPK: p.Price.StarkPK,
+			Wat: p.Price.Wat,
+			Age: p.Price.Age,
+			V:   p.Price.V,
+			R:   p.Price.R,
+			S:   p.Price.S,
 		},
 		Trace:   p.Trace,
 		Version: p.Version,
@@ -186,18 +168,6 @@ func (p *Price) copy() *Price {
 	if p.Trace != nil {
 		c.Trace = make([]byte, len(p.Trace))
 		copy(c.Trace, p.Trace)
-	}
-	if p.Price.StarkS != nil {
-		c.Price.StarkS = make([]byte, len(p.Price.StarkS))
-		copy(c.Price.StarkS, p.Price.StarkS)
-	}
-	if p.Price.StarkR != nil {
-		c.Price.StarkR = make([]byte, len(p.Price.StarkR))
-		copy(c.Price.StarkR, p.Price.StarkR)
-	}
-	if p.Price.StarkPK != nil {
-		c.Price.StarkPK = make([]byte, len(p.Price.StarkPK))
-		copy(c.Price.StarkPK, p.Price.StarkPK)
 	}
 	return c
 }

@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ghost
+package feeder
 
 import (
 	"context"
@@ -32,9 +32,9 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-const LoggerTag = "GHOST"
+const LoggerTag = "FEEDER"
 
-type Ghost struct {
+type Feeder struct {
 	ctx    context.Context
 	waitCh chan error
 
@@ -46,26 +46,31 @@ type Ghost struct {
 	log           log.Logger
 }
 
-// Config is the configuration for the Ghost.
+// Config is the configuration for the Feeder.
 type Config struct {
 	// Pairs is a list supported pairs.
 	Pairs []string
+
 	// PriceProvider is an instance of the provider.Provider.
 	PriceProvider provider.Provider
+
 	// Signer is an instance of the ethereum.Signer which will be used to
 	// sign prices.
 	Signer ethereum.Signer
+
 	// Transport is an implementation of transport used to send prices to
 	// relayers.
 	Transport transport.Transport
+
 	// Interval describes how often we should send prices to the network.
 	Interval time.Duration
-	// Logger is a current logger interface used by the Ghost. The Logger
+
+	// Logger is a current logger interface used by the Feeder. The Logger
 	// helps to monitor asynchronous processes.
 	Logger log.Logger
 }
 
-func New(cfg Config) (*Ghost, error) {
+func New(cfg Config) (*Feeder, error) {
 	if cfg.PriceProvider == nil {
 		return nil, errors.New("price provider must not be nil")
 	}
@@ -82,7 +87,7 @@ func New(cfg Config) (*Ghost, error) {
 	if err != nil {
 		return nil, err
 	}
-	g := &Ghost{
+	g := &Feeder{
 		waitCh:        make(chan error),
 		priceProvider: cfg.PriceProvider,
 		signer:        cfg.Signer,
@@ -94,7 +99,7 @@ func New(cfg Config) (*Ghost, error) {
 	return g, nil
 }
 
-func (g *Ghost) Start(ctx context.Context) error {
+func (g *Feeder) Start(ctx context.Context) error {
 	if g.ctx != nil {
 		return errors.New("service can be started only once")
 	}
@@ -109,13 +114,13 @@ func (g *Ghost) Start(ctx context.Context) error {
 }
 
 // Wait waits until the context is canceled or until an error occurs.
-func (g *Ghost) Wait() chan error {
+func (g *Feeder) Wait() chan error {
 	return g.waitCh
 }
 
 // broadcast sends price for single pair to the network. This method uses
 // current price from the Provider, so it must be updated beforehand.
-func (g *Ghost) broadcast(pair provider.Pair) error {
+func (g *Feeder) broadcast(pair provider.Pair) error {
 	var err error
 
 	tick, err := g.priceProvider.Price(pair)
@@ -152,7 +157,7 @@ func (g *Ghost) broadcast(pair provider.Pair) error {
 
 // broadcasterRoutine creates an asynchronous loop which fetches prices from exchanges and then
 // sends them to the network at a specified interval.
-func (g *Ghost) broadcasterRoutine() {
+func (g *Feeder) broadcasterRoutine() {
 	if g.interval == 0 {
 		return
 	}
@@ -173,12 +178,12 @@ func (g *Ghost) broadcasterRoutine() {
 					err := g.broadcast(pair)
 					if err != nil {
 						g.log.
-							WithFields(log.Fields{"assetPair": pair}).
+							WithField("assetPair", pair).
 							WithError(err).
 							Warn("Unable to broadcast price")
 					} else {
 						g.log.
-							WithFields(log.Fields{"assetPair": pair}).
+							WithField("assetPair", pair).
 							Info("Price broadcast")
 					}
 				}
@@ -189,7 +194,7 @@ func (g *Ghost) broadcasterRoutine() {
 	}
 }
 
-func (g *Ghost) contextCancelHandler() {
+func (g *Feeder) contextCancelHandler() {
 	defer func() { close(g.waitCh) }()
 	defer g.log.Info("Stopped")
 	<-g.ctx.Done()
