@@ -200,6 +200,7 @@ linters:
 issues:
   exclude:
     - '.*github.com/chronicleprotocol/oracle-suite/pkg/ethereum.*is deprecated.*'
+    - '.*Use ethereumv2 package instead.*'
   exclude-rules:
     - path: /mocks/
       linters:
