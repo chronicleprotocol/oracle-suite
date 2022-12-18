@@ -25,7 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
 
 var ErrStorageQueryFailed = errors.New("oracle contract storage query failed")
@@ -146,7 +146,7 @@ func (m *Median) Feeds(ctx context.Context) ([]ethereum.Address, error) {
 }
 
 // Poke implements the oracle.Median interface.
-func (m *Median) Poke(ctx context.Context, prices []*oracle.Price, simulateBeforeRun bool) (*ethereum.Hash, error) {
+func (m *Median) Poke(ctx context.Context, prices []*median.Price, simulateBeforeRun bool) (*ethereum.Hash, error) {
 	// It's important to send prices in correct order, otherwise contract will fail:
 	sort.Slice(prices, func(i, j int) bool {
 		return prices[i].Val.Cmp(prices[j].Val) < 0

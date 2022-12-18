@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/feeder"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/feeder"
 	goferMocks "github.com/chronicleprotocol/oracle-suite/pkg/price/provider/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 )
@@ -46,7 +46,7 @@ func TestGhost_Configure(t *testing.T) {
 	}
 
 	ghostFactory = func(cfg feeder.Config) (*feeder.Feeder, error) {
-		assert.Equal(t, time.Duration(interval)*time.Second, cfg.Interval)
+		assert.Equal(t, time.Duration(interval)*time.Second, cfg.Interval.Duration())
 		assert.Equal(t, pairs, cfg.Pairs)
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, transport, cfg.Transport)

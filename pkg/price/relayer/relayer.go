@@ -16,6 +16,7 @@
 package relayer
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -27,70 +28,48 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/types"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 const LoggerTag = "RELAYER"
 
-type errNotEnoughPricesForQuorum struct {
-	AssetPair string
-}
-
-func (e errNotEnoughPricesForQuorum) Error() string {
-	return fmt.Sprintf(
-		"unable to update the Oracle for %s pair, there is not enough prices to achieve a quorum",
-		e.AssetPair,
-	)
-}
-
-type errUnknownAsset struct {
-	AssetPair string
-}
-
-func (e errUnknownAsset) Error() string {
-	return fmt.Sprintf("pair %s does not exists", e.AssetPair)
-}
-
-type errNoPrices struct {
-	AssetPair string
-}
-
-func (e errNoPrices) Error() string {
-	return fmt.Sprintf("there is no prices in the priceStore for %s pair", e.AssetPair)
-}
-
+// Relayer is a service that relays prices to the Medianizer contracts.
 type Relayer struct {
-	ctx    context.Context
 	mu     sync.Mutex
+	ctx    context.Context
 	waitCh chan error
 
-	signer     ethereum.Signer
-	priceStore *store.PriceStore
-	interval   time.Duration
-	log        log.Logger
-	pairs      map[string]*Pair
+	signer ethereum.Signer
+	store  *store.PriceStore
+	ticker *timeutil.Ticker
+	pairs  map[string]*Pair
+	log    log.Logger
 }
 
 // Config is the configuration for Relayer.
 type Config struct {
-	// Signer is the signer which will be used to sign the Oracle update transactions.
+	// Signer is the signer which will be used to sign poke transactions to the
+	// Medianizer contracts.
 	Signer ethereum.Signer
 
-	// PriceStore provides prices for Relayer.
+	// PriceStore is the price store which will be used to get the latest
+	// prices.
 	PriceStore *store.PriceStore
 
-	// Interval describes how often we should try to update Oracles.
-	Interval time.Duration
+	// PokeTicker invokes the Relayer routine that relays prices to the Medianizer
+	// contracts.
+	PokeTicker *timeutil.Ticker
 
 	// Pairs is the list supported pairs by Relayer with their configuration.
 	Pairs []*Pair
 
-	// Logger is a current logger interface used by the Relayer. The Logger is
-	// required to monitor asynchronous processes.
+	// Logger is a current logger interface used by the Relayer.
 	Logger log.Logger
 }
 
@@ -109,7 +88,18 @@ type Pair struct {
 
 	// Median is the instance of the oracle.Median which is the interface for
 	// the Medianizer contract.
-	Median oracle.Median
+	Median median.Median
+
+	// FeederAddresses is the list of addresses which are allowed to send
+	// updates to the Medianizer contract.
+	FeederAddresses []types.Address
+
+	// FeederAddressesUpdateTicker invokes the FeederAddresses update routine
+	// when ticked.
+	//
+	// TODO(mdobak): Instead of updating the list periodically, we should
+	//               listen for events from the Medianizer contract.
+	FeederAddressesUpdateTicker *timeutil.Ticker
 }
 
 func New(cfg Config) (*Relayer, error) {
@@ -123,12 +113,12 @@ func New(cfg Config) (*Relayer, error) {
 		cfg.Logger = null.New()
 	}
 	r := &Relayer{
-		waitCh:     make(chan error),
-		signer:     cfg.Signer,
-		priceStore: cfg.PriceStore,
-		interval:   cfg.Interval,
-		pairs:      make(map[string]*Pair),
-		log:        cfg.Logger.WithField("tag", LoggerTag),
+		waitCh: make(chan error),
+		signer: cfg.Signer,
+		store:  cfg.PriceStore,
+		ticker: cfg.PokeTicker,
+		pairs:  make(map[string]*Pair, len(cfg.Pairs)),
+		log:    cfg.Logger.WithField("tag", LoggerTag),
 	}
 	for _, p := range cfg.Pairs {
 		r.pairs[p.AssetPair] = p
@@ -136,6 +126,7 @@ func New(cfg Config) (*Relayer, error) {
 	return r, nil
 }
 
+// Start implements the service.Service interface.
 func (s *Relayer) Start(ctx context.Context) error {
 	if s.ctx != nil {
 		return errors.New("service can be started only once")
@@ -145,27 +136,34 @@ func (s *Relayer) Start(ctx context.Context) error {
 	}
 	s.log.Info("Starting")
 	s.ctx = ctx
+	for _, p := range s.pairs {
+		if err := s.syncFeederAddresses(p); err != nil {
+			return err
+		}
+		go s.syncFeederAddressesRoutine(p)
+	}
 	go s.relayerRoutine()
 	go s.contextCancelHandler()
 	return nil
 }
 
-// Wait waits until the context is canceled or until an error occurs.
+// Wait implements the service.Service interface.
 func (s *Relayer) Wait() chan error {
 	return s.waitCh
 }
 
-// relay tries to update an Oracle contract for given pair. It'll return
-// transaction hash or nil if there is no need to update Oracle.
+// relay tries to update an Oracle contract for given pair.
+// In returns a transaction hash if the update was successful.
+// If update is not required, it returns nil.
 func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	pair, ok := s.pairs[assetPair]
 	if !ok {
-		return nil, errUnknownAsset{AssetPair: assetPair}
+		return nil, fmt.Errorf("unknown asset pair: %s", assetPair)
 	}
-	prices, err := s.priceStore.GetByAssetPair(s.ctx, assetPair)
+	prices, err := s.store.GetByAssetPair(s.ctx, assetPair)
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +183,9 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 	// Clear expired prices.
 	clearOlderThan(&prices, oracleTime)
 
+	// Remove prices from addresses outside the FeederAddresses list.
+	filterAddresses(&prices, pair.FeederAddresses, s.signer)
+
 	// Use only a minimum prices required to achieve a quorum.
 	// Using a different number of prices that specified in the bar field cause
 	// the transaction to fail.
@@ -192,8 +193,10 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 
 	// Check if price on the Medianizer contract needs to be updated.
 	// The price needs to be updated if:
-	// - price is older than the OracleExpiration.
-	// - price differs from the current price by more than the OracleSpread.
+	// - Price is older than the interval specified in the OracleExpiration
+	//   field.
+	// - Price differs from the current price by more than is specified in the
+	//   OracleSpread field.
 	spread := calcSpread(&prices, oraclePrice)
 	isExpired := oracleTime.Add(pair.OracleExpiration).Before(time.Now())
 	isStale := spread >= pair.OracleSpread
@@ -213,9 +216,9 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 			"currentSpread":    spread,
 		}).
 		Debug("Trying to update Oracle")
-	for _, price := range messagesToPrices(&prices) {
+	for _, price := range prices {
 		s.log.
-			WithFields(price.Fields(s.signer)).
+			WithFields(price.Price.Fields(s.signer)).
 			Debug("Feed")
 	}
 
@@ -223,53 +226,84 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 	if isExpired || isStale {
 		// Check if there are enough prices to achieve a quorum.
 		if int64(len(prices)) != oracleQuorum {
-			return nil, errNotEnoughPricesForQuorum{AssetPair: assetPair}
+			return nil, fmt.Errorf("not enough prices to achieve quorum: %d/%d", len(prices), oracleQuorum)
 		}
 
-		// Send *actual* transaction to the Ethereum network.
-		tx, err := pair.Median.Poke(s.ctx, messagesToPrices(&prices), true)
-		return tx, err
+		// Send *actual* transaction.
+		return pair.Median.Poke(s.ctx, toOraclePrices(&prices), true)
 	}
 
-	// There is no need to update Oracle.
+	// There is no need to update the price.
 	return nil, nil
 }
 
-// relayerRoutine creates an asynchronous loop that tries to send an update
-// to an Oracle contract at a specified interval.
-func (s *Relayer) relayerRoutine() {
-	if s.interval == 0 {
-		return
+func (s *Relayer) syncFeederAddresses(p *Pair) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// Get list of addresses from the contract.
+	addresses, err := p.Median.Feeds(s.ctx)
+	if err != nil {
+		return err
 	}
-	ticker := time.NewTicker(s.interval)
+	// Update the list.
+	p.FeederAddresses = nil
+	for _, addr := range addresses {
+		p.FeederAddresses = append(p.FeederAddresses, types.Address(addr))
+	}
+	return nil
+}
+
+func (s *Relayer) relayerRoutine() {
+	s.ticker.Start(s.ctx)
 	for {
 		select {
 		case <-s.ctx.Done():
-			ticker.Stop()
 			return
-		case <-ticker.C:
+		case <-s.ticker.TickCh():
 			for assetPair := range s.pairs {
 				tx, err := s.relay(assetPair)
 
 				// Print log in case of an error.
 				if err != nil {
 					s.log.
-						WithFields(log.Fields{"assetPair": assetPair}).
+						WithField("assetPair", assetPair).
 						WithError(err).
 						Warn("Unable to update Oracle")
 				}
+
 				// Print log if there was no need to update prices.
 				if err == nil && tx == nil {
 					s.log.
-						WithFields(log.Fields{"assetPair": assetPair}).
+						WithField("assetPair", assetPair).
 						Info("Oracle price is still valid")
 				}
+
 				// Print log if Oracle update transaction was sent.
 				if tx != nil {
 					s.log.
-						WithFields(log.Fields{"assetPair": assetPair, "tx": tx.String()}).
+						WithFields(log.Fields{
+							"assetPair": assetPair,
+							"tx":        tx.String(),
+						}).
 						Info("Oracle updated")
 				}
+			}
+		}
+	}
+}
+
+func (s *Relayer) syncFeederAddressesRoutine(p *Pair) {
+	p.FeederAddressesUpdateTicker.Start(s.ctx)
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-p.FeederAddressesUpdateTicker.TickCh():
+			if err := s.syncFeederAddresses(p); err != nil {
+				s.log.
+					WithField("assetPair", p.AssetPair).
+					WithError(err).
+					Warn("Unable to sync feeder addresses")
 			}
 		}
 	}
@@ -281,9 +315,9 @@ func (s *Relayer) contextCancelHandler() {
 	<-s.ctx.Done()
 }
 
-// messagesToPrices returns oracle prices.
-func messagesToPrices(p *[]*messages.Price) []*oracle.Price {
-	var prices []*oracle.Price
+// toOraclePrices returns a slice of oracle.Prices from price messages.
+func toOraclePrices(p *[]*messages.Price) []*median.Price {
+	var prices []*median.Price
 	for _, price := range *p {
 		prices = append(prices, price.Price)
 	}
@@ -291,10 +325,7 @@ func messagesToPrices(p *[]*messages.Price) []*oracle.Price {
 }
 
 // truncate removes random prices until the number of remaining prices is equal
-// to n. If the number of prices is less or equal to n, it does nothing.
-//
-// This method is used to reduce number of arguments in transaction which will
-// reduce transaction costs.
+// to n.
 func truncate(p *[]*messages.Price, n int64) {
 	if int64(len(*p)) <= n {
 		return
@@ -305,7 +336,37 @@ func truncate(p *[]*messages.Price, n int64) {
 	*p = (*p)[0:n]
 }
 
-// calcMedian calculates the calcMedian price for all messages in the list.
+// filterAddresses removes all prices from the slice that are not signed by
+// addresses from the list.
+func filterAddresses(p *[]*messages.Price, addrs []types.Address, s ethereum.Signer) {
+	var prices []*messages.Price
+	for _, price := range *p {
+		feedAddr, err := price.Price.From(s)
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			if bytes.Equal(feedAddr.Bytes(), addr.Bytes()) {
+				prices = append(prices, price)
+				break
+			}
+		}
+	}
+	*p = prices
+}
+
+// clearOlderThan deletes messages which are older than given time.
+func clearOlderThan(p *[]*messages.Price, t time.Time) {
+	var prices []*messages.Price
+	for _, price := range *p {
+		if !price.Price.Age.Before(t) {
+			prices = append(prices, price)
+		}
+	}
+	*p = prices
+}
+
+// calcMedian calculates the median price.
 func calcMedian(p *[]*messages.Price) *big.Int {
 	count := len(*p)
 	if count == 0 {
@@ -323,8 +384,8 @@ func calcMedian(p *[]*messages.Price) *big.Int {
 	return (*p)[(count-1)/2].Price.Val
 }
 
-// calcSpread calculates the calcSpread between given price and a calcMedian price.
-// The calcSpread is returned as percentage points.
+// calcSpread calculates the spread between given price and a median price.
+// The spread is returned as percentage points.
 func calcSpread(p *[]*messages.Price, price *big.Int) float64 {
 	if len(*p) == 0 || price.Cmp(big.NewInt(0)) == 0 {
 		return math.Inf(1)
@@ -336,15 +397,4 @@ func calcSpread(p *[]*messages.Price, price *big.Int) float64 {
 	x = new(big.Float).Mul(x, big.NewFloat(100))
 	xf, _ := x.Float64()
 	return math.Abs(xf)
-}
-
-// clearOlderThan deletes messages which are older than given time.
-func clearOlderThan(p *[]*messages.Price, t time.Time) {
-	var prices []*messages.Price
-	for _, price := range *p {
-		if !price.Price.Age.Before(t) {
-			prices = append(prices, price)
-		}
-	}
-	*p = prices
 }

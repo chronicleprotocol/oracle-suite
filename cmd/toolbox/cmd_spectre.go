@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/oracle/geth"
+	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 )
 
 func NewSpectreCmd(opts *options) *cobra.Command {
@@ -63,7 +63,7 @@ func NewSpectreMedianCmd(opts *options) *cobra.Command {
 					continue
 				}
 
-				median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(config.Contract))
+				median := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(config.Contract))
 				ctx := context.Background()
 				wat, err := median.Wat(ctx)
 				if err != nil {

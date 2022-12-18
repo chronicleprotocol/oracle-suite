@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
 
 func TestPrice_Marshalling(t *testing.T) {
@@ -38,7 +38,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: &Price{
 				messageVersion: 0,
-				Price: &oracle.Price{
+				Price: &median.Price{
 					Wat: "AAABBB",
 					Val: big.NewInt(10),
 					Age: time.Unix(100, 0),
@@ -55,7 +55,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price: &oracle.Price{
+				Price: &median.Price{
 					Wat: "AAABBB",
 					Val: big.NewInt(10),
 					Age: time.Unix(100, 0),
@@ -72,7 +72,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price: &oracle.Price{
+				Price: &median.Price{
 					Wat: "AAABBB",
 					Val: big.NewInt(10),
 					Age: time.Unix(100, 0),
@@ -89,7 +89,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: &Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        "0.0.1",
 			},
@@ -99,7 +99,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        "0.0.1",
 			}).AsV0(),
@@ -109,7 +109,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        "0.0.1",
 			}).AsV1(),
@@ -119,7 +119,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: &Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        strings.Repeat("a", priceMessageMaxSize+1),
 			},
@@ -129,7 +129,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        strings.Repeat("a", priceMessageMaxSize+1),
 			}).AsV0(),
@@ -139,7 +139,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        strings.Repeat("a", priceMessageMaxSize+1),
 			}).AsV1(),

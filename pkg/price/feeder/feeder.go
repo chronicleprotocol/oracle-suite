@@ -18,22 +18,23 @@ package feeder
 import (
 	"context"
 	"errors"
-	"sync"
-	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 const LoggerTag = "FEEDER"
 
+// Feeder is a service which periodically fetches prices and then sends them to
+// the Oracle network using transport layer.
 type Feeder struct {
 	ctx    context.Context
 	waitCh chan error
@@ -41,17 +42,17 @@ type Feeder struct {
 	priceProvider provider.Provider
 	signer        ethereum.Signer
 	transport     transport.Transport
-	interval      time.Duration
+	interval      *timeutil.Ticker
 	pairs         []provider.Pair
 	log           log.Logger
 }
 
 // Config is the configuration for the Feeder.
 type Config struct {
-	// Pairs is a list supported pairs.
+	// Pairs is a list supported pairs in the format "QUOTE/BASE".
 	Pairs []string
 
-	// PriceProvider is an instance of the provider.Provider.
+	// PriceProvider is a price provider which is used to fetch prices.
 	PriceProvider provider.Provider
 
 	// Signer is an instance of the ethereum.Signer which will be used to
@@ -59,17 +60,17 @@ type Config struct {
 	Signer ethereum.Signer
 
 	// Transport is an implementation of transport used to send prices to
-	// relayers.
+	// the network.
 	Transport transport.Transport
 
 	// Interval describes how often we should send prices to the network.
-	Interval time.Duration
+	Interval *timeutil.Ticker
 
-	// Logger is a current logger interface used by the Feeder. The Logger
-	// helps to monitor asynchronous processes.
+	// Logger is a current logger interface used by the Feeder.
 	Logger log.Logger
 }
 
+// New creates a new instance of the Feeder.
 func New(cfg Config) (*Feeder, error) {
 	if cfg.PriceProvider == nil {
 		return nil, errors.New("price provider must not be nil")
@@ -99,6 +100,7 @@ func New(cfg Config) (*Feeder, error) {
 	return g, nil
 }
 
+// Start implements the supervisor.Service interface.
 func (g *Feeder) Start(ctx context.Context) error {
 	if g.ctx != nil {
 		return errors.New("service can be started only once")
@@ -113,7 +115,7 @@ func (g *Feeder) Start(ctx context.Context) error {
 	return nil
 }
 
-// Wait waits until the context is canceled or until an error occurs.
+// Wait implements the supervisor.Service interface.
 func (g *Feeder) Wait() chan error {
 	return g.waitCh
 }
@@ -123,6 +125,7 @@ func (g *Feeder) Wait() chan error {
 func (g *Feeder) broadcast(pair provider.Pair) error {
 	var err error
 
+	// Create price.
 	tick, err := g.priceProvider.Price(pair)
 	if err != nil {
 		return err
@@ -130,19 +133,17 @@ func (g *Feeder) broadcast(pair provider.Pair) error {
 	if tick.Error != "" {
 		return errors.New(tick.Error)
 	}
-
-	// Create price:
-	price := &oracle.Price{Wat: pair.Base + pair.Quote, Age: tick.Time}
+	price := &median.Price{Wat: pair.Base + pair.Quote, Age: tick.Time}
 	price.SetFloat64Price(tick.Price)
 
-	// Sign price:
+	// Sign price.
 	err = price.Sign(g.signer)
 	if err != nil {
 		return err
 	}
 
-	// Broadcast price to P2P network:
-	msg, err := createPriceMessage(price, tick)
+	// Broadcast price to P2P network.
+	msg, err := toPriceMessage(price, tick)
 	if err != nil {
 		return err
 	}
@@ -155,42 +156,26 @@ func (g *Feeder) broadcast(pair provider.Pair) error {
 	return err
 }
 
-// broadcasterRoutine creates an asynchronous loop which fetches prices from exchanges and then
-// sends them to the network at a specified interval.
 func (g *Feeder) broadcasterRoutine() {
-	if g.interval == 0 {
-		return
-	}
-	var wg sync.WaitGroup
-	ticker := time.NewTicker(g.interval)
 	for {
 		select {
 		case <-g.ctx.Done():
-			ticker.Stop()
 			return
-		case <-ticker.C:
-			// Send prices to the network:
-			// Signing may be slow, especially with high KDF so this is why
-			// we are using goroutines here.
-			wg.Add(1)
-			go func() {
-				for _, pair := range g.pairs {
-					err := g.broadcast(pair)
-					if err != nil {
-						g.log.
-							WithField("assetPair", pair).
-							WithError(err).
-							Warn("Unable to broadcast price")
-					} else {
-						g.log.
-							WithField("assetPair", pair).
-							Info("Price broadcast")
-					}
+		case <-g.interval.TickCh():
+			// Send prices to the network.
+			for _, pair := range g.pairs {
+				if err := g.broadcast(pair); err != nil {
+					g.log.
+						WithField("assetPair", pair).
+						WithError(err).
+						Warn("Unable to broadcast price")
+					continue
 				}
-				wg.Done()
-			}()
+				g.log.
+					WithField("assetPair", pair).
+					Info("Price broadcast")
+			}
 		}
-		wg.Wait()
 	}
 }
 
@@ -200,13 +185,13 @@ func (g *Feeder) contextCancelHandler() {
 	<-g.ctx.Done()
 }
 
-func createPriceMessage(op *oracle.Price, gp *provider.Price) (*messages.Price, error) {
-	trace, err := marshal.Marshall(marshal.JSON, gp)
+func toPriceMessage(price *median.Price, provider *provider.Price) (*messages.Price, error) {
+	trace, err := marshal.Marshall(marshal.JSON, provider)
 	if err != nil {
 		return nil, err
 	}
 	return &messages.Price{
-		Price: op,
+		Price: price,
 		Trace: trace,
 	}, nil
 }

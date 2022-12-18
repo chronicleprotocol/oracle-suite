@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
 
 type Median struct {
@@ -46,7 +46,7 @@ func (m *Median) Feeds(ctx context.Context) ([]ethereum.Address, error) {
 	return args.Get(0).([]ethereum.Address), args.Error(1)
 }
 
-func (m *Median) Poke(ctx context.Context, prices []*oracle.Price, simulateBeforeRun bool) (*ethereum.Hash, error) {
+func (m *Median) Poke(ctx context.Context, prices []*median.Price, simulateBeforeRun bool) (*ethereum.Hash, error) {
 	args := m.Called(ctx, prices, simulateBeforeRun)
 	return args.Get(0).(*ethereum.Hash), args.Error(1)
 }

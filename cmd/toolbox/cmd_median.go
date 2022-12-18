@@ -24,9 +24,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
+	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
-	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/oracle/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -64,9 +65,9 @@ func NewMedianAgeCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			age, err := median.Age(context.Background())
+			age, err := med.Age(context.Background())
 			if err != nil {
 				return err
 			}
@@ -90,9 +91,9 @@ func NewMedianBarCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			bar, err := median.Bar(context.Background())
+			bar, err := med.Bar(context.Background())
 			if err != nil {
 				return err
 			}
@@ -115,9 +116,9 @@ func NewMedianWatCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			wat, err := median.Wat(context.Background())
+			wat, err := med.Wat(context.Background())
 			if err != nil {
 				return err
 			}
@@ -140,9 +141,9 @@ func NewMedianValCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			price, err := median.Val(context.Background())
+			price, err := med.Val(context.Background())
 			if err != nil {
 				return err
 			}
@@ -165,9 +166,9 @@ func NewMedianFeedsCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			feeds, err := median.Feeds(context.Background())
+			feeds, err := med.Feeds(context.Background())
 			if err != nil {
 				return err
 			}
@@ -192,7 +193,7 @@ func NewMedianPokeCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[1]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[1]))
 
 			// Read JSON and parse it:
 			in, err := readInput(args, 1)
@@ -206,12 +207,12 @@ func NewMedianPokeCmd(opts *options) *cobra.Command {
 				return err
 			}
 
-			var prices []*oracle.Price
+			var prices []*median.Price
 			for _, m := range *msgs {
 				prices = append(prices, m.Price)
 			}
 
-			tx, err := median.Poke(context.Background(), prices, true)
+			tx, err := med.Poke(context.Background(), prices, true)
 			if err != nil {
 				return err
 			}
@@ -234,14 +235,14 @@ func NewMedianLiftCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
 			var addresses []ethereum.Address
 			for _, a := range args[1:] {
 				addresses = append(addresses, ethereum.HexToAddress(a))
 			}
 
-			tx, err := median.Lift(context.Background(), addresses, true)
+			tx, err := med.Lift(context.Background(), addresses, true)
 			if err != nil {
 				return err
 			}
@@ -264,14 +265,14 @@ func NewMedianDropCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(geth, ethereum.HexToAddress(args[1]))
+			med := medianGeth.NewMedian(geth, ethereum.HexToAddress(args[1]))
 
 			var addresses []ethereum.Address
 			for _, a := range args[1:] {
 				addresses = append(addresses, ethereum.HexToAddress(a))
 			}
 
-			tx, err := median.Drop(context.Background(), addresses, true)
+			tx, err := med.Drop(context.Background(), addresses, true)
 			if err != nil {
 				return err
 			}
@@ -294,14 +295,14 @@ func NewMedianSetBarCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			median := oracleGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
 			bar, ok := (&big.Int{}).SetString(args[1], 10)
 			if !ok {
 				return errors.New("given value is not an valid number")
 			}
 
-			tx, err := median.SetBar(context.Background(), bar, true)
+			tx, err := med.SetBar(context.Background(), bar, true)
 			if err != nil {
 				return err
 			}

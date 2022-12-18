@@ -25,8 +25,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/relayer"
 )
 
 func TestSpectre_Configure(t *testing.T) {
@@ -58,7 +58,7 @@ func TestSpectre_Configure(t *testing.T) {
 	relayerFactory = func(cfg relayer.Config) (*relayer.Relayer, error) {
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, ps, cfg.PriceStore)
-		assert.Equal(t, secToDuration(interval), cfg.Interval)
+		assert.Equal(t, secToDuration(interval), cfg.PokeTicker.Duration())
 		assert.Equal(t, logger, cfg.Logger)
 		assert.Equal(t, "AAABBB", cfg.Pairs[0].AssetPair)
 		assert.Equal(t, secToDuration(config.Medianizers["AAABBB"].OracleExpiration), cfg.Pairs[0].OracleExpiration)

@@ -18,13 +18,14 @@ package spectre
 import (
 	"time"
 
+	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	oracleGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/oracle/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
@@ -67,16 +68,17 @@ type PriceStoreDependencies struct {
 func (c *Spectre) ConfigureRelayer(d Dependencies) (*relayer.Relayer, error) {
 	cfg := relayer.Config{
 		Signer:     d.Signer,
-		Interval:   time.Second * time.Duration(c.Interval),
+		PokeTicker: timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		PriceStore: d.PriceStore,
 		Logger:     d.Logger,
 	}
 	for name, pair := range c.Medianizers {
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
-			AssetPair:        name,
-			OracleSpread:     pair.OracleSpread,
-			OracleExpiration: time.Second * time.Duration(pair.OracleExpiration),
-			Median:           oracleGeth.NewMedian(d.EthereumClient, ethereum.HexToAddress(pair.Contract)),
+			AssetPair:                   name,
+			OracleSpread:                pair.OracleSpread,
+			OracleExpiration:            time.Second * time.Duration(pair.OracleExpiration),
+			Median:                      medianGeth.NewMedian(d.EthereumClient, ethereum.HexToAddress(pair.Contract)),
+			FeederAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
 		})
 	}
 	return relayerFactory(cfg)

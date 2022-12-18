@@ -19,10 +19,11 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/feeder"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/feeder"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 //nolint
@@ -48,7 +49,7 @@ func (c *Ghost) Configure(d Dependencies) (*feeder.Feeder, error) {
 		Signer:        d.Signer,
 		Transport:     d.Transport,
 		Logger:        d.Logger,
-		Interval:      time.Second * time.Duration(c.Interval),
+		Interval:      timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		Pairs:         c.Pairs,
 	}
 	return ghostFactory(cfg)

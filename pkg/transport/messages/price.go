@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 )
 
@@ -37,7 +37,7 @@ var ErrPriceMessageTooLarge = errors.New("price message too large")
 var ErrUnknownPriceMessageVersion = errors.New("unknown message version")
 
 type Price struct {
-	Price   *oracle.Price   `json:"price"`
+	Price   *median.Price   `json:"price"`
 	Trace   json.RawMessage `json:"trace"`
 	Version string          `json:"version,omitempty"` // TODO: this should move to some meta field e.g. `feedVersion`
 
@@ -114,7 +114,7 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 			return err
 		}
 		v, r, s := ethereum.SignatureFromBytes(msg.Vrs).VRS()
-		p.Price = &oracle.Price{
+		p.Price = &median.Price{
 			Wat: msg.Wat,
 			Val: new(big.Int).SetBytes(msg.Val),
 			Age: time.Unix(msg.Age, 0),
@@ -152,7 +152,7 @@ func (p *Price) AsV1() *Price {
 func (p *Price) copy() *Price {
 	c := &Price{
 		messageVersion: p.messageVersion,
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: p.Price.Wat,
 			Age: p.Price.Age,
 			V:   p.Price.V,

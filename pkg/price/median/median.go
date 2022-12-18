@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package oracle
+package median
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
-// Median is an interface for the median oracle contract:
+// Median is an interface for the Medianizer oracle contract:
 // https://github.com/makerdao/median/
 //
 // Contract documentation:
@@ -73,6 +73,6 @@ type Median interface {
 	// SetBar sends transaction to the smart contract which invokes contract's
 	// setBar method, which sets bar variable (quorum).  If simulateBeforeRun is
 	// set to true, then transaction will be simulated on the EVM before actual
-	// transaction will be send.
+	// transaction will be sent.
 	SetBar(ctx context.Context, bar *big.Int, simulateBeforeRun bool) (*ethereum.Hash, error)
 }

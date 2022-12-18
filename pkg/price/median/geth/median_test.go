@@ -29,7 +29,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
 
 func TestMedian_Age(t *testing.T) {
@@ -74,7 +74,7 @@ func TestMedian_Price(t *testing.T) {
 
 	// Call Val function:
 	bts := make([]byte, 32)
-	val := new(big.Int).Mul(big.NewInt(42), big.NewInt(oracle.PriceMultiplier))
+	val := new(big.Int).Mul(big.NewInt(42), big.NewInt(median.PriceMultiplier))
 	val.FillBytes(bts)
 	c.On("Storage", mock.Anything, a, common.BigToHash(big.NewInt(1))).Return(bts, nil)
 	price, err := m.Val(context.Background())
@@ -91,21 +91,21 @@ func TestMedian_Poke(t *testing.T) {
 	s := &mocks.Signer{}
 	m := NewMedian(c, a)
 
-	p1 := &oracle.Price{Wat: "AAABBB"}
+	p1 := &median.Price{Wat: "AAABBB"}
 	p1.SetFloat64Price(10)
 	p1.Age = time.Unix(0xAAAAAAAA, 0)
 	p1.V = 0xA1
 	p1.R = [32]byte{0xA2}
 	p1.S = [32]byte{0xA3}
 
-	p2 := &oracle.Price{Wat: "AAABBB"}
+	p2 := &median.Price{Wat: "AAABBB"}
 	p2.SetFloat64Price(30)
 	p2.Age = time.Unix(0xBBBBBBBB, 0)
 	p2.V = 0xB1
 	p2.R = [32]byte{0xB2}
 	p2.S = [32]byte{0xB3}
 
-	p3 := &oracle.Price{Wat: "AAABBB"}
+	p3 := &median.Price{Wat: "AAABBB"}
 	p3.SetFloat64Price(20)
 	p3.Age = time.Unix(0xCCCCCCCC, 0)
 	p3.V = 0xC1
@@ -122,7 +122,7 @@ func TestMedian_Poke(t *testing.T) {
 	c.On("SendTransaction", mock.Anything, mock.Anything).Return(&ethereum.Hash{}, nil)
 
 	// Call Poke function:
-	_, err := m.Poke(context.Background(), []*oracle.Price{p1, p2, p3}, false)
+	_, err := m.Poke(context.Background(), []*median.Price{p1, p2, p3}, false)
 	assert.NoError(t, err)
 
 	// Verify generated transaction:

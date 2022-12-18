@@ -24,12 +24,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store/testutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -80,8 +80,8 @@ func TestStore(t *testing.T) {
 	assert.Contains(t, toOraclePrices(xxxyyy), testutil.PriceXXXYYY2.Price)
 }
 
-func toOraclePrices(ps []*messages.Price) []*oracle.Price {
-	var r []*oracle.Price
+func toOraclePrices(ps []*messages.Price) []*median.Price {
+	var r []*median.Price
 	for _, p := range ps {
 		r = append(r, p.Price)
 	}

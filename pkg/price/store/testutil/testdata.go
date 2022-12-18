@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -28,7 +28,7 @@ var (
 	Address1     = ethereum.HexToAddress("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
 	Address2     = ethereum.HexToAddress("0x8eb3daaf5cb4138f5f96711c09c0cfd0288a36e9")
 	PriceAAABBB1 = &messages.Price{
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(10),
 			Age: time.Unix(100, 0),
@@ -39,7 +39,7 @@ var (
 		Trace: nil,
 	}
 	PriceAAABBB2 = &messages.Price{
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(20),
 			Age: time.Unix(200, 0),
@@ -50,7 +50,7 @@ var (
 		Trace: nil,
 	}
 	PriceAAABBB3 = &messages.Price{
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(30),
 			Age: time.Unix(300, 0),
@@ -61,7 +61,7 @@ var (
 		Trace: nil,
 	}
 	PriceAAABBB4 = &messages.Price{
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(30),
 			Age: time.Unix(400, 0),
@@ -72,7 +72,7 @@ var (
 		Trace: nil,
 	}
 	PriceXXXYYY1 = &messages.Price{
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: "XXXYYY",
 			Val: big.NewInt(10),
 			Age: time.Unix(100, 0),
@@ -83,7 +83,7 @@ var (
 		Trace: nil,
 	}
 	PriceXXXYYY2 = &messages.Price{
-		Price: &oracle.Price{
+		Price: &median.Price{
 			Wat: "XXXYYY",
 			Val: big.NewInt(20),
 			Age: time.Unix(200, 0),

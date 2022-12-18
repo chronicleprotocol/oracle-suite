@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package oracle
+package median
 
 import (
 	"encoding/binary"
@@ -175,26 +175,6 @@ func (p *Price) UnmarshalJSON(bytes []byte) error {
 	}
 
 	return nil
-}
-
-func decodeHexNumber(s string) ([]byte, error) {
-	s = strings.TrimPrefix(s, "0x")
-	if s == "" || s == "0" {
-		return []byte{}, nil // fast path
-	}
-	n, ok := (&big.Int{}).SetString(s, 16)
-	if !ok {
-		return nil, errors.New("unable to parse hex number")
-	}
-	return n.Bytes(), nil
-}
-
-func encodeHexNumber(b []byte) string {
-	if len(b) == 0 {
-		return "0x0"
-	}
-	n := (&big.Int{}).SetBytes(b)
-	return "0x" + n.Text(16)
 }
 
 // hash is an equivalent of keccak256(abi.encodePacked(val_, age_, wat))) in Solidity.

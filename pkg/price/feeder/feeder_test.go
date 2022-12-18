@@ -31,13 +31,14 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	priceMocks "github.com/chronicleprotocol/oracle-suite/pkg/price/provider/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 var (
@@ -94,7 +95,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 	tests := []struct {
 		name    string
 		prices  int
-		mocks   func(pro *priceMocks.Provider, sig *ethereumMocks.Signer)
+		mocks   func(*priceMocks.Provider, *ethereumMocks.Signer)
 		asserts func(t *testing.T, pricesV0, pricesV1 []*messages.Price)
 	}{
 		{
@@ -151,40 +152,45 @@ func TestFeeder_Broadcast(t *testing.T) {
 			ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer ctxCancel()
 
-			pro := &priceMocks.Provider{}
-			sig := &ethereumMocks.Signer{}
-			tra := local.New([]byte("test"), 0, map[string]transport.Message{
+			// Prepare feeder services.
+			priceProvider := &priceMocks.Provider{}
+			signer := &ethereumMocks.Signer{}
+			ticker := timeutil.NewTicker(time.Second)
+			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
 				messages.PriceV0MessageName: (*messages.Price)(nil),
 				messages.PriceV1MessageName: (*messages.Price)(nil),
 			})
-			_ = tra.Start(ctx)
-			defer func() {
-				<-tra.Wait()
-			}()
 
-			gho, err := New(Config{
+			// Prepare mocks.
+			tt.mocks(priceProvider, signer)
+
+			// Start feeder.
+			feeder, err := New(Config{
 				Pairs:         []string{"AAA/BBB", "XXX/YYY"},
-				PriceProvider: pro,
-				Signer:        sig,
-				Transport:     tra,
-				Interval:      time.Second,
+				PriceProvider: priceProvider,
+				Signer:        signer,
+				Transport:     localTransport,
+				Interval:      ticker,
 			})
 			require.NoError(t, err)
-			require.NoError(t, gho.Start(ctx))
+			require.NoError(t, localTransport.Start(ctx))
+			require.NoError(t, feeder.Start(ctx))
 			defer func() {
-				<-gho.Wait()
+				ctxCancel()
+				<-feeder.Wait()
+				<-localTransport.Wait()
 			}()
 
-			tt.mocks(pro, sig)
+			ticker.Tick()
 
 			// Wait for two messages.
 			var pricesV0, pricesV1 []*messages.Price
 			for {
 				select {
-				case msg := <-tra.Messages(messages.PriceV0MessageName):
+				case msg := <-localTransport.Messages(messages.PriceV0MessageName):
 					price := msg.Message.(*messages.Price)
 					pricesV0 = append(pricesV0, price)
-				case msg := <-tra.Messages(messages.PriceV1MessageName):
+				case msg := <-localTransport.Messages(messages.PriceV1MessageName):
 					price := msg.Message.(*messages.Price)
 					pricesV1 = append(pricesV1, price)
 				}
@@ -192,7 +198,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 					break
 				}
 			}
-			ctxCancel()
+
 			sort.Slice(pricesV0, func(i, j int) bool {
 				return pricesV0[i].Price.Wat < pricesV0[j].Price.Wat
 			})
@@ -200,6 +206,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 				return pricesV1[i].Price.Wat < pricesV1[j].Price.Wat
 			})
 
+			// Assert results.
 			tt.asserts(t, pricesV0, pricesV1)
 		})
 	}
@@ -287,7 +294,7 @@ func TestFeeder_Start(t *testing.T) {
 		PriceProvider: pro,
 		Signer:        sig,
 		Transport:     tra,
-		Interval:      time.Second,
+		Interval:      timeutil.NewTicker(time.Second),
 	})
 	require.NoError(t, err)
 	require.Error(t, gho.Start(nil)) // Start without context should fail.
@@ -300,7 +307,7 @@ func assertPrice(t *testing.T, expected *provider.Price, actual *messages.Price)
 	p, _ := new(big.Float).SetInt(actual.Price.Val).Float64()
 	assert.Equal(t, actual.Price.Age.Unix(), expected.Time.Unix())
 	assert.Equal(t, actual.Price.Wat, expected.Pair.Base+expected.Pair.Quote)
-	assert.Equal(t, p/oracle.PriceMultiplier, expected.Price)
+	assert.Equal(t, p/median.PriceMultiplier, expected.Price)
 	assert.Equal(t, actual.Price.V, byte(0xAA))
 	assert.Equal(t, actual.Price.R, [32]byte(common.HexToHash("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
 	assert.Equal(t, actual.Price.S, [32]byte(common.HexToHash("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
