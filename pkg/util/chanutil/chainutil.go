@@ -36,8 +36,6 @@ type FanIn[T any] struct {
 // NewFanIn creates a new FanIn instance.
 func NewFanIn[T any](chs ...<-chan T) *FanIn[T] {
 	fi := &FanIn[T]{out: make(chan T)}
-	// The error here is impossible because the output channel cannot be
-	// closed yet.
 	_ = fi.Add(chs...)
 	return fi
 }

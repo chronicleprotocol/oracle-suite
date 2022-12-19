@@ -150,7 +150,7 @@ func (s *Relayer) Start(ctx context.Context) error {
 }
 
 // Wait implements the service.Service interface.
-func (s *Relayer) Wait() chan error {
+func (s *Relayer) Wait() <-chan error {
 	return s.waitCh
 }
 

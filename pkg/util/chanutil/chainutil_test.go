@@ -128,7 +128,9 @@ func TestFanOut(t *testing.T) {
 	var vs [][]int
 	for i, ch := range []<-chan int{out1, out2, out3} {
 		wg.Add(1)
+		mu.Lock()
 		vs = append(vs, []int{})
+		mu.Unlock()
 		go func(ch <-chan int, i int) {
 			for v := range ch {
 				mu.Lock()

@@ -88,13 +88,14 @@ func TestEventPublisher(t *testing.T) {
 		Data:        map[string][]byte{"data_key": []byte("val")},
 		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}
-	lis.ch <- msg1
-	lis.ch <- msg2
 
-	time.Sleep(100 * time.Millisecond)
-
-	rMsg1 := <-loc.Messages(messages.EventV1MessageName)
-	rMsg2 := <-loc.Messages(messages.EventV1MessageName)
+	msgCh := loc.Messages(messages.EventV1MessageName)
+	go func() {
+		lis.ch <- msg1
+		lis.ch <- msg2
+	}()
+	rMsg1 := <-msgCh
+	rMsg2 := <-msgCh
 
 	assert.Equal(t, []byte("signer"), rMsg1.Message.(*messages.Event).Signatures["test"].Signer)
 	assert.Equal(t, []byte("signer"), rMsg2.Message.(*messages.Event).Signatures["test"].Signer)

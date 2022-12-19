@@ -117,7 +117,7 @@ func (g *Feeder) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (g *Feeder) Wait() chan error {
+func (g *Feeder) Wait() <-chan error {
 	return g.waitCh
 }
 

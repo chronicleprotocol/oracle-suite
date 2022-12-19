@@ -107,13 +107,13 @@ func (l *EventPublisher) Wait() <-chan error {
 
 func (l *EventPublisher) listenerLoop() {
 	for _, li := range l.listeners {
-		li := li
+		ch := li.Events()
 		go func() {
 			for {
 				select {
 				case <-l.ctx.Done():
 					return
-				case e := <-li.Events():
+				case e := <-ch:
 					l.broadcast(e)
 				}
 			}

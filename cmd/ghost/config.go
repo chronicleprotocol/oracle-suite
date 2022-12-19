@@ -68,7 +68,6 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
-
 	if sig.Address() == ethereum.EmptyAddress {
 		return nil, errors.New("ethereum account must be configured")
 	}

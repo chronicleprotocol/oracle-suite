@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/middleware"
@@ -19,7 +19,7 @@ type TweetPriceMessage struct {
 
 func (t *TweetPriceMessage) Tweet() string {
 	f, _ := new(big.Float).SetInt(t.Price.Price.Val).Float64()
-	f = f / oracle.PriceMultiplier
+	f = f / median.PriceMultiplier
 	if f >= 100 {
 		return fmt.Sprintf("%s: %.2f", t.Price.Price.Wat, f)
 	}
