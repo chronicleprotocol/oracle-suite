@@ -259,7 +259,7 @@ func (p *P2P) Start(ctx context.Context) error {
 	if p.mode == ClientMode {
 		for topic := range p.topics {
 			msgCh := make(chan transport.ReceivedMessage)
-			p.msgCh[topic] = make(chan transport.ReceivedMessage)
+			p.msgCh[topic] = msgCh
 			p.msgFanOut[topic] = chanutil.NewFanOut(msgCh)
 			if err := p.subscribe(topic); err != nil {
 				return err

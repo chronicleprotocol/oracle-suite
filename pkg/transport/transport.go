@@ -22,11 +22,14 @@ type ReceivedMessage struct {
 	// Message contains the message content. It is nil when the Error field
 	// is not nil.
 	Message Message
+
 	// Author is the ID of the author of the message.
 	Author []byte
+
 	// Data contains an optional data associated with the message. A type of
 	// the data is different depending on a transport implementation.
 	Data interface{}
+
 	// Error contains an optional error returned by transport layer.
 	Error error
 }
@@ -35,6 +38,7 @@ type ReceivedMessage struct {
 type Message interface {
 	// MarshallBinary serializes the message into a byte slice.
 	MarshallBinary() ([]byte, error)
+
 	// UnmarshallBinary deserializes the message from a byte slice.
 	UnmarshallBinary([]byte) error
 }
@@ -45,8 +49,10 @@ type Transport interface {
 
 	// ID returns an identity used to sign messages.
 	ID() []byte
+
 	// Broadcast sends a message with a given topic.
 	Broadcast(topic string, message Message) error
+
 	// Messages returns a channel for incoming messages. A new channel is
 	// created for each call, therefore this method should not be used in
 	// loops. In case of an error, an error will be returned in the
