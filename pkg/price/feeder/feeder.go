@@ -110,6 +110,7 @@ func (g *Feeder) Start(ctx context.Context) error {
 	}
 	g.log.Infof("Starting")
 	g.ctx = ctx
+	g.interval.Start(g.ctx)
 	go g.broadcasterRoutine()
 	go g.contextCancelHandler()
 	return nil

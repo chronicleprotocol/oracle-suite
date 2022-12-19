@@ -140,8 +140,10 @@ func (s *Relayer) Start(ctx context.Context) error {
 		if err := s.syncFeederAddresses(p); err != nil {
 			return err
 		}
+		p.FeederAddressesUpdateTicker.Start(ctx)
 		go s.syncFeederAddressesRoutine(p)
 	}
+	s.ticker.Start(s.ctx)
 	go s.relayerRoutine()
 	go s.contextCancelHandler()
 	return nil
@@ -254,7 +256,6 @@ func (s *Relayer) syncFeederAddresses(p *Pair) error {
 }
 
 func (s *Relayer) relayerRoutine() {
-	s.ticker.Start(s.ctx)
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -293,7 +294,6 @@ func (s *Relayer) relayerRoutine() {
 }
 
 func (s *Relayer) syncFeederAddressesRoutine(p *Pair) {
-	p.FeederAddressesUpdateTicker.Start(s.ctx)
 	for {
 		select {
 		case <-s.ctx.Done():
