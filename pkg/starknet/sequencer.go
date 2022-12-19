@@ -48,25 +48,45 @@ func (s *Sequencer) getBlock(ctx context.Context, blockNumber string) (*Block, e
 	url := fmt.Sprintf("%s/feeder_gateway/get_block?blockNumber=%s", s.endpoint, blockNumber)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, Error{Err: err}
 	}
 	req = req.WithContext(ctx)
 	res, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, Error{Err: err}
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+		return nil, HTTPError{StatusCode: res.StatusCode}
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, Error{Err: err}
 	}
 	var block *Block
 	err = json.Unmarshal(body, &block)
 	if err != nil {
-		return nil, err
+		return nil, Error{Err: err}
 	}
 	return block, nil
+}
+
+type Error struct {
+	Err error
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("starknet error: %s", e.Err)
+}
+
+func (e Error) Unwrap() error {
+	return e.Err
+}
+
+type HTTPError struct {
+	StatusCode int
+}
+
+func (e HTTPError) Error() string {
+	return fmt.Sprintf("starknet HTTP error: %d %s", e.StatusCode, http.StatusText(e.StatusCode))
 }

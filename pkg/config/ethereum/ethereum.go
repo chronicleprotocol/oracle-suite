@@ -28,8 +28,8 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/rpcsplitter"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/rpcsplitter"
 )
 
 const splitterVirtualHost = "makerdao-splitter"
@@ -42,7 +42,7 @@ var ethClientFactory = func(
 	gracefulTimeout time.Duration,
 	maxBlocksBehind int,
 	logger log.Logger,
-) (geth.EthClient, error) {
+) (*rpc.Client, error) {
 
 	// In theory, we don't need to use RPC-Splitter for a single endpoint, but
 	// to make the application behavior consistent we use it.
@@ -69,7 +69,7 @@ var ethClientFactory = func(
 		if err != nil {
 			return nil, err
 		}
-		return ethclient.NewClient(rpcClient), nil
+		return rpcClient, nil
 	}
 }
 
@@ -91,7 +91,7 @@ func (c *Ethereum) ConfigureSigner() (ethereum.Signer, error) {
 	return geth.NewSigner(account), nil
 }
 
-func (c *Ethereum) ConfigureRPCClient(logger log.Logger) (geth.EthClient, error) {
+func (c *Ethereum) ConfigureRPCClient(logger log.Logger) (*rpc.Client, error) {
 	var endpoints []string
 	switch v := c.RPC.(type) {
 	case string:
@@ -138,7 +138,7 @@ func (c *Ethereum) ConfigureEthereumClient(signer ethereum.Signer, logger log.Lo
 	if err != nil {
 		return nil, err
 	}
-	return geth.NewClient(client, signer), nil
+	return geth.NewClient(ethclient.NewClient(client), signer), nil
 }
 
 func (c *Ethereum) configureAccount() (*geth.Account, error) {

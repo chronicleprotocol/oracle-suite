@@ -30,7 +30,7 @@ func Test_packTeleportGUID(t *testing.T) {
 
 	b, err := packTeleportGUID(g)
 	require.NoError(t, err)
-	assert.Equal(t, teleportTestGUID, b)
+	assert.Equal(t, teleportTestGUID.Bytes(), b)
 }
 
 func Test_unpackTeleportGUID(t *testing.T) {

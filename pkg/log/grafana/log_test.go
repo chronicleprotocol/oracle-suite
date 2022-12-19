@@ -94,10 +94,10 @@ func TestLogger(t *testing.T) {
 		{
 			metrics: []Metric{{
 				MatchMessage: regexp.MustCompile("foo"),
-				Name:         "test.${key1}.${key2}.${key3.a}",
+				Name:         "test.%{key1}.%{key2}.%{key3.a}",
 				Tags: map[string][]string{
-					"tag1": {"${key1}"},
-					"tag2": {"${key2}", "${key3.a}"},
+					"tag1": {"%{key1}"},
+					"tag2": {"%{key2}", "%{key3.a}"},
 				},
 			}},
 			want: []want{
@@ -225,7 +225,7 @@ func TestLogger(t *testing.T) {
 		// Ignore metrics that uses invalid path in a name:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile("foo"), Name: "test.${invalid}"},
+				{MatchMessage: regexp.MustCompile("foo"), Name: "test.%{invalid}"},
 				{MatchMessage: regexp.MustCompile("foo"), Name: "test.valid"},
 			},
 			want: []want{
@@ -238,7 +238,7 @@ func TestLogger(t *testing.T) {
 		// Ignore tags with that uses invalid path:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Tags: map[string][]string{"tag": {"${invalid}"}}},
+				{MatchMessage: regexp.MustCompile("foo"), Name: "a", Tags: map[string][]string{"tag": {"%{invalid}"}}},
 			},
 			want: []want{
 				{name: "a", value: 1},
@@ -250,7 +250,7 @@ func TestLogger(t *testing.T) {
 		// Test all log types except panics:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile(".*"), Name: "${name}"},
+				{MatchMessage: regexp.MustCompile(".*"), Name: "%{name}"},
 			},
 			want: []want{
 				{name: "debug", value: 1},
@@ -276,7 +276,7 @@ func TestLogger(t *testing.T) {
 		// Test panic:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile(".*"), Name: "${name}"},
+				{MatchMessage: regexp.MustCompile(".*"), Name: "%{name}"},
 			},
 			want: []want{
 				{name: "panic", value: 1},
@@ -288,7 +288,7 @@ func TestLogger(t *testing.T) {
 		// Test panicf:
 		{
 			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile(".*"), Name: "${name}"},
+				{MatchMessage: regexp.MustCompile(".*"), Name: "%{name}"},
 			},
 			want: []want{
 				{name: "panicf", value: 1},

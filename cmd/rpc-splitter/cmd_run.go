@@ -25,9 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/rpcsplitter"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver/middleware"
-	"github.com/chronicleprotocol/oracle-suite/pkg/rpcsplitter"
 )
 
 func NewRunCmd(opts *options) *cobra.Command {

@@ -3,7 +3,7 @@
 # options for analysis running
 run:
   # include test files or not, default is true
-  tests: true
+  tests: false
 
   # which dirs to skip: issues from them won't be reported;
   # can use regexp here: generated.*, regexp is applied on full path;
@@ -172,9 +172,9 @@ linters:
     - lll
     - nakedret
     - nolintlint
-#    - rowserrcheck
+    #- rowserrcheck
     - staticcheck
-#    - structcheck
+    #- structcheck
     - stylecheck
     - typecheck
     - unconvert
@@ -198,18 +198,10 @@ linters:
   # - wsl
 
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude:
+    - '.*github.com/chronicleprotocol/oracle-suite/pkg/ethereum.*is deprecated.*'
+    - '.*Use ethereumv2 package instead.*'
   exclude-rules:
-    - path: _test\.go
-      linters:
-        - dupl
-        - funlen
-        - gomnd
-        - lll
-        - scopelint
-        - unused
-        - errcheck
-        - gosec
     - path: /mocks/
       linters:
         - dupl

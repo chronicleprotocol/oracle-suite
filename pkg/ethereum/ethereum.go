@@ -24,6 +24,8 @@ import (
 // These aliases was created to not rely directly on the go-ethereum packages.
 
 // AddressLength is the expected length of the address
+//
+// Deprecated: Use ethereumv2 package instead.
 const AddressLength = common.AddressLength
 
 type (
@@ -32,21 +34,33 @@ type (
 )
 
 // HexToAddress returns Address from hex representation.
+//
+// Deprecated: Use ethereumv2 package instead.
 var HexToAddress = common.HexToAddress
 
 // IsHexAddress verifies if given string is a valid Ethereum address.
+//
+// Deprecated: Use ethereumv2 package instead.
 var IsHexAddress = common.IsHexAddress
 
 // EmptyAddress contains empty Ethereum address: 0x0000000000000000000000000000000000000000
+//
+// Deprecated: Use ethereumv2 package instead.
 var EmptyAddress Address
 
 // HexToBytes returns bytes from hex string.
+//
+// Deprecated: Use ethereumv2 package instead.
 var HexToBytes = common.FromHex
 
 // HexToHash returns Hash from hex string.
+//
+// Deprecated: Use ethereumv2 package instead.
 var HexToHash = common.HexToHash
 
 // SHA3Hash calculates SHA3 hash.
+//
+// Deprecated.
 func SHA3Hash(b []byte) []byte {
 	return crypto.Keccak256Hash(b).Bytes()
 }

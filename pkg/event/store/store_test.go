@@ -29,6 +29,19 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+type storeTest struct {
+	addCallback func(ctx context.Context, author []byte, evt *messages.Event) (bool, error)
+	getCallback func(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error)
+}
+
+func (s *storeTest) Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error) {
+	return s.addCallback(ctx, author, evt)
+}
+
+func (s *storeTest) Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error) {
+	return s.getCallback(ctx, typ, idx)
+}
+
 func TestEventStore(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	tra := local.New([]byte("test"), 1, map[string]transport.Message{messages.EventV1MessageName: (*messages.Event)(nil)})

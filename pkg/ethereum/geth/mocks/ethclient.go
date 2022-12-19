@@ -94,6 +94,13 @@ func (e *EthClient) BlockNumber(ctx context.Context) (uint64, error) {
 	return args.Get(0).(uint64), args.Error(1)
 }
 
+func (e *EthClient) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	args := e.Called(ctx, number)
+	return args.Get(0).(*types.Block), args.Error(1)
+}
+
 func (e *EthClient) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()

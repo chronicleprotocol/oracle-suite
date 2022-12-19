@@ -19,12 +19,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/types"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
@@ -40,18 +40,19 @@ func TestEventPublisher_Configure_Teleport(t *testing.T) {
 	log := null.New()
 
 	config := EventPublisher{Listeners: listeners{TeleportEVM: []teleportEVMListener{{
-		Ethereum:    ethereumConfig.Ethereum{RPC: "https://example.com/"},
-		Interval:    1,
-		BlocksDelta: []int{10, 60},
-		BlocksLimit: 10,
-		Addresses:   []common.Address{common.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
+		Ethereum:       ethereumConfig.Ethereum{RPC: "https://example.com/"},
+		Interval:       1,
+		PrefetchPeriod: 1,
+		BlockLimit:     1,
+		ReplayAfter:    []int64{1},
+		Addresses:      []types.Address{types.HexToAddress("0x07a35a1d4b751a818d93aa38e615c0df23064881")},
 	}}}}
 
 	eventPublisherFactory = func(cfg publisher.Config) (*publisher.EventPublisher, error) {
 		assert.Equal(t, tra, cfg.Transport)
 		assert.NotNil(t, cfg.Signers)
 		assert.Equal(t, log, cfg.Logger)
-		assert.Len(t, cfg.Listeners, 1)
+		assert.Len(t, cfg.Providers, 1)
 		assert.Len(t, cfg.Signers, 1)
 		return &publisher.EventPublisher{}, nil
 	}

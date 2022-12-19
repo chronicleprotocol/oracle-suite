@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
 
 func TestPrice_Marshalling(t *testing.T) {
@@ -38,16 +38,13 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: &Price{
 				messageVersion: 0,
-				Price: &oracle.Price{
-					Wat:     "AAABBB",
-					Val:     big.NewInt(10),
-					Age:     time.Unix(100, 0),
-					V:       1,
-					R:       [32]byte{1},
-					S:       [32]byte{2},
-					StarkR:  []byte{3},
-					StarkS:  []byte{4},
-					StarkPK: []byte{5},
+				Price: &median.Price{
+					Wat: "AAABBB",
+					Val: big.NewInt(10),
+					Age: time.Unix(100, 0),
+					V:   1,
+					R:   [32]byte{1},
+					S:   [32]byte{2},
 				},
 				Trace:   []byte("{}"),
 				Version: "0.0.1",
@@ -58,16 +55,13 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price: &oracle.Price{
-					Wat:     "AAABBB",
-					Val:     big.NewInt(10),
-					Age:     time.Unix(100, 0),
-					V:       1,
-					R:       [32]byte{1},
-					S:       [32]byte{2},
-					StarkR:  []byte{3},
-					StarkS:  []byte{4},
-					StarkPK: []byte{5},
+				Price: &median.Price{
+					Wat: "AAABBB",
+					Val: big.NewInt(10),
+					Age: time.Unix(100, 0),
+					V:   1,
+					R:   [32]byte{1},
+					S:   [32]byte{2},
 				},
 				Trace:   []byte("{}"),
 				Version: "0.0.1",
@@ -78,16 +72,13 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price: &oracle.Price{
-					Wat:     "AAABBB",
-					Val:     big.NewInt(10),
-					Age:     time.Unix(100, 0),
-					V:       1,
-					R:       [32]byte{1},
-					S:       [32]byte{2},
-					StarkR:  []byte{3},
-					StarkS:  []byte{4},
-					StarkPK: []byte{5},
+				Price: &median.Price{
+					Wat: "AAABBB",
+					Val: big.NewInt(10),
+					Age: time.Unix(100, 0),
+					V:   1,
+					R:   [32]byte{1},
+					S:   [32]byte{2},
 				},
 				Trace:   []byte("{}"),
 				Version: "0.0.1",
@@ -98,7 +89,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: &Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        "0.0.1",
 			},
@@ -108,7 +99,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        "0.0.1",
 			}).AsV0(),
@@ -118,7 +109,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        "0.0.1",
 			}).AsV1(),
@@ -128,7 +119,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: &Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        strings.Repeat("a", priceMessageMaxSize+1),
 			},
@@ -138,7 +129,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        strings.Repeat("a", priceMessageMaxSize+1),
 			}).AsV0(),
@@ -148,7 +139,7 @@ func TestPrice_Marshalling(t *testing.T) {
 		{
 			price: (&Price{
 				messageVersion: 0,
-				Price:          &oracle.Price{},
+				Price:          &median.Price{},
 				Trace:          nil,
 				Version:        strings.Repeat("a", priceMessageMaxSize+1),
 			}).AsV1(),
@@ -175,9 +166,6 @@ func TestPrice_Marshalling(t *testing.T) {
 				assert.Equal(t, tt.price.Price.V, price.Price.V)
 				assert.Equal(t, tt.price.Price.R, price.Price.R)
 				assert.Equal(t, tt.price.Price.S, price.Price.S)
-				assert.Equal(t, tt.price.Price.StarkR, price.Price.StarkR)
-				assert.Equal(t, tt.price.Price.StarkS, price.Price.StarkS)
-				assert.Equal(t, tt.price.Price.StarkPK, price.Price.StarkPK)
 				assert.Equal(t, tt.price.Version, price.Version)
 
 				if tt.price.messageVersion == 0 && tt.price.Trace == nil {

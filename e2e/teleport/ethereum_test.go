@@ -2,6 +2,7 @@ package teleport
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -27,6 +28,11 @@ func TestEthereum(t *testing.T) {
 			Mock(),
 		smocker.NewMockBuilder().
 			AddResponseHeader("Content-Type", "application/json").
+			SetRequestBodyString(smocker.ShouldContainSubstring("eth_getBlockByNumber")).
+			SetResponseBody(mustReadFile("./testdata/mock/eth_getBlockByNumber.json")).
+			Mock(),
+		smocker.NewMockBuilder().
+			AddResponseHeader("Content-Type", "application/json").
 			SetRequestBodyString(smocker.ShouldContainSubstring("eth_getLogs")).
 			SetResponseBody(mustReadFile("./testdata/mock/eth_getLogs.json")).
 			Mock(),
@@ -37,9 +43,9 @@ func TestEthereum(t *testing.T) {
 		require.Fail(t, err.Error())
 	}
 
-	cmd1 := command(ctx, "../..", "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
-	cmd2 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
-	cmd3 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
+	cmd2 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
+	cmd3 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.json", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = cmd1.Wait()
@@ -50,14 +56,18 @@ func TestEthereum(t *testing.T) {
 	if err := cmd1.Start(); err != nil {
 		require.Fail(t, err.Error())
 	}
+	go func() {
+		time.Sleep(5 * time.Second)
+		if err := cmd2.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+		if err := cmd3.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+	}()
+
 	waitForPort(ctx, "localhost", 30100)
-	if err := cmd2.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30101)
-	if err := cmd3.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30102)
 
 	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_evm&index=0x5f4a7c89123ed655b7fce471f2f14a4b699a9edfabeef6a8d5571976907f1884", 2)
@@ -100,4 +110,69 @@ func TestEthereum(t *testing.T) {
 		"36913257c92c309bcbf415a2a041ba1eeb02117c64e59aa73c54ddaee97126ec7b091cf83d65e912bd6d2dbb306a42e466a7080111cc797dd78b621df918b8aa1b",
 		lairResponse[1].Signatures["ethereum"].Signature,
 	)
+}
+
+func TestEthereum_Replay(t *testing.T) {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+
+	s := smocker.NewAPI(env("SMOCKER_URL", "http://127.0.0.1:8081"))
+	err := s.Reset(ctx)
+	if err != nil {
+		require.Fail(t, err.Error())
+	}
+
+	mocks := []*smocker.Mock{
+		smocker.NewMockBuilder().
+			AddResponseHeader("Content-Type", "application/json").
+			SetRequestBodyString(smocker.ShouldContainSubstring("eth_blockNumber")).
+			SetResponseBody(mustReadFile("./testdata/mock/eth_blockNumber.json")).
+			Mock(),
+		smocker.NewMockBuilder().
+			AddResponseHeader("Content-Type", "application/json").
+			SetRequestBodyString(smocker.ShouldContainSubstring("eth_getBlockByNumber")).
+			SetResponseBody(mustReadFile("./testdata/mock/eth_getBlockByNumber.json")).
+			Mock(),
+		smocker.NewMockBuilder().
+			AddResponseHeader("Content-Type", "application/json").
+			SetRequestBodyString(smocker.ShouldContainSubstring("eth_getLogs")).
+			SetResponseBody(mustReadFile("./testdata/mock/eth_getLogs.json")).
+			Mock(),
+	}
+
+	err = s.AddMocks(ctx, mocks)
+	if err != nil {
+		require.Fail(t, err.Error())
+	}
+
+	eventDate := time.Unix(1655824479, 0)
+	replayAfter := time.Since(eventDate) + 40*time.Second
+
+	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair_test_replay.json", "-v", "debug")
+	cmd2 := command(ctx, "../..", []string{fmt.Sprintf("REPLAY_AFTER=%d", int(replayAfter.Seconds()))}, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
+	defer func() {
+		ctxCancel()
+		_ = cmd1.Wait()
+		_ = cmd2.Wait()
+	}()
+
+	// Run Lair with 20-second delay, so the only way to receive event is to wait
+	// for it to be replayed.
+	go func() {
+		time.Sleep(20 * time.Second)
+		if err := cmd1.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+	}()
+	if err := cmd2.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
+	waitForPort(ctx, "localhost", 30100)
+	waitForPort(ctx, "localhost", 30101)
+
+	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_evm&index=0x5f4a7c89123ed655b7fce471f2f14a4b699a9edfabeef6a8d5571976907f1884", 1)
+	if err != nil {
+		require.Fail(t, err.Error())
+	}
+
+	require.Len(t, lairResponse, 1)
 }

@@ -52,6 +52,30 @@ type Event struct {
 	Signatures map[string]EventSignature
 }
 
+// Copy returns a copy of the event.
+func (e *Event) Copy() *Event {
+	evt := &Event{Type: e.Type, EventDate: e.EventDate, MessageDate: e.MessageDate}
+	evt.ID = make([]byte, len(e.ID))
+	evt.Index = make([]byte, len(e.Index))
+	copy(evt.ID, e.ID)
+	copy(evt.Index, e.Index)
+	evt.Data = map[string][]byte{}
+	for k, v := range e.Data {
+		evt.Data[k] = make([]byte, len(v))
+		copy(evt.Data[k], v)
+	}
+	evt.Signatures = map[string]EventSignature{}
+	for k, v := range e.Signatures {
+		evt.Signatures[k] = EventSignature{
+			Signer:    make([]byte, len(v.Signer)),
+			Signature: make([]byte, len(v.Signature)),
+		}
+		copy(evt.Signatures[k].Signer, v.Signer)
+		copy(evt.Signatures[k].Signature, v.Signature)
+	}
+	return evt
+}
+
 // MarshallBinary implements the transport.Message interface.
 func (e *Event) MarshallBinary() ([]byte, error) {
 	signatures := map[string]*pb.Event_Signature{}

@@ -21,6 +21,8 @@ import (
 // It does not support recursive data.
 func Dump(v interface{}) interface{} {
 	switch tv := v.(type) {
+	case nil:
+		return nil
 	case float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, bool, string:
 		return v
 	case []byte:
@@ -33,6 +35,9 @@ func Dump(v interface{}) interface{} {
 		return toJSON(v)
 	default:
 		rv := reflect.ValueOf(v)
+		if v == nil || rv.IsZero() {
+			return nil
+		}
 		rt := rv.Type()
 		switch rv.Kind() {
 		case reflect.Struct:

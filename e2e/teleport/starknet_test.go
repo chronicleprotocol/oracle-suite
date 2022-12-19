@@ -2,7 +2,6 @@ package teleport
 
 import (
 	"context"
-	"strconv"
 	"testing"
 	"time"
 
@@ -24,29 +23,19 @@ func TestStarknet(t *testing.T) {
 	mocks = append(mocks,
 		smocker.NewMockBuilder().
 			SetRequestPath(smocker.ShouldEqual("/feeder_gateway/get_block")).
-			AddRequestQueryParam("blockNumber", smocker.ShouldEqual("null")).
+			AddRequestQueryParam("blockNumber", smocker.ShouldEqual("pending")).
 			AddResponseHeader("Content-Type", "application/json").
 			SetResponseBody(mustReadFile("./testdata/mock/starknet.json")).
 			Mock(),
 	)
-	for n := 191500; n < 191504; n++ {
-		mocks = append(mocks,
-			smocker.NewMockBuilder().
-				SetRequestPath(smocker.ShouldEqual("/feeder_gateway/get_block")).
-				AddRequestQueryParam("blockNumber", smocker.ShouldEqual(strconv.Itoa(n))).
-				AddResponseHeader("Content-Type", "application/json").
-				SetResponseBody(mustReadFile("./testdata/mock/starknet.json")).
-				Mock(),
-		)
-	}
 	err = s.AddMocks(ctx, mocks)
 	if err != nil {
 		require.Fail(t, err.Error())
 	}
 
-	cmd1 := command(ctx, "../..", "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
-	cmd2 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_starknet.json", "-v", "debug")
-	cmd3 := command(ctx, "../..", "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_starknet.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
+	cmd2 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_starknet.json", "-v", "debug")
+	cmd3 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_starknet.json", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = cmd1.Wait()
@@ -57,14 +46,17 @@ func TestStarknet(t *testing.T) {
 	if err := cmd1.Start(); err != nil {
 		require.Fail(t, err.Error())
 	}
+	go func() {
+		time.Sleep(5 * time.Second)
+		if err := cmd2.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+		if err := cmd3.Start(); err != nil {
+			require.Fail(t, err.Error())
+		}
+	}()
 	waitForPort(ctx, "localhost", 30100)
-	if err := cmd2.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30101)
-	if err := cmd3.Start(); err != nil {
-		require.Fail(t, err.Error())
-	}
 	waitForPort(ctx, "localhost", 30102)
 
 	lairResponse, err := waitForLair(ctx, "http://localhost:30000/?type=teleport_starknet&index=0x57a333bfccf30465cf287460c9c4bb7b21645213bc9cca7fbe99e1b9167d202", 2)

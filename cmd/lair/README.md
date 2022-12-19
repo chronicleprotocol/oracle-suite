@@ -90,7 +90,8 @@ Lair supports JSON and YAML configuration files.
       "redis": {
         "address": "127.0.0.1:7001",
         "password": "password",
-        "db": 0
+        "db": 0,
+        "tls": true 
       }
     }
   }
@@ -129,14 +130,14 @@ Lair supports JSON and YAML configuration files.
         - `[]metrics` - List of metric definitions
             - `matchMessage` (`string`) - Regular expression that must match a log message.
             - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
-            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `$${path}`, where
-              path is the dot-separated path to the field.
+            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `%{path}`,
+              where path is the dot-separated path to the field.
             - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
-              format `${path}`, where path is the dot-separated path to the field.
+              format `%{path}`, where path is the dot-separated path to the field.
             - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
               used as the metric value.
-            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not applied (
-              default: 0).
+            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not
+              applied (default: 0).
             - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
               options are:
                 - `sum` - Add values.
@@ -153,23 +154,34 @@ Lair supports JSON and YAML configuration files.
             - `type` (`string`) - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (
               default: `memory`).
             - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
-                - `ttl` (`integer`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds
-                  about one week)
+                - `ttl` (`integer`) - Specifies how long messages should be stored in seconds (default: 604800 seconds
+                  about one week).
                 - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
                   number, e.g. `0.0.0.0:8080`.
-                - `password` (`string`) - Redis server password.
-                - `db` (`int`) - Redis server database number.
+                - `username` (`string`) - Redis server username for ACL (default: `""`).
+                - `password` (`string`) - Redis server password (default: `""`).
+                - `db` (`int`) - Redis server database number. Ignored in cluster mode (default: 0).
                 - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
+                - `tls` (`bool`) - Enables TLS connection to Redis server (default: `false`).
+                - `tlsServerName` (`string`) - Server name used to verify the hostname on the returned certificates from
+                  the server. Ignored if empty (default: `""`).
+                - `tlsCertFile` (`string`) - Path to the PEM encoded certificate file (default: `""`).
+                - `tlsKeyFile` (`string`) - Path to the PEM encoded private key file (default: `""`).
+                - `tlsRootCAFile` (`string`) - Path to the PEM encoded root certificate file (default: `""`).
+                - `tlsInsecureSkipVerify` (`bool`) - Disables TLS certificate verification (default: `false`).
+                - `cluster` (`bool`) - Enables Redis cluster mode (default: `false`).
+                - `clusterAddresses` (`[]string`) - List of Redis cluster addresses provided as the combination of IP
+                  address or host and port number, e.g. `0.0.0.0:8080`.
             - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
-                - `ttl` (`int`) - Specifies how long messages should be stored in seconds. (default: 604800 seconds -
-                  about one week)
+                - `ttl` (`int`) - Specifies how long messages should be stored in seconds (default: 604800 seconds -
+                  about one week).
 
 ### Environment variables
 
 It is possible to use environment variables anywhere in the configuration file. The syntax is similar as in the
-shell: `${ENV_VAR}`. If the environment  variable is not set, the error will be returned during the application
-startup. To escape the dollar sign, use `\$` or `$$`. The latter syntax is not supported inside variables. It is
-possible to define default values for environment variables. To do so, use the following syntax: `${ENV_VAR-default}`.
+shell: `${ENV_VAR}`. If the environment variable is not set, the error will be returned during the application
+startup. To escape the dollar sign, use `\$` It is possible to define default values for environment variables.
+To do so, use the following syntax: `${ENV_VAR-default}`.
 
 ## API
 

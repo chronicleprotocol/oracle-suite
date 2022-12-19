@@ -31,11 +31,9 @@
           "addresses": [
             "0x197f9e93cfaf7068ca2daf3ec89c2b91d051505c2231a0a0b9f70801a91fb24"
           ],
-          "interval": 5,
-          "blocksDelta": [
-            0
-          ],
-          "blocksLimit": 5
+          "interval": 10,
+          "prefetchPeriod": 10,
+          "replayAfter": ["${REPLAY_AFTER-10}"]
         }
       ]
     }

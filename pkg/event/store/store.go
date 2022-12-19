@@ -142,7 +142,7 @@ func (e *EventStore) eventCollectorRoutine() {
 				}).
 				Info("Event received")
 			if err != nil {
-				e.log.WithError(msg.Error).Error("Unable to store the event")
+				e.log.WithError(err).Error("Unable to store the event")
 				continue
 			}
 		}

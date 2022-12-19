@@ -14,6 +14,7 @@ func TestSerialize(t *testing.T) {
 		arg  interface{}
 		want interface{}
 	}{
+		{arg: nil, want: nil},
 		{arg: 1, want: 1},
 		{arg: 1.1, want: 1.1},
 		{arg: "foo", want: "foo"},

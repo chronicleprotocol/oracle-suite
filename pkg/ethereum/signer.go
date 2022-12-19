@@ -16,21 +16,34 @@
 package ethereum
 
 // SignatureLength is the expected length of the Signature.
+//
+// Deprecated.
 const SignatureLength = 65
 
 // Signature represents the 65 byte signature.
+//
+// Deprecated.
 type Signature [SignatureLength]byte
 
+// SignatureFromBytes returns Signature from bytes.
+//
+// Deprecated.
 func SignatureFromBytes(b []byte) Signature {
 	var s Signature
 	copy(s[:], b)
 	return s
 }
 
+// SignatureFromVRS returns Signature from VRS values.
+//
+// Deprecated.
 func SignatureFromVRS(v uint8, r [32]byte, s [32]byte) Signature {
 	return SignatureFromBytes(append(append(append([]byte{}, r[:]...), s[:]...), v))
 }
 
+// VRS returns the V, R, S values of the signature.
+//
+// Deprecated.
 func (s Signature) VRS() (sv uint8, sr [32]byte, ss [32]byte) {
 	copy(sr[:], s[:32])
 	copy(ss[:], s[32:64])
@@ -38,10 +51,16 @@ func (s Signature) VRS() (sv uint8, sr [32]byte, ss [32]byte) {
 	return
 }
 
+// Bytes returns the byte representation of the signature.
+//
+// Deprecated.
 func (s Signature) Bytes() []byte {
 	return s[:]
 }
 
+// Signer is an interface for signing messages and transactions.
+//
+// Deprecated: Use ethereumv2 package instead.
 type Signer interface {
 	// Address returns account's address used to sign data. May be empty if
 	// the signer is used only to verify signatures.

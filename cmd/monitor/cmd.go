@@ -28,7 +28,7 @@ import (
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/oracle/geth"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 

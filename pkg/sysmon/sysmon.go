@@ -5,10 +5,12 @@ import (
 	"errors"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"time"
 
 	"golang.org/x/sys/unix"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -16,7 +18,8 @@ const LoggerTag = "SYSMON"
 
 var startTime = time.Now()
 
-// Sysmon is a system monitor. It logs basic system and runtime metrics.
+// Sysmon is a system monitor. It periodically logs system status.
+// It works only if the logger uses the debug level.
 type Sysmon struct {
 	ctx      context.Context
 	waitCh   chan error
@@ -48,6 +51,26 @@ func (s *Sysmon) Start(ctx context.Context) error {
 		return errors.New("context must not be nil")
 	}
 	s.log.Info("Starting")
+	fields := log.Fields{
+		"appVersion": suite.Version,
+		"goVersion":  runtime.Version(),
+		"goCompiler": runtime.Compiler,
+		"goOS":       runtime.GOOS,
+		"goArch":     runtime.GOARCH,
+	}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "CGO_ENABLED":
+				fields["cgoEnabled"] = setting.Value
+			case "vcs.revision":
+				fields["gitCommit"] = setting.Value
+			case "vcs.modified":
+				fields["gitModified"] = setting.Value
+			}
+		}
+	}
+	s.log.WithFields(fields).Debug("Build info")
 	s.ctx = ctx
 	go s.monitorRoutine()
 	go s.contextCancelHandler()
@@ -65,7 +88,7 @@ func (s *Sysmon) monitorRoutine() {
 	var spaceAvail uint64
 	wd, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		s.log.WithError(err).Warn("Failed to get current working directory, disk space monitoring is disabled")
 	}
 	t := time.NewTicker(s.interval)
 	defer t.Stop()
@@ -74,7 +97,7 @@ func (s *Sysmon) monitorRoutine() {
 		case <-s.ctx.Done():
 			return
 		case <-t.C:
-			if unix.Statfs(wd, &stat) == nil {
+			if len(wd) > 0 && unix.Statfs(wd, &stat) == nil {
 				spaceAvail = stat.Bavail * uint64(stat.Bsize)
 			} else {
 				spaceAvail = 0

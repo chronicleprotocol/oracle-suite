@@ -20,20 +20,19 @@ import (
 	"time"
 )
 
-// Retry runs the f function until it returns nil but not more than defined in
+// Try runs the f function until it returns nil but not more than defined in
 // the attempts argument. After reaching the max attempts, it returns the last
 // error. The delay argument defines the time between each attempt. If the
 // context is canceled, the function stops and returns the error.
-func Retry(ctx context.Context, f func() error, attempts int, delay time.Duration) (err error) {
+func Try(ctx context.Context, f func() error, attempts int, delay time.Duration) (err error) {
 	for i := 0; i < attempts; i++ {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		err = f()
-		if err == nil {
+		if err = f(); err == nil {
 			return nil
 		}
-		if i != attempts-1 {
+		if attempts < 0 || i < attempts {
 			t := time.NewTimer(delay)
 			select {
 			case <-ctx.Done():
@@ -43,4 +42,23 @@ func Retry(ctx context.Context, f func() error, attempts int, delay time.Duratio
 		}
 	}
 	return err
+}
+
+// TryForever runs the f function until it returns nil or the context is
+// canceled. The delay argument defines the time between each attempt.
+func TryForever(ctx context.Context, f func() error, delay time.Duration) {
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+		if err := f(); err == nil {
+			return
+		}
+		t := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+		case <-t.C:
+		}
+		t.Stop()
+	}
 }

@@ -73,15 +73,38 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
 	}
+
 	suite.client.On(
-		"CallBlocks",
+		"BlockNumber",
 		mock.Anything,
-		ethereum.Call{
+	).Return(big.NewInt(100), nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
 			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
 			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
-		},
-		[]int64{0, 10, 20},
-	).Return(resp, nil).Once()
+		}},
+	).Return([][]byte{resp[0]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		}},
+	).Return([][]byte{resp[1]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		}},
+	).Return([][]byte{resp[2]}, nil).Once()
 
 	pair := Pair{Base: "STETH", Quote: "WETH"}
 
@@ -89,8 +112,6 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 	suite.Require().NoError(results1[0].Error)
 	suite.Equal(0.97, results1[0].Price.Price)
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
-
-	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 1)
 
 	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
 	suite.Require().Error(results2[0].Error)
@@ -102,30 +123,53 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
 	}
-	suite.client.On(
-		"CallBlocks",
-		mock.Anything,
-		ethereum.Call{
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
-		},
-		[]int64{0, 10, 20},
-	).Return(resp, nil).Once()
 
-	resp1 := [][]byte{
+	resp2 := [][]byte{
 		common.BigToHash(big.NewInt(0.2 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.6 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.7 * 1e18)).Bytes(),
 	}
+
 	suite.client.On(
-		"CallBlocks",
+		"BlockNumber",
 		mock.Anything,
-		ethereum.Call{
+	).Return(big.NewInt(100), nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		}, {
 			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
 			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
-		},
-		[]int64{0, 10, 20},
-	).Return(resp1, nil).Once()
+		}},
+	).Return([][]byte{resp[0], resp2[0]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		}, {
+			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
+		}},
+	).Return([][]byte{resp[1], resp2[1]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		}, {
+			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
+		}},
+	).Return([][]byte{resp[2], resp2[2]}, nil).Once()
 
 	pair := Pair{Base: "RETH", Quote: "WETH"}
 
@@ -133,8 +177,6 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 	suite.Require().NoError(results1[0].Error)
 	suite.Equal(0.485, results1[0].Price.Price)
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
-
-	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 2)
 
 	results2 := suite.origin.Fetch([]Pair{pair.Inverse()})
 	suite.Require().Error(results2[0].Error)

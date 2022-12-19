@@ -1,0 +1,15 @@
+FROM golang:1.18-alpine as builder
+RUN apk --no-cache add git gcc libc-dev linux-headers
+WORKDIR /go/src/rpc-splitter
+COPY . .
+RUN    export CGO_ENABLED=1 \
+    && mkdir -p dist \
+    && go mod vendor \
+    && go build -o dist/rpc-splitter ./cmd/rpc-splitter
+
+FROM alpine:3.16
+RUN apk --no-cache add ca-certificates
+WORKDIR /root
+COPY --from=builder /go/src/rpc-splitter/dist/ /usr/local/bin/
+EXPOSE 9989
+ENTRYPOINT ["/usr/local/bin/rpc-splitter"]

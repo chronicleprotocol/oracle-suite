@@ -20,11 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
@@ -74,9 +73,9 @@ func TestEthereum_ConfigureSigner_WithPassword(t *testing.T) {
 func TestEthereum_ConfigureEthereumClient(t *testing.T) {
 	prevEthClientFactory := ethClientFactory
 	defer func() { ethClientFactory = prevEthClientFactory }()
-	ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (geth.EthClient, error) {
+	ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (*rpc.Client, error) {
 		assert.Equal(t, "1.2.3.4:1234", endpoints[0])
-		return &mocks.EthClient{}, nil
+		return nil, nil
 	}
 
 	config := Ethereum{
@@ -97,10 +96,10 @@ func TestEthereum_ConfigureEthereumClient(t *testing.T) {
 func TestEthereum_ConfigureEthereumClientWithMultipleEndpoints(t *testing.T) {
 	prevEthClientFactory := ethClientFactory
 	defer func() { ethClientFactory = prevEthClientFactory }()
-	ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (geth.EthClient, error) {
+	ethClientFactory = func(endpoints []string, timeout, gracefulTimeout time.Duration, maxBlocksBehind int, logger log.Logger) (*rpc.Client, error) {
 		assert.Equal(t, "1.2.3.4:1234", endpoints[0])
 		assert.Equal(t, "5.6.7.8:1234", endpoints[1])
-		return &mocks.EthClient{}, nil
+		return nil, nil
 	}
 
 	config := Ethereum{

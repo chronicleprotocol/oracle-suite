@@ -30,12 +30,14 @@
           "ethereum": {
             "rpc": "http://localhost:8080"
           },
-          "interval": 10,
-          "blocksDelta": [0],
-          "blocksLimit": 1000,
           "addresses": [
             "0x20265780907778b4d0e9431c8ba5c7f152707f1d"
-          ]
+          ],
+          "interval": 10,
+          "prefetchPeriod": 10,
+          "blockConfirmations": 0,
+          "blocksLimit": 1000,
+          "replayAfter": ["${REPLAY_AFTER-10}"]
         }
       ]
     }

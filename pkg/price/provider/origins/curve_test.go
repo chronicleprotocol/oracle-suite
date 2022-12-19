@@ -70,23 +70,44 @@ func (suite *CurveSuite) TestSuccessResponse() {
 		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
 		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
 	}
+
 	suite.client.On(
-		"CallBlocks",
+		"BlockNumber",
 		mock.Anything,
-		ethereum.Call{
+	).Return(big.NewInt(100), nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
 			Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
 			Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000"),
-		},
-		[]int64{0, 10, 20},
-	).Return(resp, nil).Once()
+		}},
+	).Return([][]byte{resp[0]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+			Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+		}},
+	).Return([][]byte{resp[1]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+			Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+		}},
+	).Return([][]byte{resp[2]}, nil).Once()
 
 	pair := Pair{Base: "STETH", Quote: "ETH"}
 	results1 := suite.origin.Fetch([]Pair{pair})
 	suite.Require().NoError(results1[0].Error)
 	suite.Equal(0.97, results1[0].Price.Price)
 	suite.Greater(results1[0].Price.Timestamp.Unix(), int64(0))
-
-	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 1)
 }
 
 func (suite *CurveSuite) TestSuccessResponse_Inverse() {
@@ -97,14 +118,36 @@ func (suite *CurveSuite) TestSuccessResponse_Inverse() {
 	}
 
 	suite.client.On(
-		"CallBlocks",
+		"BlockNumber",
 		mock.Anything,
-		ethereum.Call{
+	).Return(big.NewInt(100), nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
 			Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
 			Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000de0b6b3a7640000"),
-		},
-		[]int64{0, 10, 20},
-	).Return(resp, nil).Once()
+		}},
+	).Return([][]byte{resp[0]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+			Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+		}},
+	).Return([][]byte{resp[1]}, nil).Once()
+
+	suite.client.On(
+		"MultiCall",
+		mock.Anything,
+		[]ethereum.Call{{
+			Address: ethereum.HexToAddress("0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"),
+			Data:    ethereum.HexToBytes("0x5e0d443f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000de0b6b3a7640000"),
+		}},
+	).Return([][]byte{resp[2]}, nil).Once()
 
 	pair := Pair{Base: "STETH", Quote: "ETH"}
 
@@ -113,8 +156,6 @@ func (suite *CurveSuite) TestSuccessResponse_Inverse() {
 	suite.Require().NoError(results2[0].Error)
 	suite.Equal(0.97, results2[0].Price.Price)
 	suite.Greater(results2[0].Price.Timestamp.Unix(), int64(0))
-
-	suite.client.AssertNumberOfCalls(suite.T(), "CallBlocks", 1)
 }
 
 func (suite *CurveSuite) TestFailOnWrongPair() {

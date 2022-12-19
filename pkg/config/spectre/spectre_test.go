@@ -25,15 +25,15 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/spectre"
 )
 
 func TestSpectre_Configure(t *testing.T) {
-	prevSpectreFactory := spectreFactory
+	prevSpectreFactory := relayerFactory
 	prevDatastoreFactory := priceStoreFactory
 	defer func() {
-		spectreFactory = prevSpectreFactory
+		relayerFactory = prevSpectreFactory
 		priceStoreFactory = prevDatastoreFactory
 	}()
 
@@ -51,25 +51,23 @@ func TestSpectre_Configure(t *testing.T) {
 				Contract:         "0xe0F30cb149fAADC7247E953746Be9BbBB6B5751f",
 				OracleSpread:     0.1,
 				OracleExpiration: 15500,
-				MsgExpiration:    1800,
 			},
 		},
 	}
 
-	spectreFactory = func(cfg spectre.Config) (*spectre.Spectre, error) {
+	relayerFactory = func(cfg relayer.Config) (*relayer.Relayer, error) {
 		assert.Equal(t, signer, cfg.Signer)
 		assert.Equal(t, ps, cfg.PriceStore)
-		assert.Equal(t, secToDuration(interval), cfg.Interval)
+		assert.Equal(t, secToDuration(interval), cfg.PokeTicker.Duration())
 		assert.Equal(t, logger, cfg.Logger)
 		assert.Equal(t, "AAABBB", cfg.Pairs[0].AssetPair)
 		assert.Equal(t, secToDuration(config.Medianizers["AAABBB"].OracleExpiration), cfg.Pairs[0].OracleExpiration)
-		assert.Equal(t, secToDuration(config.Medianizers["AAABBB"].MsgExpiration), cfg.Pairs[0].PriceExpiration)
 		assert.Equal(t, config.Medianizers["AAABBB"].OracleSpread, cfg.Pairs[0].OracleSpread)
 		assert.Equal(t, ethereum.HexToAddress(config.Medianizers["AAABBB"].Contract), cfg.Pairs[0].Median.Address())
-		return &spectre.Spectre{}, nil
+		return &relayer.Relayer{}, nil
 	}
 
-	s, err := config.ConfigureSpectre(Dependencies{
+	s, err := config.ConfigureRelayer(Dependencies{
 		Signer:         signer,
 		PriceStore:     ps,
 		EthereumClient: ethClient,

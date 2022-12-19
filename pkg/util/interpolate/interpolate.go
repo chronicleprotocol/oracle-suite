@@ -19,15 +19,6 @@ import (
 	"strings"
 )
 
-// Parsed is a parsed string.
-type Parsed []part
-
-type Variable struct {
-	Name       string // Name of the variable.
-	Default    string // Default value if the variable is not set.
-	HasDefault bool   // True if the variable has a default value.
-}
-
 // Parse parses the string and returns a parsed representation. The variables
 // may be interpolated later using the Interpolate method.
 //
@@ -37,15 +28,40 @@ type Variable struct {
 //
 // - Variables may have a default value separated by -, eq. ${VAR-default}.
 //
-// - To include a literal $ in the output, escape it with a backslash or
-// another $. For example, \$ and $$ are both interpreted as a literal $.
-// The latter does not work inside a variable.
+// - To include a literal $, escape it with a backslash, eq. \$.
 //
 // - If a variable is not closed, it is treated as a literal.
 func Parse(s string) Parsed {
-	p := parser{in: s, out: make([]part, 0, 1)}
+	p := dollarParser(s)
 	p.parse()
 	return p.out
+}
+
+// ParsePercent parses the string and returns a parsed representation. The variables
+// may be interpolated later using the Interpolate method.
+//
+// The syntax is similar to shell variable expansion. The following rules apply:
+//
+// - Variables are enclosed in %{...} and may contain any character.
+//
+// - Variables may have a default value separated by -, eq. %{VAR-default}.
+//
+// - To include a literal %, escape it with a backslash, eq. \%.
+//
+// - If a variable is not closed, it is treated as a literal.
+func ParsePercent(s string) Parsed {
+	p := percentParser(s)
+	p.parse()
+	return p.out
+}
+
+// Parsed is a parsed string.
+type Parsed []part
+
+type Variable struct {
+	Name       string // Name of the variable.
+	Default    string // Default value if the variable is not set.
+	HasDefault bool   // True if the variable has a default value.
 }
 
 // Interpolate replaces variables in the string based on the mapping function.
@@ -84,34 +100,58 @@ type part struct {
 }
 
 const (
-	tokenEscapedDollar = "$$"
-	tokenBackslash     = "\\"
-	tokenVarBegin      = "${"
-	tokenVarEnd        = "}"
-	tokenDefaultVal    = "-"
+	tokenDollarVarBegin  = "${"
+	tokenPercentVarBegin = "%{"
+	tokenVarEnd          = "}"
+	tokenDefaultVal      = "-"
+	tokenBackslash       = "\\"
 )
 
+func dollarParser(s string) parser {
+	return parser{
+		in:              s,
+		out:             make([]part, 0, 1),
+		tokenBackslash:  tokenBackslash,
+		tokenVarBegin:   tokenDollarVarBegin,
+		tokenVarEnd:     tokenVarEnd,
+		tokenDefaultVal: tokenDefaultVal,
+	}
+}
+
+func percentParser(s string) parser {
+	return parser{
+		in:              s,
+		out:             make([]part, 0, 1),
+		tokenBackslash:  tokenBackslash,
+		tokenVarBegin:   tokenPercentVarBegin,
+		tokenVarEnd:     tokenVarEnd,
+		tokenDefaultVal: tokenDefaultVal,
+	}
+}
+
 type parser struct {
-	in     string
-	out    Parsed
-	pos    int
-	litBuf strings.Builder
-	varBuf strings.Builder
-	defBuf strings.Builder
+	in              string
+	out             Parsed
+	pos             int
+	litBuf          strings.Builder
+	varBuf          strings.Builder
+	defBuf          strings.Builder
+	tokenBackslash  string
+	tokenVarBegin   string
+	tokenVarEnd     string
+	tokenDefaultVal string
 }
 
 func (p *parser) parse() {
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenBackslash):
+		case p.nextToken(p.tokenBackslash):
 			p.parseBackslash()
-		case p.nextToken(tokenEscapedDollar):
-			p.appendByte('$')
-		case p.nextToken(tokenVarBegin):
+		case p.nextToken(p.tokenVarBegin):
 			p.parseVariable()
 		default:
 			// Add all characters to the first character that may start the token.
-			p.appendLiteral(p.nextBytesUntilAnyOf("\\$"))
+			p.appendLiteral(p.nextBytesUntilAnyOf(p.tokenVarBegin[0], p.tokenBackslash[0]))
 		}
 	}
 	p.appendBuffer()
@@ -119,7 +159,7 @@ func (p *parser) parse() {
 
 func (p *parser) parseBackslash() {
 	if !p.hasNext() {
-		p.appendLiteral(tokenBackslash)
+		p.appendLiteral(p.tokenBackslash)
 		return
 	}
 	p.appendByte(p.nextByte())
@@ -132,15 +172,15 @@ func (p *parser) parseVariable() {
 	p.defBuf.Reset()
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenBackslash):
+		case p.nextToken(p.tokenBackslash):
 			if !p.hasNext() {
 				continue
 			}
 			p.varBuf.WriteByte(p.nextByte())
-		case p.nextToken(tokenDefaultVal):
+		case p.nextToken(p.tokenDefaultVal):
 			def = true
 			p.parseDefault()
-		case p.nextToken(tokenVarEnd):
+		case p.nextToken(p.tokenVarEnd):
 			p.appendVariable(Variable{
 				Name:       p.varBuf.String(),
 				Default:    p.defBuf.String(),
@@ -149,30 +189,30 @@ func (p *parser) parseVariable() {
 			return
 		default:
 			// Add all characters to the first character that may start the token.
-			p.varBuf.WriteString(p.nextBytesUntilAnyOf("-\\}"))
+			p.varBuf.WriteString(p.nextBytesUntilAnyOf(p.tokenVarEnd[0], p.tokenDefaultVal[0], p.tokenBackslash[0]))
 		}
 	}
 	// Variable not closed. Treat the whole thing as a literal.
-	p.appendLiteral(tokenVarBegin)
+	p.appendLiteral(p.tokenVarBegin)
 	p.pos = pos
 }
 
 func (p *parser) parseDefault() {
 	for p.hasNext() {
 		switch {
-		case p.nextToken(tokenBackslash):
+		case p.nextToken(p.tokenBackslash):
 			if !p.hasNext() {
 				continue
 			}
 			p.defBuf.WriteByte(p.nextByte())
-		case p.nextToken(tokenVarEnd):
+		case p.nextToken(p.tokenVarEnd):
 			// Move the position back so that the closing token is not
 			// consumed and can be parsed by the parent parser.
-			p.pos -= len(tokenVarEnd)
+			p.pos -= len(p.tokenVarEnd)
 			return
 		default:
 			// Add all characters to the first character that may start the token.
-			p.defBuf.WriteString(p.nextBytesUntilAnyOf("\\}"))
+			p.defBuf.WriteString(p.nextBytesUntilAnyOf(p.tokenVarEnd[0], p.tokenBackslash[0]))
 		}
 	}
 }
@@ -190,7 +230,7 @@ func (p *parser) nextByte() byte {
 
 // nextBytesUntilAnyOf returns the next bytes until any of the given characters
 // is encountered but not less than one. Only ASCII characters are supported.
-func (p *parser) nextBytesUntilAnyOf(s string) string {
+func (p *parser) nextBytesUntilAnyOf(s ...byte) string {
 	pos := p.pos
 	p.pos++
 	for p.pos < len(p.in) {

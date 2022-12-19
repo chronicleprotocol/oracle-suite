@@ -29,7 +29,8 @@ type PostPriceHook struct {
 	handlers map[string]interface{}
 }
 
-const RocketPoolPair = "RETH/ETH"
+const RocketPoolPairETH = "RETH/ETH"
+const RocketPoolPairUSD = "RETH/USD"
 
 type HookParams map[string]map[string]interface{}
 
@@ -41,12 +42,14 @@ func NewPostPriceHook(ctx context.Context, cli ethereum.Client, params HookParam
 	handlers := make(map[string]interface{})
 	for k, v := range params {
 		switch k {
-		case RocketPoolPair:
+		case RocketPoolPairUSD:
+			fallthrough
+		case RocketPoolPairETH:
 			h, err := hooks.NewRocketPoolCircuitBreaker(v)
 			if err != nil {
 				return nil, err
 			}
-			handlers[k] = h
+			handlers[RocketPoolPairETH] = h
 		default:
 		}
 	}
@@ -58,27 +61,61 @@ func NewPostPriceHook(ctx context.Context, cli ethereum.Client, params HookParam
 	}, nil
 }
 
+func findPrice(a []*Price, selector func(*Price) bool) *Price {
+	if len(a) > 0 {
+		for _, price := range a {
+			if selector(price) {
+				return price
+			}
+			//nolint
+			if len(price.Prices) > 0 {
+				return findPrice(price.Prices, selector)
+			}
+		}
+	}
+	return nil
+}
+
 func (o *PostPriceHook) Check(prices map[Pair]*Price) error {
 	for pair, price := range prices {
 		switch pair.String() {
-		case RocketPoolPair:
-			if _, ok := o.handlers[RocketPoolPair]; !ok {
-				return fmt.Errorf("no post price hook handler found for %s", RocketPoolPair)
+		case RocketPoolPairUSD:
+			fallthrough
+		case RocketPoolPairETH:
+			if _, ok := o.handlers[RocketPoolPairETH]; !ok {
+				return fmt.Errorf("no post price hook handler found for %s", pair.String())
 			}
 
-			var refPrice float64
-			for _, origin := range price.Prices {
-				if origin.Parameters["origin"] == "rocketpool" {
-					refPrice = origin.Price
-					break
-				}
+			checkPrice := price.Price
+			refPrice := findPrice(price.Prices,
+				func(p *Price) bool {
+					return p.Parameters["origin"] == "rocketpool"
+				},
+			)
+			if refPrice == nil {
+				prices[pair].Error = fmt.Sprintf("post price hook failed for %s, reference price not found", pair.String())
+				return nil
 			}
-			if refPrice == 0 {
+			if refPrice.Price == 0 {
 				prices[pair].Error = fmt.Sprintf("post price hook failed for %s, reference price should be > 0", pair.String())
 				return nil
 			}
+			if pair.String() == RocketPoolPairUSD {
+				p := findPrice(price.Prices,
+					func(p *Price) bool {
+						return p.Type == "aggregator" && p.Pair.String() == RocketPoolPairETH
+					},
+				)
+				if p == nil {
+					prices[pair].Error = fmt.Sprintf("post price hook failed for %s, unable to find aggregate %s price",
+						pair.String(), RocketPoolPairETH)
+					return nil
+				}
+				checkPrice = p.Price
 
-			err := o.handlers[RocketPoolPair].(*hooks.RocketPoolCircuitBreaker).Check(o.ctx, o.cli, price.Price, refPrice)
+			}
+			err := o.handlers[RocketPoolPairETH].(*hooks.RocketPoolCircuitBreaker).Check(o.ctx,
+				o.cli, checkPrice, refPrice.Price)
 			if err != nil {
 				prices[pair].Error = err.Error()
 			}

@@ -23,109 +23,196 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type parserFunc func(string) Parsed
+
 func TestParse(t *testing.T) {
 	tests := []struct {
-		str  string
-		want string
+		str     string
+		want    string
+		parsers []parserFunc
 	}{
 		{
-			str:  "",
-			want: "",
+			str:     "",
+			want:    "",
+			parsers: []parserFunc{Parse, ParsePercent},
 		},
 		{
-			str:  "foo",
-			want: "foo",
+			str:     "foo",
+			want:    "foo",
+			parsers: []parserFunc{Parse, ParsePercent},
 		},
 		{
-			str:  "${bar}",
-			want: "[bar]",
+			str:     "${bar}",
+			want:    "[bar]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "${bar-baz}",
-			want: "[baz]",
+			str:     "%{bar}",
+			want:    "[bar]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "${bar\\-baz}",
-			want: "[bar-baz]",
+			str:     "${bar-baz}",
+			want:    "[baz]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "${bar$$baz}",
-			want: "[bar$$baz]",
+			str:     "%{bar-baz}",
+			want:    "[baz]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "foo_${bar}_baz",
-			want: "foo_[bar]_baz",
+			str:     "${bar\\-baz}",
+			want:    "[bar-baz]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "${bar\\}foo}",
-			want: "[bar}foo]",
+			str:     "%{bar\\-baz}",
+			want:    "[bar-baz]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "foo_${bar}",
-			want: "foo_[bar]",
+			str:     "${bar$$baz}",
+			want:    "[bar$$baz]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "${foo}_${bar}",
-			want: "[foo]_[bar]",
+			str:     "%{bar%%baz}",
+			want:    "[bar%%baz]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "$${foo}_$${bar}",
-			want: "${foo}_${bar}",
+			str:     "foo_${bar}_baz",
+			want:    "foo_[bar]_baz",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "\\${foo}_\\${bar}",
-			want: "${foo}_${bar}",
+			str:     "foo_%{bar}_baz",
+			want:    "foo_[bar]_baz",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "$$${foo}_$$${bar}",
-			want: "$[foo]_$[bar]",
+			str:     "${bar\\}foo}",
+			want:    "[bar}foo]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "\\\\${foo}_\\\\${bar}",
-			want: "\\[foo]_\\[bar]",
+			str:     "%{bar\\}foo}",
+			want:    "[bar}foo]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "$$",
-			want: "$",
+			str:     "foo_${bar}",
+			want:    "foo_[bar]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "\\",
-			want: "\\",
+			str:     "foo_%{bar}",
+			want:    "foo_[bar]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "${",
-			want: "${",
+			str:     "${foo}_bar",
+			want:    "[foo]_bar",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "}",
-			want: "}",
+			str:     "%{foo}_bar",
+			want:    "[foo]_bar",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "${\\",
-			want: "${\\",
+			str:     "${foo}_${bar}",
+			want:    "[foo]_[bar]",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "${foo",
-			want: "${foo",
+			str:     "%{foo}_%{bar}",
+			want:    "[foo]_[bar]",
+			parsers: []parserFunc{ParsePercent},
 		},
 		{
-			str:  "${foo$$bar${baz\\}",
-			want: "${foo$bar${baz}",
+			str:     "\\${foo}_\\${bar}",
+			want:    "${foo}_${bar}",
+			parsers: []parserFunc{Parse},
 		},
 		{
-			str:  "$0${$",
-			want: "$0${$",
+			str:     "\\%{foo}_\\%{bar}",
+			want:    "%{foo}_%{bar}",
+			parsers: []parserFunc{ParsePercent},
+		},
+		{
+			str:     "\\\\${foo}_\\\\${bar}",
+			want:    "\\[foo]_\\[bar]",
+			parsers: []parserFunc{Parse},
+		},
+		{
+			str:     "\\\\%{foo}_\\\\%{bar}",
+			want:    "\\[foo]_\\[bar]",
+			parsers: []parserFunc{ParsePercent},
+		},
+		{
+			str:     "\\",
+			want:    "\\",
+			parsers: []parserFunc{Parse, ParsePercent},
+		},
+		{
+			str:     "${",
+			want:    "${",
+			parsers: []parserFunc{Parse},
+		},
+		{
+			str:     "%{",
+			want:    "%{",
+			parsers: []parserFunc{ParsePercent},
+		},
+		{
+			str:     "}",
+			want:    "}",
+			parsers: []parserFunc{Parse, ParsePercent},
+		},
+		{
+			str:     "${\\",
+			want:    "${\\",
+			parsers: []parserFunc{Parse},
+		},
+		{
+			str:     "%{\\",
+			want:    "%{\\",
+			parsers: []parserFunc{ParsePercent},
+		},
+		{
+			str:     "${foo",
+			want:    "${foo",
+			parsers: []parserFunc{Parse},
+		},
+		{
+			str:     "%{foo",
+			want:    "%{foo",
+			parsers: []parserFunc{ParsePercent},
+		},
+		{
+			str:     "$0${$",
+			want:    "$0${$",
+			parsers: []parserFunc{Parse},
+		},
+		{
+			str:     "%0%{%",
+			want:    "%0%{%",
+			parsers: []parserFunc{ParsePercent},
 		},
 	}
 	for n, tt := range tests {
-		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			assert.Equal(t, tt.want, Parse(tt.str).Interpolate(func(variable Variable) string {
-				if variable.Default != "" {
-					return "[" + variable.Default + "]"
-				}
-				return "[" + variable.Name + "]"
-			}))
-		})
+		for k, p := range tt.parsers {
+			t.Run(fmt.Sprintf("case-%d-%d", n+1, k+1), func(t *testing.T) {
+				assert.Equal(t, tt.want, p(tt.str).Interpolate(func(variable Variable) string {
+					if variable.Default != "" {
+						return "[" + variable.Default + "]"
+					}
+					return "[" + variable.Name + "]"
+				}))
+			})
+		}
 	}
 }
 
@@ -138,12 +225,33 @@ func FuzzParse(f *testing.F) {
 		// Sample inputs:
 		"${foo}",
 		"${foo-bar}",
-		"$${foo}",
 		"\\${foo}",
 		// Tokens:
-		"$$",
 		"\\",
 		"${",
+		"}",
+		"-",
+	} {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		Parse(s).Interpolate(func(variable Variable) string { return "[" + variable.Name + "]" })
+	})
+}
+
+func FuzzParsePercent(f *testing.F) {
+	for _, s := range []string{
+		// Literals:
+		"",
+		"foo",
+		string([]byte{0}),
+		// Sample inputs:
+		"%{foo}",
+		"%{foo-bar}",
+		"\\%{foo}",
+		// Tokens:
+		"\\",
+		"%{",
 		"}",
 		"-",
 	} {

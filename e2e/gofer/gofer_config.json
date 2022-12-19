@@ -375,7 +375,6 @@
           [{ "origin": "binance", "pair": "ETH/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "bitstamp", "pair": "ETH/USD" }],
           [{ "origin": "coinbasepro", "pair": "ETH/USD" }],
-          [{ "origin": "ftx", "pair": "ETH/USD" }],
           [{ "origin": "gemini", "pair": "ETH/USD" }],
           [{ "origin": "kraken", "pair": "ETH/USD" }],
           [{ "origin": "uniswapV3", "pair": "ETH/USD" }]
@@ -390,7 +389,6 @@
           [{ "origin": "binance", "pair": "MKR/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "bitstamp", "pair": "MKR/USD" }],
           [{ "origin": "coinbasepro", "pair": "MKR/USD" }],
-          [{ "origin": "ftx", "pair": "MKR/USD" }],
           [{ "origin": "gemini", "pair": "MKR/USD" }],
           [{ "origin": "kraken", "pair": "MKR/USD" }]
         ],
@@ -404,7 +402,6 @@
           [{ "origin": "binance", "pair": "MKR/BTC" },{ "origin": ".", "pair": "ETH/BTC" }],
           [{ "origin": "bitstamp", "pair": "MKR/USD" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "coinbasepro", "pair": "MKR/USD" },{ "origin": ".", "pair": "ETH/USD" }],
-          [{ "origin": "ftx", "pair": "MKR/USD" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "gemini", "pair": "MKR/USD" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "kraken", "pair": "MKR/USD" },{ "origin": ".", "pair": "ETH/USD" }]
         ],
@@ -431,7 +428,6 @@
         "sources": [
           [{ "origin": "binance", "pair": "LINK/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "coinbasepro", "pair": "LINK/USD" }],
-          [{ "origin": "ftx", "pair": "LINK/USD" }],
           [{ "origin": "gemini", "pair": "LINK/USD" }],
           [{ "origin": "huobi", "pair": "LINK/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "kraken", "pair": "LINK/USD" }]
@@ -472,7 +468,6 @@
           [{ "origin": "binance", "pair": "MATIC/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "huobi", "pair": "MATIC/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "coinbasepro", "pair": "MATIC/USD" }],
-          [{ "origin": "ftx", "pair": "MATIC/USD" }],
           [{ "origin": "gemini", "pair": "MATIC/USD" }],
           [{ "origin": "kraken", "pair": "MATIC/USD" }]
         ],
@@ -484,7 +479,6 @@
         "method": "median",
         "sources": [
           [{ "origin": "binance", "pair": "PAXG/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
-          [{ "origin": "ftx", "pair": "PAXG/USD" }],
           [{ "origin": "gemini", "pair": "PAXG/USD" }],
           [{ "origin": "kraken", "pair": "PAXG/USD" }],
           [{ "origin": "uniswap", "pair": "PAXG/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
@@ -525,7 +519,6 @@
         "sources": [
           [{ "origin": "binance", "pair": "UNI/BTC" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "coinbasepro", "pair": "UNI/USD" }],
-          [{ "origin": "ftx", "pair": "UNI/USD" }],
           [{ "origin": "huobi", "pair": "UNI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "okex", "pair": "UNI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "uniswapV3", "pair": "UNI/ETH" },{ "origin": ".", "pair": "ETH/USD" }]
@@ -551,7 +544,6 @@
           [{ "origin": "binance", "pair": "BTC/USDT" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "okex", "pair": "BTC/USDT" },{ "origin": ".", "pair": "BTC/USD" }],
           [{ "origin": "bitfinex", "pair": "USDT/USD" }],
-          [{ "origin": "ftx", "pair": "ETH/USDT" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "huobi", "pair": "ETH/USDT" },{ "origin": ".", "pair": "ETH/USD" }],
           [{ "origin": "kraken", "pair": "USDT/USD" }]
         ],
@@ -608,7 +600,6 @@
           [{ "origin": "binance", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "okx", "pair": "YFI/USDT" },{ "origin": ".", "pair": "USDT/USD" }],
           [{ "origin": "coinbasepro", "pair": "YFI/USD" }],
-          [{ "origin": "ftx", "pair": "YFI/USD" }],
           [{ "origin": "kraken", "pair": "YFI/USD" }]
         ],
         "params": {

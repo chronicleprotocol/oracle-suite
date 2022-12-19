@@ -25,10 +25,10 @@ import (
 
 func NewAgentCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "agent",
-		Args:  cobra.ExactArgs(0),
-		Short: "",
-		Long:  ``,
+		Use:     "agent",
+		Aliases: []string{"run"},
+		Args:    cobra.ExactArgs(0),
+		Short:   "Starts the Spire agent",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			sup, err := PrepareAgentServices(ctx, opts)

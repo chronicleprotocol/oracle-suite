@@ -22,9 +22,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/types"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -47,7 +47,7 @@ func logToMessage(l types.Log) (*messages.Event, error) {
 		// ID is additionally hashed to ensure that it is not similar to
 		// any other field, so it will not be misused. This field is intended
 		// to be used only be the event store.
-		ID:          crypto.Keccak256Hash(append(l.TxHash.Bytes(), big.NewInt(int64(l.Index)).Bytes()...)).Bytes(),
+		ID:          crypto.Keccak256Hash(append(l.TxHash.Bytes(), l.TxIndex.Big().Bytes()...)).Bytes(),
 		Index:       l.TxHash.Bytes(),
 		EventDate:   time.Unix(guid.timestamp, 0),
 		MessageDate: time.Now(),

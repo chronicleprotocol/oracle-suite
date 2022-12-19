@@ -24,7 +24,12 @@ import (
 
 const SignatureKey = "ethereum"
 
-// Signer signs Ethereum logger messages using Ethereum signature.
+// Signer signs events using Ethereum signature.
+//
+// Signer could only sign events that have a "hash" field in the data. The
+// value of that field is used to calculate the signature. The rest of the
+// fields in the data are ignored. The calculated signature is stored in the
+// "ethereum" field of the event's signatures map.
 type Signer struct {
 	signer ethereum.Signer
 	types  []string
@@ -35,7 +40,7 @@ func NewSigner(signer ethereum.Signer, types []string) *Signer {
 	return &Signer{signer: signer, types: types}
 }
 
-// Sign implements the Signer interface.
+// Sign implements the publisher.EventSigner interface.
 func (l *Signer) Sign(event *messages.Event) (bool, error) {
 	supports := false
 	for _, t := range l.types {
@@ -46,6 +51,9 @@ func (l *Signer) Sign(event *messages.Event) (bool, error) {
 	}
 	if !supports {
 		return false, nil
+	}
+	if event.Data == nil {
+		return false, errors.New("event data is nil")
 	}
 	h, ok := event.Data["hash"]
 	if !ok {

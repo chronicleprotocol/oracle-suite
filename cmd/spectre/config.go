@@ -86,7 +86,7 @@ func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor
 	if err != nil {
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
-	spe, err := opts.Config.Spectre.ConfigureSpectre(spectreConfig.Dependencies{
+	spe, err := opts.Config.Spectre.ConfigureRelayer(spectreConfig.Dependencies{
 		Signer:         sig,
 		PriceStore:     pst,
 		EthereumClient: cli,

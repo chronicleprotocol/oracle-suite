@@ -109,6 +109,14 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 				prices = append(prices, price)
 			}
 		}
+	default:
+		allPrices, err := n.priceStore.GetAll(ctx)
+		if err != nil {
+			return err
+		}
+		for _, price := range allPrices {
+			prices = append(prices, price)
+		}
 	}
 
 	*resp = PullPricesResp{Prices: prices}
