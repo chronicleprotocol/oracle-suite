@@ -17,30 +17,34 @@ package transport
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"golang.org/x/net/proxy"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/middleware"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/twitter"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/tor"
 )
 
 const (
-	LibP2P  = "libp2p"
-	LibSSB  = "libssb"
-	Twitter = "twitter"
+	LibP2P = "libp2p"
+	LibSSB = "libssb"
+	TOR    = "tor"
 )
 
 var p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
@@ -51,7 +55,7 @@ type Transport struct {
 	Transport string            `yaml:"transport"`
 	P2P       LibP2PConfig      `yaml:"libp2p"`
 	SSB       ScuttlebuttConfig `yaml:"ssb"`
-	Twitter   TwitterConfig     `yaml:"twitter"`
+	TOR       TORConfig         `yaml:"tor"`
 }
 
 type LibP2PConfig struct {
@@ -73,16 +77,11 @@ type ScuttlebuttCapsConfig struct {
 	Invite string `yaml:"invite,omitempty"`
 }
 
-type TwitterConfig struct {
-	Accounts       []string `yaml:"accounts"`
-	ConsumerKey    string   `yaml:"consumerKey"`
-	ConsumerSecret string   `yaml:"consumerSecret"`
-	AccessToken    string   `yaml:"accessToken"`
-	AccessSecret   string   `yaml:"accessSecret"`
-	PostInterval   int      `yaml:"postInterval"`
-	FetchInterval  int      `yaml:"fetchInterval"`
-	MaximumAge     int      `yaml:"maximumAge"`
-	MinimumSpread  float64  `yaml:"minimumSpread"`
+type TORConfig struct {
+	Ethereum              ethereumConfig.Ethereum `yaml:"ethereum"`
+	Port                  int                     `yaml:"port"`
+	Socks5ProxyAddr       string                  `yaml:"socks5ProxyAddr"`
+	ConsumersContractAddr ethereum.Address        `yaml:"consumersContractAddr"`
 }
 
 type Dependencies struct {
@@ -97,52 +96,33 @@ type BootstrapDependencies struct {
 
 func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (transport.Transport, error) {
 	switch strings.ToLower(c.Transport) {
-	case Twitter:
-		if len(c.Twitter.ConsumerKey) == 0 {
-			return nil, errors.New("twitter consumer key is required")
-		}
-		if len(c.Twitter.ConsumerSecret) == 0 {
-			return nil, errors.New("twitter consumer secret is required")
-		}
-		if len(c.Twitter.AccessToken) == 0 {
-			return nil, errors.New("twitter access token is required")
-		}
-		if len(c.Twitter.AccessSecret) == 0 {
-			return nil, errors.New("twitter access secret is required")
-		}
-		if c.Twitter.PostInterval < 0 {
-			return nil, errors.New("twitter post interval must be positive")
-		}
-		if c.Twitter.FetchInterval < 0 {
-			return nil, errors.New("twitter fetch interval must be positive")
-		}
-		cfg := twitter.Config{
-			Accounts:             c.Twitter.Accounts,
-			ConsumerKey:          c.Twitter.ConsumerKey,
-			ConsumerSecret:       c.Twitter.ConsumerSecret,
-			AccessToken:          c.Twitter.AccessToken,
-			AccessSecret:         c.Twitter.AccessSecret,
-			Topics:               t,
-			PostTweetsInterval:   time.Second * time.Duration(c.Twitter.PostInterval),
-			FetchTweetsInterval:  time.Second * time.Duration(c.Twitter.FetchInterval),
-			QueueSize:            1024,
-			MaximumDataSize:      100000,
-			MaximumTweetLength:   250,
-			MosaicType:           twitter.ImageTypeJPEG,
-			MosaicBitsPerChannel: 2,
-			MosaicBlockSize:      16,
-			Logger:               d.Logger,
-		}
-		tw, err := twitter.New(cfg)
-		if err != nil {
-			return nil, err
-		}
-		mw := middleware.New(tw)
-		mw.Use(newMsgLimitMiddleware(c.Twitter.MaximumAge, c.Twitter.MinimumSpread))
-		mw.Use(middleware.BroadcastMiddlewareFunc(twitterPriceMiddleware))
-		return mw, nil
 	case LibSSB:
 		return nil, errors.New("ssb not yet implemented")
+	case TOR:
+		tr := http.DefaultTransport
+		if len(c.TOR.Socks5ProxyAddr) != 0 {
+			dialSocksProxy, err := proxy.SOCKS5("tcp", c.TOR.Socks5ProxyAddr, nil, proxy.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("transport config error: cannot connect to the proxy: %w", err)
+			}
+			tr = &http.Transport{DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return dialSocksProxy.Dial(network, address)
+			}}
+		}
+		cli, err := c.TOR.Ethereum.ConfigureEthereumClient(d.Signer, d.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("transport config error: cannot configure ethereum client: %w", err)
+		}
+		cc := tor.NewContractConsumers(cli, c.TOR.ConsumersContractAddr, time.Hour)
+		return tor.New(tor.Config{
+			Port:         c.TOR.Port,
+			Consumers:    cc,
+			Transport:    tr,
+			Topics:       t,
+			Signer:       d.Signer,
+			FeedersAddrs: d.Feeds,
+			Logger:       d.Logger,
+		})
 	case LibP2P:
 		fallthrough
 	default:

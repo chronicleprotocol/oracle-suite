@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/tor/pb";
+
+message MessagePack {
+  message Messages {
+    repeated bytes data = 1;
+  }
+  map<string, Messages> messages = 1; // Map of messages where key is the topic.
+  bytes signer = 2; // Signer of the message pack.
+  bytes signature = 3; // Signature of the signer calculated for concatenation of all messages.
+}
