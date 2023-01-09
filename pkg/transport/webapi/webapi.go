@@ -45,7 +45,7 @@ const (
 
 	// defaultMaxClockSkew is the maximum allowed clock skew between the consumer
 	// and the producer.
-	defaultMaxClockSkew = 10
+	defaultMaxClockSkew = 10 * time.Second
 
 	// defaultTimeout is the default timeout for HTTP requests, both for
 	// client and server.
@@ -89,6 +89,9 @@ const (
 // timestamp of the last request received from the message producer and
 // timestamp is the timestamp from the t query parameter.
 //
+// The purpose of the signature is to prevent replay attacks and to allow
+// message consumers to quickly verify if the identity of the message producer.
+//
 // The request body is a protobuf message (see pb/tor.proto) that contains
 // the following fields:
 //
@@ -100,15 +103,17 @@ const (
 // the topic name. Topics are sorted using sort.Strings function.
 //
 // The author recovered from the signature must be the same as the author
-// recovered from the signature in the query string.
+// recovered from the signature in the query string. Otherwise, the request
+// is rejected.
 //
 // Request body is compressed using gzip compression. Requests that are not
 // compressed or are not have a valid gzip header are rejected.
 //
 // All request must have Content-Type header set to application/x-protobuf.
 //
-// The HTTP server returns HTTP 200 OK response if the request is valid and
-// HTTP 400 Bad Request response if the request is invalid for any reason.
+// The HTTP server returns HTTP 200 OK response if the request is valid.
+// Otherwise, it returns 429 Too Many Requests response if producer sends
+// messages too often or 400 Bad Request response for any other error.
 type WebAPI struct {
 	mu     sync.RWMutex
 	ctx    context.Context
@@ -158,8 +163,8 @@ type Config struct {
 	AuthorAllowlist []ethereum.Address
 
 	// FlushTicker specifies how often the producer will flush messages
-	// to the consumers. If FlushTicker is nil, default value will be used
-	// (60 seconds).
+	// to the consumers. If FlushTicker is nil, default ticker with 1 minute
+	// interval is used.
 	//
 	// Flush interval must be less or equal to timeout.
 	FlushTicker *timeutil.Ticker
@@ -292,6 +297,8 @@ func (w *WebAPI) Broadcast(topic string, message transport.Message) error {
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	// Add message to the next batch. The batch will be sent to the consumers
+	// on the next flush (see flushRoutine).
 	if w.messagePack == nil {
 		w.messagePack = &pb.MessagePack{Messages: make(map[string]*pb.MessagePack_Messages)}
 	}
@@ -304,12 +311,16 @@ func (w *WebAPI) Broadcast(topic string, message transport.Message) error {
 
 // Messages implements the transport.Transport interface.
 func (w *WebAPI) Messages(topic string) <-chan transport.ReceivedMessage {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 	if ch, ok := w.msgChFO[topic]; ok {
 		return ch.Chan()
 	}
 	return nil
 }
 
+// flushMessages sends the current batch of messages to the consumers.
+// The batch is cleared after the messages are sent.
 func (w *WebAPI) flushMessages(ctx context.Context, t time.Time) error {
 	w.mu.Lock()
 	defer func() {
@@ -338,8 +349,8 @@ func (w *WebAPI) flushMessages(ctx context.Context, t time.Time) error {
 }
 
 // doHTTPRequest sends a POST request to the given address with the given
-// data. The data must be gzipped protobuf-encoded MessagePack. The tm
-// parameter is the time used for the URL signature.
+// data. The data must be gzipped protobuf-encoded MessagePack. The t parameter
+// is the time used for the URL signature.
 func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t time.Time) {
 	w.log.WithField("addr", addr).Info("Sending messages to consumer")
 
@@ -456,8 +467,8 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// Message timestamp must be newer than the last received message by
 	// flushInterval - defaultMaxClockSkew.
 	if timestamp.Before(w.lastReqs[*requestAuthor].Add(w.flushTicker.Duration() - defaultMaxClockSkew)) {
-		w.log.WithFields(fields).Warn("Message received too soon")
-		res.WriteHeader(http.StatusBadRequest)
+		w.log.WithFields(fields).Warn("Too many messages received in a short time")
+		res.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
 	w.lastReqs[*requestAuthor] = timestamp
@@ -574,8 +585,8 @@ func signURL(url string, tm time.Time, signer ethereum.Signer, rand io.Reader) (
 	return fmt.Sprintf("%s?t=%s&r=%x&s=%x", url, t, r, s.Bytes()), nil
 }
 
-// verifyURL verifies URL signature calculated by signURL and returns signer address
-// and timestamp.
+// verifyURL verifies URL signature calculated by signURL and returns signer
+// address and timestamp.
 func verifyURL(url string, signer ethereum.Signer) (*ethereum.Address, time.Time, error) {
 	p, err := netURL.Parse(url)
 	if err != nil {
