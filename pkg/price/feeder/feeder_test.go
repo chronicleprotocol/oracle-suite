@@ -155,7 +155,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 			// Prepare feeder services.
 			priceProvider := &priceMocks.Provider{}
 			signer := &ethereumMocks.Signer{}
-			ticker := timeutil.NewTicker(time.Second)
+			ticker := timeutil.NewTicker(0)
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
 				messages.PriceV0MessageName: (*messages.Price)(nil),
 				messages.PriceV1MessageName: (*messages.Price)(nil),
@@ -185,12 +185,14 @@ func TestFeeder_Broadcast(t *testing.T) {
 
 			// Wait for two messages.
 			var pricesV0, pricesV1 []*messages.Price
+			v0ch := localTransport.Messages(messages.PriceV0MessageName)
+			v1ch := localTransport.Messages(messages.PriceV1MessageName)
 			for {
 				select {
-				case msg := <-localTransport.Messages(messages.PriceV0MessageName):
+				case msg := <-v0ch:
 					price := msg.Message.(*messages.Price)
 					pricesV0 = append(pricesV0, price)
-				case msg := <-localTransport.Messages(messages.PriceV1MessageName):
+				case msg := <-v1ch:
 					price := msg.Message.(*messages.Price)
 					pricesV1 = append(pricesV1, price)
 				}
