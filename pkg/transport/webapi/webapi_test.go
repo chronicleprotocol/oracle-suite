@@ -277,7 +277,7 @@ func Test_WebAPI(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			ctx, ctxCancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second)
 			defer ctxCancel()
 
 			consSrv := httpserver.New(&http.Server{Addr: "127.0.0.1:0"})
@@ -329,6 +329,8 @@ func Test_WebAPI(t *testing.T) {
 
 			// Run test.
 			tt.test(t, logger, signer, prod, cons)
+
+			time.Sleep(100 * time.Millisecond)
 		})
 	}
 }
