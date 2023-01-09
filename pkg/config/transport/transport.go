@@ -38,13 +38,13 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/tor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/webapi"
 )
 
 const (
 	LibP2P = "libp2p"
 	LibSSB = "libssb"
-	TOR    = "tor"
+	WebAPI = "webapi"
 )
 
 var p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
@@ -55,7 +55,7 @@ type Transport struct {
 	Transport string            `yaml:"transport"`
 	P2P       LibP2PConfig      `yaml:"libp2p"`
 	SSB       ScuttlebuttConfig `yaml:"ssb"`
-	TOR       TORConfig         `yaml:"tor"`
+	WebAPI    WebAPIConfig      `yaml:"webapi"`
 }
 
 type LibP2PConfig struct {
@@ -77,9 +77,9 @@ type ScuttlebuttCapsConfig struct {
 	Invite string `yaml:"invite,omitempty"`
 }
 
-type TORConfig struct {
+type WebAPIConfig struct {
 	Ethereum              ethereumConfig.Ethereum `yaml:"ethereum"`
-	Port                  int                     `yaml:"port"`
+	ListenAddr            string                  `yaml:"listenAddr"`
 	Socks5ProxyAddr       string                  `yaml:"socks5ProxyAddr"`
 	ConsumersContractAddr ethereum.Address        `yaml:"consumersContractAddr"`
 }
@@ -98,30 +98,30 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 	switch strings.ToLower(c.Transport) {
 	case LibSSB:
 		return nil, errors.New("ssb not yet implemented")
-	case TOR:
-		tr := http.DefaultTransport
-		if len(c.TOR.Socks5ProxyAddr) != 0 {
-			dialSocksProxy, err := proxy.SOCKS5("tcp", c.TOR.Socks5ProxyAddr, nil, proxy.Direct)
+	case WebAPI:
+		httpClient := http.DefaultClient
+		if len(c.WebAPI.Socks5ProxyAddr) != 0 {
+			dialSocksProxy, err := proxy.SOCKS5("tcp", c.WebAPI.Socks5ProxyAddr, nil, proxy.Direct)
 			if err != nil {
 				return nil, fmt.Errorf("transport config error: cannot connect to the proxy: %w", err)
 			}
-			tr = &http.Transport{DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			httpClient.Transport = &http.Transport{DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 				return dialSocksProxy.Dial(network, address)
 			}}
 		}
-		cli, err := c.TOR.Ethereum.ConfigureEthereumClient(d.Signer, d.Logger)
+		cli, err := c.WebAPI.Ethereum.ConfigureEthereumClient(d.Signer, d.Logger)
 		if err != nil {
 			return nil, fmt.Errorf("transport config error: cannot configure ethereum client: %w", err)
 		}
-		cc := tor.NewContractConsumers(cli, c.TOR.ConsumersContractAddr, time.Hour)
-		return tor.New(tor.Config{
-			Port:         c.TOR.Port,
-			Consumers:    cc,
-			Transport:    tr,
-			Topics:       t,
-			Signer:       d.Signer,
-			FeedersAddrs: d.Feeds,
-			Logger:       d.Logger,
+		cc := webapi.NewEthereumAddressBook(cli, c.WebAPI.ConsumersContractAddr, time.Hour)
+		return webapi.New(webapi.Config{
+			ListenAddr:      c.WebAPI.ListenAddr,
+			AddressBook:     cc,
+			Topics:          t,
+			AuthorAllowlist: d.Feeds,
+			Signer:          d.Signer,
+			Client:          httpClient,
+			Logger:          d.Logger,
 		})
 	case LibP2P:
 		fallthrough
@@ -143,7 +143,7 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 			BootstrapAddrs:   c.P2P.BootstrapAddrs,
 			DirectPeersAddrs: c.P2P.DirectPeersAddrs,
 			BlockedAddrs:     c.P2P.BlockedAddrs,
-			FeedersAddrs:     d.Feeds,
+			AuthorAllowlist:  d.Feeds,
 			Discovery:        !c.P2P.DisableDiscovery,
 			Signer:           d.Signer,
 			Logger:           d.Logger,

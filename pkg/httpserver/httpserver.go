@@ -43,12 +43,10 @@ type HTTPServer struct {
 	serveCh   chan error
 	waitCh    chan error
 
-	ln  net.Listener
-	srv *http.Server
-
-	handler        http.Handler
-	wrappedHandler http.Handler
-	middlewares    []Middleware
+	ln          net.Listener
+	srv         *http.Server
+	baseHandler http.Handler
+	handler     http.Handler
 }
 
 // New creates a new HTTPServer instance.
@@ -58,35 +56,29 @@ func New(srv *http.Server) *HTTPServer {
 		waitCh:  make(chan error),
 		srv:     srv,
 	}
-	s.handler = srv.Handler
+	s.baseHandler = srv.Handler
+	s.handler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) { s.baseHandler.ServeHTTP(rw, r) })
 	srv.Handler = http.HandlerFunc(s.ServeHTTP)
 	return s
 }
 
-// Use adds a middleware. Middlewares will be called in the order in which they
-// were added. This function will panic after calling ServerHTTP/Start.
+// Use adds a middleware. Middlewares will be called in the reverse order
+// they were added.
 func (s *HTTPServer) Use(m ...Middleware) {
-	if s.wrappedHandler != nil {
-		panic("cannot add a middleware after calling ServeHTTP/Start")
+	for _, m := range m {
+		s.handler = m.Handle(s.handler)
 	}
-	s.middlewares = append(s.middlewares, m...)
+}
+
+// SetHandler sets the handler for the server.
+func (s *HTTPServer) SetHandler(handler http.Handler) {
+	s.baseHandler = handler
 }
 
 // ServeHTTP prepares middlewares stack if necessary and calls ServerHTTP
 // on the wrapped server.
 func (s *HTTPServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	if s.wrappedHandler == nil {
-		if len(s.middlewares) == 0 {
-			s.wrappedHandler = s.handler
-		} else {
-			h := s.middlewares[len(s.middlewares)-1].Handle(s.handler)
-			for i := len(s.middlewares) - 2; i >= 0; i-- {
-				h = s.middlewares[i].Handle(h)
-			}
-			s.wrappedHandler = h
-		}
-	}
-	s.wrappedHandler.ServeHTTP(rw, r)
+	s.handler.ServeHTTP(rw, r)
 }
 
 // Start implements the supervisor.Service interface. It starts HTTP server.

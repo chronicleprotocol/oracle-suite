@@ -134,7 +134,6 @@ func (l *EventPublisher) broadcast(evt *messages.Event) {
 			"messageDate": evt.MessageDate,
 			"data":        evt.Data,
 			"signatures":  evt.Signatures,
-			"from":        l.transport.ID(),
 		}).
 		Info("Event published")
 	err := l.transport.Broadcast(messages.EventV1MessageName, evt)
@@ -144,7 +143,6 @@ func (l *EventPublisher) broadcast(evt *messages.Event) {
 			WithFields(log.Fields{
 				"id":   evt.ID,
 				"type": evt.Type,
-				"from": l.transport.ID(),
 			}).
 			Error("Unable to publish the event")
 	}
@@ -163,7 +161,6 @@ func (l *EventPublisher) sign(evt *messages.Event) bool {
 				WithFields(log.Fields{
 					"id":   evt.ID,
 					"type": evt.Type,
-					"from": l.transport.ID(),
 				}).
 				Error("Unable to sign the event")
 			continue
@@ -175,7 +172,6 @@ func (l *EventPublisher) sign(evt *messages.Event) bool {
 			WithFields(log.Fields{
 				"id":   evt.ID,
 				"type": evt.Type,
-				"from": l.transport.ID(),
 			}).
 			Warn("There are no signers that supports the event")
 	}

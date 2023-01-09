@@ -59,8 +59,8 @@ var peerScoreParams = &pubsub.PeerScoreParams{
 func calculatePriceTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error) {
 	var maxPeers = float64(pubsub.GossipSubDhi)
 	// Minimum and maximum expected number of feeders connected to the network:
-	var minFeederCount = float64(len(cfg.FeedersAddrs)) / 2 // assume that 50% of feeders are offline
-	var maxFeederCount = float64(len(cfg.FeedersAddrs))
+	var minFeederCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeders are offline
+	var maxFeederCount = float64(len(cfg.AuthorAllowlist))
 	// Minimum and maximum expected number of messages to be received from a single peer in a mesh:
 	var minMsgsPerSecond = (minFeederCount * minAssetPairs) / maxPeers / priceUpdateInterval.Seconds()
 	var maxMsgsPerSecond = (maxFeederCount * maxAssetPairs) / priceUpdateInterval.Seconds()
@@ -89,8 +89,8 @@ func calculateEventTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error
 
 	var maxPeers = float64(pubsub.GossipSubDhi)
 	// Minimum and maximum expected number of feeders connected to the network:
-	var minFeederCount = float64(len(cfg.FeedersAddrs)) / 2 // assume that 50% of feeders are offline
-	var maxFeederCount = float64(len(cfg.FeedersAddrs))
+	var minFeederCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeders are offline
+	var maxFeederCount = float64(len(cfg.AuthorAllowlist))
 	// Minimum and maximum expected number of messages to be received from a single peer in a mesh:
 	var minMsgsPerSecond = minFeederCount * minEventsPerSecond / maxPeers
 	var maxMsgsPerSecond = maxFeederCount * maxEventsPerSecond

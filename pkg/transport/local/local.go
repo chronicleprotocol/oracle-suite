@@ -92,11 +92,6 @@ func (l *Local) Wait() <-chan error {
 	return l.waitCh
 }
 
-// ID implements the transport.Transport interface.
-func (l *Local) ID() []byte {
-	return l.id
-}
-
 // Broadcast implements the transport.Transport interface.
 func (l *Local) Broadcast(topic string, message transport.Message) error {
 	if sub, ok := l.subs[topic]; ok {

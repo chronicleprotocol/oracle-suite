@@ -15,8 +15,19 @@
 
 package sliceutil
 
+// Copy returns a copy of the slice.
 func Copy[T any](s []T) []T {
 	newSlice := make([]T, len(s))
 	copy(newSlice, s)
 	return newSlice
+}
+
+// Contains returns true if s slice contains e element.
+func Contains[T comparable](s []T, e T) bool {
+	for _, x := range s {
+		if x == e {
+			return true
+		}
+	}
+	return false
 }

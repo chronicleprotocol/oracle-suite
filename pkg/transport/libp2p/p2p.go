@@ -87,39 +87,50 @@ type P2P struct {
 type Config struct {
 	// Mode describes in what mode the node should operate.
 	Mode Mode
+
 	// Topics is a list of subscribed topics. A value of the map a type of
 	// message given as a nil pointer, e.g.: (*Message)(nil).
 	Topics map[string]transport.Message
+
 	// PeerPrivKey is a key used for peer identity. If empty, then random key
 	// is used. Ignored in bootstrap mode.
 	PeerPrivKey crypto.PrivKey
+
 	// MessagePrivKey is a key used to sign messages. If empty, then message
 	// are signed with the same key which is used for peer identity. Ignored
 	// in bootstrap mode.
 	MessagePrivKey crypto.PrivKey
+
 	// ListenAddrs is a list of multiaddresses on which this node will be
 	// listening on. If empty, the localhost, and a random port will be used.
 	ListenAddrs []string
+
 	// BootstrapAddrs is a list multiaddresses of initial peers to connect to.
 	// This option is ignored when discovery is disabled.
 	BootstrapAddrs []string
+
 	// DirectPeersAddrs is a list multiaddresses of peers to which messages
-	// will be send directly. This option has to be configured symmetrically
+	// will be sent directly. This option has to be configured symmetrically
 	// at both ends.
 	DirectPeersAddrs []string
+
 	// BlockedAddrs is a list of multiaddresses to which connection will be
 	// blocked. If an address on that list contains an IP and a peer ID, both
 	// will be blocked separately.
 	BlockedAddrs []string
-	// FeedersAddrs is a list of price feeders. Only feeders can create new
-	// messages in the network.
-	FeedersAddrs []ethereum.Address
+
+	// AuthorAllowlist is a list of allowed message authors. Only messages from
+	// these addresses will be accepted.
+	AuthorAllowlist []ethereum.Address
+
 	// Discovery indicates whenever peer discovery should be enabled.
 	// If discovery is disabled, then DirectPeersAddrs must be used
 	// to connect to the network. Always enabled in bootstrap mode.
 	Discovery bool
+
 	// Signer used to verify price messages. Ignored in bootstrap mode.
 	Signer ethereum.Signer
+
 	// Logger is a custom logger instance. If not provided then null
 	// logger is used.
 	Logger log.Logger
@@ -212,7 +223,7 @@ func New(cfg Config) (*P2P, error) {
 				return nil
 			}),
 			messageValidator(cfg.Topics, logger), // must be registered before any other validator
-			feederValidator(cfg.FeedersAddrs, logger),
+			feederValidator(cfg.AuthorAllowlist, logger),
 			eventValidator(logger),
 			priceValidator(cfg.Signer, logger),
 		)
@@ -272,11 +283,6 @@ func (p *P2P) Start(ctx context.Context) error {
 // Wait implements the transport.Transport interface.
 func (p *P2P) Wait() <-chan error {
 	return p.node.Wait()
-}
-
-// ID implements the transport.Transport interface.
-func (p *P2P) ID() []byte {
-	return ethkey.PeerIDToAddress(p.id).Bytes()
 }
 
 // Broadcast implements the transport.Transport interface.
@@ -343,8 +349,8 @@ func rateLimiterConfig(cfg Config) internal.RateLimiterConfig {
 	bytesPerSecond := maxBytesPerSecond
 	burstSize := maxBytesPerSecond * priceUpdateInterval.Seconds()
 	return internal.RateLimiterConfig{
-		BytesPerSecond:      maxBytesPerSecond / float64(len(cfg.FeedersAddrs)),
-		BurstSize:           int(burstSize / float64(len(cfg.FeedersAddrs))),
+		BytesPerSecond:      maxBytesPerSecond / float64(len(cfg.AuthorAllowlist)),
+		BurstSize:           int(burstSize / float64(len(cfg.AuthorAllowlist))),
 		RelayBytesPerSecond: bytesPerSecond,
 		RelayBurstSize:      int(burstSize),
 	}

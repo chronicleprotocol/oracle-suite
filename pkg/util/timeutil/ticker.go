@@ -29,10 +29,10 @@ func (t *Ticker) Start(ctx context.Context) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.ctx != nil {
-		panic("timeutil.PokeTicker: ticker is already started")
+		panic("timeutil.Ticker: ticker is already started")
 	}
 	if ctx == nil {
-		panic("timeutil.PokeTicker: context is nil")
+		panic("timeutil.Ticker: context is nil")
 	}
 	t.ctx = ctx
 	go t.ticker()
@@ -46,12 +46,18 @@ func (t *Ticker) Duration() time.Duration {
 // Tick sends a tick to the ticker channel.
 // Ticker must be started before calling this method.
 func (t *Ticker) Tick() {
+	t.TickAt(time.Now())
+}
+
+// TickAt sends a tick to the ticker channel with the given time.
+// Ticker must be started before calling this method.
+func (t *Ticker) TickAt(at time.Time) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.ctx == nil || t.ctx.Err() != nil {
-		panic("timeutil.PokeTicker: ticker is not started")
+		panic("timeutil.Ticker: ticker is not started")
 	}
-	t.c <- time.Now()
+	t.c <- at
 }
 
 // TickCh returns the ticker channel.

@@ -16,7 +16,6 @@
 package chain
 
 import (
-	"bytes"
 	"context"
 	"errors"
 
@@ -43,15 +42,6 @@ func New(ts ...transport.Transport) *Chain {
 		waitCh: fi.Chan(),
 		ts:     ts,
 	}
-}
-
-// ID implements the transport.Transport interface.
-func (m *Chain) ID() []byte {
-	var ids [][]byte
-	for _, t := range m.ts {
-		ids = append(ids, t.ID())
-	}
-	return bytes.Join(ids, []byte{','})
 }
 
 // Broadcast implements the transport.Transport interface.

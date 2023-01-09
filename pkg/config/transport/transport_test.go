@@ -61,7 +61,7 @@ func TestTransport_P2P_EmptyConfig(t *testing.T) {
 		assert.Equal(t, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)}, cfg.Topics)
 		assert.Equal(t, true, cfg.Discovery)
 		assert.Equal(t, "spire", cfg.AppName)
-		assert.Equal(t, feeds, cfg.FeedersAddrs)
+		assert.Equal(t, feeds, cfg.AuthorAllowlist)
 		assert.Same(t, signer, cfg.Signer)
 		assert.Same(t, logger, cfg.Logger)
 
@@ -115,7 +115,7 @@ func TestTransport_P2P_CustomValues(t *testing.T) {
 		assert.Equal(t, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)}, cfg.Topics)
 		assert.Equal(t, false, cfg.Discovery)
 		assert.Equal(t, "spire", cfg.AppName)
-		assert.Equal(t, feeds, cfg.FeedersAddrs)
+		assert.Equal(t, feeds, cfg.AuthorAllowlist)
 		assert.Same(t, signer, cfg.Signer)
 		assert.Same(t, logger, cfg.Logger)
 

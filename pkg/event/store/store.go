@@ -44,10 +44,13 @@ type Config struct {
 	// EventTypes is a list of supported event types. Events of other types will
 	// be ignored.
 	EventTypes []string
+
 	// Storage is the storage implementation.
 	Storage Storage
+
 	// Transport is a transport interface used to fetch events from Oracles.
 	Transport transport.Transport
+
 	// Logger is a current logger interface used by the EventStore.
 	// The Logger is required to monitor asynchronous processes.
 	Logger log.Logger
@@ -59,6 +62,7 @@ type Storage interface {
 	// updated if the MessageDate is newer. The first argument is true if the
 	// event was added, false if it was replaced. The method is thread-safe.
 	Add(ctx context.Context, author []byte, evt *messages.Event) (bool, error)
+
 	// Get returns messages form the store for the given type and index. If the
 	// message does not exist, nil will be returned. The method is thread-safe.
 	Get(ctx context.Context, typ string, idx []byte) ([]*messages.Event, error)

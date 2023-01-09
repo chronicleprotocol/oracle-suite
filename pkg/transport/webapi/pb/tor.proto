@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/webapi/pb";
+
+message MessagePack {
+  message Messages {
+    repeated bytes data = 1;
+  }
+
+  // Map of messages where key is the topic.
+  map<string, Messages> messages = 1;
+
+  // Signature of the signer calculated for concatenation of all messages.
+  // Topic are sorted using ASCII values of each character.
+  bytes signature = 2;
+}

@@ -15,7 +15,9 @@
 
 package transport
 
-import "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+import (
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+)
 
 // ReceivedMessage contains a Message received from Transport.
 type ReceivedMessage struct {
@@ -23,12 +25,12 @@ type ReceivedMessage struct {
 	// is not nil.
 	Message Message
 
-	// Author is the ID of the author of the message.
+	// Author is the author of the message.
 	Author []byte
 
 	// Data contains an optional data associated with the message. A type of
 	// the data is different depending on a transport implementation.
-	Data interface{}
+	Data any
 
 	// Error contains an optional error returned by transport layer.
 	Error error
@@ -46,9 +48,6 @@ type Message interface {
 // Transport implements a mechanism for exchanging messages between Oracles.
 type Transport interface {
 	supervisor.Service
-
-	// ID returns an identity used to sign messages.
-	ID() []byte
 
 	// Broadcast sends a message with a given topic.
 	Broadcast(topic string, message Message) error
