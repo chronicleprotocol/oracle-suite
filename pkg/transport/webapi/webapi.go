@@ -1,3 +1,4 @@
+//nolint:gofmt,goimports // TODO(mdobak): remove nolint after upgrade Go to 1.19
 package webapi
 
 import (
@@ -359,21 +360,24 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 	if err != nil {
 		w.log.WithField("addr", addr).WithError(err).Error("Failed to create request")
 	}
-	req.WithContext(ctx)
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	req.Header.Set("Content-Encoding", "gzip")
 
 	// Send the request.
-	_, err = w.client.Do(req)
+	res, err := w.client.Do(req)
 	if err != nil {
 		w.log.WithField("addr", addr).WithError(err).Error("Failed to send messages to consumer")
+		return
 	}
+	defer res.Body.Close()
 }
 
 // consumeHandler handles incoming messages from consumers.
 //
 // Request must be a POST request to the /consume path with a protobuf-encoded
 // MessagePack in the body.
+//nolint:funlen,gocyclo
 func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()

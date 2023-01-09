@@ -30,7 +30,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.48
+          version: v1.50
           args: --timeout=10m0s
       - name: Start Redis instance
         run: docker run -d -p 6379:6379 --name redis -e REDIS_PASSWORD=password123 bitnami/redis:6.2

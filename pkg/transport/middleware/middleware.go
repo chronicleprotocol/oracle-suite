@@ -61,11 +61,6 @@ func (m *Middleware) Use(bm ...BroadcastMiddleware) {
 	}
 }
 
-// ID implements the transport.Transport interface.
-func (m *Middleware) ID() []byte {
-	return m.t.ID()
-}
-
 // Broadcast implements the transport.Transport interface.
 func (m *Middleware) Broadcast(topic string, message transport.Message) error {
 	m.mu.RLock()

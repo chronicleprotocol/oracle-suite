@@ -74,11 +74,11 @@ func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, err
 	// Addresses on a smart contract may omit protocol scheme, so we add it
 	// here.
 	var addrs []string
-	for _, addr := range ret[0].([]string) {
-		if strings.Index(addr, "://") == -1 {
+	for n, addr := range ret[0].([]string) {
+		if !strings.Contains(addr, "://") {
 			// Data transmitted over the WebAPI protocol is signed, hence
 			// there is no need to use HTTPS.
-			addr = "http://" + addr
+			addrs[n] = "http://" + addr
 		}
 	}
 	return addrs, nil

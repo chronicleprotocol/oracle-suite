@@ -105,9 +105,11 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 			if err != nil {
 				return nil, fmt.Errorf("transport config error: cannot connect to the proxy: %w", err)
 			}
-			httpClient.Transport = &http.Transport{DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				return dialSocksProxy.Dial(network, address)
-			}}
+			httpClient.Transport = &http.Transport{
+				DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+					return dialSocksProxy.Dial(network, address)
+				},
+			}
 		}
 		cli, err := c.WebAPI.Ethereum.ConfigureEthereumClient(d.Signer, d.Logger)
 		if err != nil {
