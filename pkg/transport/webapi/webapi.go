@@ -117,7 +117,7 @@ const (
 type WebAPI struct {
 	mu     sync.RWMutex
 	ctx    context.Context
-	waitCh <-chan error
+	waitCh chan error
 
 	// State fields:
 	messagePack *pb.MessagePack                                        // Message pack to be sent on next flush.
@@ -242,6 +242,7 @@ func New(cfg Config) (*WebAPI, error) {
 		client = &http.Client{Timeout: cfg.Timeout}
 	}
 	w := &WebAPI{
+		waitCh:       make(chan error),
 		topics:       maputil.Copy(cfg.Topics),
 		allowlist:    sliceutil.Copy(cfg.AuthorAllowlist),
 		addressBook:  cfg.AddressBook,
@@ -327,6 +328,9 @@ func (w *WebAPI) flushMessages(ctx context.Context, t time.Time) error {
 		w.messagePack = nil
 		w.mu.Unlock()
 	}()
+	if w.messagePack == nil || len(w.messagePack.Messages) == 0 {
+		return nil // Nothing to send.
+	}
 	if err := signMessage(w.messagePack, w.signer); err != nil {
 		return err
 	}
@@ -465,8 +469,8 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Message timestamp must be newer than the last received message by
-	// flushInterval - defaultMaxClockSkew.
-	if timestamp.Before(w.lastReqs[*requestAuthor].Add(w.flushTicker.Duration() - defaultMaxClockSkew)) {
+	// flushInterval - maxClockSkew.
+	if timestamp.Before(w.lastReqs[*requestAuthor].Add(w.flushTicker.Duration() - w.maxClockSkew)) {
 		w.log.WithFields(fields).Warn("Too many messages received in a short time")
 		res.WriteHeader(http.StatusTooManyRequests)
 		return
@@ -556,6 +560,7 @@ func (w *WebAPI) flushRoutine(ctx context.Context) {
 
 // contextCancelHandler handles context cancellation.
 func (w *WebAPI) contextCancelHandler() {
+	defer func() { close(w.waitCh) }()
 	defer w.log.Info("Stopped")
 	<-w.ctx.Done()
 	w.mu.Lock()

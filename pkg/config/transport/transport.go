@@ -36,9 +36,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/chain"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/recoverer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/webapi"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 const (
@@ -52,7 +55,7 @@ var p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
 }
 
 type Transport struct {
-	Transport string            `yaml:"transport"`
+	Transport any               `yaml:"transport"`
 	P2P       LibP2PConfig      `yaml:"libp2p"`
 	SSB       ScuttlebuttConfig `yaml:"ssb"`
 	WebAPI    WebAPIConfig      `yaml:"webapi"`
@@ -78,10 +81,10 @@ type ScuttlebuttCapsConfig struct {
 }
 
 type WebAPIConfig struct {
-	Ethereum              ethereumConfig.Ethereum `yaml:"ethereum"`
-	ListenAddr            string                  `yaml:"listenAddr"`
-	Socks5ProxyAddr       string                  `yaml:"socks5ProxyAddr"`
-	ConsumersContractAddr ethereum.Address        `yaml:"consumersContractAddr"`
+	ListenAddr      string                  `yaml:"listenAddr"`
+	Socks5ProxyAddr string                  `yaml:"socks5ProxyAddr"`
+	AddressBookAddr ethereum.Address        `yaml:"addressBookAddr"`
+	Ethereum        ethereumConfig.Ethereum `yaml:"ethereum"`
 }
 
 type Dependencies struct {
@@ -95,15 +98,81 @@ type BootstrapDependencies struct {
 }
 
 func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (transport.Transport, error) {
-	switch strings.ToLower(c.Transport) {
+	var types []string
+	switch varType := c.Transport.(type) {
+	case string:
+		types = []string{varType}
+	case []any:
+		for _, t := range varType {
+			if s, ok := t.(string); ok {
+				types = append(types, s)
+				continue
+			}
+			return nil, fmt.Errorf("transport config error: invalid transport type: %v", t)
+		}
+	case []string:
+		types = varType
+	default:
+		return nil, fmt.Errorf("transport config error: invalid transport type: %v", varType)
+	}
+	if len(types) == 0 {
+		types = []string{LibP2P}
+	}
+	switch len(types) {
+	case 1:
+		return c.configureTransport(d, types[0], t)
+	default:
+		var ts []transport.Transport
+		for _, typ := range types {
+			t, err := c.configureTransport(d, typ, t)
+			if err != nil {
+				return nil, err
+			}
+			ts = append(ts, t)
+		}
+		return chain.New(ts...), nil
+	}
+}
+
+func (c *Transport) ConfigureP2PBoostrap(d BootstrapDependencies) (transport.Transport, error) {
+	peerPrivKey, err := c.generatePrivKey()
+	if err != nil {
+		return nil, err
+	}
+	cfg := libp2p.Config{
+		Mode:             libp2p.BootstrapMode,
+		PeerPrivKey:      peerPrivKey,
+		ListenAddrs:      c.P2P.ListenAddrs,
+		BootstrapAddrs:   c.P2P.BootstrapAddrs,
+		DirectPeersAddrs: c.P2P.DirectPeersAddrs,
+		BlockedAddrs:     c.P2P.BlockedAddrs,
+		Logger:           d.Logger,
+		AppName:          "bootstrap",
+		AppVersion:       suite.Version,
+	}
+	p, err := p2pTransportFactory(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("transport config error: %w", err)
+	}
+	return p, nil
+}
+
+func (c *Transport) configureTransport(d Dependencies, typ string, t map[string]transport.Message) (transport.Transport, error) {
+	switch strings.ToLower(typ) {
 	case LibSSB:
 		return nil, errors.New("ssb not yet implemented")
 	case WebAPI:
+		if c.WebAPI.ListenAddr == "" {
+			return nil, errors.New("webapi listen addr not set")
+		}
+		if c.WebAPI.AddressBookAddr == (ethereum.Address{}) {
+			return nil, errors.New("webapi address book addr not set")
+		}
 		httpClient := http.DefaultClient
 		if len(c.WebAPI.Socks5ProxyAddr) != 0 {
 			dialSocksProxy, err := proxy.SOCKS5("tcp", c.WebAPI.Socks5ProxyAddr, nil, proxy.Direct)
 			if err != nil {
-				return nil, fmt.Errorf("transport config error: cannot connect to the proxy: %w", err)
+				return nil, fmt.Errorf("cannot connect to the proxy: %w", err)
 			}
 			httpClient.Transport = &http.Transport{
 				DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -113,18 +182,23 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 		}
 		cli, err := c.WebAPI.Ethereum.ConfigureEthereumClient(d.Signer, d.Logger)
 		if err != nil {
-			return nil, fmt.Errorf("transport config error: cannot configure ethereum client: %w", err)
+			return nil, fmt.Errorf("cannot configure ethereum client: %w", err)
 		}
-		cc := webapi.NewEthereumAddressBook(cli, c.WebAPI.ConsumersContractAddr, time.Hour)
-		return webapi.New(webapi.Config{
+		ab := webapi.NewEthereumAddressBook(cli, c.WebAPI.AddressBookAddr, time.Hour)
+		tra, err := webapi.New(webapi.Config{
 			ListenAddr:      c.WebAPI.ListenAddr,
-			AddressBook:     cc,
+			AddressBook:     ab,
 			Topics:          t,
 			AuthorAllowlist: d.Feeds,
+			FlushTicker:     timeutil.NewTicker(time.Minute),
 			Signer:          d.Signer,
 			Client:          httpClient,
 			Logger:          d.Logger,
 		})
+		if err != nil {
+			return nil, fmt.Errorf("cannot configure webapi transport: %w", err)
+		}
+		return recoverer.New(tra, d.Logger), nil
 	case LibP2P:
 		fallthrough
 	default:
@@ -152,35 +226,12 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 			AppName:          "spire",
 			AppVersion:       suite.Version,
 		}
-		p, err := p2pTransportFactory(cfg)
+		tra, err := p2pTransportFactory(cfg)
 		if err != nil {
 			return nil, err
 		}
-		return p, nil
+		return recoverer.New(tra, d.Logger), nil
 	}
-}
-
-func (c *Transport) ConfigureP2PBoostrap(d BootstrapDependencies) (transport.Transport, error) {
-	peerPrivKey, err := c.generatePrivKey()
-	if err != nil {
-		return nil, err
-	}
-	cfg := libp2p.Config{
-		Mode:             libp2p.BootstrapMode,
-		PeerPrivKey:      peerPrivKey,
-		ListenAddrs:      c.P2P.ListenAddrs,
-		BootstrapAddrs:   c.P2P.BootstrapAddrs,
-		DirectPeersAddrs: c.P2P.DirectPeersAddrs,
-		BlockedAddrs:     c.P2P.BlockedAddrs,
-		Logger:           d.Logger,
-		AppName:          "bootstrap",
-		AppVersion:       suite.Version,
-	}
-	p, err := p2pTransportFactory(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
 }
 
 func (c *Transport) generatePrivKey() (crypto.PrivKey, error) {
