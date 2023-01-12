@@ -101,9 +101,9 @@ Lair supports JSON and YAML configuration files.
 ### Configuration reference
 
 - `transport` - Configuration parameters for transports mechanisms used to relay messages.
-    - `transport` (string) - Transport to use. Supported mechanism are: `libp2p` and `ssb`. If empty, the `libp2p` is
-      used.
-    - `libp2p` - Configuration parameters for the libp2p transport (Spire network).
+    - `transport` (string|[]string) - Transport to use. Supported mechanism are: `libp2p`, `ssb` and `webapi`. If empty,
+      the `libp2p` is used.
+    - `libp2p` - Configuration parameters for the libp2p transport.
         - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the
           libp2p network. The value may be empty to generate a random seed.
         - `listenAddrs` (`[]string`) - List of listening addresses for libp2p node encoded using the
@@ -117,6 +117,21 @@ Lair supports JSON and YAML configuration files.
           [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
         - `disableDiscovery` (`bool`) - Disables node discovery. If enabled, the IP address of a node will not be
           broadcast to other peers. This option must be used together with `directPeersAddrs`.
+    - `webapi` - Configuration parameters for the webapi transport. WebAPI transport uses the HTTP protocol to send
+      and receive messages. It should be used over a secure network like TOR, I2P or VPN.
+        - `listenAddr` - Address on which the WebAPI server will listen for incoming connections. The address must be
+          in the format `host:port`. When used with a TOR hidden service, the server should listen on localhost.
+        - `socks5ProxyAddr` - Address of the SOCKS5 proxy server. The address must be in the format `host:port`.
+        - `addressBookAddr` - Ethereum address of the address book contract.
+        - `ethereum` - Ethereum client configuration that is used to interact with the address book contract.
+            - `rpc` (`string|[]string`) - List of RPC server addresses. It is recommended to use at least three
+              addresses from different providers.
+            - `timeout` (`int`) - total timeout in seconds (default: 10).
+            - `gracefulTimeout` (`int`) - timeout to graceful finish requests to slower RPC nodes, it is used only
+              when it is possible to return a correct response using responses from the remaining RPC nodes (
+              default: 1).
+            - `gracefulTimeout` (`int`) - if multiple RPC nodes are used, determines how far one node can be behind
+              the last known block (default: 0).
 - `feeds` (`[]string`) - List of hex-encoded addresses of other Oracles. Event messages from Oracles outside that list
   will be ignored.
 - `logger` - Optional logger configuration.
