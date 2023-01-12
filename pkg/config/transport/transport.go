@@ -157,7 +157,11 @@ func (c *Transport) ConfigureP2PBoostrap(d BootstrapDependencies) (transport.Tra
 	return p, nil
 }
 
-func (c *Transport) configureTransport(d Dependencies, typ string, t map[string]transport.Message) (transport.Transport, error) {
+func (c *Transport) configureTransport(
+	d Dependencies,
+	typ string,
+	t map[string]transport.Message) (transport.Transport, error) {
+
 	switch strings.ToLower(typ) {
 	case LibSSB:
 		return nil, errors.New("ssb not yet implemented")
