@@ -112,11 +112,10 @@ func (c *Transport) Configure(d Dependencies, t map[string]transport.Message) (t
 		}
 	case []string:
 		types = varType
+	case nil:
+		types = []string{LibP2P}
 	default:
 		return nil, fmt.Errorf("transport config error: invalid transport type: %v", varType)
-	}
-	if len(types) == 0 {
-		types = []string{LibP2P}
 	}
 	switch len(types) {
 	case 1:
