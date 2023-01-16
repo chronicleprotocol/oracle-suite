@@ -3,6 +3,7 @@ module github.com/chronicleprotocol/oracle-suite
 go 1.18
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/google/uuid v1.3.0
@@ -27,8 +28,8 @@ require (
 	go.cryptoscope.co/ssb v0.2.1
 	go.mindeco.de v1.12.0
 	go.mindeco.de/ssb-refs v0.4.1
-	golang.org/x/net v0.4.0
-	golang.org/x/sys v0.3.0
+	golang.org/x/net v0.5.0
+	golang.org/x/sys v0.4.0
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -38,6 +39,7 @@ require (
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
@@ -185,7 +187,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
