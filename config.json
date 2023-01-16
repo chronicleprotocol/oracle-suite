@@ -342,6 +342,11 @@
             "WSTETH/STETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
           }
         }
+      },
+      "ishares": {
+        "type": "ishares",
+        "name": "ishares",
+        "params": {}
       }
     },
     "priceModels": {
@@ -552,6 +557,15 @@
         ],
         "params": {
           "minimumSuccessfulSources": 2
+        }
+      },
+      "IBTA/USD": {
+        "method": "median",
+        "sources": [
+          [{ "origin": "ishares", "pair": "IBTA/USD" }]
+        ],
+        "params": {
+          "minimumSuccessfulSources": 1
         }
       }
     }

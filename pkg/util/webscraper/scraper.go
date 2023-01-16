@@ -63,7 +63,9 @@ func (o *Scraper) WithPreloadedDoc(ctx context.Context, url string) (*Scraper, e
 }
 
 func (o *Scraper) WithPreloadedDocFromBytes(b []byte) (*Scraper, error) {
-	o.log.Debug(string(b))
+	if o.log != nil {
+		o.log.WithField("document", string(b)).Debug("Preloaded document")
+	}
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(b))
 	if err != nil {
 		return nil, err
@@ -126,7 +128,7 @@ func (o *Scraper) loadDoc(ctx context.Context, url string) (*goquery.Document, e
 		}
 
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		o.log.Debug(string(body))
+		o.log.WithField("document", string(body)).Debug("Preloaded document")
 	}
 
 	return goquery.NewDocumentFromReader(res.Body)

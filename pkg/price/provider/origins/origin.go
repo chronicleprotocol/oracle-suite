@@ -275,6 +275,7 @@ func DefaultOriginSet(pool query.WorkerPool) *Set {
 		"okex":          NewBaseExchangeHandler(Okex{WorkerPool: pool}, nil),
 		"okx":           NewBaseExchangeHandler(Okx{WorkerPool: pool}, nil),
 		"upbit":         NewBaseExchangeHandler(Upbit{WorkerPool: pool}, nil),
+		"ishares":       NewBaseExchangeHandler(IShares{WorkerPool: pool}, nil),
 	})
 }
 

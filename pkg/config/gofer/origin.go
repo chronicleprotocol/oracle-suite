@@ -223,6 +223,8 @@ func NewHandler(
 		}, aliases), nil
 	case "upbit":
 		return origins.NewBaseExchangeHandler(origins.Upbit{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
+	case "ishares":
+		return origins.NewBaseExchangeHandler(origins.IShares{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	}
 
 	return nil, origins.ErrUnknownOrigin
