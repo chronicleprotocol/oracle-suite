@@ -161,9 +161,6 @@ func (c *Gofer) ConfigurePriceHook(ctx context.Context, cli ethereum.Client) (pr
 // ConfigureGofer returns a new async gofer instance.
 func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
 	listenAddr := c.RPC.Address
-	if len(c.RPCListenAddr) != 0 {
-		listenAddr = c.RPCListenAddr
-	}
 	if listenAddr == "" || noRPC {
 		gra, err := c.buildGraphs()
 		if err != nil {

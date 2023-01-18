@@ -23,17 +23,17 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
-//nolint
+// nolint
 var spireAgentFactory = func(cfg spire.AgentConfig) (*spire.Agent, error) {
 	return spire.NewAgent(cfg)
 }
 
-//nolint
+// nolint
 var spireClientFactory = func(cfg spire.ClientConfig) (*spire.Client, error) {
 	return spire.NewClient(cfg)
 }
 
-//nolint
+// nolint
 var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
 	return store.New(cfg)
 }
@@ -87,9 +87,6 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 
 func (c *Spire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
 	listenAddr := c.RPC.Address
-	if len(c.RPCListenAddr) != 0 {
-		listenAddr = c.RPCListenAddr
-	}
 	return spireClientFactory(spire.ClientConfig{
 		Signer:  d.Signer,
 		Address: listenAddr,
