@@ -46,7 +46,7 @@ import (
 
 const (
 	LibP2P = "libp2p"
-	LibSSB = "libssb"
+	LibSSB = "ssb"
 	WebAPI = "webapi"
 )
 
