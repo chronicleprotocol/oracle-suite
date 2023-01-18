@@ -199,6 +199,8 @@ Example:
     - `rpcListenAddr` (`string`) - Listen address for the RPC endpoint provided as the combination of IP address and
       port number. This parameter is optional. If specified, Gofer will attempt to retrieve prices from the specified
       RPC endpoint.
+    - `rpcAgentAddr` (`string`) - Address of the RPC agent. This parameter is optional. If specified, Gofer will
+      attempt to retrieve prices from the specified RPC agent.
     - `origins` - [Origins configuration](#origins-configuration)
     - `priceModels` - [Price models configuration](#price-models-configuration)
 

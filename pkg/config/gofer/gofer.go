@@ -67,6 +67,7 @@ func (e ErrCyclicReference) Error() string {
 type Gofer struct {
 	RPC           RPC                   `yaml:"rpc"` // Old configuration format, to remove in the future.
 	RPCListenAddr string                `yaml:"rpcListenAddr"`
+	RPCAgentAddr  string                `yaml:"rpcAgentAddr"`
 	Origins       map[string]Origin     `yaml:"origins"`
 	PriceModels   map[string]PriceModel `yaml:"priceModels"`
 }
@@ -161,8 +162,8 @@ func (c *Gofer) ConfigurePriceHook(ctx context.Context, cli ethereum.Client) (pr
 // ConfigureGofer returns a new async gofer instance.
 func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
 	listenAddr := c.RPC.Address
-	if len(c.RPCListenAddr) != 0 {
-		listenAddr = c.RPCListenAddr
+	if len(c.RPCAgentAddr) != 0 {
+		listenAddr = c.RPCAgentAddr
 	}
 	if listenAddr == "" || noRPC {
 		gra, err := c.buildGraphs()

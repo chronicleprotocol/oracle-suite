@@ -41,6 +41,7 @@ var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
 type Spire struct {
 	RPC           RPC      `yaml:"rpc"` // Old configuration format, to remove in the future.
 	RPCListenAddr string   `yaml:"rpcListenAddr"`
+	RPCAgentAddr  string   `yaml:"rpcAgentAddr"`
 	Pairs         []string `yaml:"pairs"`
 }
 
@@ -87,8 +88,8 @@ func (c *Spire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
 
 func (c *Spire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
 	listenAddr := c.RPC.Address
-	if len(c.RPCListenAddr) != 0 {
-		listenAddr = c.RPCListenAddr
+	if len(c.RPCAgentAddr) != 0 {
+		listenAddr = c.RPCAgentAddr
 	}
 	return spireClientFactory(spire.ClientConfig{
 		Signer:  d.Signer,

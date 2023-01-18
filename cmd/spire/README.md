@@ -174,6 +174,7 @@ Spire supports JSON and YAML configuration files.
 - `spire` - Spire configuration.
     - `rpcListenAddr` (`string`) - Listen address for the RPC endpoint provided as the combination of IP address and
       port number.
+    - `rpcAgentAddr` (`string`) - Address of the RPC agent.
     - `pairs` (`[]string`) - List of price pairs to be monitored. Only pairs in this list will be available via pull
       command.
 
