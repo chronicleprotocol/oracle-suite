@@ -81,6 +81,8 @@ type Client interface {
 	// Storage returns the value of key in the contract storage of the
 	// given account.
 	Storage(ctx context.Context, address Address, key Hash) ([]byte, error)
+	// Balance returns the wei balance of the given account.
+	Balance(ctx context.Context, address Address) (*big.Int, error)
 	// SendTransaction injects a signed transaction into the pending pool
 	// for execution.
 	SendTransaction(ctx context.Context, transaction *Transaction) (*Hash, error)

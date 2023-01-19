@@ -25,56 +25,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
-type options struct {
-	flag.LoggerFlag
-	ConfigFilePath string
-	Config         Config
-	Version        string
-}
-
-type Config struct {
-	Ethereum  ethereumConfig.Ethereum `json:"ethereum"`
-	Logger    loggerConfig.Logger     `json:"logger"`
-	Contracts []struct {
-		Address string `json:"address"`
-		Symbol  string `json:"symbol"`
-		Wat     string `json:"wat"`
-	} `json:"contracts"`
-}
-
-func NewRootCommand(opts *options) *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use: "monitor",
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd: true,
-		},
-		Version: opts.Version,
-	}
-
-	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringVarP(
-		&opts.ConfigFilePath,
-		"config",
-		"c",
-		"./monitor.json",
-		"monitor config file",
-	)
-
-	return rootCmd
-}
-
-const LoggerTag = "MONITOR"
-
-func NewMedianCmd(opts *options) *cobra.Command {
+func NewBalanceCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:     "median",
+		Use:     "balance",
 		Version: opts.Version,
 		Args:    cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -99,23 +56,21 @@ func NewMedianCmd(opts *options) *cobra.Command {
 				return fmt.Errorf(`ethereum config error: %w`, err)
 			}
 
-			for _, contract := range opts.Config.Contracts {
-				if contract.Address == "" {
+			for _, aa := range opts.Config.Transactors {
+				if aa == "" {
 					continue
 				}
-				addr := common.HexToAddress(contract.Address)
-				val, err := geth.NewMedian(client, addr).Val(ctx)
+				addr := common.HexToAddress(aa)
+				val, err := client.Balance(ctx, addr)
 				if err != nil {
-					log.Errorf(contract.Wat, contract.Symbol)
+					log.Errorf("balance", addr)
 					continue
 				}
 
 				log.
-					WithField("val", val.String()).
-					WithField("wat", contract.Wat).
-					WithField("symbol", contract.Symbol).
-					WithField("addr", addr.Hex()).
-					Info("current median price")
+					WithField("balance", val.String()).
+					WithField("account", addr.Hex()).
+					Info("current account balance")
 			}
 
 			if l, ok := log.(supervisor.Service); ok {

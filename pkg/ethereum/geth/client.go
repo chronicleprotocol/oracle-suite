@@ -75,6 +75,7 @@ func (e ErrRevert) Unwrap() error {
 type EthClient interface {
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 	StorageAt(ctx context.Context, account common.Address, key common.Hash, block *big.Int) ([]byte, error)
+	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
 	CallContract(ctx context.Context, call ethereum.CallMsg, block *big.Int) ([]byte, error)
 	NonceAt(ctx context.Context, account common.Address, block *big.Int) (uint64, error)
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
@@ -205,6 +206,11 @@ func (e *Client) MultiCall(ctx context.Context, calls []pkgEthereum.Call) ([][]b
 // Storage implements the ethereum.Client interface.
 func (e *Client) Storage(ctx context.Context, address pkgEthereum.Address, key pkgEthereum.Hash) ([]byte, error) {
 	return e.ethClient.StorageAt(ctx, address, key, pkgEthereum.BlockNumberFromContext(ctx))
+}
+
+// Balance implements the ethereum.Client interface.
+func (e *Client) Balance(ctx context.Context, address pkgEthereum.Address) (*big.Int, error) {
+	return e.ethClient.BalanceAt(ctx, address, pkgEthereum.BlockNumberFromContext(ctx))
 }
 
 // SendTransaction implements the ethereum.Client interface.

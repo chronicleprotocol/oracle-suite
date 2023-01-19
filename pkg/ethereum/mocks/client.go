@@ -60,6 +60,11 @@ func (e *Client) Storage(ctx context.Context, address ethereum.Address, key ethe
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (e *Client) Balance(ctx context.Context, address ethereum.Address) (*big.Int, error) {
+	args := e.Called(ctx, address)
+	return args.Get(0).(*big.Int), args.Error(1)
+}
+
 func (e *Client) SendTransaction(ctx context.Context, transaction *ethereum.Transaction) (*ethereum.Hash, error) {
 	args := e.Called(ctx, transaction)
 	return args.Get(0).(*ethereum.Hash), args.Error(1)

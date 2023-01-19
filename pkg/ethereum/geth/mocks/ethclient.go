@@ -45,6 +45,13 @@ func (e *EthClient) StorageAt(ctx context.Context, acc common.Address, key commo
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (e *EthClient) BalanceAt(ctx context.Context, acc common.Address, block *big.Int) (*big.Int, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	args := e.Called(ctx, acc, block)
+	return args.Get(0).(*big.Int), args.Error(1)
+}
+
 func (e *EthClient) CallContract(ctx context.Context, call ethereum.CallMsg, block *big.Int) ([]byte, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
