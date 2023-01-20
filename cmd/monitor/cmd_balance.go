@@ -70,7 +70,7 @@ func NewBalanceCmd(opts *options) *cobra.Command {
 				log.
 					WithField("balance", val.String()).
 					WithField("account", addr.Hex()).
-					Info("Current account balance")
+					Info("current account balance")
 			}
 
 			if l, ok := log.(supervisor.Service); ok {
