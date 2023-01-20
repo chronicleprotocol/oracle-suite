@@ -76,23 +76,6 @@ func NewMedianCmd(opts *options) *cobra.Command {
 					Info("current median price")
 			}
 
-			// for _, aa := range opts.Config.Transactors {
-			// 	if aa == "" {
-			// 		continue
-			// 	}
-			// 	addr := common.HexToAddress(aa)
-			// 	val, err := client.Balance(ctx, addr)
-			// 	if err != nil {
-			// 		log.Errorf("balance", addr)
-			// 		continue
-			// 	}
-			//
-			// 	log.
-			// 		WithField("balance", val.String()).
-			// 		WithField("account", addr.Hex()).
-			// 		Info("current account balance")
-			// }
-
 			if l, ok := log.(supervisor.Service); ok {
 				ctx, cancelFn := context.WithCancel(ctx)
 				cancelFn()
