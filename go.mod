@@ -193,3 +193,11 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
+
+replace go.cryptoscope.co/muxrpc/v2 => github.com/ssbc/go-muxrpc/v2 v2.0.10
+
+replace go.cryptoscope.co/netwrap => github.com/ssbc/go-netwrap v0.1.1
+
+replace go.cryptoscope.co/secretstream => github.com/ssbc/go-secretstream v1.2.9
+
+replace go.cryptoscope.co/ssb => github.com/ssbc/go-ssb v0.2.1
