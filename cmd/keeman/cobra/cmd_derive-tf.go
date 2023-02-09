@@ -89,6 +89,18 @@ func NewDeriveTf() *cobra.Command {
 					return err
 				}
 				addr = id.String()
+			} else if q.Format == FormatOnionV3 || q.Format == FormatOnionV3Pub || q.Format == FormatOnionV3Sec {
+				var o onion
+				if err := json.Unmarshal(b, &o); err != nil {
+					return err
+				}
+				addr = o.Hostname
+				b = []byte(addr)
+				if q.Format == FormatOnionV3Pub {
+					b = o.PublicKey
+				} else if q.Format == FormatOnionV3Sec {
+					b = o.SecretKey
+				}
 			}
 			fmt.Printf(
 				`{"output":"%s","path":"%s","addr":"%s"}`,
@@ -114,4 +126,11 @@ type ssbSecret struct {
 	ID      refs.FeedRef `json:"id"`
 	Private string       `json:"private"`
 	Public  string       `json:"public"`
+}
+
+type onion struct {
+	Prefix    string `json:"prefix"`
+	Hostname  string `json:"hostname"`
+	PublicKey []byte `json:"public_key"`
+	SecretKey []byte `json:"secret_key"`
 }

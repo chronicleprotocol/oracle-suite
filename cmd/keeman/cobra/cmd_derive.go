@@ -33,6 +33,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/eth"
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/rand"
 	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/ssb"
+	"github.com/chronicleprotocol/oracle-suite/cmd/keeman/tor"
 )
 
 const (
@@ -88,7 +89,7 @@ func NewDerive(opts *Options) *cobra.Command {
 	var prefix, password, format string
 	var index int
 	cmd := &cobra.Command{
-		Use:     "derive [--prefix path] [--format eth|ssb|b32] [--password] path...",
+		Use:     "derive [--prefix path] [--format eth|ssb|b32|onion] [--password] path...",
 		Aliases: []string{"der", "d"},
 		Short:   "Derive a key pair from the provided mnemonic phrase",
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -158,13 +159,16 @@ func NewDerive(opts *Options) *cobra.Command {
 }
 
 const (
-	FormatKeystore = "eth"
-	FormatSSB      = "ssb"
-	FormatSSBSHS   = "shs"
-	FormatSSBCaps  = "caps"
-	FormatBytes32  = "b32"
-	FormatPrivHex  = "privhex"
-	FormatLibP2P   = "libp2p"
+	FormatKeystore   = "eth"
+	FormatSSB        = "ssb"
+	FormatSSBSHS     = "shs"
+	FormatSSBCaps    = "caps"
+	FormatBytes32    = "b32"
+	FormatPrivHex    = "privhex"
+	FormatLibP2P     = "libp2p"
+	FormatOnionV3    = "onion"
+	FormatOnionV3Pub = "onion-pub"
+	FormatOnionV3Sec = "onion-sec"
 )
 
 func formattedBytes(format string, privateKey *ecdsa.PrivateKey, password string) ([]byte, error) {
@@ -206,6 +210,12 @@ func formattedBytes(format string, privateKey *ecdsa.PrivateKey, password string
 			return nil, err
 		}
 		return hexEncodeBytes(randBytes()), nil
+	case FormatOnionV3, FormatOnionV3Pub, FormatOnionV3Sec:
+		o, err := tor.NewOnion(crypto.FromECDSA(privateKey))
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(o)
 	}
 	return nil, fmt.Errorf("unknown format: %s", format)
 }
