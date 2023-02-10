@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -89,16 +90,18 @@ func NewDeriveTf() *cobra.Command {
 					return err
 				}
 				addr = id.String()
-			} else if q.Format == FormatOnionV3 || q.Format == FormatOnionV3Pub || q.Format == FormatOnionV3Sec {
+			} else if strings.HasPrefix(q.Format, FormatOnionV3+"-") {
 				var o onion
 				if err := json.Unmarshal(b, &o); err != nil {
 					return err
 				}
 				addr = o.Hostname
-				b = []byte(addr)
-				if q.Format == FormatOnionV3Pub {
+				switch q.Format {
+				case FormatOnionV3Adr:
+					b = []byte(addr)
+				case FormatOnionV3Pub:
 					b = o.PublicKey
-				} else if q.Format == FormatOnionV3Sec {
+				case FormatOnionV3Sec:
 					b = o.SecretKey
 				}
 			}

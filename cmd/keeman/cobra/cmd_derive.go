@@ -167,6 +167,7 @@ const (
 	FormatPrivHex    = "privhex"
 	FormatLibP2P     = "libp2p"
 	FormatOnionV3    = "onion"
+	FormatOnionV3Adr = "onion-adr"
 	FormatOnionV3Pub = "onion-pub"
 	FormatOnionV3Sec = "onion-sec"
 )
@@ -210,7 +211,7 @@ func formattedBytes(format string, privateKey *ecdsa.PrivateKey, password string
 			return nil, err
 		}
 		return hexEncodeBytes(randBytes()), nil
-	case FormatOnionV3, FormatOnionV3Pub, FormatOnionV3Sec:
+	case FormatOnionV3, FormatOnionV3Adr, FormatOnionV3Pub, FormatOnionV3Sec:
 		o, err := tor.NewOnion(crypto.FromECDSA(privateKey))
 		if err != nil {
 			return nil, err
