@@ -75,7 +75,7 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			// Send price message to RPC client:
+			// Send price message to RPCURLs client:
 			err = cli.PublishPrice(msg)
 			if err != nil {
 				return err

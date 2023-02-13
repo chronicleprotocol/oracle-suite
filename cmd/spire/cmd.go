@@ -25,6 +25,7 @@ type options struct {
 	flag.LoggerFlag
 	ConfigFilePath    string
 	Config            Config
+	ConfigHCL         ConfigHCL
 	Version           string
 	TransportOverride string
 }
