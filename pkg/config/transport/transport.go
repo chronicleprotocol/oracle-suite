@@ -171,6 +171,7 @@ func (c *Transport) ConfigureP2PBoostrap(d BootstrapDependencies) (transport.Tra
 	return p, nil
 }
 
+//nolint:funlen,gocyclo
 func (c *Transport) configureTransport(
 	d Dependencies,
 	typ string,

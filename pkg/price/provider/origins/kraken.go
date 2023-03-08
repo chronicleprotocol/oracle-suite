@@ -25,7 +25,7 @@ import (
 )
 
 const krakenBaseURL = "https://api.kraken.com"
-const krakenURL = "%s/0/public/PokeTicker?pair=%s"
+const krakenURL = "%s/0/public/Ticker?pair=%s"
 
 type Kraken struct {
 	WorkerPool query.WorkerPool
