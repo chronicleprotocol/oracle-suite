@@ -60,8 +60,8 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 					err = sErr
 				}
 			}()
+			msgCh := tra.Messages(messages.PriceV1MessageName)
 			for {
-				msgCh := tra.Messages(messages.PriceV1MessageName)
 				select {
 				case <-ctx.Done():
 					return
