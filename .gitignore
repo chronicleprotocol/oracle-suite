@@ -25,7 +25,7 @@
 # Temporary and local files
 .tmp
 .DS_Store
-node_modules
+node_modules/
 /package*.json
 
 # Go Workspaces
