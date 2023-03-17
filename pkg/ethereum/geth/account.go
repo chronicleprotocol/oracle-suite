@@ -17,6 +17,8 @@ package geth
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"os"
 	"runtime"
 
@@ -43,6 +45,12 @@ func NewAccount(keyStorePath, passphrase string, address ethereum.Address) (*Acc
 	if keyStorePath == "" {
 		keyStorePath = defaultKeyStorePath()
 	}
+	log.Println("keyStorePath:", keyStorePath)
+	stat, err := os.Stat(keyStorePath)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("name:", stat.Name(), "size:", stat.Size(), "mode:", stat.Mode(), "mtime:", stat.ModTime(), "isDir:", stat.IsDir())
 
 	ks := keystore.NewKeyStore(keyStorePath, keystore.LightScryptN, keystore.LightScryptP)
 	w := &Account{
@@ -77,7 +85,7 @@ func (s *Account) findAccountByAddress(from ethereum.Address) (accounts.Wallet, 
 		}
 	}
 
-	return nil, nil, ErrMissingAccount
+	return nil, nil, fmt.Errorf("%w: %s", ErrMissingAccount, from.String())
 }
 
 // source: https://github.com/dapphub/dapptools/blob/master/src/ethsign/ethsign.go
