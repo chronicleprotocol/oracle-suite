@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"golang.org/x/time/rate"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"

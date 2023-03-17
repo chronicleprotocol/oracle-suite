@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/net/proxy"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
