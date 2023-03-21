@@ -111,7 +111,7 @@ func (c *EthereumAddressBook) Consumers(ctx context.Context) ([]string, error) {
 }
 
 func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, error) {
-	cd, err := consumersABI.Pack("getConsumers")
+	cd, err := consumersABI.Pack("list")
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, err
 	if err != nil {
 		return nil, err
 	}
-	ret, err := consumersABI.Unpack("getConsumers", res)
+	ret, err := consumersABI.Unpack("list", res)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ const consumersJSONABI = `
 [
   {
     "inputs": [],
-    "name": "getConsumers",
+    "name": "list",
     "outputs": [
       {
         "internalType": "string[]",
