@@ -18,7 +18,7 @@ package sets
 import (
 	"sync"
 
-	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -101,26 +101,6 @@ func (n *NotifeeSet) Disconnected(network network.Network, conn network.Conn) {
 
 	for _, notifee := range n.notifees {
 		notifee.Disconnected(network, conn)
-	}
-}
-
-// OpenedStream implements the network.Notifiee interface.
-func (n *NotifeeSet) OpenedStream(network network.Network, stream network.Stream) {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-
-	for _, notifee := range n.notifees {
-		notifee.OpenedStream(network, stream)
-	}
-}
-
-// ClosedStream implements the network.Notifiee interface.
-func (n *NotifeeSet) ClosedStream(network network.Network, stream network.Stream) {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-
-	for _, notifee := range n.notifees {
-		notifee.ClosedStream(network, stream)
 	}
 }
 

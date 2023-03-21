@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/types"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/net/proxy"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"

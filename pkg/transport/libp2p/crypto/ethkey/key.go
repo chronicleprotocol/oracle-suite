@@ -17,9 +17,9 @@ package ethkey
 
 import (
 	"github.com/defiweb/go-eth/types"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	cryptoPB "github.com/libp2p/go-libp2p-core/crypto/pb"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	cryptoPB "github.com/libp2p/go-libp2p/core/crypto/pb"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // KeyTypeID uses the Ethereum keys to sign and verify messages.

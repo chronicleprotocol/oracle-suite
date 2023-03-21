@@ -22,8 +22,8 @@ import (
 
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
-	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/core/peer"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"

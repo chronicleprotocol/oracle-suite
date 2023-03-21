@@ -15,9 +15,7 @@
 
 package sets
 
-import (
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-)
+import pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 // PubSubEventHandlerFunc is a adapter for the PubSubEventHandler interface.
 type PubSubEventHandlerFunc func(topic string, event pubsub.PeerEvent)

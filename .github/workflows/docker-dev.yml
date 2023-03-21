@@ -117,14 +117,3 @@ jobs:
           tags: ghcr.io/chronicleprotocol/rpc-splitter:develop
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Docker image for SSB RPC Client
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-ssb-rpc-client
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ghcr.io/chronicleprotocol/ssb-rpc-client:develop
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

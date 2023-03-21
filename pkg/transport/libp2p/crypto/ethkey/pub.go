@@ -21,8 +21,8 @@ import (
 
 	cryptoETH "github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	cryptoPB "github.com/libp2p/go-libp2p-core/crypto/pb"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	cryptoPB "github.com/libp2p/go-libp2p/core/crypto/pb"
 )
 
 type PubKey struct {

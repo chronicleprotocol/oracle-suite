@@ -31,13 +31,6 @@ builds:
       - linux
       # - darwin
 
-  - main: ./cmd/ssb-rpc-client
-    id: "ssb-rpc-client"
-    binary: ssb-rpc-client
-    goos:
-      - linux
-      - darwin
-
   - main: ./cmd/rpc-splitter
     id: "rpc-splitter"
     binary: rpc-splitter
@@ -68,12 +61,6 @@ archives:
     id: "lair"
     builds:
       - lair
-    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-
-  -
-    id: "ssb-rpc-client"
-    builds:
-      - ssb-rpc-client
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
   -

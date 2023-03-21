@@ -15,9 +15,7 @@
 
 package sets
 
-import (
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-)
+import pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 // MessageHandler can ba implemented by type that supports handling the PubSub
 // system messages.

@@ -20,8 +20,8 @@ import (
 	"errors"
 
 	"github.com/defiweb/go-eth/wallet"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	cryptoPB "github.com/libp2p/go-libp2p-core/crypto/pb"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	cryptoPB "github.com/libp2p/go-libp2p/core/crypto/pb"
 )
 
 type PrivKey struct {
