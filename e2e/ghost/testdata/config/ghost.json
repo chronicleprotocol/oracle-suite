@@ -7,10 +7,6 @@
       "directPeersAddrs": [],
       "blockedAddrs": [],
       "disableDiscovery": false
-    },
-    "ssb": {
-      "caps": "./caps.json",
-      "key": "./ssb.json"
     }
   },
   "ethereum": {
