@@ -104,24 +104,4 @@ func (n *NotifeeSet) Disconnected(network network.Network, conn network.Conn) {
 	}
 }
 
-// OpenedStream implements the network.Notifiee interface.
-func (n *NotifeeSet) OpenedStream(network network.Network, stream network.Stream) {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-
-	for _, notifee := range n.notifees {
-		notifee.OpenedStream(network, stream)
-	}
-}
-
-// ClosedStream implements the network.Notifiee interface.
-func (n *NotifeeSet) ClosedStream(network network.Network, stream network.Stream) {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-
-	for _, notifee := range n.notifees {
-		notifee.ClosedStream(network, stream)
-	}
-}
-
 var _ network.Notifiee = (*NotifeeSet)(nil)
