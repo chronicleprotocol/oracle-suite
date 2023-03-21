@@ -32,7 +32,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
-const splitterVirtualHost = "makerdao-splitter"
+const splitterVirtualHost = "rpc-splitter"
 const defaultTotalTimeout = 10
 const defaultGracefulTimeout = 1
 
