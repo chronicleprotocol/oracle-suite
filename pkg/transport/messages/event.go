@@ -38,16 +38,22 @@ type EventSignature struct {
 type Event struct {
 	// Type of the event.
 	Type string
+
 	// Unique ID of the event.
 	ID []byte
+
 	// Event index used to search for events.
 	Index []byte
+
 	// The date of the event.
 	EventDate time.Time
+
 	// The date when the event message was created.
 	MessageDate time.Time
+
 	// List of event data.
 	Data map[string][]byte
+
 	// List of event signatures.
 	Signatures map[string]EventSignature
 }

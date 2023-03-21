@@ -19,10 +19,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/defiweb/go-eth/hexutil"
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 
 	"github.com/stretchr/testify/suite"
@@ -69,9 +69,9 @@ func TestBalancerV2Suite(t *testing.T) {
 
 func (suite *BalancerV2Suite) TestSuccessResponse() {
 	resp := [][]byte{
-		common.BigToHash(big.NewInt(0.94 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
+		types.Bytes(big.NewInt(0.94 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.98 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.99 * ether).Bytes()).PadLeft(32),
 	}
 
 	suite.client.On(
@@ -82,27 +82,27 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 	suite.client.On(
 		"MultiCall",
 		mock.Anything,
-		[]ethereum.Call{{
-			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		[]types.Call{{
+			To:    types.MustAddressFromHexPtr("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+			Input: hexutil.MustHexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 		}},
 	).Return([][]byte{resp[0]}, nil).Once()
 
 	suite.client.On(
 		"MultiCall",
 		mock.Anything,
-		[]ethereum.Call{{
-			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		[]types.Call{{
+			To:    types.MustAddressFromHexPtr("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+			Input: hexutil.MustHexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 		}},
 	).Return([][]byte{resp[1]}, nil).Once()
 
 	suite.client.On(
 		"MultiCall",
 		mock.Anything,
-		[]ethereum.Call{{
-			Address: ethereum.HexToAddress("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		[]types.Call{{
+			To:    types.MustAddressFromHexPtr("0x32296969Ef14EB0c6d29669C550D4a0449130230"),
+			Input: hexutil.MustHexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 		}},
 	).Return([][]byte{resp[2]}, nil).Once()
 
@@ -119,15 +119,15 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 
 func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 	resp := [][]byte{
-		common.BigToHash(big.NewInt(0.94 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
+		types.Bytes(big.NewInt(0.94 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.98 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.99 * ether).Bytes()).PadLeft(32),
 	}
 
 	resp2 := [][]byte{
-		common.BigToHash(big.NewInt(0.2 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.6 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.7 * 1e18)).Bytes(),
+		types.Bytes(big.NewInt(0.2 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.6 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.7 * ether).Bytes()).PadLeft(32),
 	}
 
 	suite.client.On(
@@ -138,36 +138,36 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 	suite.client.On(
 		"MultiCall",
 		mock.Anything,
-		[]ethereum.Call{{
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		[]types.Call{{
+			To:    types.MustAddressFromHexPtr("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Input: hexutil.MustHexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 		}, {
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
+			To:    types.MustAddressFromHexPtr("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Input: hexutil.MustHexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
 		}},
 	).Return([][]byte{resp[0], resp2[0]}, nil).Once()
 
 	suite.client.On(
 		"MultiCall",
 		mock.Anything,
-		[]ethereum.Call{{
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		[]types.Call{{
+			To:    types.MustAddressFromHexPtr("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Input: hexutil.MustHexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 		}, {
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
+			To:    types.MustAddressFromHexPtr("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Input: hexutil.MustHexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
 		}},
 	).Return([][]byte{resp[1], resp2[1]}, nil).Once()
 
 	suite.client.On(
 		"MultiCall",
 		mock.Anything,
-		[]ethereum.Call{{
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
+		[]types.Call{{
+			To:    types.MustAddressFromHexPtr("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Input: hexutil.MustHexToBytes("0xb10be7390000000000000000000000000000000000000000000000000000000000000000"),
 		}, {
-			Address: ethereum.HexToAddress("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
-			Data:    ethereum.HexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
+			To:    types.MustAddressFromHexPtr("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			Input: hexutil.MustHexToBytes("0xb867ee5a000000000000000000000000ae78736cd615f374d3085123a210448e74fc6393"),
 		}},
 	).Return([][]byte{resp[2], resp2[2]}, nil).Once()
 

@@ -18,22 +18,24 @@ package teleportevm
 import (
 	"context"
 	"encoding/hex"
+	"math/big"
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/rpcclient/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/types"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
-
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/ptrutil"
 )
 
-var teleportTestAddress = types.HexToAddress("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
-var teleportTestGUID = types.HexToBytes("0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222220000000000000000000000003333333333333333333333333333333333333333000000000000000000000000444444444444444444444444444444444444444400000000000000000000000000000000000000000000000000000000000000370000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000004d")
+var teleportTestAddress = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
+var teleportTestGUID = types.MustBytesFromHex("0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222220000000000000000000000003333333333333333333333333333333333333333000000000000000000000000444444444444444444444444444444444444444400000000000000000000000000000000000000000000000000000000000000370000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000004d")
 
 func Test_teleportEventProvider_FetchEventsRoutine(t *testing.T) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
@@ -42,7 +44,7 @@ func Test_teleportEventProvider_FetchEventsRoutine(t *testing.T) {
 	cli := &mocks.Client{}
 	ep, err := New(Config{
 		Client:             cli,
-		Addresses:          types.Addresses{teleportTestAddress},
+		Addresses:          []types.Address{teleportTestAddress},
 		Interval:           100 * time.Millisecond,
 		PrefetchPeriod:     100 * time.Second,
 		BlockLimit:         10,
@@ -53,37 +55,37 @@ func Test_teleportEventProvider_FetchEventsRoutine(t *testing.T) {
 	ep.disablePrefetchEventsRoutine = true
 	ep.disableFetchEventsRoutine = false
 
-	txHash := types.HexToHash("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8")
+	txHash := types.MustHashFromHex("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8", types.PadNone)
 	logs := []types.Log{
-		{TxIndex: types.Uint64ToNumber(1), Data: teleportTestGUID, TxHash: txHash, Address: teleportTestAddress},
-		{TxIndex: types.Uint64ToNumber(2), Data: teleportTestGUID, TxHash: txHash, Address: teleportTestAddress},
+		{TransactionIndex: ptrutil.Ptr(uint64(1)), Data: teleportTestGUID, TransactionHash: &txHash, Address: teleportTestAddress},
+		{TransactionIndex: ptrutil.Ptr(uint64(2)), Data: teleportTestGUID, TransactionHash: &txHash, Address: teleportTestAddress},
 	}
 
-	cli.On("BlockNumber", ctx).Return(uint64(100), nil).Once()
-	cli.On("BlockNumber", ctx).Return(uint64(119), nil).Once()
-	cli.On("BlockNumber", ctx).Return(uint64(125), nil).Once()
+	cli.On("BlockNumber", ctx).Return(big.NewInt(100), nil).Once()
+	cli.On("BlockNumber", ctx).Return(big.NewInt(119), nil).Once()
+	cli.On("BlockNumber", ctx).Return(big.NewInt(125), nil).Once()
 
 	// First two ranges must be split into two FilterLogs calls to avoid exceeding the block limit.
 	cli.On("FilterLogs", ctx, mock.Anything).Return(logs, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(types.FilterLogsQuery)
 		assert.Equal(t, uint64(100), fq.FromBlock.Big().Uint64()) // latest block minus block confirmations
 		assert.Equal(t, uint64(109), fq.ToBlock.Big().Uint64())   // latest block minus block confirmations minus block limit
-		assert.Equal(t, types.Addresses{teleportTestAddress}, fq.Address)
-		assert.Equal(t, []types.Hashes{{teleportTopic0}}, fq.Topics)
+		assert.Equal(t, []types.Address{teleportTestAddress}, fq.Address)
+		assert.Equal(t, [][]types.Hash{{teleportTopic0}}, fq.Topics)
 	})
 	cli.On("FilterLogs", ctx, mock.Anything).Return(logs, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(types.FilterLogsQuery)
 		assert.Equal(t, uint64(110), fq.FromBlock.Big().Uint64())
 		assert.Equal(t, uint64(118), fq.ToBlock.Big().Uint64())
-		assert.Equal(t, types.Addresses{teleportTestAddress}, fq.Address)
-		assert.Equal(t, []types.Hashes{{teleportTopic0}}, fq.Topics)
+		assert.Equal(t, []types.Address{teleportTestAddress}, fq.Address)
+		assert.Equal(t, [][]types.Hash{{teleportTopic0}}, fq.Topics)
 	})
 	cli.On("FilterLogs", ctx, mock.Anything).Return(logs, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(types.FilterLogsQuery)
 		assert.Equal(t, uint64(119), fq.FromBlock.Big().Uint64())
 		assert.Equal(t, uint64(124), fq.ToBlock.Big().Uint64())
-		assert.Equal(t, types.Addresses{teleportTestAddress}, fq.Address)
-		assert.Equal(t, []types.Hashes{{teleportTopic0}}, fq.Topics)
+		assert.Equal(t, []types.Address{teleportTestAddress}, fq.Address)
+		assert.Equal(t, [][]types.Hash{{teleportTopic0}}, fq.Topics)
 	})
 
 	require.NoError(t, ep.Start(ctx))
@@ -98,7 +100,7 @@ func Test_teleportEventProvider_PrefetchEventsRoutine(t *testing.T) {
 	cli := &mocks.Client{}
 	ep, err := New(Config{
 		Client:             cli,
-		Addresses:          types.Addresses{teleportTestAddress},
+		Addresses:          []types.Address{teleportTestAddress},
 		Interval:           100 * time.Millisecond,
 		PrefetchPeriod:     100 * time.Second,
 		BlockLimit:         15,
@@ -109,37 +111,49 @@ func Test_teleportEventProvider_PrefetchEventsRoutine(t *testing.T) {
 	ep.disableFetchEventsRoutine = true
 	require.NoError(t, err)
 
-	txHash := types.HexToHash("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8")
+	txHash := types.MustHashFromHex("0x66e8ab5a41d4b109c7f6ea5303e3c292771e57fb0b93a8474ca6f72e53eac0e8", types.PadNone)
 	logs := []types.Log{
-		{TxIndex: types.Uint64ToNumber(1), Data: teleportTestGUID, TxHash: txHash, Address: teleportTestAddress},
-		{TxIndex: types.Uint64ToNumber(2), Data: teleportTestGUID, TxHash: txHash, Address: teleportTestAddress},
+		{TransactionIndex: ptrutil.Ptr(uint64(1)), Data: teleportTestGUID, TransactionHash: &txHash, Address: teleportTestAddress},
+		{TransactionIndex: ptrutil.Ptr(uint64(2)), Data: teleportTestGUID, TransactionHash: &txHash, Address: teleportTestAddress},
 	}
 
 	now := time.Now().Unix()
-	cli.On("BlockByNumber", mock.Anything, types.Uint64ToBlockNumber(99)).Return(dummyBlock(99, now), nil)
-	cli.On("BlockByNumber", mock.Anything, types.Uint64ToBlockNumber(84)).Return(dummyBlock(84, now-80), nil)
-	cli.On("BlockByNumber", mock.Anything, types.Uint64ToBlockNumber(69)).Return(dummyBlock(69, now-160), nil)
-	cli.On("BlockNumber", ctx).Return(uint64(100), nil).Once()
+	cli.On("Block", mock.Anything).Run(func(args mock.Arguments) {
+		ctx := args.Get(0).(context.Context)
+		blockNumber := ethereum.BlockNumberFromContext(ctx)
+		assert.Equal(t, uint64(99), blockNumber.Uint64())
+	}).Return(dummyBlock(99, now), nil).Once()
+	cli.On("Block", mock.Anything).Run(func(args mock.Arguments) {
+		ctx := args.Get(0).(context.Context)
+		blockNumber := ethereum.BlockNumberFromContext(ctx)
+		assert.Equal(t, uint64(84), blockNumber.Uint64())
+	}).Return(dummyBlock(84, now-80), nil).Once()
+	cli.On("Block", mock.Anything).Run(func(args mock.Arguments) {
+		ctx := args.Get(0).(context.Context)
+		blockNumber := ethereum.BlockNumberFromContext(ctx)
+		assert.Equal(t, uint64(69), blockNumber.Uint64())
+	}).Return(dummyBlock(69, now-160), nil).Once()
+	cli.On("BlockNumber", ctx).Return(big.NewInt(100), nil).Once()
 	cli.On("FilterLogs", ctx, mock.Anything).Return([]types.Log{}, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(types.FilterLogsQuery)
 		assert.Equal(t, uint64(85), fq.FromBlock.Big().Uint64()) // latest block minus block confirmations minus block limit
 		assert.Equal(t, uint64(99), fq.ToBlock.Big().Uint64())   // latest block minus block confirmations
-		assert.Equal(t, types.Addresses{teleportTestAddress}, fq.Address)
-		assert.Equal(t, []types.Hashes{{teleportTopic0}}, fq.Topics)
+		assert.Equal(t, []types.Address{teleportTestAddress}, fq.Address)
+		assert.Equal(t, [][]types.Hash{{teleportTopic0}}, fq.Topics)
 	})
 	cli.On("FilterLogs", ctx, mock.Anything).Return([]types.Log{}, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(types.FilterLogsQuery)
 		assert.Equal(t, uint64(70), fq.FromBlock.Big().Uint64())
 		assert.Equal(t, uint64(84), fq.ToBlock.Big().Uint64())
-		assert.Equal(t, types.Addresses{teleportTestAddress}, fq.Address)
-		assert.Equal(t, []types.Hashes{{teleportTopic0}}, fq.Topics)
+		assert.Equal(t, []types.Address{teleportTestAddress}, fq.Address)
+		assert.Equal(t, [][]types.Hash{{teleportTopic0}}, fq.Topics)
 	})
 	cli.On("FilterLogs", ctx, mock.Anything).Return(logs, nil).Once().Run(func(args mock.Arguments) {
 		fq := args.Get(1).(types.FilterLogsQuery)
 		assert.Equal(t, uint64(55), fq.FromBlock.Big().Uint64())
 		assert.Equal(t, uint64(69), fq.ToBlock.Big().Uint64())
-		assert.Equal(t, types.Addresses{teleportTestAddress}, fq.Address)
-		assert.Equal(t, []types.Hashes{{teleportTopic0}}, fq.Topics)
+		assert.Equal(t, []types.Address{teleportTestAddress}, fq.Address)
+		assert.Equal(t, [][]types.Hash{{teleportTopic0}}, fq.Topics)
 	})
 
 	require.NoError(t, ep.Start(ctx))
@@ -164,11 +178,9 @@ loop:
 	assert.Equal(t, expectedEvents, events)
 }
 
-func dummyBlock(number uint64, timestamp int64) *types.BlockTxHashes {
-	return &types.BlockTxHashes{
-		Block: types.Block{
-			Number:    types.Uint64ToNumber(number),
-			Timestamp: types.Uint64ToNumber(uint64(timestamp)),
-		},
+func dummyBlock(number uint64, timestamp int64) *types.Block {
+	return &types.Block{
+		Number:    new(big.Int).SetUint64(number),
+		Timestamp: time.Unix(timestamp, 0),
 	}
 }

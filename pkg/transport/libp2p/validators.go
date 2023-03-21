@@ -20,10 +20,11 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
@@ -59,7 +60,7 @@ func messageValidator(topics map[string]transport.Message, logger log.Logger) in
 	}
 }
 
-func feederValidator(feeders []ethereum.Address, logger log.Logger) internal.Options {
+func feederValidator(feeders []types.Address, logger log.Logger) internal.Options {
 	return func(n *internal.Node) error {
 		n.AddValidator(func(ctx context.Context, topic string, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
 			feedAddr := ethkey.PeerIDToAddress(psMsg.GetFrom())
@@ -111,7 +112,7 @@ func eventValidator(logger log.Logger) internal.Options {
 
 // priceValidator adds a validator for price messages. The validator checks if
 // the price message is valid, and if the price is not older than 5 min.
-func priceValidator(signer ethereum.Signer, logger log.Logger) internal.Options {
+func priceValidator(logger log.Logger, recoverer crypto.Recoverer) internal.Options {
 	return func(n *internal.Node) error {
 		n.AddValidator(func(ctx context.Context, topic string, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
 			priceMsg, ok := psMsg.ValidatorData.(*messages.Price)
@@ -119,7 +120,7 @@ func priceValidator(signer ethereum.Signer, logger log.Logger) internal.Options 
 				return pubsub.ValidationAccept
 			}
 			// Check is a message signature is valid and extract author's address:
-			priceFrom, err := priceMsg.Price.From(signer)
+			priceFrom, err := priceMsg.Price.From(recoverer)
 			wat := priceMsg.Price.Wat
 			age := priceMsg.Price.Age.UTC().Format(time.RFC3339)
 			val := priceMsg.Price.Val.String()

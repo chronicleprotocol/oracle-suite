@@ -18,9 +18,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -42,8 +42,8 @@ func NewPriceCmd(opts *options) *cobra.Command {
 
 func NewPriceSignCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "sign [json_message]",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "sign key [json_message]",
+		Args:  cobra.MinimumNArgs(1),
 		Short: "signs given JSON price message and returns JSON with VRS fields",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -52,8 +52,14 @@ func NewPriceSignCmd(opts *options) *cobra.Command {
 				return err
 			}
 
+			// Key:
+			key, ok := srv.Keys[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find key %s", args[0])
+			}
+
 			// Read JSON and parse it:
-			input, err := readInput(args, 0)
+			input, err := readInput(args, 1)
 			if err != nil {
 				return err
 			}
@@ -64,7 +70,7 @@ func NewPriceSignCmd(opts *options) *cobra.Command {
 			}
 
 			// Sign price:
-			err = msg.Price.Sign(srv.Signer)
+			err = msg.Price.Sign(key)
 			if err != nil {
 				return err
 			}
@@ -91,8 +97,6 @@ func NewPriceVerifyCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, args []string) error {
 			var err error
 
-			signer := geth.NewSigner(nil)
-
 			// Read JSON and parse it:
 			input, err := readInput(args, 0)
 			if err != nil {
@@ -105,7 +109,7 @@ func NewPriceVerifyCmd() *cobra.Command {
 			}
 
 			// Print message parameters:
-			fields := msg.Price.Fields(signer)
+			fields := msg.Price.Fields(crypto.ECRecoverer)
 			for _, k := range sortFields(fields) {
 				fmt.Printf("%-4s %s\n", k, fields[k])
 			}

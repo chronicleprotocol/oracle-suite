@@ -33,6 +33,7 @@ import (
 	refs "go.mindeco.de/ssb-refs"
 )
 
+//nolint:gocritic,gocyclo
 func NewDeriveTf() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "derive-tf",

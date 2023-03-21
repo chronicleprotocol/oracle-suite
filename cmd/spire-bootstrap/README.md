@@ -27,7 +27,7 @@ make
 ## Configuration
 
 To start working with Spire-Bootstrap, you have to create configuration file first. By default, the default config file
-location is `config.json` in the current working directory. You can change the config file location using the `--config`
+location is `config.hcl` in the current working directory. You can change the config file location using the `--config`
 flag. Spire-Bootstrap supports JSON and YAML configuration files.
 
 ### Example configuration
@@ -117,7 +117,7 @@ Available Commands:
   run         Starts bootstrap node
 
 Flags:
-  -c, --config string                                  ghost config file (default "./config.json")
+  -c, --config string                                  ghost config file (default "./config.hcl")
   -h, --help                                           help for spire-bootstrap
       --log.format text|json                           log format (default text)
   -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default warning)

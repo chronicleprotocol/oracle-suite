@@ -20,9 +20,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/defiweb/go-eth/types"
 )
 
 // Median is an interface for the Medianizer oracle contract:
@@ -32,7 +30,7 @@ import (
 // https://docs.makerdao.com/smart-contract-modules/oracle-module/median-detailed-documentation
 type Median interface {
 	// Address returns medianizer contract address.
-	Address() common.Address
+	Address() types.Address
 
 	// Age returns the value from contract's age method. The age is the block
 	// timestamp of last price val update.
@@ -50,29 +48,29 @@ type Median interface {
 
 	// Feeds returns a list of all Ethereum addresses that are authorized to update
 	// Oracle prices (orcls).
-	Feeds(ctx context.Context) ([]ethereum.Address, error)
+	Feeds(ctx context.Context) ([]types.Address, error)
 
 	// Poke sends transaction to the smart contract which invokes contract's
 	// poke method, which updates asset price (val).  If simulateBeforeRun is
 	// set to true, then transaction will be simulated on the EVM before actual
 	// transaction will be sent.
-	Poke(ctx context.Context, prices []*Price, simulateBeforeRun bool) (*ethereum.Hash, error)
+	Poke(ctx context.Context, prices []*Price, simulateBeforeRun bool) (*types.Hash, error)
 
 	// Lift sends transaction to the smart contract which invokes contract's
 	// lift method, which sends  adds given addresses to the feeders list (orcls).
 	// If simulateBeforeRun is set to true, then transaction will be simulated
 	// on the EVM before actual transaction will be sent.
-	Lift(ctx context.Context, addresses []common.Address, simulateBeforeRun bool) (*ethereum.Hash, error)
+	Lift(ctx context.Context, addresses []types.Address, simulateBeforeRun bool) (*types.Hash, error)
 
 	// Drop sends transaction to the smart contract which invokes contract's
 	// drop method, which removes given addresses from the feeders list (orcls).
 	// If simulateBeforeRun is set to true, then transaction will be simulated
 	// on the EVM before actual transaction will be sent.
-	Drop(ctx context.Context, addresses []common.Address, simulateBeforeRun bool) (*ethereum.Hash, error)
+	Drop(ctx context.Context, addresses []types.Address, simulateBeforeRun bool) (*types.Hash, error)
 
 	// SetBar sends transaction to the smart contract which invokes contract's
 	// setBar method, which sets bar variable (quorum).  If simulateBeforeRun is
 	// set to true, then transaction will be simulated on the EVM before actual
 	// transaction will be sent.
-	SetBar(ctx context.Context, bar *big.Int, simulateBeforeRun bool) (*ethereum.Hash, error)
+	SetBar(ctx context.Context, bar *big.Int, simulateBeforeRun bool) (*types.Hash, error)
 }

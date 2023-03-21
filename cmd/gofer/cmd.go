@@ -40,7 +40,7 @@ with aggregates that increase reliability in the DeFi environment.`,
 		&opts.ConfigFilePath,
 		"config",
 		"c",
-		"./config.json",
+		"./config.hcl",
 		"config file",
 	)
 	rootCmd.PersistentFlags().VarP(
@@ -53,7 +53,7 @@ with aggregates that increase reliability in the DeFi environment.`,
 		&opts.NoRPC,
 		"norpc",
 		false,
-		"disable the use of RPC agent",
+		"disable the use of RPCURLs agent",
 	)
 
 	return rootCmd

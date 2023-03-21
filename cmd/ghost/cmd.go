@@ -43,14 +43,14 @@ func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.ConfigFilePath,
 		"config", "c",
-		"./config.json",
+		"./config.hcl",
 		"ghost config file",
 	)
 	rootCmd.PersistentFlags().BoolVar(
 		&opts.GoferNoRPC,
 		"gofer.norpc",
 		false,
-		"disable the use of Graph RPC agent",
+		"disable the use of Graph RPCURLs agent",
 	)
 
 	return rootCmd

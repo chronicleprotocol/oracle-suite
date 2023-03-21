@@ -20,11 +20,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/types"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -47,9 +46,9 @@ func logToMessage(l types.Log) (*messages.Event, error) {
 		// ID is additionally hashed to ensure that it is not similar to
 		// any other field, so it will not be misused. This field is intended
 		// to be used only be the event store.
-		ID:          crypto.Keccak256Hash(append(l.TxHash.Bytes(), l.TxIndex.Big().Bytes()...)).Bytes(),
-		Index:       l.TxHash.Bytes(),
-		EventDate:   time.Unix(guid.timestamp, 0),
+		ID:          crypto.Keccak256(l.TransactionHash.Bytes(), new(big.Int).SetUint64(*l.TransactionIndex).Bytes()).Bytes(),
+		Index:       l.TransactionHash.Bytes(),
+		EventDate:   time.Unix(guid.Timestamp, 0),
 		MessageDate: time.Now(),
 		Data:        data,
 		Signatures:  map[string]messages.EventSignature{},
@@ -59,78 +58,53 @@ func logToMessage(l types.Log) (*messages.Event, error) {
 // teleportGUID as defined in:
 // https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol
 type teleportGUID struct {
-	sourceDomain common.Hash
-	targetDomain common.Hash
-	receiver     common.Hash
-	operator     common.Hash
-	amount       *big.Int
-	nonce        *big.Int
-	timestamp    int64
+	SourceDomain types.Hash `abi:"sourceDomain"`
+	TargetDomain types.Hash `abi:"targetDomain"`
+	Receiver     types.Hash `abi:"receiver"`
+	Operator     types.Hash `abi:"operator"`
+	Amount       *big.Int   `abi:"amount"`
+	Nonce        *big.Int   `abi:"nonce"`
+	Timestamp    int64      `abi:"timestamp"`
 }
 
 // hash is used to generate an oracle signature for the TeleportGUID struct.
 // It must be compatible with the following contract:
 // https://github.com/makerdao/dss-teleport/blob/master/src/TeleportGUID.sol
-func (g *teleportGUID) hash() (common.Hash, error) {
+func (g *teleportGUID) hash() (types.Hash, error) {
 	b, err := packTeleportGUID(g)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("unable to generate a hash for TeleportGUID: %w", err)
+		return types.Hash{}, fmt.Errorf("unable to generate a hash for TeleportGUID: %w", err)
 	}
-	return crypto.Keccak256Hash(b), nil
+	return crypto.Keccak256(b), nil
 }
 
 // packTeleportGUID converts teleportGUID to ABI encoded data.
-func packTeleportGUID(g *teleportGUID) ([]byte, error) {
-	b, err := abiTeleportGUID.Pack(
-		g.sourceDomain,
-		g.targetDomain,
-		g.receiver,
-		g.operator,
-		g.amount,
-		g.nonce,
-		big.NewInt(g.timestamp),
-	)
+func packTeleportGUID(guid *teleportGUID) ([]byte, error) {
+	b, err := abi.EncodeValue(abiTeleportGUID, guid)
 	if err != nil {
-		return nil, fmt.Errorf("unable to pack TeleportGUID: %w", err)
+		return nil, fmt.Errorf("unable to encode TeleportGUID: %w", err)
 	}
 	return b, nil
 }
 
 // unpackTeleportGUID converts ABI encoded data to teleportGUID.
 func unpackTeleportGUID(data []byte) (*teleportGUID, error) {
-	u, err := abiTeleportGUID.Unpack(data)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unpack TeleportGUID: %w", err)
+	x := abiTeleportGUID
+	var guid teleportGUID
+	if err := abi.DecodeValue(x, data, &guid); err != nil {
+		return nil, fmt.Errorf("unable to decode TeleportGUID: %w", err)
 	}
-	return &teleportGUID{
-		sourceDomain: bytes32ToHash(u[0].([32]uint8)),
-		targetDomain: bytes32ToHash(u[1].([32]uint8)),
-		receiver:     bytes32ToHash(u[2].([32]uint8)),
-		operator:     bytes32ToHash(u[3].([32]uint8)),
-		amount:       u[4].(*big.Int),
-		nonce:        u[5].(*big.Int),
-		timestamp:    u[6].(*big.Int).Int64(),
-	}, nil
+	return &guid, nil
 }
 
-func bytes32ToHash(b [32]uint8) common.Hash {
-	return common.BytesToHash(b[:])
-}
-
-var abiTeleportGUID abi.Arguments
-
-func init() {
-	bytes32, _ := abi.NewType("bytes32", "", nil)
-	uint128, _ := abi.NewType("uint128", "", nil)
-	uint80, _ := abi.NewType("uint128", "", nil)
-	uint48, _ := abi.NewType("uint48", "", nil)
-	abiTeleportGUID = abi.Arguments{
-		{Type: bytes32}, // sourceDomain
-		{Type: bytes32}, // targetDomain
-		{Type: bytes32}, // receiver
-		{Type: bytes32}, // operator
-		{Type: uint128}, // amount
-		{Type: uint80},  // nonce
-		{Type: uint48},  // timestamp
-	}
-}
+var abiTeleportGUID = abi.MustParseType(
+	`(
+		bytes32 sourceDomain, 
+		bytes32 targetDomain, 
+		bytes32 receiver, 
+		bytes32 operator, 
+		uint128 amount, 
+		uint80 nonce, 
+		uint48 timestamp
+	)`,
+)

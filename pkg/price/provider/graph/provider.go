@@ -26,6 +26,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
 )
 
+type Graphs map[provider.Pair]nodes.Node
+
 type ErrPairNotFound struct {
 	Pair provider.Pair
 }
@@ -37,14 +39,14 @@ func (e ErrPairNotFound) Error() string {
 // Provider implements the provider.Provider interface. It uses a graph
 // structure to calculate pairs prices.
 type Provider struct {
-	graphs map[provider.Pair]nodes.Aggregator
+	graphs Graphs
 	feeder *feeder.Feeder
 }
 
 // NewProvider returns a new Provider instance. If the GetByFeeder is not nil,
 // then prices are automatically updated when the Price or Prices methods are
 // called. Otherwise, prices have to be updated externally.
-func NewProvider(graph map[provider.Pair]nodes.Aggregator, feeder *feeder.Feeder) *Provider {
+func NewProvider(graph Graphs, feeder *feeder.Feeder) *Provider {
 	return &Provider{graphs: graph, feeder: feeder}
 }
 
@@ -72,7 +74,13 @@ func (g *Provider) Price(pair provider.Pair) (*provider.Price, error) {
 	if g.feeder != nil {
 		g.feeder.Feed([]nodes.Node{n}, time.Now())
 	}
-	return mapGraphPrice(n.Price()), nil
+	switch n := n.(type) {
+	case nodes.Aggregator:
+		return mapGraphPrice(n.Price()), nil
+	case nodes.Origin:
+		return mapGraphPrice(n.Price()), nil
+	}
+	return nil, fmt.Errorf("unable to get price for %s", pair)
 }
 
 // Prices implements the provider.Providerinterface.
@@ -86,8 +94,11 @@ func (g *Provider) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.P
 	}
 	res := make(map[provider.Pair]*provider.Price)
 	for _, n := range ns {
-		if n, ok := n.(nodes.Aggregator); ok {
+		switch n := n.(type) {
+		case nodes.Aggregator:
 			res[n.Pair()] = mapGraphPrice(n.Price())
+		case nodes.Origin:
+			res[n.OriginPair().Pair] = mapGraphPrice(n.Price())
 		}
 	}
 	return res, nil
@@ -135,7 +146,13 @@ func mapGraphNodes(n nodes.Node) *provider.Model {
 	case *nodes.MedianAggregatorNode:
 		gn.Type = "median"
 		gn.Pair = typedNode.Pair()
-	case *nodes.OriginNode:
+	case *nodes.ReferenceNode:
+		gn.Type = "reference"
+		gn.Pair = typedNode.Pair()
+	case nodes.Aggregator:
+		gn.Type = "aggregator"
+		gn.Pair = typedNode.Pair()
+	case nodes.Origin:
 		gn.Type = "origin"
 		gn.Pair = typedNode.OriginPair().Pair
 		gn.Parameters["origin"] = typedNode.OriginPair().Origin

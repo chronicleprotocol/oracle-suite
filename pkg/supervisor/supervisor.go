@@ -30,6 +30,7 @@ const LoggerTag = "SUPERVISOR"
 type Service interface {
 	// Start starts the service.
 	Start(ctx context.Context) error
+
 	// Wait returns a channel that is blocked while service is running.
 	// When the service is stopped, the channel will be closed. If an error
 	// occurs, an error will be sent to the channel before closing it.

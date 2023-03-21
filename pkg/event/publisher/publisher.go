@@ -54,10 +54,13 @@ type EventSigner interface {
 type Config struct {
 	// Providers is a list of event providers.
 	Providers []EventProvider
+
 	// EventSigner is a list of Signers used to sign events.
 	Signers []EventSigner
+
 	// Transport is used to send events to the Oracle network.
 	Transport transport.Transport
+
 	// Logger is a current logger interface used by the EventPublisher.
 	Logger log.Logger
 }

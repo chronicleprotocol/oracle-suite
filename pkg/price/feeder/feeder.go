@@ -19,13 +19,14 @@ import (
 	"context"
 	"errors"
 
+	"github.com/defiweb/go-eth/wallet"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -40,7 +41,7 @@ type Feeder struct {
 	waitCh chan error
 
 	priceProvider provider.Provider
-	signer        ethereum.Signer
+	signer        wallet.Key
 	transport     transport.Transport
 	interval      *timeutil.Ticker
 	pairs         []provider.Pair
@@ -55,9 +56,8 @@ type Config struct {
 	// PriceProvider is a price provider which is used to fetch prices.
 	PriceProvider provider.Provider
 
-	// Signer is an instance of the ethereum.Signer which will be used to
-	// sign prices.
-	Signer ethereum.Signer
+	// Signer is a wallet used to sign prices.
+	Signer wallet.Key
 
 	// Transport is an implementation of transport used to send prices to
 	// the network.

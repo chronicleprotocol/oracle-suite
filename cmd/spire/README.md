@@ -28,7 +28,7 @@ make
 ## Configuration
 
 To start working with Spire, you have to create configuration file first. By default, the default config file location
-is `config.json` in the current working directory. You can change the config file location using the `--config` flag.
+is `config.hcl` in the current working directory. You can change the config file location using the `--config` flag.
 Spire supports JSON and YAML configuration files.
 
 ### Example configuration
@@ -144,9 +144,11 @@ Spire supports JSON and YAML configuration files.
         - `listenAddr` - Address on which the WebAPI server will listen for incoming connections. The address must be
           in the format `host:port`. When used with a TOR hidden service, the server should listen on localhost.
         - `socks5ProxyAddr` - Address of the SOCKS5 proxy server. The address must be in the format `host:port`.
-        - `addressBookType` (`string|[]string`) - Type of address book to use. Supported types are: `ethereum` and `static`.
+        - `addressBookType` (`string|[]string`) - Type of address book to use. Supported types are: `ethereum`
+          and `static`.
           `ethereum` type uses a contract deployed on the Ethereum-compatible blockchain to store the list of addresses,
-          `static` type uses a static list of addresses defined in the configuration file. It is possible to use multiple
+          `static` type uses a static list of addresses defined in the configuration file. It is possible to use
+          multiple
           address book types at the same time.
             - `ethereumAddressBook` - Configuration parameters for the Ethereum address book.
                 - `addressBookAddr` - Ethereum address of the address book contract.
@@ -154,10 +156,12 @@ Spire supports JSON and YAML configuration files.
                     - `rpc` (`string|[]string`) - List of RPC server addresses. It is recommended to use at least three
                       addresses from different providers.
                     - `timeout` (`int`) - total timeout in seconds (default: 10).
-                    - `gracefulTimeout` (`int`) - timeout to graceful finish requests to slower RPC nodes, it is used only
+                    - `gracefulTimeout` (`int`) - timeout to graceful finish requests to slower RPC nodes, it is used
+                      only
                       when it is possible to return a correct response using responses from the remaining RPC nodes (
                       default: 1).
-                    - `maxBlocksBehind` (`int`) - if multiple RPC nodes are used, determines how far one node can be behind
+                    - `maxBlocksBehind` (`int`) - if multiple RPC nodes are used, determines how far one node can be
+                      behind
                       the last known block (default: 0).
             - `staticAddressBook` - Configuration parameters for the static address book.
                 - `remoteAddrs` (`[]string`) - List of remote addresses to which messages will be sent.
@@ -266,7 +270,7 @@ Available Commands:
   stream      Streams data from the network
 
 Flags:
-  -c, --config string                                  spire config file (default "./config.json")
+  -c, --config string                                  spire config file (default "./config.hcl")
   -h, --help                                           help for spire
       --log.format text|json                           log format (default text)
   -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default warning)

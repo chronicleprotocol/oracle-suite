@@ -4,10 +4,12 @@ go 1.18
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/defiweb/go-eth v0.0.0-20230320223326-92a25855d420
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/libp2p/go-libp2p v0.18.0
 	github.com/libp2p/go-libp2p-connmgr v0.3.1
 	github.com/libp2p/go-libp2p-core v0.14.0
@@ -18,33 +20,34 @@ require (
 	github.com/miguelmota/go-ethereum-hdwallet v0.1.1
 	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.2.1
+	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.7.0
-	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
+	github.com/stretchr/testify v1.8.1
+	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/zclconf/go-cty v1.13.0
 	go.cryptoscope.co/muxrpc/v2 v2.0.10
-	go.cryptoscope.co/netwrap v0.1.1
-	go.cryptoscope.co/secretstream v1.2.9
 	go.cryptoscope.co/ssb v0.2.1
 	go.mindeco.de v1.12.0
 	go.mindeco.de/ssb-refs v0.4.1
-	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
-	golang.org/x/net v0.5.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/crypto v0.1.0
+	golang.org/x/net v0.6.0
+	golang.org/x/sys v0.5.0
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	google.golang.org/protobuf v1.28.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
+	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/btcsuite/btcd v0.22.0-beta // indirect
+	github.com/btcsuite/btcd v0.22.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -55,6 +58,9 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
+	github.com/defiweb/go-anymapper v0.0.0-20230314210910-241886f5c16d // indirect
+	github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937 // indirect
+	github.com/defiweb/go-sigparser v0.0.0-20221125211146-2e4b90d8e269 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
 	github.com/dgraph-io/sroar v0.0.0-20210524170324-9b164cbe6e02 // indirect
@@ -76,6 +82,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v1.12.0 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -95,7 +102,7 @@ require (
 	github.com/karrick/bufpool v1.2.0 // indirect
 	github.com/karrick/gopool v1.2.2 // indirect
 	github.com/keks/persist v0.0.0-20210520094901-9bdd97c1fad2 // indirect
-	github.com/klauspost/compress v1.15.1 // indirect
+	github.com/klauspost/compress v1.15.13 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
 	github.com/koron/go-ssdp v0.0.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
@@ -140,6 +147,7 @@ require (
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.0.4 // indirect
 	github.com/multiformats/go-base36 v0.1.0 // indirect
@@ -169,7 +177,7 @@ require (
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/ssb-ngi-pointer/go-metafeed v0.0.0-20210727102809-98707678965d // indirect
-	github.com/stretchr/objx v0.1.1 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
@@ -179,19 +187,23 @@ require (
 	github.com/zeebo/bencode v1.0.0 // indirect
 	go.cryptoscope.co/luigi v0.3.6-0.20200131144242-3256b54e72c8 // indirect
 	go.cryptoscope.co/margaret v0.4.0 // indirect
+	go.cryptoscope.co/netwrap v0.1.1 // indirect
 	go.cryptoscope.co/nocomment v0.0.0-20210520094614-fb744e81f810 // indirect
+	go.cryptoscope.co/secretstream v1.2.9 // indirect
 	go.mindeco.de/ssb-gabbygrove v0.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/text v0.6.0 // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
+	nhooyr.io/websocket v1.8.7 // indirect
 )
 
 replace go.cryptoscope.co/muxrpc/v2 => github.com/ssbc/go-muxrpc/v2 v2.0.10

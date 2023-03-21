@@ -22,12 +22,13 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -56,8 +57,8 @@ func NewMedianCmd(opts *options) *cobra.Command {
 
 func NewMedianAgeCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "age median_address",
-		Args:  cobra.ExactArgs(1),
+		Use:   "age client median_address",
+		Args:  cobra.ExactArgs(2),
 		Short: "returns the age value (last update time)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -65,7 +66,14 @@ func NewMedianAgeCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			age, err := med.Age(context.Background())
 			if err != nil {
@@ -82,8 +90,8 @@ func NewMedianAgeCmd(opts *options) *cobra.Command {
 
 func NewMedianBarCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "bar median_address",
-		Args:  cobra.ExactArgs(1),
+		Use:   "bar client median_address",
+		Args:  cobra.ExactArgs(2),
 		Short: "returns the bar value (required quorum)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -91,7 +99,14 @@ func NewMedianBarCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			bar, err := med.Bar(context.Background())
 			if err != nil {
@@ -107,8 +122,8 @@ func NewMedianBarCmd(opts *options) *cobra.Command {
 
 func NewMedianWatCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "wat median_address",
-		Args:  cobra.ExactArgs(1),
+		Use:   "wat client median_address",
+		Args:  cobra.ExactArgs(2),
 		Short: "returns the wat value (asset name)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -116,7 +131,14 @@ func NewMedianWatCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			wat, err := med.Wat(context.Background())
 			if err != nil {
@@ -132,8 +154,8 @@ func NewMedianWatCmd(opts *options) *cobra.Command {
 
 func NewMedianValCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "val median_address",
-		Args:  cobra.ExactArgs(1),
+		Use:   "val client median_address",
+		Args:  cobra.ExactArgs(2),
 		Short: "returns the val value (asset price)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -141,7 +163,14 @@ func NewMedianValCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			price, err := med.Val(context.Background())
 			if err != nil {
@@ -157,8 +186,8 @@ func NewMedianValCmd(opts *options) *cobra.Command {
 
 func NewMedianFeedsCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "feeds median_address",
-		Args:  cobra.ExactArgs(1),
+		Use:   "feeds client median_address",
+		Args:  cobra.ExactArgs(2),
 		Short: "returns list of feeds which are allowed to send prices",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -166,7 +195,14 @@ func NewMedianFeedsCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
+
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			feeds, err := med.Feeds(context.Background())
 			if err != nil {
@@ -184,8 +220,8 @@ func NewMedianFeedsCmd(opts *options) *cobra.Command {
 
 func NewMedianPokeCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "poke median_address [json_messages_list]",
-		Args:  cobra.ExactArgs(1),
+		Use:   "poke client median_address [json_messages_list]",
+		Args:  cobra.MinimumNArgs(2),
 		Short: "directly invokes poke method",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -193,10 +229,17 @@ func NewMedianPokeCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[1]))
+
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			// Read JSON and parse it:
-			in, err := readInput(args, 1)
+			in, err := readInput(args, 2)
 			if err != nil {
 				return err
 			}
@@ -226,7 +269,7 @@ func NewMedianPokeCmd(opts *options) *cobra.Command {
 
 func NewMedianLiftCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "lift median_address [addresses...]",
+		Use:   "lift client median_address [addresses...]",
 		Args:  cobra.MinimumNArgs(2),
 		Short: "adds given addresses to the feeders list",
 		Long:  ``,
@@ -235,11 +278,18 @@ func NewMedianLiftCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			var addresses []ethereum.Address
-			for _, a := range args[1:] {
-				addresses = append(addresses, ethereum.HexToAddress(a))
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
+
+			var addresses []types.Address
+			for _, a := range args[2:] {
+				addresses = append(addresses, types.MustAddressFromHex(a))
 			}
 
 			tx, err := med.Lift(context.Background(), addresses, true)
@@ -256,20 +306,27 @@ func NewMedianLiftCmd(opts *options) *cobra.Command {
 
 func NewMedianDropCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "drop median_address [addresses...]",
-		Args:  cobra.MinimumNArgs(2),
+		Use:   "drop client median_address [addresses...]",
+		Args:  cobra.MinimumNArgs(3),
 		Short: "removes given addresses from the feeders list",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
-			geth, _, err := opts.Config.Configure()
+			srv, err := PrepareServices(opts)
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(geth, ethereum.HexToAddress(args[1]))
 
-			var addresses []ethereum.Address
-			for _, a := range args[1:] {
-				addresses = append(addresses, ethereum.HexToAddress(a))
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
+
+			var addresses []types.Address
+			for _, a := range args[2:] {
+				addresses = append(addresses, types.MustAddressFromHex(a))
 			}
 
 			tx, err := med.Drop(context.Background(), addresses, true)
@@ -286,8 +343,8 @@ func NewMedianDropCmd(opts *options) *cobra.Command {
 
 func NewMedianSetBarCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "set-bar median_address bar",
-		Args:  cobra.ExactArgs(2),
+		Use:   "set-bar client median_address bar",
+		Args:  cobra.ExactArgs(3),
 		Short: "sets bar variable (quorum)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -295,9 +352,16 @@ func NewMedianSetBarCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			med := medianGeth.NewMedian(srv.Client, ethereum.HexToAddress(args[0]))
 
-			bar, ok := (&big.Int{}).SetString(args[1], 10)
+			// Client:
+			cli, ok := srv.Clients[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find client %s", args[0])
+			}
+
+			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
+
+			bar, ok := (&big.Int{}).SetString(args[2], 10)
 			if !ok {
 				return errors.New("given value is not an valid number")
 			}

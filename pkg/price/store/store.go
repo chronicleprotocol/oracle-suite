@@ -20,7 +20,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -37,10 +39,10 @@ var ErrUnknownPair = errors.New("received pair is not configured")
 type PriceStore struct {
 	ctx       context.Context
 	storage   Storage
-	signer    ethereum.Signer
 	transport transport.Transport
 	pairs     []string
 	log       log.Logger
+	recover   crypto.Recoverer
 	waitCh    chan error
 }
 
@@ -48,36 +50,43 @@ type PriceStore struct {
 type Config struct {
 	// Storage is the storage implementation.
 	Storage Storage
-	// Signer is an instance of the ethereum.Signer which will be used to
-	// verify price signatures.
-	Signer ethereum.Signer
+
 	// Transport is an implementation of transport used to fetch prices from
 	// feeders.
 	Transport transport.Transport
+
 	// Pairs is the list of asset pairs which are supported by the store.
 	Pairs []string
+
 	// Logger is a current logger interface used by the PriceStore.
 	// The Logger is required to monitor asynchronous processes.
 	Logger log.Logger
+
+	// Recoverer provides a method to recover the public key from a signature.
+	// The default is crypto.ECREcoverer.
+	Recoverer crypto.Recoverer
 }
 
 // Storage provides an interface to the price storage.
 type Storage interface {
 	// Add adds a price to the store. The method is thread-safe.
-	Add(ctx context.Context, from ethereum.Address, msg *messages.Price) error
+	Add(ctx context.Context, from types.Address, msg *messages.Price) error
+
 	// GetAll returns all prices. The method is thread-safe.
 	GetAll(ctx context.Context) (map[FeederPrice]*messages.Price, error)
+
 	// GetByAssetPair returns all prices for given asset pair. The method is
 	// thread-safe.
 	GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error)
+
 	// GetByFeeder returns the latest price for given asset pair sent by given
 	// feeder. The method is thread-safe.
-	GetByFeeder(ctx context.Context, pair string, feeder ethereum.Address) (*messages.Price, error)
+	GetByFeeder(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error)
 }
 
 type FeederPrice struct {
 	AssetPair string
-	Feeder    ethereum.Address
+	Feeder    types.Address
 }
 
 // New creates a new store instance.
@@ -85,21 +94,21 @@ func New(cfg Config) (*PriceStore, error) {
 	if cfg.Storage == nil {
 		return nil, errors.New("storage must not be nil")
 	}
-	if cfg.Signer == nil {
-		return nil, errors.New("signer must not be nil")
-	}
 	if cfg.Transport == nil {
 		return nil, errors.New("transport must not be nil")
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
+	if cfg.Recoverer == nil {
+		cfg.Recoverer = crypto.ECRecoverer
+	}
 	return &PriceStore{
 		storage:   cfg.Storage,
-		signer:    cfg.Signer,
 		transport: cfg.Transport,
 		pairs:     cfg.Pairs,
 		log:       cfg.Logger.WithField("tag", LoggerTag),
+		recover:   cfg.Recoverer,
 		waitCh:    make(chan error),
 	}, nil
 }
@@ -126,7 +135,7 @@ func (p *PriceStore) Wait() <-chan error {
 
 // Add adds a new price to the list. If a price from same feeder already
 // exists, the newer one will be used.
-func (p *PriceStore) Add(ctx context.Context, from ethereum.Address, msg *messages.Price) error {
+func (p *PriceStore) Add(ctx context.Context, from types.Address, msg *messages.Price) error {
 	return p.storage.Add(ctx, from, msg)
 }
 
@@ -141,12 +150,12 @@ func (p *PriceStore) GetByAssetPair(ctx context.Context, pair string) ([]*messag
 }
 
 // GetByFeeder returns the latest price for given asset pair sent by given feeder.
-func (p *PriceStore) GetByFeeder(ctx context.Context, pair string, feeder ethereum.Address) (*messages.Price, error) {
+func (p *PriceStore) GetByFeeder(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error) {
 	return p.storage.GetByFeeder(ctx, pair, feeder)
 }
 
 func (p *PriceStore) collectPrice(price *messages.Price) error {
-	from, err := price.Price.From(p.signer)
+	from, err := price.Price.From(p.recover)
 	if err != nil {
 		return ErrInvalidSignature
 	}
@@ -197,11 +206,11 @@ func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
 	if err != nil {
 		p.log.
 			WithError(err).
-			WithFields(price.Price.Fields(p.signer)).
+			WithFields(price.Price.Fields(p.recover)).
 			Warn("Received invalid price")
 	} else {
 		p.log.
-			WithFields(price.Price.Fields(p.signer)).
+			WithFields(price.Price.Fields(p.recover)).
 			WithField("version", price.Version).
 			Info("Price received")
 	}

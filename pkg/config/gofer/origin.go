@@ -16,10 +16,6 @@
 package gofer
 
 import (
-	"fmt"
-
-	"gopkg.in/yaml.v3"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 
 	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
@@ -30,57 +26,61 @@ import (
 // which prices will be averaged.
 var averageFromBlocks = []int64{0, 10, 20}
 
-func parseParamsSymbolAliases(params yaml.Node) (origins.SymbolAliases, error) {
-	var res struct {
-		SymbolAliases origins.SymbolAliases `yaml:"symbolAliases"`
+func parseParamsSymbolAliases(params any) origins.SymbolAliases {
+	paramsMap, ok := params.(map[string]any)
+	if !ok {
+		return nil
 	}
-	err := params.Decode(&res)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal origin symbol aliases from params: %w", err)
+	aliasesMap, ok := paramsMap["symbol_aliases"].(map[string]any)
+	if !ok {
+		return nil
 	}
-	return res.SymbolAliases, nil
+	aliases := make(origins.SymbolAliases, len(aliasesMap))
+	for k, v := range aliasesMap {
+		aliases[k], _ = v.(string)
+	}
+	return aliases
 }
 
-func parseParamsAPIKey(params yaml.Node) (string, error) {
-	var res struct {
-		APIKey string `yaml:"apiKey"`
+func parseParamsAPIKey(params any) string {
+	paramsMap, ok := params.(map[string]any)
+	if !ok {
+		return ""
 	}
-	err := params.Decode(&res)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal origin symbol aliases from params: %w", err)
+	if apiKey, ok := paramsMap["api_key"].(string); ok {
+		return apiKey
 	}
-	return res.APIKey, nil
+	return ""
 }
 
-func parseParamsContracts(params yaml.Node) (origins.ContractAddresses, error) {
-	var res struct {
-		Contracts origins.ContractAddresses `yaml:"contracts"`
+func parseParamsContracts(params any) origins.ContractAddresses {
+	paramsMap, ok := params.(map[string]any)
+	if !ok {
+		return nil
 	}
-	err := params.Decode(&res)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal origin symbol aliases from params: %w", err)
+	addrsMap, ok := paramsMap["contracts"].(map[string]any)
+	if !ok {
+		return nil
 	}
-	return res.Contracts, nil
+	addrs := make(origins.ContractAddresses, len(addrsMap))
+	for k, v := range addrsMap {
+		addrs[k], _ = v.(string)
+	}
+	return addrs
 }
 
 //nolint:funlen,gocyclo,whitespace
 func NewHandler(
 	origin string,
 	wp query.WorkerPool,
-	cli pkgEthereum.Client,
+	cli pkgEthereum.Client, //nolint:staticcheck // deprecated
 	baseURL string,
-	params yaml.Node,
+	params any,
 ) (origins.Handler, error) {
-	aliases, err := parseParamsSymbolAliases(params)
-	if err != nil {
-		return nil, err
-	}
+	aliases := parseParamsSymbolAliases(params)
 	switch origin {
 	case "balancer":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		return origins.NewBaseExchangeHandler(origins.Balancer{
 			WorkerPool:        wp,
 			BaseURL:           baseURL,
@@ -101,10 +101,7 @@ func NewHandler(
 	case "cryptocompare":
 		return origins.NewBaseExchangeHandler(origins.CryptoCompare{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "coinmarketcap":
-		apiKey, err := parseParamsAPIKey(params)
-		if err != nil {
-			return nil, err
-		}
+		apiKey := parseParamsAPIKey(params)
 		return origins.NewBaseExchangeHandler(
 			origins.CoinMarketCap{WorkerPool: wp, BaseURL: baseURL, APIKey: apiKey},
 			aliases,
@@ -114,10 +111,7 @@ func NewHandler(
 	case "folgory":
 		return origins.NewBaseExchangeHandler(origins.Folgory{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "fx":
-		apiKey, err := parseParamsAPIKey(params)
-		if err != nil {
-			return nil, err
-		}
+		apiKey := parseParamsAPIKey(params)
 		return origins.NewBaseExchangeHandler(
 			origins.Fx{WorkerPool: wp, BaseURL: baseURL, APIKey: apiKey},
 			aliases,
@@ -141,10 +135,7 @@ func NewHandler(
 	case "okx":
 		return origins.NewBaseExchangeHandler(origins.Okx{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "openexchangerates":
-		apiKey, err := parseParamsAPIKey(params)
-		if err != nil {
-			return nil, err
-		}
+		apiKey := parseParamsAPIKey(params)
 		return origins.NewBaseExchangeHandler(
 			origins.OpenExchangeRates{WorkerPool: wp, BaseURL: baseURL, APIKey: apiKey},
 			aliases,
@@ -152,70 +143,49 @@ func NewHandler(
 	case "poloniex":
 		return origins.NewBaseExchangeHandler(origins.Poloniex{WorkerPool: wp, BaseURL: baseURL}, aliases), nil
 	case "sushiswap":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		return origins.NewBaseExchangeHandler(origins.Sushiswap{
 			WorkerPool:        wp,
 			BaseURL:           baseURL,
 			ContractAddresses: contracts,
 		}, aliases), nil
 	case "curve", "curvefinance":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		h, err := origins.NewCurveFinance(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(*h, aliases), nil
 	case "balancerV2":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		h, err := origins.NewBalancerV2(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(*h, aliases), nil
 	case "wsteth":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		h, err := origins.NewWrappedStakedETH(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(*h, aliases), nil
 	case "rocketpool":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		h, err := origins.NewRocketPool(cli, contracts, averageFromBlocks)
 		if err != nil {
 			return nil, err
 		}
 		return origins.NewBaseExchangeHandler(*h, aliases), nil
 	case "uniswap", "uniswapV2":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		return origins.NewBaseExchangeHandler(origins.Uniswap{
 			WorkerPool:        wp,
 			BaseURL:           baseURL,
 			ContractAddresses: contracts,
 		}, aliases), nil
 	case "uniswapV3":
-		contracts, err := parseParamsContracts(params)
-		if err != nil {
-			return nil, err
-		}
+		contracts := parseParamsContracts(params)
 		return origins.NewBaseExchangeHandler(origins.UniswapV3{
 			WorkerPool:        wp,
 			BaseURL:           baseURL,

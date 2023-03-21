@@ -18,54 +18,47 @@ package main
 import (
 	"fmt"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
-	spectreConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 )
 
 type Config struct {
-	Ethereum ethereumConfig.Ethereum `json:"ethereum"`
-	Spectre  spectreConfig.Spectre   `json:"spectre"`
-}
+	Ethereum ethereumConfig.ConfigEthereum `hcl:"ethereum,block"`
+	Logger   *loggerConfig.ConfigLogger    `hcl:"logger,block"`
 
-func (c *Config) Configure() (ethereum.Client, ethereum.Signer, error) {
-	sig, err := c.Ethereum.ConfigureSigner()
-	if err != nil {
-		return nil, nil, err
-	}
-	cli, err := c.Ethereum.ConfigureEthereumClient(sig, null.New())
-	if err != nil {
-		return nil, nil, err
-	}
-	return cli, sig, nil
-}
-
-func (c *Config) Medianizers() map[string]spectreConfig.Medianizer {
-	return c.Spectre.Medianizers
+	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
 type Services struct {
-	Client ethereum.Client
-	Signer ethereum.Signer
+	Keys    ethereumConfig.KeyRegistry
+	Clients ethereumConfig.ClientRegistry
 }
 
 func PrepareServices(opts *options) (*Services, error) {
-	// Load config file:
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse configuration file: %w", err)
+		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-
-	// Services:
-	cli, sig, err := opts.Config.Configure()
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "spire",
+		BaseLogger: opts.Logger(),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to load Spire configuration: %w", err)
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-
+	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
 	return &Services{
-		Client: cli,
-		Signer: sig,
+		Keys:    keys,
+		Clients: clients,
 	}, nil
 }

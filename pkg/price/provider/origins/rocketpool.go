@@ -20,27 +20,27 @@ import (
 	_ "embed"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
+//nolint:staticcheck // deprecated ethereum.Client
 type RocketPool struct {
-	ethClient  ethereum.Client
-	addrs      ContractAddresses
-	abi        abi.ABI
-	circuitABI abi.ABI
-	blocks     []int64
+	ethClient ethereum.Client
+	addrs     ContractAddresses
+	abi       *abi.Contract
+	blocks    []int64
 }
 
 //go:embed rocketpool_abi.json
-var rocketPoolABI string
+var rocketPoolABI []byte
 
 func NewRocketPool(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*RocketPool, error) {
-	a, err := abi.JSON(strings.NewReader(rocketPoolABI))
+	a, err := abi.ParseJSON(rocketPoolABI)
 	if err != nil {
 		return nil, err
 	}
@@ -64,15 +64,15 @@ func (s RocketPool) callOne(pair Pair) (*Price, error) {
 
 	var callData []byte
 	if !inverted {
-		callData, err = s.abi.Pack("getExchangeRate")
+		callData, err = s.abi.Methods["getExchangeRate"].EncodeArgs()
 	} else {
-		callData, err = s.abi.Pack("getRethValue", big.NewInt(0).SetUint64(ether))
+		callData, err = s.abi.Methods["getRethValue"].EncodeArgs(big.NewInt(0).SetUint64(ether))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get contract args for pair: %s: %w", pair.String(), err)
 	}
 
-	resp, err := s.ethClient.CallBlocks(context.Background(), ethereum.Call{Address: contract, Data: callData}, s.blocks)
+	resp, err := s.ethClient.CallBlocks(context.Background(), types.Call{To: &contract, Input: callData}, s.blocks)
 	if err != nil {
 		return nil, err
 	}

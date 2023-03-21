@@ -20,79 +20,94 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/eventapi"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportevm"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportstarknet"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 type Config struct {
-	Lair      eventAPIConfig.EventAPI   `json:"lair"`
-	Transport transportConfig.Transport `json:"transport"`
-	Feeds     feedsConfig.Feeds         `json:"feeds"`
-	Logger    loggerConfig.Logger       `json:"logger"`
+	Lair      eventAPIConfig.ConfigEventAPI   `hcl:"lair,block"`
+	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
+	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
+	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
+	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
+
+	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
-		AppName:    "lair",
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "leeloo",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
+		return nil, fmt.Errorf(`logger config error: %w`, err)
+	}
+	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	fed, err := opts.Config.Feeds.Addresses()
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
+	feeds, err := opts.Config.Feeds.Addresses()
 	if err != nil {
 		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
-	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
-		Signer: geth.NewSigner(nil),
-		Feeds:  fed,
-		Logger: log,
-	},
-		map[string]transport.Message{messages.EventV1MessageName: (*messages.Event)(nil)},
-	)
+	transport, err := opts.Config.Transport.Transport(transportConfig.Dependencies{
+		Keys:    keys,
+		Clients: clients,
+		Feeds:   feeds,
+		Logger:  logger,
+		Messages: map[string]pkgTransport.Message{
+			messages.EventV1MessageName: (*messages.Event)(nil),
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	sto, err := opts.Config.Lair.ConfigureStorage()
+	storage, err := opts.Config.Lair.ConfigureStorage()
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
-	evs, err := store.New(store.Config{
+	eventStore, err := store.New(store.Config{
 		EventTypes: []string{teleportevm.TeleportEventType, teleportstarknet.TeleportEventType},
-		Storage:    sto,
-		Transport:  tra,
-		Logger:     log,
+		Storage:    storage,
+		Transport:  transport,
+		Logger:     logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
 	api, err := opts.Config.Lair.Configure(eventAPIConfig.Dependencies{
-		EventStore: evs,
-		Transport:  tra,
-		Logger:     log,
+		EventStore: eventStore,
+		Transport:  transport,
+		Logger:     logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
-	sup := supervisor.New(log)
-	sup.Watch(tra, evs, api, sysmon.New(time.Minute, log))
-	if l, ok := log.(supervisor.Service); ok {
-		sup.Watch(l)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(transport, eventStore, api, sysmon.New(time.Minute, logger))
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, nil
+	return supervisor, nil
 }

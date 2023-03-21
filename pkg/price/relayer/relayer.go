@@ -27,8 +27,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereumv2/types"
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
@@ -45,19 +46,15 @@ type Relayer struct {
 	ctx    context.Context
 	waitCh chan error
 
-	signer ethereum.Signer
-	store  *store.PriceStore
-	ticker *timeutil.Ticker
-	pairs  map[string]*Pair
-	log    log.Logger
+	store   *store.PriceStore
+	ticker  *timeutil.Ticker
+	pairs   map[string]*Pair
+	log     log.Logger
+	recover crypto.Recoverer
 }
 
 // Config is the configuration for Relayer.
 type Config struct {
-	// Signer is the signer which will be used to sign poke transactions to the
-	// Medianizer contracts.
-	Signer ethereum.Signer
-
 	// PriceStore is the price store which will be used to get the latest
 	// prices.
 	PriceStore *store.PriceStore
@@ -71,20 +68,24 @@ type Config struct {
 
 	// Logger is a current logger interface used by the Relayer.
 	Logger log.Logger
+
+	// Recoverer provides a method to recover the public key from a signature.
+	// The default is crypto.ECRecoverer.
+	Recoverer crypto.Recoverer
 }
 
 type Pair struct {
 	// AssetPair is the name of asset pair, e.g. ETHUSD.
 	AssetPair string
 
-	// OracleSpread is the minimum calcSpread between the Oracle price and new
+	// Spread is the minimum calcSpread between the Oracle price and new
 	// price required to send update.
-	OracleSpread float64
+	Spread float64
 
-	// OracleExpiration is the minimum time difference between the last Oracle
+	// Expiration is the minimum time difference between the last Oracle
 	// update on the Medianizer contract and current time required to send
 	// update.
-	OracleExpiration time.Duration
+	Expiration time.Duration
 
 	// Median is the instance of the oracle.Median which is the interface for
 	// the Medianizer contract.
@@ -103,22 +104,22 @@ type Pair struct {
 }
 
 func New(cfg Config) (*Relayer, error) {
-	if cfg.Signer == nil {
-		return nil, errors.New("signer must not be nil")
-	}
 	if cfg.PriceStore == nil {
 		return nil, errors.New("price store must not be nil")
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
+	if cfg.Recoverer == nil {
+		cfg.Recoverer = crypto.ECRecoverer
+	}
 	r := &Relayer{
-		waitCh: make(chan error),
-		signer: cfg.Signer,
-		store:  cfg.PriceStore,
-		ticker: cfg.PokeTicker,
-		pairs:  make(map[string]*Pair, len(cfg.Pairs)),
-		log:    cfg.Logger.WithField("tag", LoggerTag),
+		waitCh:  make(chan error),
+		store:   cfg.PriceStore,
+		ticker:  cfg.PokeTicker,
+		pairs:   make(map[string]*Pair, len(cfg.Pairs)),
+		log:     cfg.Logger.WithField("tag", LoggerTag),
+		recover: cfg.Recoverer,
 	}
 	for _, p := range cfg.Pairs {
 		r.pairs[p.AssetPair] = p
@@ -157,7 +158,7 @@ func (s *Relayer) Wait() <-chan error {
 // relay tries to update an Oracle contract for given pair.
 // In returns a transaction hash if the update was successful.
 // If update is not required, it returns nil.
-func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
+func (s *Relayer) relay(assetPair string) (*types.Hash, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -186,7 +187,7 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 	clearOlderThan(&prices, oracleTime)
 
 	// Remove prices from addresses outside the FeederAddresses list.
-	filterAddresses(&prices, pair.FeederAddresses, s.signer)
+	filterAddresses(&prices, pair.FeederAddresses, s.recover)
 
 	// Use only a minimum prices required to achieve a quorum.
 	// Using a different number of prices that specified in the bar field cause
@@ -200,8 +201,8 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 	// - Price differs from the current price by more than is specified in the
 	//   OracleSpread field.
 	spread := calcSpread(&prices, oraclePrice)
-	isExpired := oracleTime.Add(pair.OracleExpiration).Before(time.Now())
-	isStale := spread >= pair.OracleSpread
+	isExpired := oracleTime.Add(pair.Expiration).Before(time.Now())
+	isStale := spread >= pair.Spread
 
 	// Print logs.
 	s.log.
@@ -212,15 +213,15 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 			"val":              oraclePrice.String(),
 			"expired":          isExpired,
 			"stale":            isStale,
-			"oracleExpiration": pair.OracleExpiration.String(),
-			"oracleSpread":     pair.OracleSpread,
+			"oracleExpiration": pair.Expiration.String(),
+			"oracleSpread":     pair.Spread,
 			"timeToExpiration": time.Since(oracleTime).String(),
 			"currentSpread":    spread,
 		}).
 		Debug("Trying to update Oracle")
 	for _, price := range prices {
 		s.log.
-			WithFields(price.Price.Fields(s.signer)).
+			WithFields(price.Price.Fields(s.recover)).
 			Debug("Feed")
 	}
 
@@ -242,15 +243,17 @@ func (s *Relayer) relay(assetPair string) (*ethereum.Hash, error) {
 func (s *Relayer) syncFeederAddresses(p *Pair) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	// Get list of addresses from the contract.
 	addresses, err := p.Median.Feeds(s.ctx)
 	if err != nil {
 		return err
 	}
+
 	// Update the list.
 	p.FeederAddresses = nil
 	for _, addr := range addresses {
-		p.FeederAddresses = append(p.FeederAddresses, types.Address(addr))
+		p.FeederAddresses = append(p.FeederAddresses, addr)
 	}
 	return nil
 }
@@ -338,10 +341,10 @@ func truncate(p *[]*messages.Price, n int64) {
 
 // filterAddresses removes all prices from the slice that are not signed by
 // addresses from the list.
-func filterAddresses(p *[]*messages.Price, addrs []types.Address, s ethereum.Signer) {
+func filterAddresses(p *[]*messages.Price, addrs []types.Address, r crypto.Recoverer) {
 	var prices []*messages.Price
 	for _, price := range *p {
-		feedAddr, err := price.Price.From(s)
+		feedAddr, err := price.Price.From(r)
 		if err != nil {
 			continue
 		}

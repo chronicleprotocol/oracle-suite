@@ -17,19 +17,14 @@ package geth
 
 import (
 	"context"
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
-	"regexp"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/types"
 
-	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 const (
@@ -45,282 +40,186 @@ const (
 // the Client.MultiCall function.
 //
 // https://github.com/makerdao/multicall
-var multiCallContracts = map[uint64]common.Address{
-	mainnetChainID: common.HexToAddress("0xeefba1e63905ef1d7acba5a8513c70307c1ce441"),
-	kovanChainID:   common.HexToAddress("0x2cc8688c5f75e365aaeeb4ea8d6a480405a48d2a"),
-	rinkebyChainID: common.HexToAddress("0x42ad527de7d4e9d9d011ac45b31d8551f8fe9821"),
-	gorliChainID:   common.HexToAddress("0x77dca2c955b15e9de4dbbcf1246b4b85b651e50e"),
-	ropstenChainID: common.HexToAddress("0x53c43764255c17bd724f74c4ef150724ac50a3ed"),
-	xdaiChainID:    common.HexToAddress("0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"),
+var multiCallContracts = map[uint64]types.Address{
+	mainnetChainID: types.MustAddressFromHex("0xeefba1e63905ef1d7acba5a8513c70307c1ce441"),
+	kovanChainID:   types.MustAddressFromHex("0x2cc8688c5f75e365aaeeb4ea8d6a480405a48d2a"),
+	rinkebyChainID: types.MustAddressFromHex("0x42ad527de7d4e9d9d011ac45b31d8551f8fe9821"),
+	gorliChainID:   types.MustAddressFromHex("0x77dca2c955b15e9de4dbbcf1246b4b85b651e50e"),
+	ropstenChainID: types.MustAddressFromHex("0x53c43764255c17bd724f74c4ef150724ac50a3ed"),
+	xdaiChainID:    types.MustAddressFromHex("0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"),
 }
 
-var ErrMulticallNotSupported = errors.New("multicall is not supported on current chain")
-var ErrInvalidSignedTxType = errors.New("unable to send transaction, SignedTx field have invalid type")
+type Client struct{ client rpc.RPC }
 
-// ErrRevert may be returned by Client.Call method in case of EVM revert.
-type ErrRevert struct {
-	Message string
-	Err     error
+func NewClient(client rpc.RPC) *Client {
+	return &Client{client: client}
 }
 
-func (e ErrRevert) Error() string {
-	return fmt.Sprintf("reverted: %s", e.Message)
-}
-
-func (e ErrRevert) Unwrap() error {
-	return e.Err
-}
-
-// EthClient represents the Ethereum client, like the ethclient.Client.
-type EthClient interface {
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
-	StorageAt(ctx context.Context, account common.Address, key common.Hash, block *big.Int) ([]byte, error)
-	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
-	CallContract(ctx context.Context, call ethereum.CallMsg, block *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, account common.Address, block *big.Int) (uint64, error)
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
-	NetworkID(ctx context.Context) (*big.Int, error)
-	BlockNumber(ctx context.Context) (uint64, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error)
-}
-
-// Client implements the ethereum.Client interface.
-type Client struct {
-	ethClient EthClient
-	chainID   *big.Int
-	signer    pkgEthereum.Signer
-}
-
-// NewClient returns a new Client instance.
-func NewClient(ethClient EthClient, signer pkgEthereum.Signer) *Client {
-	return &Client{
-		ethClient: ethClient,
-		signer:    signer,
-	}
-}
-
-// BlockNumber implements the ethereum.Client interface.
-func (e *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
-	n, err := e.ethClient.BlockNumber(ctx)
+func (c *Client) BlockNumber(ctx context.Context) (*big.Int, error) {
+	bn, err := c.client.BlockNumber(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return new(big.Int).SetUint64(n), nil
+	return bn, nil
 }
 
-// Block implements the ethereum.Client interface.
-func (e *Client) Block(ctx context.Context) (*types.Block, error) {
-	return e.ethClient.BlockByNumber(ctx, pkgEthereum.BlockNumberFromContext(ctx))
+func (c *Client) Block(ctx context.Context) (*types.Block, error) {
+	return c.client.BlockByNumber(ctx, blockNumberFromContext(ctx), false)
 }
 
-// Call implements the ethereum.Client interface.
-func (e *Client) Call(ctx context.Context, call pkgEthereum.Call) ([]byte, error) {
-	addr := common.Address{}
-	if e.signer != nil {
-		addr = e.signer.Address()
-	}
-
-	cm := ethereum.CallMsg{
-		From:     addr,
-		To:       &call.Address,
-		Gas:      0,
-		GasPrice: nil,
-		Value:    nil,
-		Data:     call.Data,
-	}
-
-	resp, err := e.ethClient.CallContract(ctx, cm, pkgEthereum.BlockNumberFromContext(ctx))
-	if err := isRevertErr(err); err != nil {
-		return nil, err
-	}
-	if err := isRevertResp(resp); err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, err
+func (c *Client) Call(ctx context.Context, call types.Call) ([]byte, error) {
+	return c.client.Call(ctx, call, blockNumberFromContext(ctx))
 }
 
-func (e *Client) CallBlocks(ctx context.Context, call pkgEthereum.Call, blocks []int64) ([][]byte, error) {
-	blockNumber, err := e.BlockNumber(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get block number: %w", err)
-	}
-
-	var resps [][]byte
+func (c *Client) CallBlocks(ctx context.Context, call types.Call, blocks []int64) ([][]byte, error) {
+	var res [][]byte
 	for _, block := range blocks {
-		r, err := e.Call(
-			pkgEthereum.WithBlockNumber(ctx, new(big.Int).Sub(blockNumber, big.NewInt(block))),
-			call,
-		)
+		bn := types.BlockNumberFromUint64(uint64(block))
+		r, err := c.client.Call(ctx, call, bn)
 		if err != nil {
 			return nil, err
 		}
-		resps = append(resps, r)
+		res = append(res, r)
 	}
-
-	return resps, nil
+	return res, nil
 }
 
-// MultiCall implements the ethereum.Client interface.
-func (e *Client) MultiCall(ctx context.Context, calls []pkgEthereum.Call) ([][]byte, error) {
-	type abiCall struct {
-		Address common.Address `abi:"target"`
-		Data    []byte         `abi:"callData"`
+func (c *Client) MultiCall(ctx context.Context, calls []types.Call) ([][]byte, error) {
+	type multicallCall struct {
+		Target types.Address `abi:"target"`
+		Data   []byte        `abi:"callData"`
 	}
-	var abiCalls []abiCall
-	for _, c := range calls {
-		abiCalls = append(abiCalls, abiCall{
-			Address: c.Address,
-			Data:    c.Data,
+	var (
+		multicallCalls   []multicallCall
+		multicallResults [][]byte
+	)
+	for _, call := range calls {
+		if call.To == nil {
+			return nil, fmt.Errorf("multicall: call to nil address")
+		}
+		multicallCalls = append(multicallCalls, multicallCall{
+			Target: *call.To,
+			Data:   call.Input,
 		})
 	}
-	chainID, err := e.getChainID(ctx)
+	chainID, err := c.client.ChainID(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("multicall: getting chain id failed: %w", err)
 	}
-	multicallAddr, ok := multiCallContracts[chainID.Uint64()]
+	multicallContract, ok := multiCallContracts[chainID]
 	if !ok {
-		return nil, ErrMulticallNotSupported
+		return nil, fmt.Errorf("multicall: unsupported chain id %d", chainID)
 	}
-	callData, err := multiCallABI.Pack("aggregate", abiCalls)
+	callata, err := multicallMethod.EncodeArgs(multicallCalls)
+	if err != nil {
+		return nil, fmt.Errorf("multicall: encoding arguments failed: %w", err)
+	}
+	resp, err := c.client.Call(ctx, types.Call{
+		To:    &multicallContract,
+		Input: callata,
+	}, types.LatestBlockNumber)
+	if err != nil {
+		return nil, fmt.Errorf("multicall: call failed: %w", err)
+	}
+	if err := multicallMethod.DecodeValues(resp, nil, &multicallResults); err != nil {
+		return nil, fmt.Errorf("multicall: decoding results failed: %w", err)
+	}
+	return multicallResults, nil
+}
+
+func (c *Client) Storage(ctx context.Context, address types.Address, key types.Hash) ([]byte, error) {
+	hash, err := c.client.GetStorageAt(ctx, address, key, blockNumberFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}
-	response, err := e.Call(ctx, pkgEthereum.Call{Address: multicallAddr, Data: callData})
+	return hash.Bytes(), nil
+}
+
+func (c *Client) Balance(ctx context.Context, address types.Address) (*big.Int, error) {
+	balance, err := c.client.GetBalance(ctx, address, blockNumberFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}
-	results, err := multiCallABI.Unpack("aggregate", response)
-	if err != nil {
-		return nil, err
-	}
-	return results[1].([][]byte), nil
+	return balance, nil
 }
 
-// Storage implements the ethereum.Client interface.
-func (e *Client) Storage(ctx context.Context, address pkgEthereum.Address, key pkgEthereum.Hash) ([]byte, error) {
-	return e.ethClient.StorageAt(ctx, address, key, pkgEthereum.BlockNumberFromContext(ctx))
-}
-
-// Balance implements the ethereum.Client interface.
-func (e *Client) Balance(ctx context.Context, address pkgEthereum.Address) (*big.Int, error) {
-	return e.ethClient.BalanceAt(ctx, address, pkgEthereum.BlockNumberFromContext(ctx))
-}
-
-// SendTransaction implements the ethereum.Client interface.
-func (e *Client) SendTransaction(ctx context.Context, transaction *pkgEthereum.Transaction) (*pkgEthereum.Hash, error) {
+func (c *Client) SendTransaction(ctx context.Context, transaction *types.Transaction) (*types.Hash, error) {
 	var err error
 
-	// We don't want to modify passed structure because that would be rude, so
-	// we copy it here:
-	tx := &pkgEthereum.Transaction{
-		Address:     transaction.Address,
-		Nonce:       transaction.Nonce,
-		PriorityFee: transaction.PriorityFee,
-		MaxFee:      transaction.MaxFee,
-		GasLimit:    transaction.GasLimit,
-		ChainID:     transaction.ChainID,
-		SignedTx:    transaction.SignedTx,
+	if transaction.From == nil {
+		return nil, fmt.Errorf("transaction must have a sender")
 	}
-	tx.Data = make([]byte, len(transaction.Data))
-	copy(tx.Data, transaction.Data)
+
+	tx := &types.Transaction{
+		Call: types.Call{
+			From:                 transaction.From,
+			To:                   transaction.To,
+			MaxPriorityFeePerGas: transaction.MaxPriorityFeePerGas,
+			MaxFeePerGas:         transaction.MaxFeePerGas,
+			GasLimit:             transaction.GasLimit,
+		},
+		Nonce:     transaction.Nonce,
+		ChainID:   transaction.ChainID,
+		Signature: transaction.Signature,
+	}
+	tx.Input = make([]byte, len(transaction.Input))
+	copy(tx.Input, transaction.Input)
 
 	// Fill optional values if necessary:
-	if tx.Nonce == 0 {
-		tx.Nonce, err = e.ethClient.PendingNonceAt(ctx, e.signer.Address())
+	if tx.Nonce == nil {
+		nonce, err := c.client.GetTransactionCount(ctx, *tx.From, types.LatestBlockNumber)
 		if err != nil {
 			return nil, err
 		}
+		tx.SetNonce(nonce)
 	}
-	if tx.PriorityFee == nil {
-		suggestedGasTipPrice, err := e.ethClient.SuggestGasTipCap(ctx)
+	if tx.MaxFeePerGas == nil {
+		suggestedGasTipPrice, err := c.client.MaxPriorityFeePerGas(ctx)
 		if err != nil {
 			return nil, err
 		}
-		tx.PriorityFee = suggestedGasTipPrice
+		tx.SetMaxPriorityFeePerGas(suggestedGasTipPrice)
 	}
-	if tx.MaxFee == nil {
-		suggestedGasPrice, err := e.ethClient.SuggestGasPrice(ctx)
+	if tx.MaxFeePerGas == nil {
+		suggestedGasPrice, err := c.client.GasPrice(ctx)
 		if err != nil {
 			return nil, err
 		}
-		tx.MaxFee = new(big.Int).Mul(suggestedGasPrice, big.NewInt(2))
+		tx.SetMaxFeePerGas(new(big.Int).Mul(suggestedGasPrice, big.NewInt(2)))
 	}
 	if tx.ChainID == nil {
-		tx.ChainID, err = e.getChainID(ctx)
+		chainID, err := c.client.ChainID(ctx)
 		if err != nil {
 			return nil, err
 		}
-	}
-	if tx.SignedTx == nil {
-		err = e.signer.SignTransaction(tx)
-		if err != nil {
-			return nil, err
-		}
+		tx.SetChainID(chainID)
 	}
 
 	// Send transaction:
-	if stx, ok := tx.SignedTx.(*types.Transaction); ok {
-		hash := stx.Hash()
-		return &hash, e.ethClient.SendTransaction(ctx, stx)
-	}
-	return nil, ErrInvalidSignedTxType
-}
-
-// FilterLogs implements the ethereum.Client interface.
-func (e *Client) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
-	return e.ethClient.FilterLogs(ctx, query)
-}
-
-func (e *Client) getChainID(ctx context.Context) (*big.Int, error) {
-	if e.chainID == nil {
-		var err error
-		e.chainID, err = e.ethClient.NetworkID(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return e.chainID, nil
-}
-
-func isRevertResp(resp []byte) error {
-	revert, err := abi.UnpackRevert(resp)
+	hash, err := c.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-
-	return ErrRevert{Message: revert, Err: nil}
+	return hash, nil
 }
 
-func isRevertErr(vmErr error) error {
-	if terr, is := vmErr.(rpc.DataError); is {
-		// Some RPC servers returns "revert" data as a hex encoded string, here
-		// we're trying to parse it:
-		if str, ok := terr.ErrorData().(string); ok {
-			re := regexp.MustCompile("(0x[a-zA-Z0-9]+)")
-			match := re.FindStringSubmatch(str)
-
-			if len(match) == 2 && len(match[1]) > 2 {
-				bytes, err := hex.DecodeString(match[1][2:])
-				if err != nil {
-					return nil
-				}
-
-				revert, err := abi.UnpackRevert(bytes)
-				if err != nil {
-					return nil
-				}
-
-				return ErrRevert{Message: revert, Err: vmErr}
-			}
-		}
-	}
-
-	return nil
+func (c *Client) FilterLogs(ctx context.Context, query types.FilterLogsQuery) ([]types.Log, error) {
+	return c.client.GetLogs(ctx, query)
 }
+
+func blockNumberFromContext(ctx context.Context) types.BlockNumber {
+	bn := ethereum.BlockNumberFromContext(ctx)
+	if bn == nil {
+		return types.LatestBlockNumber
+	}
+	return types.BlockNumberFromBigInt(bn)
+}
+
+var multicallMethod = abi.MustParseMethod(`
+	function aggregate(
+		(address target, bytes callData)[] memory calls
+	) public returns (
+		uint256 blockNumber, 
+		bytes[] memory returnData
+	)`,
+)

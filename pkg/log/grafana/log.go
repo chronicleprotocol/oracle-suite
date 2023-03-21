@@ -146,7 +146,6 @@ const (
 	Replace OnDuplicate = iota // Replace the current value.
 	Ignore                     // Use previous value.
 	Sum                        // Add to the current value.
-	Sub                        // Subtract from the current value.
 	Max                        // Use higher value.
 	Min                        // Use lower value.
 )
@@ -343,9 +342,6 @@ func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
 		c.metricPoints[mk] = mv
 	case exists && m.OnDuplicate == Sum:
 		mv.value += cv.value
-		c.metricPoints[mk] = mv
-	case exists && m.OnDuplicate == Sub:
-		mv.value -= cv.value
 		c.metricPoints[mk] = mv
 	case exists && m.OnDuplicate == Min:
 		if mv.value < cv.value {

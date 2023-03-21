@@ -18,26 +18,25 @@ package feeder
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"errors"
 	"math/big"
 	"sort"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/defiweb/go-eth/hexutil"
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	priceMocks "github.com/chronicleprotocol/oracle-suite/pkg/price/provider/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
@@ -87,25 +86,25 @@ var (
 		Prices:    nil,
 		Error:     "err",
 	}
-	PriceAAABBBHash = errutil.Must(hex.DecodeString("9315c7118c32ce6c778bf691147c554afd2dc816b5c6bd191ac03784f69aa004"))
-	PriceXXXYYYHash = errutil.Must(hex.DecodeString("8dd1c8d47ec9eafda294cfc8c0c8d4041a13d7a89536a89eb6685a79d9fa6bc4"))
+	PriceAAABBBHash = types.MustHashFromHex("9315c7118c32ce6c778bf691147c554afd2dc816b5c6bd191ac03784f69aa004", types.PadNone)
+	PriceXXXYYYHash = types.MustHashFromHex("8dd1c8d47ec9eafda294cfc8c0c8d4041a13d7a89536a89eb6685a79d9fa6bc4", types.PadNone)
 )
 
 func TestFeeder_Broadcast(t *testing.T) {
 	tests := []struct {
 		name    string
 		prices  int
-		mocks   func(*priceMocks.Provider, *ethereumMocks.Signer)
+		mocks   func(*priceMocks.Provider, *ethereumMocks.Key)
 		asserts func(t *testing.T, pricesV0, pricesV1 []*messages.Price)
 	}{
 		{
 			name:   "valid-prices",
 			prices: 2,
-			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Signer) {
+			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Key) {
 				pro.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return(PriceAAABBB, nil).Times(1)
 				pro.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY, nil).Times(1)
-				sig.On("Signature", PriceAAABBBHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
-				sig.On("Signature", PriceXXXYYYHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+				sig.On("SignMessage", PriceAAABBBHash.Bytes()).Return(types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65)), nil)
+				sig.On("SignMessage", PriceXXXYYYHash.Bytes()).Return(types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65)), nil)
 			},
 			asserts: func(t *testing.T, pricesV0, pricesV1 []*messages.Price) {
 				require.Len(t, pricesV0, 2)
@@ -119,10 +118,10 @@ func TestFeeder_Broadcast(t *testing.T) {
 		{
 			name:   "invalid-price",
 			prices: 1,
-			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Signer) {
+			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Key) {
 				pro.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return(InvalidPriceAAABBB, nil).Times(1)
 				pro.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY, nil).Times(1)
-				sig.On("Signature", PriceXXXYYYHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+				sig.On("SignMessage", PriceXXXYYYHash.Bytes()).Return(types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65)), nil)
 			},
 			asserts: func(t *testing.T, pricesV0, pricesV1 []*messages.Price) {
 				require.Len(t, pricesV0, 1)
@@ -134,10 +133,10 @@ func TestFeeder_Broadcast(t *testing.T) {
 		{
 			name:   "price-unavailable",
 			prices: 1,
-			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Signer) {
+			mocks: func(pro *priceMocks.Provider, sig *ethereumMocks.Key) {
 				pro.On("Price", provider.Pair{Base: "AAA", Quote: "BBB"}).Return((*provider.Price)(nil), errors.New("err")).Times(1)
 				pro.On("Price", provider.Pair{Base: "XXX", Quote: "YYY"}).Return(PriceXXXYYY, nil).Times(1)
-				sig.On("Signature", PriceXXXYYYHash).Return(ethereum.SignatureFromBytes(bytes.Repeat([]byte{0xAA}, 65)), nil)
+				sig.On("SignMessage", PriceXXXYYYHash.Bytes()).Return(types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65)), nil)
 			},
 			asserts: func(t *testing.T, pricesV0, pricesV1 []*messages.Price) {
 				require.Len(t, pricesV0, 1)
@@ -154,7 +153,8 @@ func TestFeeder_Broadcast(t *testing.T) {
 
 			// Prepare feeder services.
 			priceProvider := &priceMocks.Provider{}
-			signer := &ethereumMocks.Signer{}
+			signer := &ethereumMocks.Key{}
+
 			ticker := timeutil.NewTicker(0)
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
 				messages.PriceV0MessageName: (*messages.Price)(nil),
@@ -224,7 +224,7 @@ func TestFeeder_InvalidConfig(t *testing.T) {
 			name: "minimal-valid-config",
 			cfg: Config{
 				PriceProvider: &priceMocks.Provider{},
-				Signer:        &ethereumMocks.Signer{},
+				Signer:        &ethereumMocks.Key{},
 				Transport:     local.New([]byte("test"), 0, nil),
 			},
 			wantErr: false,
@@ -233,7 +233,7 @@ func TestFeeder_InvalidConfig(t *testing.T) {
 			name: "invalid-pair",
 			cfg: Config{
 				PriceProvider: &priceMocks.Provider{},
-				Signer:        &ethereumMocks.Signer{},
+				Signer:        &ethereumMocks.Key{},
 				Transport:     local.New([]byte("test"), 0, nil),
 				Pairs:         []string{"AAABBB"},
 			},
@@ -243,7 +243,7 @@ func TestFeeder_InvalidConfig(t *testing.T) {
 			name: "missing-price-provider",
 			cfg: Config{
 				PriceProvider: nil,
-				Signer:        &ethereumMocks.Signer{},
+				Signer:        &ethereumMocks.Key{},
 				Transport:     local.New([]byte("test"), 0, nil),
 			},
 			wantErr: true,
@@ -261,7 +261,7 @@ func TestFeeder_InvalidConfig(t *testing.T) {
 			name: "missing-transport",
 			cfg: Config{
 				PriceProvider: &priceMocks.Provider{},
-				Signer:        &ethereumMocks.Signer{},
+				Signer:        &ethereumMocks.Key{},
 				Transport:     nil,
 			},
 			wantErr: true,
@@ -284,7 +284,7 @@ func TestFeeder_Start(t *testing.T) {
 	defer ctxCancel()
 
 	pro := &priceMocks.Provider{}
-	sig := &ethereumMocks.Signer{}
+	sig := &ethereumMocks.Key{}
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{})
 	_ = tra.Start(ctx)
 	defer func() {
@@ -310,7 +310,7 @@ func assertPrice(t *testing.T, expected *provider.Price, actual *messages.Price)
 	assert.Equal(t, actual.Price.Age.Unix(), expected.Time.Unix())
 	assert.Equal(t, actual.Price.Wat, expected.Pair.Base+expected.Pair.Quote)
 	assert.Equal(t, p/median.PriceMultiplier, expected.Price)
-	assert.Equal(t, actual.Price.V, byte(0xAA))
-	assert.Equal(t, actual.Price.R, [32]byte(common.HexToHash("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
-	assert.Equal(t, actual.Price.S, [32]byte(common.HexToHash("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
+	assert.Equal(t, actual.Price.Sig.V, big.NewInt(0xAA))
+	assert.Equal(t, actual.Price.Sig.R.Bytes(), hexutil.MustHexToBytes("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	assert.Equal(t, actual.Price.Sig.S.Bytes(), hexutil.MustHexToBytes("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 }

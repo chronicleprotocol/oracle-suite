@@ -16,21 +16,17 @@
 package ethkey
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/defiweb/go-eth/wallet"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 )
 
 func TestPubKey_Equals(t *testing.T) {
 	pub1 := NewPubKey(testAddress1)
 	pub2 := NewPubKey(testAddress2)
 
-	assert.True(t, pub1.Equals(pub1)) // nolint:gocritic
+	assert.True(t, pub1.Equals(pub1))
 	assert.False(t, pub1.Equals(pub2))
 }
 
@@ -47,30 +43,22 @@ func TestPubKey_Type(t *testing.T) {
 }
 
 func TestPubKey_Verify(t *testing.T) {
-	sig := &mocks.Signer{}
-	ethSig := ethereum.SignatureFromBytes([]byte("bar"))
-	orgSigner := NewSigner
-	NewSigner = func() ethereum.Signer { return sig }
-	pub := NewPubKey(testAddress1)
+	key1 := wallet.NewRandomKey()
+	key2 := wallet.NewRandomKey()
+	sig1, _ := key1.SignMessage([]byte("foo"))
+	sig2, _ := key2.SignMessage([]byte("foo"))
+
+	pub := NewPubKey(key1.Address())
 	bts := []byte("foo")
 
-	// Valid:
-	sig.On("Recover", ethSig, []byte("foo")).Return(&testAddress1, nil).Once()
-	ok, err := pub.Verify(bts, ethSig.Bytes())
-	assert.True(t, ok)
-	assert.NoError(t, err)
-
-	// Invalid:
-	sig.On("Recover", ethSig, []byte("foo")).Return(&testAddress2, nil).Once()
-	ok, err = pub.Verify(bts, ethSig.Bytes())
-	assert.False(t, ok)
-	assert.NoError(t, err)
-
-	// Error:
-	sig.On("Recover", ethSig, []byte("foo")).Return((*common.Address)(nil), errors.New("err")).Once()
-	ok, err = pub.Verify(bts, ethSig.Bytes())
-	assert.False(t, ok)
-	assert.Error(t, err)
-
-	NewSigner = orgSigner
+	t.Run("valid", func(t *testing.T) {
+		ok, err := pub.Verify(bts, sig1.Bytes())
+		assert.True(t, ok)
+		assert.NoError(t, err)
+	})
+	t.Run("invalid", func(t *testing.T) {
+		ok, err := pub.Verify(bts, sig2.Bytes())
+		assert.False(t, ok)
+		assert.NoError(t, err)
+	})
 }

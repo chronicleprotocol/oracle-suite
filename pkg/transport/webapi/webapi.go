@@ -19,9 +19,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
+	"github.com/defiweb/go-eth/wallet"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -121,21 +123,24 @@ type WebAPI struct {
 
 	// State fields:
 	messagePack *pb.MessagePack                                        // Message pack to be sent on next flush.
-	lastReqs    map[ethereum.Address]time.Time                         // Last timestamp received from each producer.
+	lastReqs    map[types.Address]time.Time                            // Last timestamp received from each producer.
 	msgCh       map[string]chan transport.ReceivedMessage              // Channels for received messages.
 	msgChFO     map[string]*chanutil.FanOut[transport.ReceivedMessage] // Fan-out channels for received messages.
 
 	// Configuration fields:
 	addressBook  AddressBook
 	topics       map[string]transport.Message
-	allowlist    []ethereum.Address
+	allowlist    []types.Address
 	flushTicker  *timeutil.Ticker
-	signer       ethereum.Signer
+	signer       wallet.Key
 	client       *http.Client
 	server       *httpserver.HTTPServer
 	rand         io.Reader
 	maxClockSkew time.Duration
 	log          log.Logger
+
+	// Internal fields:
+	recover crypto.Recoverer
 }
 
 // Config is a configuration of WebAPI.
@@ -160,7 +165,7 @@ type Config struct {
 
 	// AuthorAllowlist is a list of allowed message authors. Only messages from
 	// these addresses will be accepted.
-	AuthorAllowlist []ethereum.Address
+	AuthorAllowlist []types.Address
 
 	// FlushTicker specifies how often the producer will flush messages
 	// to the consumers. If FlushTicker is nil, default ticker with 1 minute
@@ -170,7 +175,7 @@ type Config struct {
 	FlushTicker *timeutil.Ticker
 
 	// Signer used to sign and verify messages.
-	Signer ethereum.Signer
+	Signer wallet.Key
 
 	// Timeout is a timeout for HTTP requests.
 	//
@@ -250,12 +255,13 @@ func New(cfg Config) (*WebAPI, error) {
 		client:       client,
 		server:       server,
 		signer:       cfg.Signer,
-		lastReqs:     make(map[ethereum.Address]time.Time),
+		lastReqs:     make(map[types.Address]time.Time),
 		msgCh:        make(map[string]chan transport.ReceivedMessage),
 		msgChFO:      make(map[string]*chanutil.FanOut[transport.ReceivedMessage]),
 		maxClockSkew: cfg.MaxClockSkew,
 		rand:         cfg.Rand,
 		log:          cfg.Logger.WithField("tag", LoggerTag),
+		recover:      crypto.ECRecoverer,
 	}
 	w.server.SetHandler(http.HandlerFunc(w.consumeHandler))
 	return w, nil
@@ -438,7 +444,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Verify the request URL signature.
-	requestAuthor, timestamp, err := verifyURL(req.URL.String(), w.signer)
+	requestAuthor, timestamp, err := verifyURL(req.URL.String(), w.recover)
 	if err != nil {
 		w.log.WithFields(fields).WithError(err).Debug("Invalid request signature")
 		res.WriteHeader(http.StatusBadRequest)
@@ -502,7 +508,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// Verify the message signature and verify that the author of the message
 	// is same as the author of the request. There is no scenario in which the
 	// author of the message and the request author can be different.
-	messagePackAuthor, err := verifyMessage(mp, w.signer)
+	messagePackAuthor, err := verifyMessage(mp, w.recover)
 	if err != nil {
 		w.log.WithFields(fields).WithError(err).Warn("Invalid message pack signature")
 		res.WriteHeader(http.StatusBadRequest)
@@ -577,13 +583,13 @@ func (w *WebAPI) contextCancelHandler() {
 //  t: Unix timestamp of the signature as a 10-base integer.
 //  r: Random 16-byte value encoded in hex.
 //  s: Signature created by signing the concatenation of t and r.
-func signURL(url string, tm time.Time, signer ethereum.Signer, rand io.Reader) (string, error) {
+func signURL(url string, tm time.Time, signer wallet.Key, rand io.Reader) (string, error) {
 	r := make([]byte, 16)
 	if _, err := rand.Read(r); err != nil {
 		return "", err
 	}
 	t := strconv.FormatInt(tm.Unix(), 10)
-	s, err := signer.Signature([]byte(t + hex.EncodeToString(r)))
+	s, err := signer.SignMessage([]byte(t + hex.EncodeToString(r)))
 	if err != nil {
 		return "", err
 	}
@@ -592,7 +598,7 @@ func signURL(url string, tm time.Time, signer ethereum.Signer, rand io.Reader) (
 
 // verifyURL verifies URL signature calculated by signURL and returns signer
 // address and timestamp.
-func verifyURL(url string, signer ethereum.Signer) (*ethereum.Address, time.Time, error) {
+func verifyURL(url string, recover crypto.Recoverer) (*types.Address, time.Time, error) {
 	p, err := netURL.Parse(url)
 	if err != nil {
 		return nil, time.Time{}, err
@@ -606,7 +612,7 @@ func verifyURL(url string, signer ethereum.Signer) (*ethereum.Address, time.Time
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	addr, err := signer.Recover(ethereum.SignatureFromBytes(s), []byte(q.Get("t")+q.Get("r")))
+	addr, err := recover.RecoverMessage([]byte(q.Get("t")+q.Get("r")), types.MustSignatureFromBytes(s))
 	if err != nil {
 		return nil, time.Time{}, err
 	}
@@ -614,8 +620,8 @@ func verifyURL(url string, signer ethereum.Signer) (*ethereum.Address, time.Time
 }
 
 // signMessage signs the given message pack with the signer's private key.
-func signMessage(msg *pb.MessagePack, signer ethereum.Signer) error {
-	sig, err := signer.Signature(messageSigningData(msg))
+func signMessage(msg *pb.MessagePack, signer wallet.Key) error {
+	sig, err := signer.SignMessage(messageSigningData(msg))
 	if err != nil {
 		return err
 	}
@@ -624,8 +630,8 @@ func signMessage(msg *pb.MessagePack, signer ethereum.Signer) error {
 }
 
 // verifyMessage verifies message pack signature and returns signer address.
-func verifyMessage(msg *pb.MessagePack, signer ethereum.Signer) (*ethereum.Address, error) {
-	return signer.Recover(ethereum.SignatureFromBytes(msg.Signature), messageSigningData(msg))
+func verifyMessage(msg *pb.MessagePack, recover crypto.Recoverer) (*types.Address, error) {
+	return recover.RecoverMessage(messageSigningData(msg), types.MustSignatureFromBytes(msg.Signature))
 }
 
 // messageSigningData returns the data used to sign the given message pack.

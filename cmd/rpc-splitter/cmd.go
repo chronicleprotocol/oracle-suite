@@ -61,7 +61,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		&opts.GracefulTimeoutSec,
 		"graceful-timeout", "g",
 		1,
-		"set timeout to graceful finish requests to slower RPC nodes",
+		"set timeout to graceful finish requests to slower RPCURLs nodes",
 	)
 	rootCmd.PersistentFlags().IntVarP(
 		&opts.TotalTimeoutSec,
@@ -79,7 +79,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		&opts.EthRPCURLs,
 		"eth-rpc",
 		[]string{},
-		"list of ethereum RPC nodes",
+		"list of ethereum RPCURLs nodes",
 	)
 	err := rootCmd.MarkPersistentFlagRequired("eth-rpc")
 	if err != nil {

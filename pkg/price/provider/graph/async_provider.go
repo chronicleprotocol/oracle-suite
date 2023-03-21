@@ -42,7 +42,7 @@ type AsyncProvider struct {
 
 // NewAsyncProvider returns a new AsyncGofer instance.
 func NewAsyncProvider(
-	graph map[provider.Pair]nodes.Aggregator,
+	graph map[provider.Pair]nodes.Node,
 	feeder *feeder.Feeder,
 	nodes []nodes.Node,
 	logger log.Logger,

@@ -48,13 +48,17 @@ type Sequencer interface {
 type Config struct {
 	// Sequencer is an instance of Ethereum RPC sequencer.
 	Sequencer Sequencer
+
 	// Addresses is a list of contracts from which events will be fetched.
 	Addresses []*starknet.Felt
+
 	// Interval specifies how often provider should check for new events.
 	Interval time.Duration
+
 	// PrefetchPeriod specifies how far back in time provider should prefetch
 	// events. It is used only during the initial start of the provider.
 	PrefetchPeriod time.Duration
+
 	// Logger is an instance of a logger. Logger is used mostly to report
 	// recoverable errors.
 	Logger log.Logger

@@ -20,7 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
+	"github.com/defiweb/go-eth/wallet"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -34,7 +37,8 @@ type Nothing = struct{}
 type API struct {
 	transport  transport.Transport
 	priceStore *store.PriceStore
-	signer     ethereum.Signer
+	signer     wallet.Key
+	recover    crypto.Recoverer
 	log        log.Logger
 }
 
@@ -62,7 +66,7 @@ type PullPriceResp struct {
 
 func (n *API) PublishPrice(arg *PublishPriceArg, _ *Nothing) error {
 	n.log.
-		WithFields(arg.Price.Price.Fields(n.signer)).
+		WithFields(arg.Price.Price.Fields(n.recover)).
 		Info("Publish price")
 
 	if err := n.transport.Broadcast(messages.PriceV0MessageName, arg.Price.AsV0()); err != nil {
@@ -89,7 +93,7 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 
 	switch {
 	case arg.FilterAssetPair != "" && arg.FilterFeeder != "":
-		price, err := n.priceStore.GetByFeeder(ctx, arg.FilterAssetPair, ethereum.HexToAddress(arg.FilterFeeder))
+		price, err := n.priceStore.GetByFeeder(ctx, arg.FilterAssetPair, types.MustAddressFromHex(arg.FilterFeeder))
 		if err != nil {
 			return err
 		}
@@ -133,7 +137,7 @@ func (n *API) PullPrice(arg *PullPriceArg, resp *PullPriceResp) error {
 		WithField("feeder", arg.Feeder).
 		Info("Pull price")
 
-	price, err := n.priceStore.GetByFeeder(ctx, arg.AssetPair, ethereum.HexToAddress(arg.Feeder))
+	price, err := n.priceStore.GetByFeeder(ctx, arg.AssetPair, types.MustAddressFromHex(arg.Feeder))
 	if err != nil {
 		return err
 	}

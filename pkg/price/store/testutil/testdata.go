@@ -19,22 +19,25 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/defiweb/go-eth/types"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 var (
-	Address1     = ethereum.HexToAddress("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
-	Address2     = ethereum.HexToAddress("0x8eb3daaf5cb4138f5f96711c09c0cfd0288a36e9")
+	Address1     = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
+	Address2     = types.MustAddressFromHex("0x8eb3daaf5cb4138f5f96711c09c0cfd0288a36e9")
 	PriceAAABBB1 = &messages.Price{
 		Price: &median.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(10),
 			Age: time.Unix(100, 0),
-			V:   1,
-			R:   [32]byte{1},
-			S:   [32]byte{2},
+			Sig: types.Signature{
+				V: big.NewInt(1),
+				R: big.NewInt(1),
+				S: big.NewInt(2),
+			},
 		},
 		Trace: nil,
 	}
@@ -43,9 +46,11 @@ var (
 			Wat: "AAABBB",
 			Val: big.NewInt(20),
 			Age: time.Unix(200, 0),
-			V:   2,
-			R:   [32]byte{3},
-			S:   [32]byte{4},
+			Sig: types.Signature{
+				V: big.NewInt(2),
+				R: big.NewInt(3),
+				S: big.NewInt(4),
+			},
 		},
 		Trace: nil,
 	}
@@ -54,9 +59,11 @@ var (
 			Wat: "AAABBB",
 			Val: big.NewInt(30),
 			Age: time.Unix(300, 0),
-			V:   3,
-			R:   [32]byte{4},
-			S:   [32]byte{5},
+			Sig: types.Signature{
+				V: big.NewInt(3),
+				R: big.NewInt(4),
+				S: big.NewInt(5),
+			},
 		},
 		Trace: nil,
 	}
@@ -65,9 +72,11 @@ var (
 			Wat: "AAABBB",
 			Val: big.NewInt(30),
 			Age: time.Unix(400, 0),
-			V:   4,
-			R:   [32]byte{5},
-			S:   [32]byte{6},
+			Sig: types.Signature{
+				V: big.NewInt(4),
+				R: big.NewInt(5),
+				S: big.NewInt(6),
+			},
 		},
 		Trace: nil,
 	}
@@ -76,9 +85,11 @@ var (
 			Wat: "XXXYYY",
 			Val: big.NewInt(10),
 			Age: time.Unix(100, 0),
-			V:   5,
-			R:   [32]byte{6},
-			S:   [32]byte{7},
+			Sig: types.Signature{
+				V: big.NewInt(5),
+				R: big.NewInt(6),
+				S: big.NewInt(7),
+			},
 		},
 		Trace: nil,
 	}
@@ -87,9 +98,11 @@ var (
 			Wat: "XXXYYY",
 			Val: big.NewInt(20),
 			Age: time.Unix(200, 0),
-			V:   6,
-			R:   [32]byte{7},
-			S:   [32]byte{8},
+			Sig: types.Signature{
+				V: big.NewInt(6),
+				R: big.NewInt(7),
+				S: big.NewInt(8),
+			},
 		},
 		Trace: nil,
 	}

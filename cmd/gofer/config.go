@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 
@@ -32,80 +34,100 @@ import (
 )
 
 type Config struct {
-	Ethereum ethereumConfig.Ethereum `json:"ethereum"`
-	Gofer    goferConfig.Gofer       `json:"gofer"`
-	Logger   loggerConfig.Logger     `json:"logger"`
+	Ethereum ethereumConfig.ConfigEthereum `hcl:"ethereum,block"`
+	Gofer    goferConfig.ConfigGofer       `hcl:"gofer,block"`
+	Logger   *loggerConfig.ConfigLogger    `hcl:"logger,block"`
+
+	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
 func PrepareClientServices(
 	ctx context.Context,
 	opts *options,
-) (*supervisor.Supervisor, provider.Provider, marshal.Marshaller, provider.PriceHook, error) {
+) (
+	*supervisor.Supervisor,
+	provider.Provider,
+	marshal.Marshaller,
+	provider.PriceHook,
+	error,
+) {
 
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
-		AppName:    "gofer",
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "leeloo",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+		return nil, nil, nil, nil, fmt.Errorf(`logger config error: %w`, err)
 	}
-	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log)
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	gof, err := opts.Config.Gofer.ConfigureGofer(cli, log, opts.NoRPC)
+	gofer, err := opts.Config.Gofer.ConfigureGofer(goferConfig.Dependencies{
+		Clients: clients,
+		Logger:  logger,
+	}, opts.NoRPC)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
-	hook, err := opts.Config.Gofer.ConfigurePriceHook(ctx, cli)
+	hook, err := opts.Config.Gofer.ConfigurePriceHook(goferConfig.HookDependencies{
+		Context: ctx,
+		Clients: clients,
+	})
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf(`price hook config error: %w`, err)
 	}
-	mar, err := marshal.NewMarshal(opts.Format.format)
+	marshaler, err := marshal.NewMarshal(opts.Format.format)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf(`invalid format option: %w`, err)
 	}
-	sup := supervisor.New(log)
-	if g, ok := gof.(supervisor.Service); ok {
+	sup := supervisor.New(logger)
+	if g, ok := gofer.(supervisor.Service); ok {
 		sup.Watch(g)
 	}
-	if l, ok := log.(supervisor.Service); ok {
+	if l, ok := logger.(supervisor.Service); ok {
 		sup.Watch(l)
 	}
-	return sup, gof, mar, hook, nil
+	return sup, gofer, marshaler, hook, nil
 }
 
-func PrepareAgentServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareAgentServices(_ context.Context, opts *options) (*supervisor.Supervisor, error) {
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
-		AppName:    "gofer",
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+		AppName:    "leeloo",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`logger config error: %w`, err)
 	}
-	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(nil, log)
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	gof, err := opts.Config.Gofer.ConfigureAsyncGofer(cli, log)
+	gofer, err := opts.Config.Gofer.ConfigureAsyncGofer(goferConfig.AsyncDependencies{
+		Clients: clients,
+		Logger:  nil,
+	})
 	if err != nil {
 		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
-	age, err := opts.Config.Gofer.ConfigureRPCAgent(cli, gof, log)
+	agent, err := opts.Config.Gofer.ConfigureRPCAgent(goferConfig.AgentDependencies{
+		Provider: gofer,
+		Logger:   logger,
+	})
 	if err != nil {
 		return nil, fmt.Errorf(`gofer config error: %w`, err)
 	}
-	sup := supervisor.New(log)
-	sup.Watch(gof.(supervisor.Service), age, sysmon.New(time.Minute, log))
-	if l, ok := log.(supervisor.Service); ok {
+	sup := supervisor.New(logger)
+	sup.Watch(gofer.(supervisor.Service), agent, sysmon.New(time.Minute, logger))
+	if l, ok := logger.(supervisor.Service); ok {
 		sup.Watch(l)
 	}
 	return sup, nil

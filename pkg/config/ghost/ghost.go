@@ -16,9 +16,11 @@
 package ghost
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/feeder"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
@@ -26,31 +28,36 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-//nolint
-var ghostFactory = func(cfg feeder.Config) (*feeder.Feeder, error) {
-	return feeder.New(cfg)
-}
+type ConfigGhost struct {
+	// EthereumKey is the name of the Ethereum key to use for signing prices.
+	EthereumKey string `hcl:"ethereum_key"`
 
-type Ghost struct {
-	Interval int      `yaml:"interval"`
-	Pairs    []string `yaml:"pairs"`
+	// Interval is the interval at which to publish prices.
+	Interval int `hcl:"interval"`
+
+	// Pairs is the list of pairs to publish prices for.
+	Pairs []string `hcl:"pairs"`
 }
 
 type Dependencies struct {
+	Keys      ethereumConfig.KeyRegistry
 	Gofer     provider.Provider
-	Signer    ethereum.Signer
 	Transport transport.Transport
 	Logger    log.Logger
 }
 
-func (c *Ghost) Configure(d Dependencies) (*feeder.Feeder, error) {
+func (c *ConfigGhost) Ghost(d Dependencies) (*feeder.Feeder, error) {
+	ethereumKey, ok := d.Keys[c.EthereumKey]
+	if !ok {
+		return nil, fmt.Errorf("ghost: ethereum key %s not found", c.EthereumKey)
+	}
 	cfg := feeder.Config{
 		PriceProvider: d.Gofer,
-		Signer:        d.Signer,
+		Signer:        ethereumKey,
 		Transport:     d.Transport,
 		Logger:        d.Logger,
 		Interval:      timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		Pairs:         c.Pairs,
 	}
-	return ghostFactory(cfg)
+	return feeder.New(cfg)
 }

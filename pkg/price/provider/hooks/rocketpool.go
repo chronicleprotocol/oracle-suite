@@ -21,22 +21,21 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"strings"
+
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 //go:embed circuit_abi.json
-var circuitABI string
+var circuitABI []byte
 
-const circuitContractKey = "circuitContract"
+const circuitContractKey = "circuit_contract"
 
 type RocketPoolCircuitBreaker struct {
-	contract   common.Address
-	circuitABI abi.ABI
+	contract   types.Address
+	circuitABI *abi.Contract
 }
 
 func NewRocketPoolCircuitBreaker(params map[string]interface{}) (*RocketPoolCircuitBreaker, error) {
@@ -49,9 +48,9 @@ func NewRocketPoolCircuitBreaker(params map[string]interface{}) (*RocketPoolCirc
 	if !ok {
 		return nil, fmt.Errorf("post price hook failed for RETH incorrect params: %s", c)
 	}
-	ret.contract = ethereum.HexToAddress(c)
+	ret.contract = types.MustAddressFromHex(c)
 
-	cabi, err := abi.JSON(strings.NewReader(circuitABI))
+	cabi, err := abi.ParseJSON(circuitABI)
 	if err != nil {
 		return nil, err
 	}
@@ -64,21 +63,21 @@ func (o *RocketPoolCircuitBreaker) Check(ctx context.Context,
 	cli ethereum.Client, medianPrice, refPrice float64) error {
 
 	// read()
-	callData, err := o.circuitABI.Pack("read")
+	callData, err := o.circuitABI.Methods["read"].EncodeArgs()
 	if err != nil {
 		return fmt.Errorf("failed to get contract args for %s: %w", circuitContractKey, err)
 	}
-	response, err := cli.Call(ctx, ethereum.Call{Address: o.contract, Data: callData})
+	response, err := cli.Call(ctx, types.Call{To: &o.contract, Input: callData})
 	if err != nil {
 		return err
 	}
 	val := new(big.Float).SetInt(new(big.Int).SetBytes(response))
 	// divisor()
-	callData, err = o.circuitABI.Pack("divisor")
+	callData, err = o.circuitABI.Methods["divisor"].EncodeArgs()
 	if err != nil {
 		return fmt.Errorf("failed to get contract args for %s: %w", circuitContractKey, err)
 	}
-	response, err = cli.Call(ctx, ethereum.Call{Address: o.contract, Data: callData})
+	response, err = cli.Call(ctx, types.Call{To: &o.contract, Input: callData})
 	if err != nil {
 		return err
 	}

@@ -21,13 +21,15 @@ import (
 	"fmt"
 	"time"
 
+	cryptoETH "github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
+	"github.com/defiweb/go-eth/wallet"
 	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -121,7 +123,7 @@ type Config struct {
 
 	// AuthorAllowlist is a list of allowed message authors. Only messages from
 	// these addresses will be accepted.
-	AuthorAllowlist []ethereum.Address
+	AuthorAllowlist []types.Address
 
 	// Discovery indicates whenever peer discovery should be enabled.
 	// If discovery is disabled, then DirectPeersAddrs must be used
@@ -129,7 +131,7 @@ type Config struct {
 	Discovery bool
 
 	// Signer used to verify price messages. Ignored in bootstrap mode.
-	Signer ethereum.Signer
+	Signer wallet.Key
 
 	// Logger is a custom logger instance. If not provided then null
 	// logger is used.
@@ -225,7 +227,7 @@ func New(cfg Config) (*P2P, error) {
 			messageValidator(cfg.Topics, logger), // must be registered before any other validator
 			feederValidator(cfg.AuthorAllowlist, logger),
 			eventValidator(logger),
-			priceValidator(cfg.Signer, logger),
+			priceValidator(logger, cryptoETH.ECRecoverer),
 		)
 		if cfg.MessagePrivKey != nil {
 			opts = append(opts, internal.MessagePrivKey(cfg.MessagePrivKey))

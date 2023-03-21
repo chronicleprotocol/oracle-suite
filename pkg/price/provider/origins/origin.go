@@ -21,10 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
+	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 )
+
+const ether = 1e18
 
 // Handler is interface that all Origin API handlers should implement.
 type Handler interface {
@@ -80,12 +82,12 @@ func (c ContractAddresses) ByPair(p Pair) (string, bool, bool) {
 	return contract, false, ok
 }
 
-func (c ContractAddresses) AddressByPair(pair Pair) (ethereum.Address, bool, error) {
+func (c ContractAddresses) AddressByPair(pair Pair) (types.Address, bool, error) {
 	contract, inverted, ok := c.ByPair(pair)
 	if !ok {
-		return ethereum.Address{}, inverted, fmt.Errorf("failed to get contract address for pair: %s", pair.String())
+		return types.Address{}, inverted, fmt.Errorf("failed to get contract address for pair: %s", pair.String())
 	}
-	return ethereum.HexToAddress(contract), inverted, nil
+	return types.MustAddressFromHex(contract), inverted, nil
 }
 
 type SymbolAliases map[string]string

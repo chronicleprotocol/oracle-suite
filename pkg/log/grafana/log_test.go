@@ -156,19 +156,6 @@ func TestLogger(t *testing.T) {
 				l.Info("foo")
 			},
 		},
-		// Sub duplicated values:
-		{
-			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile("foo"), Name: "a", OnDuplicate: Sub},
-			},
-			want: []want{
-				{name: "a", value: 0},
-			},
-			logs: func(l log.Logger) {
-				l.Info("foo")
-				l.Info("foo")
-			},
-		},
 		// Use lower value:
 		{
 			metrics: []Metric{

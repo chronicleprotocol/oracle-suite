@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
@@ -27,147 +29,164 @@ import (
 	spireConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 type Config struct {
-	Transport transportConfig.Transport `json:"transport"`
-	Ethereum  ethereumConfig.Ethereum   `json:"ethereum"`
-	Spire     spireConfig.Spire         `json:"spire"`
-	Feeds     feedsConfig.Feeds         `json:"feeds"`
-	Logger    loggerConfig.Logger       `json:"logger"`
+	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
+	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
+	Spire     spireConfig.ConfigSpire         `hcl:"spire,block"`
+	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
+	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
+
+	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func PrepareAgentServices(_ context.Context, opts *options) (*supervisor.Supervisor, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareAgentServices(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`logger config error: %w`, err)
 	}
-	sig, err := opts.Config.Ethereum.ConfigureSigner()
+	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	fed, err := opts.Config.Feeds.Addresses()
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
+	feeds, err := opts.Config.Feeds.Addresses()
 	if err != nil {
 		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
-	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
-		Signer: sig,
-		Feeds:  fed,
-		Logger: log,
-	},
-		map[string]transport.Message{
+	transport, err := opts.Config.Transport.Transport(transportConfig.Dependencies{
+		Keys:    keys,
+		Clients: clients,
+		Messages: map[string]pkgTransport.Message{
 			messages.PriceV0MessageName: (*messages.Price)(nil),
 			messages.PriceV1MessageName: (*messages.Price)(nil),
 		},
-	)
+		Feeds:  feeds,
+		Logger: logger,
+	})
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	dat, err := opts.Config.Spire.ConfigurePriceStore(spireConfig.PriceStoreDependencies{
-		Signer:    sig,
-		Transport: tra,
-		Feeds:     fed,
-		Logger:    log,
+	priceStore, err := opts.Config.Spire.ConfigurePriceStore(spireConfig.PriceStoreDependencies{
+		Transport: transport,
+		Feeds:     feeds,
+		Logger:    logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
-	age, err := opts.Config.Spire.ConfigureAgent(spireConfig.AgentDependencies{
-		Signer:     sig,
-		Transport:  tra,
-		PriceStore: dat,
-		Feeds:      fed,
-		Logger:     log,
+	spireAgent, err := opts.Config.Spire.ConfigureAgent(spireConfig.AgentDependencies{
+		Keys:       keys,
+		Transport:  transport,
+		PriceStore: priceStore,
+		Feeds:      feeds,
+		Logger:     logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`spire config error: %w`, err)
 	}
-	sup := supervisor.New(log)
-	sup.Watch(tra, dat, age, sysmon.New(time.Minute, log))
-	if l, ok := log.(supervisor.Service); ok {
-		sup.Watch(l)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(transport, priceStore, spireAgent, sysmon.New(time.Minute, logger))
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, nil
+	return supervisor, nil
 }
 
-func PrepareClientServices(_ context.Context, opts *options) (*supervisor.Supervisor, *spire.Client, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareClientServices(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, *spire.Client, error) {
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	sig, err := opts.Config.Ethereum.ConfigureSigner()
+	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	cli, err := opts.Config.Spire.ConfigureClient(spireConfig.ClientDependencies{
-		Signer: sig,
+	client, err := opts.Config.Spire.ConfigureClient(spireConfig.ClientDependencies{
+		KeyRegistry: keys,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf(`spire config error: %w`, err)
 	}
-	sup := supervisor.New(log)
-	sup.Watch(cli)
-	if l, ok := log.(supervisor.Service); ok {
-		sup.Watch(l)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(client)
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, cli, nil
+	return supervisor, client, nil
 }
 
-func PrepareStreamServices(_ context.Context, opts *options) (*supervisor.Supervisor, transport.Transport, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareStreamServices(
+	_ context.Context,
+	opts *options,
+) (
+	*pkgSupervisor.Supervisor,
+	pkgTransport.Transport,
+	error,
+) {
+
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf(`logger config error: %w`, err)
 	}
-	fed, err := opts.Config.Feeds.Addresses()
-	if err != nil {
-		return nil, nil, fmt.Errorf(`feeds config error: %w`, err)
-	}
-	sig, err := opts.Config.Ethereum.ConfigureSigner()
+	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
-		Signer: sig,
-		Feeds:  fed,
-		Logger: log,
-	},
-		map[string]transport.Message{
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, nil, fmt.Errorf(`ethereum config error: %w`, err)
+	}
+	feeds, err := opts.Config.Feeds.Addresses()
+	if err != nil {
+		return nil, nil, fmt.Errorf(`feeds config error: %w`, err)
+	}
+	transport, err := opts.Config.Transport.Transport(transportConfig.Dependencies{
+		Keys:    keys,
+		Clients: clients,
+		Messages: map[string]pkgTransport.Message{
 			messages.PriceV0MessageName: (*messages.Price)(nil),
 			messages.PriceV1MessageName: (*messages.Price)(nil),
 		},
-	)
+		Feeds:  feeds,
+		Logger: logger,
+	})
 	if err != nil {
 		return nil, nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	sup := supervisor.New(log)
-	sup.Watch(tra)
-	if l, ok := log.(supervisor.Service); ok {
-		sup.Watch(l)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(transport)
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, tra, nil
+	return supervisor, transport, nil
 }

@@ -23,13 +23,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -38,13 +38,17 @@ import (
 )
 
 var (
-	testAddress     = ethereum.HexToAddress("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
+	testAddress     = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
 	testPriceAAABBB = &messages.Price{
 		Price: &median.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(10),
 			Age: time.Unix(100, 0),
-			V:   1,
+			Sig: types.Signature{
+				V: big.NewInt(1),
+				R: big.NewInt(2),
+				S: big.NewInt(3),
+			},
 		},
 		Trace:   nil,
 		Version: "0.4.10",
@@ -61,7 +65,7 @@ func newTestInstances() (*Agent, *Client) {
 	ctx, ctxCancel = context.WithCancel(context.Background())
 
 	log := null.New()
-	sig := &mocks.Signer{}
+	rec := &mocks.Recoverer{}
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{
 		messages.PriceV0MessageName: (*messages.Price)(nil),
 		messages.PriceV1MessageName: (*messages.Price)(nil),
@@ -69,21 +73,20 @@ func newTestInstances() (*Agent, *Client) {
 	_ = tra.Start(ctx)
 	priceStore, err = store.New(store.Config{
 		Storage:   store.NewMemoryStorage(),
-		Signer:    sig,
 		Transport: tra,
 		Pairs:     []string{"AAABBB", "XXXYYY"},
 		Logger:    null.New(),
+		Recoverer: rec,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	sig.On("Recover", mock.Anything, mock.Anything).Return(&testAddress, nil)
+	rec.On("RecoverMessage", mock.Anything, mock.Anything).Return(&testAddress, nil)
 
 	agt, err := NewAgent(AgentConfig{
 		PriceStore: priceStore,
 		Transport:  tra,
-		Signer:     sig,
 		Address:    "127.0.0.1:0",
 		Logger:     log,
 	})
@@ -100,7 +103,6 @@ func newTestInstances() (*Agent, *Client) {
 	}
 
 	cli, err := NewClient(ClientConfig{
-		Signer:  sig,
 		Address: agt.srv.Addr().String(),
 	})
 	if err != nil {

@@ -33,9 +33,9 @@ func TestStarknet(t *testing.T) {
 		require.Fail(t, err.Error())
 	}
 
-	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
-	cmd2 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_starknet.json", "-v", "debug")
-	cmd3 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_starknet.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.hcl", "-v", "debug")
+	cmd2 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_starknet.hcl", "-v", "debug")
+	cmd3 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_starknet.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = cmd1.Wait()

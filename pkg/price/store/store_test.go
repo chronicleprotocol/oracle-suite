@@ -39,12 +39,11 @@ func TestStore(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
-	sig := &mocks.Signer{}
+	rec := &mocks.Recoverer{}
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)})
 	_ = tra.Start(ctx)
 
 	ps, err := New(Config{
-		Signer:    sig,
 		Storage:   NewMemoryStorage(),
 		Transport: tra,
 		Pairs:     []string{"AAABBB", "XXXYYY"},
@@ -52,11 +51,12 @@ func TestStore(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NoError(t, ps.Start(ctx))
+	ps.recover = rec
 
-	sig.On("Recover", testutil.PriceAAABBB1.Price.Signature(), mock.Anything).Return(&testutil.Address1, nil)
-	sig.On("Recover", testutil.PriceAAABBB2.Price.Signature(), mock.Anything).Return(&testutil.Address2, nil)
-	sig.On("Recover", testutil.PriceXXXYYY1.Price.Signature(), mock.Anything).Return(&testutil.Address1, nil)
-	sig.On("Recover", testutil.PriceXXXYYY2.Price.Signature(), mock.Anything).Return(&testutil.Address2, nil)
+	rec.On("RecoverMessage", mock.Anything, testutil.PriceAAABBB1.Price.Sig).Return(&testutil.Address1, nil)
+	rec.On("RecoverMessage", mock.Anything, testutil.PriceAAABBB2.Price.Sig).Return(&testutil.Address2, nil)
+	rec.On("RecoverMessage", mock.Anything, testutil.PriceXXXYYY1.Price.Sig).Return(&testutil.Address1, nil)
+	rec.On("RecoverMessage", mock.Anything, testutil.PriceXXXYYY2.Price.Sig).Return(&testutil.Address2, nil)
 
 	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB1))
 	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB2))

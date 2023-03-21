@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
@@ -30,33 +32,35 @@ import (
 )
 
 type Config struct {
-	Transport transportConfig.Transport `json:"transport"`
-	Logger    loggerConfig.Logger       `json:"logger"`
+	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
+	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
+
+	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func PrepareSupervisor(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareSupervisor(_ context.Context, opts *options) (*supervisor.Supervisor, error) {
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	tra, err := opts.Config.Transport.ConfigureP2PBoostrap(transportConfig.BootstrapDependencies{
-		Logger: log,
+	transport, err := opts.Config.Transport.LibP2PBootstrap(transportConfig.BootstrapDependencies{
+		Logger: logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	if _, ok := tra.(*libp2p.P2P); !ok {
+	if _, ok := transport.(*libp2p.P2P); !ok {
 		return nil, errors.New("spire-bootstrap works only with the libp2p transport")
 	}
-	sup := supervisor.New(log)
-	sup.Watch(tra, sysmon.New(time.Minute, log))
-	if l, ok := log.(supervisor.Service); ok {
+	sup := supervisor.New(logger)
+	sup.Watch(transport, sysmon.New(time.Minute, logger))
+	if l, ok := logger.(supervisor.Service); ok {
 		sup.Watch(l)
 	}
 	return sup, nil

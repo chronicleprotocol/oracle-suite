@@ -6,7 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
@@ -74,20 +75,22 @@ func (c *StaticAddressBook) Consumers(ctx context.Context) ([]string, error) {
 
 // EthereumAddressBook is an AddressBook implementation that uses an Ethereum
 // contract to store the list of addresses.
+//nolint:staticcheck // deprecated ethereum.Client
 type EthereumAddressBook struct {
 	mu sync.Mutex
 
-	client    ethereum.Client  // Ethereum client
-	address   ethereum.Address // Address of the contract.
-	cache     []string         // Cached list of addresses.
-	cacheTime time.Time        // Time when the cache was last updated.
-	cacheTTL  time.Duration    // How long the cache should be valid.
+	client    ethereum.Client // Ethereum client
+	address   types.Address   // Address of the contract.
+	cache     []string        // Cached list of addresses.
+	cacheTime time.Time       // Time when the cache was last updated.
+	cacheTTL  time.Duration   // How long the cache should be valid.
 }
 
 // NewEthereumAddressBook creates a new instance of EthereumAddressBook.
 // The cacheTTL parameter specifies how long the list of addresses should be
 // cached before it is fetched again from the Ethereum contract.
-func NewEthereumAddressBook(c ethereum.Client, addr ethereum.Address, cacheTTL time.Duration) *EthereumAddressBook {
+//nolint:staticcheck // deprecated ethereum.Client
+func NewEthereumAddressBook(c ethereum.Client, addr types.Address, cacheTTL time.Duration) *EthereumAddressBook {
 	return &EthereumAddressBook{
 		client:   c,
 		address:  addr,
@@ -111,24 +114,24 @@ func (c *EthereumAddressBook) Consumers(ctx context.Context) ([]string, error) {
 }
 
 func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, error) {
-	cd, err := consumersABI.Pack("getConsumers")
+	cd, err := consumersMethod.EncodeArgs()
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.client.Call(ctx, ethereum.Call{
-		Address: c.address,
-		Data:    cd,
+	res, err := c.client.Call(ctx, types.Call{
+		To:    &c.address,
+		Input: cd,
 	})
 	if err != nil {
 		return nil, err
 	}
-	ret, err := consumersABI.Unpack("getConsumers", res)
+	var addrs []string
+	err = consumersMethod.DecodeValue(res, addrs)
 	if err != nil {
 		return nil, err
 	}
 	// Addresses on a smart contract may omit protocol scheme, so we add it
 	// here.
-	addrs := ret[0].([]string)
 	for n, addr := range addrs {
 		if !strings.Contains(addr, "://") {
 			// Data transmitted over the WebAPI protocol is signed, hence
@@ -139,30 +142,4 @@ func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, err
 	return addrs, nil
 }
 
-const consumersJSONABI = `
-[
-  {
-    "inputs": [],
-    "name": "getConsumers",
-    "outputs": [
-      {
-        "internalType": "string[]",
-        "name": "",
-        "type": "string[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-]
-`
-
-var consumersABI abi.ABI
-
-func init() {
-	var err error
-	consumersABI, err = abi.JSON(strings.NewReader(consumersJSONABI))
-	if err != nil {
-		panic(err.Error())
-	}
-}
+var consumersMethod = abi.MustParseMethod("function getConsumers() returns (string[])")

@@ -17,14 +17,14 @@ package median
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"math"
+	"math/big"
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 )
 
@@ -64,23 +64,24 @@ func TestPrice_SetFloat64Price(t *testing.T) {
 }
 
 func TestPrice_Sign(t *testing.T) {
-	s := &mocks.Signer{}
+	s := &mocks.Key{}
+	r := &mocks.Recoverer{}
 	p := &Price{Wat: "AAABBB"}
 	p.Age = time.Unix(1605371361, 0)
 	p.SetFloat64Price(42)
 
 	// Generate a random signature and address:
-	sig := ethereum.Signature{}
-	var addr ethereum.Address
-	rand.Read(sig[:])
+	sig := make([]byte, 65)
+	var addr types.Address
+	rand.Read(sig)
 	rand.Read(addr[:])
 
 	// Test Sign:
 	//
 	// Hash passed to the Signature function *must* be exactly the same as in
 	// the priceHash var.
-	hash, _ := hex.DecodeString(priceHash)
-	s.On("Signature", hash).Return(sig, nil)
+	hash, _ := types.HashFromHex(priceHash, types.PadNone)
+	s.On("SignMessage", hash.Bytes()).Return(types.MustSignatureFromBytesPtr(sig), nil)
 	err := p.Sign(s)
 	assert.NoError(t, err)
 
@@ -88,14 +89,14 @@ func TestPrice_Sign(t *testing.T) {
 	//
 	// Here, we're just checking if the signature and the hash passed to
 	// the Recover function are the same as generated above.
-	s.On("Recover", sig, hash).Return(&addr, nil)
-	retAddr, err := p.From(s)
+	r.On("RecoverMessage", hash.Bytes(), types.MustSignatureFromBytes(sig)).Return(&addr, nil)
+	retAddr, err := p.From(r)
 	assert.NoError(t, err)
 	assert.Equal(t, addr, *retAddr)
 }
 
 func TestPrice_Sign_NoPrice(t *testing.T) {
-	s := &mocks.Signer{}
+	s := &mocks.Key{}
 	p := &Price{Wat: "AAABBB"}
 
 	err := p.Sign(s)
@@ -106,9 +107,9 @@ func TestPrice_Marshall(t *testing.T) {
 	p := &Price{Wat: "AAABBB"}
 	p.Age = time.Unix(1605371361, 0)
 	p.SetFloat64Price(42)
-	p.V = 0xAA
-	p.R = [32]byte{0x01}
-	p.S = [32]byte{0x02}
+	p.Sig.V = big.NewInt(0xAA)
+	p.Sig.R = big.NewInt(0x01)
+	p.Sig.S = big.NewInt(0x02)
 
 	// Marshall to JSON:
 	j, err := p.MarshalJSON()
@@ -119,8 +120,8 @@ func TestPrice_Marshall(t *testing.T) {
 		   "val":"42000000000000000000",
 		   "age":1605371361,
 		   "v":"aa",
-		   "r":"0100000000000000000000000000000000000000000000000000000000000000",
-		   "s":"0200000000000000000000000000000000000000000000000000000000000000"
+		   "r":"0000000000000000000000000000000000000000000000000000000000000001",
+		   "s":"0000000000000000000000000000000000000000000000000000000000000002"
 		}`,
 		string(j),
 	)
@@ -132,7 +133,5 @@ func TestPrice_Marshall(t *testing.T) {
 	assert.Equal(t, p.Wat, p2.Wat)
 	assert.Equal(t, p.Age, p2.Age)
 	assert.Equal(t, p.Val, p2.Val)
-	assert.Equal(t, p.V, p2.V)
-	assert.Equal(t, p.R, p2.R)
-	assert.Equal(t, p.S, p2.S)
+	assert.Equal(t, p.Sig.Bytes(), p2.Sig.Bytes())
 }

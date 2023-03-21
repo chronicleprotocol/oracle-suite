@@ -18,18 +18,18 @@ package ethkey
 import (
 	"testing"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 )
 
 func TestPrivKey_Equals(t *testing.T) {
-	sig1 := &mocks.Signer{}
+	sig1 := &mocks.Key{}
 	sig1.On("Address").Return(testAddress1)
 	prv1 := NewPrivKey(sig1)
 
-	sig2 := &mocks.Signer{}
+	sig2 := &mocks.Key{}
 	sig2.On("Address").Return(testAddress2)
 	prv2 := NewPrivKey(sig2)
 
@@ -38,7 +38,7 @@ func TestPrivKey_Equals(t *testing.T) {
 }
 
 func TestPrivKey_GetPublic(t *testing.T) {
-	sig := &mocks.Signer{}
+	sig := &mocks.Key{}
 	sig.On("Address").Return(testAddress1)
 	prv := NewPrivKey(sig)
 
@@ -47,7 +47,7 @@ func TestPrivKey_GetPublic(t *testing.T) {
 }
 
 func TestPrivKey_Raw(t *testing.T) {
-	sig := &mocks.Signer{}
+	sig := &mocks.Key{}
 	sig.On("Address").Return(testAddress1)
 	prv := NewPrivKey(sig)
 
@@ -57,9 +57,9 @@ func TestPrivKey_Raw(t *testing.T) {
 }
 
 func TestPrivKey_Sign(t *testing.T) {
-	wthSig := ethereum.SignatureFromBytes([]byte("bar"))
-	sig := &mocks.Signer{}
-	sig.On("Signature", []byte("foo")).Return(wthSig, nil)
+	wthSig := types.MustSignatureFromBytes(fakeSignature)
+	sig := &mocks.Key{}
+	sig.On("SignMessage", []byte("foo")).Return(&wthSig, nil)
 	prv := NewPrivKey(sig)
 
 	ethBts, err := prv.Sign([]byte("foo"))
@@ -68,5 +68,5 @@ func TestPrivKey_Sign(t *testing.T) {
 }
 
 func TestPrivKey_Type(t *testing.T) {
-	assert.Equal(t, KeyTypeID, NewPrivKey(&mocks.Signer{}).Type())
+	assert.Equal(t, KeyTypeID, NewPrivKey(&mocks.Key{}).Type())
 }

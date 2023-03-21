@@ -35,9 +35,6 @@ type Options struct {
 func Command() (*Options, *cobra.Command) {
 	return &Options{}, &cobra.Command{
 		Use: "keeman",
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd: true,
-		},
 	}
 }
 

@@ -23,8 +23,14 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/zclconf/go-cty/cty"
 
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 
@@ -64,299 +70,353 @@ func (e ErrCyclicReference) Error() string {
 	return s.String()
 }
 
-type Gofer struct {
-	RPC           RPC                   `yaml:"rpc"` // Old configuration format, to remove in the future.
-	RPCListenAddr string                `yaml:"rpcListenAddr"`
-	RPCAgentAddr  string                `yaml:"rpcAgentAddr"`
-	Origins       map[string]Origin     `yaml:"origins"`
-	PriceModels   map[string]PriceModel `yaml:"priceModels"`
+type Dependencies struct {
+	Clients ethereumConfig.ClientRegistry
+	Logger  log.Logger
 }
 
-type RPC struct {
-	Address string `yaml:"address"`
+type AsyncDependencies struct {
+	Clients ethereumConfig.ClientRegistry
+	Logger  log.Logger
 }
 
-type Origin struct {
-	Type   string    `yaml:"type"`
-	URL    string    `yaml:"url"` // TODO: Move it to the params field.
-	Params yaml.Node `yaml:"params"`
+type AgentDependencies struct {
+	Provider provider.Provider
+	Logger   log.Logger
 }
 
-type PriceModel struct {
-	Method  string     `yaml:"method"`
-	Sources [][]Source `yaml:"sources"`
-	Params  yaml.Node  `yaml:"params"`
-	TTL     int        `yaml:"ttl"`
+type HookDependencies struct {
+	Context context.Context
+	Clients ethereumConfig.ClientRegistry
 }
 
-type MedianPriceModel struct {
-	MinSourceSuccess int                    `yaml:"minimumSuccessfulSources"`
-	PostPriceHook    map[string]interface{} `yaml:"postPriceHook"`
+type ConfigGofer struct {
+	// RPCListenAddr is the address on which the RPC server will listen.
+	RPCListenAddr string `hcl:"rpc_listen_addr,optional"`
+
+	// RPCAgentAddr is the address of the RPC agent.
+	RPCAgentAddr string `hcl:"rpc_agent_addr,optional"`
+
+	// EthereumClient is the name of the Ethereum client to use for fetching
+	// on-chain prices.
+	EthereumClient string `hcl:"ethereum_client"`
+
+	// Origins is a configuration of price origins.
+	Origins []configOrigin `hcl:"origin,block"`
+
+	// PriceModels is a configuration of price models.
+	PriceModels []configSource `hcl:"price_model,block"`
+
+	// Hooks is a configuration of hooks.
+	Hooks []configHook `hcl:"hook,block"`
 }
 
-type Source struct {
-	Origin string `yaml:"origin"`
-	Pair   string `yaml:"pair"`
-	TTL    int    `yaml:"ttl"`
+type configOrigin struct {
+	// Origin is the name of the origin.
+	Origin string `hcl:",label"`
+
+	// Type is the type of the origin, e.g. "uniswap", "kraken" etc.
+	Type string `hcl:"type"`
+
+	// URL is the URL of the origin.
+	URL string `hcl:"url,optional"`
+
+	// Params is the configuration of the origin.
+	Params cty.Value `hcl:"params,optional"`
 }
 
-// ConfigureRPCAgent returns a new rpc.Agent instance.
-func (c *Gofer) ConfigureRPCAgent(cli ethereum.Client, gof provider.Provider, logger log.Logger) (*rpc.Agent, error) {
-	listenAddr := c.RPC.Address
-	if len(c.RPCListenAddr) != 0 {
-		listenAddr = c.RPCListenAddr
-	}
-	srv, err := rpc.NewAgent(rpc.AgentConfig{
-		Provider: gof,
-		Network:  "tcp",
-		Address:  listenAddr,
-		Logger:   logger,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
-	}
-	return srv, nil
+type configSource struct {
+	// Pair is the pair of the source in the form of "base/quote".
+	Pair string `hcl:",label"`
+
+	// Type is the type of the graph node:
+	// - "origin" for an origin node, that provides a price
+	// - "median" for a median node, that calculates a median price from multiple sources
+	// - "indirect" for an indirect node, that calculates an indirect price from multiple sources
+	Type string `hcl:",label"`
+
+	// Sources is a list of sources for "median" and "indirect" nodes.
+	Sources []configSource `hcl:"source,block"`
+
+	Body hcl.Body `hcl:",remain"` // To handle configOriginNode and configMedianNode.
+}
+
+type configOriginNode struct {
+	// Origin is the name of the origin.
+	Origin string `hcl:"origin"`
+}
+
+type configMedianNode struct {
+	// MinSources is the minimum number of sources required to calculate a median price.
+	MinSources int `hcl:"min_sources"`
+}
+
+type configHook struct {
+	// Pair is the pair of the hook in the form of "base/quote".
+	Pair string `hcl:",label"`
+
+	// PostPriceHook is the configuration of the post price hook.
+	PostPriceHook cty.Value `hcl:"post_price,optional"`
 }
 
 // ConfigureAsyncGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureAsyncGofer(cli ethereum.Client, logger log.Logger) (provider.Provider, error) {
+func (c *ConfigGofer) ConfigureAsyncGofer(d AsyncDependencies) (provider.Provider, error) {
+	rpcClient := d.Clients[c.EthereumClient]
+	if rpcClient == nil {
+		return nil, fmt.Errorf("gofer: ethereum client %q not found", c.EthereumClient)
+	}
 	gra, err := c.buildGraphs()
 	if err != nil {
-		return nil, fmt.Errorf("unable to load price models: %w", err)
+		return nil, fmt.Errorf("gofer: unable to build graphs: %w", err)
 	}
 	var ns []nodes.Node
 	for _, n := range gra {
 		ns = append(ns, n)
 	}
-	originSet, err := c.buildOrigins(cli)
+	originSet, err := c.buildOrigins(geth.NewClient(rpcClient))
 	if err != nil {
 		return nil, err
 	}
-	fed := feeder.NewFeeder(originSet, logger)
-	gof, err := graph.NewAsyncProvider(gra, fed, ns, logger)
+	fed := feeder.NewFeeder(originSet, d.Logger)
+	gof, err := graph.NewAsyncProvider(gra, fed, ns, d.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize RPC agent: %w", err)
+		return nil, fmt.Errorf("gofer: unable to initialize RPC client: %w", err)
 	}
 	return gof, nil
 }
 
-func (c *Gofer) ConfigurePriceHook(ctx context.Context, cli ethereum.Client) (provider.PriceHook, error) {
-	m := provider.NewHookParams()
-	for name, model := range c.PriceModels {
-		switch model.Method {
-		case "median":
-			var params MedianPriceModel
-			err := model.Params.Decode(&params)
-			if err != nil {
-				return nil, err
-			}
-			if len(params.PostPriceHook) > 0 {
-				m[name] = params.PostPriceHook
-			}
-		default:
+// ConfigureRPCAgent returns a new rpc.Agent instance.
+func (c *ConfigGofer) ConfigureRPCAgent(d AgentDependencies) (*rpc.Agent, error) {
+	srv, err := rpc.NewAgent(rpc.AgentConfig{
+		Provider: d.Provider,
+		Network:  "tcp",
+		Address:  c.RPCListenAddr,
+		Logger:   d.Logger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("gofer: unable to initialize RPC agent: %w", err)
+	}
+	return srv, nil
+}
+
+func (c *ConfigGofer) ConfigurePriceHook(d HookDependencies) (provider.PriceHook, error) {
+	rpcClient := d.Clients[c.EthereumClient]
+	if rpcClient == nil {
+		return nil, fmt.Errorf("gofer: ethereum client %q not found", c.EthereumClient)
+	}
+	params := provider.NewHookParams()
+	for _, hook := range c.Hooks {
+		v, err := ctyToAny(hook.PostPriceHook)
+		if err != nil {
+			return nil, fmt.Errorf("gofer: invalid hook params: %w", err)
+		}
+		m, ok := v.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("gofer: invalid hook params: %v", v)
+		}
+		if len(m) > 0 {
+			params[hook.Pair] = m
 		}
 	}
-	return provider.NewPostPriceHook(ctx, cli, m)
+	return provider.NewPostPriceHook(d.Context, geth.NewClient(rpcClient), params)
 }
 
 // ConfigureGofer returns a new async gofer instance.
-func (c *Gofer) ConfigureGofer(cli ethereum.Client, logger log.Logger, noRPC bool) (provider.Provider, error) {
-	listenAddr := c.RPC.Address
-	if len(c.RPCAgentAddr) != 0 {
-		listenAddr = c.RPCAgentAddr
-	}
-	if listenAddr == "" || noRPC {
+func (c *ConfigGofer) ConfigureGofer(d Dependencies, noRPC bool) (provider.Provider, error) {
+	if c.RPCAgentAddr == "" || noRPC {
+		rpcClient := d.Clients[c.EthereumClient]
+		if rpcClient == nil {
+			return nil, fmt.Errorf("gofer: ethereum client %q not found", c.EthereumClient)
+		}
 		gra, err := c.buildGraphs()
 		if err != nil {
 			return nil, fmt.Errorf("unable to load price models: %w", err)
 		}
-		originSet, err := c.buildOrigins(cli)
+		originSet, err := c.buildOrigins(geth.NewClient(rpcClient))
 		if err != nil {
 			return nil, err
 		}
-		fed := feeder.NewFeeder(originSet, logger)
+		fed := feeder.NewFeeder(originSet, d.Logger)
 		gof := graph.NewProvider(gra, fed)
 		return gof, nil
 	}
-	return c.configureRPCClient(listenAddr)
+	return c.configureRPCClient(c.RPCAgentAddr)
 }
 
 // configureRPCClient returns a new rpc.RPC instance.
-func (c *Gofer) configureRPCClient(listenAddr string) (*rpc.Provider, error) {
+func (c *ConfigGofer) configureRPCClient(listenAddr string) (*rpc.Provider, error) {
 	return rpc.NewProvider("tcp", listenAddr)
 }
 
-func (c *Gofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) {
+func (c *ConfigGofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) { //nolint:staticcheck // deprecated
 	const defaultWorkerCount = 10
 	wp := query.NewHTTPWorkerPool(defaultWorkerCount)
 	originSet := origins.DefaultOriginSet(wp)
-	for name, origin := range c.Origins {
-		handler, err := NewHandler(origin.Type, wp, cli, origin.URL, origin.Params)
-		if err != nil || handler == nil {
-			return nil, fmt.Errorf(
-				"failed to initiate %s origin with name %s due to error: %w", origin.Type, name, err,
-			)
+	for _, origin := range c.Origins {
+		params, err := ctyToAny(origin.Params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse params for origin %s: %w", origin.Origin, err)
 		}
-		originSet.SetHandler(name, handler)
+		handler, err := NewHandler(origin.Type, wp, cli, origin.URL, params)
+		if err != nil || handler == nil {
+			return nil, fmt.Errorf("failed to create handler for origin %s: %w", origin.Origin, err)
+		}
+		originSet.SetHandler(origin.Origin, handler)
 	}
 	return originSet, nil
 }
 
-func (c *Gofer) buildGraphs() (map[provider.Pair]nodes.Aggregator, error) {
+func (c *ConfigGofer) buildGraphs() (map[provider.Pair]nodes.Node, error) {
 	var err error
-
-	graphs := map[provider.Pair]nodes.Aggregator{}
-
+	graphs := map[provider.Pair]nodes.Node{}
 	// It's important to create root nodes before branches, because branches
 	// may refer to another root nodes instances.
 	err = c.buildRoots(graphs)
 	if err != nil {
 		return nil, err
 	}
-
 	err = c.buildBranches(graphs)
 	if err != nil {
 		return nil, err
 	}
-
 	err = c.detectCycle(graphs)
 	if err != nil {
 		return nil, err
 	}
-
 	return graphs, nil
 }
 
-func (c *Gofer) buildRoots(graphs map[provider.Pair]nodes.Aggregator) error {
-	for name, model := range c.PriceModels {
-		modelPair, err := provider.NewPair(name)
+func (c *ConfigGofer) buildRoots(graphs map[provider.Pair]nodes.Node) error {
+	for _, model := range c.PriceModels {
+		modelPair, err := provider.NewPair(model.Pair)
 		if err != nil {
 			return err
 		}
-
-		switch model.Method {
-		case "median":
-			var params MedianPriceModel
-			if err := model.Params.Decode(&params); err != nil {
-				return err
-			}
-			graphs[modelPair] = nodes.NewMedianAggregatorNode(modelPair, params.MinSourceSuccess)
-		default:
-			return fmt.Errorf("unknown method %s for pair %s", model.Method, name)
-		}
+		graphs[modelPair] = nodes.NewReferenceNode()
 	}
-
 	return nil
 }
 
-func (c *Gofer) buildBranches(graphs map[provider.Pair]nodes.Aggregator) error {
-	for name, model := range c.PriceModels {
-		// We can ignore error here, because it was checked already
-		// in buildRoots method.
-		modelPair, _ := provider.NewPair(name)
-
-		var parent nodes.Parent
-		if typedNode, ok := graphs[modelPair].(nodes.Parent); ok {
-			parent = typedNode
-		} else {
-			return fmt.Errorf(
-				"%s must implement the nodes.Parent interface",
-				reflect.TypeOf(graphs[modelPair]).Elem().String(),
-			)
+func (c *ConfigGofer) buildBranches(graphs map[provider.Pair]nodes.Node) error {
+	for _, model := range c.PriceModels {
+		modelPair, err := provider.NewPair(model.Pair)
+		if err != nil {
+			return err
 		}
-
-		for _, sources := range model.Sources {
-			var children []nodes.Node
-			for _, source := range sources {
-				var err error
-				var node nodes.Node
-
-				if source.Origin == "." {
-					node, err = c.reference(graphs, source)
-					if err != nil {
-						return err
-					}
-				} else {
-					node, err = c.originNode(model, source)
-					if err != nil {
-						return err
-					}
-				}
-
-				children = append(children, node)
-			}
-
-			// If there are provided multiple sources it means, that the price
-			// have to be calculated by using the nodes.IndirectAggregatorNode.
-			// Otherwise, we can pass that nodes.OriginNode directly to
-			// the parent node.
-			var node nodes.Node
-			if len(children) == 1 {
-				node = children[0]
-			} else {
-				indirectAggregator := nodes.NewIndirectAggregatorNode(modelPair)
-				for _, c := range children {
-					indirectAggregator.AddChild(c)
-				}
-				node = indirectAggregator
-			}
-
-			parent.AddChild(node)
+		node, err := c.buildNodes(model, graphs)
+		if err != nil {
+			return err
 		}
+		graphs[modelPair].(*nodes.ReferenceNode).SetReference(node)
 	}
-
 	return nil
 }
 
-func (c *Gofer) reference(graphs map[provider.Pair]nodes.Aggregator, source Source) (nodes.Node, error) {
-	sourcePair, err := provider.NewPair(source.Pair)
+func (c *ConfigGofer) buildNodes(config configSource, graphs map[provider.Pair]nodes.Node) (nodes.Node, error) {
+	pair, err := provider.NewPair(config.Pair)
 	if err != nil {
 		return nil, err
 	}
+	switch config.Type {
+	case "origin":
+		return c.originNode(pair, config, graphs)
+	case "median":
+		return c.medianNode(pair, config, graphs)
+	case "indirect":
+		return c.indirectNode(pair, config, graphs)
+	}
+	return nil, fmt.Errorf("unknown node type: %s", config.Type)
+}
 
-	if _, ok := graphs[sourcePair]; !ok {
+func (c *ConfigGofer) childNodes(sources []configSource, graphs map[provider.Pair]nodes.Node) ([]nodes.Node, error) {
+	var child []nodes.Node
+	for _, source := range sources {
+		node, err := c.buildNodes(source, graphs)
+		if err != nil {
+			return nil, err
+		}
+		child = append(child, node)
+	}
+	return child, nil
+}
+
+func (c *ConfigGofer) originNode(pair provider.Pair, config configSource, graphs graph.Graphs) (nodes.Node, error) {
+	var params configOriginNode
+	if err := decodeRemain(config.Body, &params); err != nil {
+		return nil, err
+	}
+	if params.Origin == "." {
+		return c.reference(pair, graphs)
+	}
+	originPair := nodes.OriginPair{
+		Origin: params.Origin,
+		Pair:   pair,
+	}
+	return nodes.NewOriginNode(originPair, defaultTTL, defaultTTL+maxTTL), nil
+}
+
+func (c *ConfigGofer) medianNode(pair provider.Pair, config configSource, graphs graph.Graphs) (nodes.Node, error) {
+	child, err := c.childNodes(config.Sources, graphs)
+	if err != nil {
+		return nil, err
+	}
+	switch len(child) {
+	case 0:
+		return nil, fmt.Errorf("median aggregator must have at least one child")
+	case 1:
+		return child[0], nil
+	default:
+		var params configMedianNode
+		if err := decodeRemain(config.Body, &params); err != nil {
+			return nil, err
+		}
+		aggregator := nodes.NewMedianAggregatorNode(pair, params.MinSources)
+		for _, c := range child {
+			aggregator.AddChild(c)
+		}
+		return aggregator, nil
+	}
+}
+
+func (c *ConfigGofer) indirectNode(pair provider.Pair, config configSource, graphs graph.Graphs) (nodes.Node, error) {
+	child, err := c.childNodes(config.Sources, graphs)
+	if err != nil {
+		return nil, err
+	}
+	switch len(child) {
+	case 0:
+		return nil, fmt.Errorf("indirect aggregator must have at least one child")
+	case 1:
+		return child[0], nil
+	default:
+		aggregator := nodes.NewIndirectAggregatorNode(pair)
+		for _, c := range child {
+			aggregator.AddChild(c)
+		}
+		return aggregator, nil
+	}
+}
+
+func (c *ConfigGofer) reference(pair provider.Pair, graphs graph.Graphs) (nodes.Node, error) {
+	if _, ok := graphs[pair]; !ok {
 		return nil, fmt.Errorf(
 			"unable to find price model for the %s pair",
-			sourcePair,
+			pair,
 		)
 	}
-
-	return graphs[sourcePair].(nodes.Node), nil
+	return graphs[pair], nil
 }
 
-func (c *Gofer) originNode(model PriceModel, source Source) (nodes.Node, error) {
-	sourcePair, err := provider.NewPair(source.Pair)
-	if err != nil {
-		return nil, err
-	}
-
-	originPair := nodes.OriginPair{
-		Origin: source.Origin,
-		Pair:   sourcePair,
-	}
-
-	ttl := defaultTTL
-	if model.TTL > 0 {
-		ttl = time.Second * time.Duration(model.TTL)
-	}
-	if source.TTL > 0 {
-		ttl = time.Second * time.Duration(source.TTL)
-	}
-
-	return nodes.NewOriginNode(originPair, ttl, ttl+maxTTL), nil
-}
-
-func (c *Gofer) detectCycle(graphs map[provider.Pair]nodes.Aggregator) error {
+func (c *ConfigGofer) detectCycle(graphs map[provider.Pair]nodes.Node) error {
 	for _, pair := range sortGraphs(graphs) {
 		if path := nodes.DetectCycle(graphs[pair]); len(path) > 0 {
 			return ErrCyclicReference{Pair: pair, Path: path}
 		}
 	}
-
 	return nil
 }
 
-func sortGraphs(graphs map[provider.Pair]nodes.Aggregator) []provider.Pair {
+func sortGraphs(graphs map[provider.Pair]nodes.Node) []provider.Pair {
 	var ps []provider.Pair
 	for p := range graphs {
 		ps = append(ps, p)
@@ -365,4 +425,41 @@ func sortGraphs(graphs map[provider.Pair]nodes.Aggregator) []provider.Pair {
 		return ps[i].String() < ps[j].String()
 	})
 	return ps
+}
+
+func decodeRemain(body hcl.Body, target any) error {
+	diag := gohcl.DecodeBody(body, config.HCLContext, target)
+	if diag.HasErrors() {
+		return diag
+	}
+	return nil
+}
+
+func ctyToAny(v cty.Value) (any, error) {
+	var err error
+	typ := v.Type()
+	switch {
+	case typ.IsMapType() || typ.IsObjectType():
+		m := make(map[string]any)
+		for it := v.ElementIterator(); it.Next(); {
+			ctyKey, ctyVal := it.Element()
+			if ctyKey.Type() != cty.String {
+				return nil, fmt.Errorf("unsupported type: %s", ctyKey.Type().FriendlyName())
+			}
+			m[ctyKey.AsString()], err = ctyToAny(ctyVal)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return m, nil
+	case typ == cty.String:
+		return v.AsString(), nil
+	case typ == cty.Number:
+		return v.AsBigFloat(), nil
+	case typ == cty.Bool:
+		return v.True(), nil
+	case typ == cty.NilType:
+		return nil, nil
+	}
+	return nil, fmt.Errorf("unsupported type: %s", typ.FriendlyName())
 }

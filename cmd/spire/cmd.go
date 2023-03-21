@@ -36,9 +36,6 @@ func NewRootCommand(opts *options) *cobra.Command {
 		Short:         "",
 		SilenceErrors: false,
 		SilenceUsage:  true,
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd: true,
-		},
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
@@ -46,7 +43,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		&opts.ConfigFilePath,
 		"config",
 		"c",
-		"./config.json",
+		"./config.hcl",
 		"spire config file",
 	)
 

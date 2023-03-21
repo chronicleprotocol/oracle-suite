@@ -19,8 +19,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/spf13/cobra"
 )
@@ -56,14 +56,20 @@ func NewSignerCmd(opts *options) *cobra.Command {
 
 func NewSignerSignCmd(opts *options, signerOpts *signerOptions) *cobra.Command {
 	return &cobra.Command{
-		Use:   "sign [input]",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "sign key [input]",
+		Args:  cobra.MinimumNArgs(1),
 		Short: "signs given input (stdin is used if input argument is empty)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
-			_, signer, err := opts.Config.Configure()
+			srv, err := PrepareServices(opts)
 			if err != nil {
 				return err
+			}
+
+			// Key:
+			key, ok := srv.Keys[args[0]]
+			if !ok {
+				return fmt.Errorf("unable to find key %s", args[0])
 			}
 
 			in, err := readInput(args, 0)
@@ -78,7 +84,7 @@ func NewSignerSignCmd(opts *options, signerOpts *signerOptions) *cobra.Command {
 				}
 			}
 
-			signature, err := signer.Signature(in)
+			signature, err := key.SignMessage(in)
 			if err != nil {
 				return err
 			}
@@ -97,8 +103,6 @@ func NewSignerVerifyCmd(signerOpts *signerOptions) *cobra.Command {
 		Short: "verifies given signature (stdin is used if input argument is empty)",
 		Long:  ``,
 		RunE: func(_ *cobra.Command, args []string) error {
-			signer := geth.NewSigner(nil)
-
 			in, err := readInput(args, 1)
 			if err != nil {
 				return err
@@ -116,7 +120,7 @@ func NewSignerVerifyCmd(signerOpts *signerOptions) *cobra.Command {
 				return err
 			}
 
-			address, err := signer.Recover(ethereum.SignatureFromBytes(signature), in)
+			address, err := crypto.ECRecoverer.RecoverMessage(in, types.MustSignatureFromBytes(signature))
 			if err != nil {
 				return err
 			}

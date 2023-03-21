@@ -19,10 +19,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/defiweb/go-eth/hexutil"
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 
 	"github.com/stretchr/testify/suite"
@@ -66,16 +66,16 @@ func TestWrappedStakedETHSuite(t *testing.T) {
 
 func (suite *WrappedStakedETHSuite) TestSuccessResponse() {
 	resp := [][]byte{
-		common.BigToHash(big.NewInt(0.94 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
+		types.Bytes(big.NewInt(0.94 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.98 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.99 * ether).Bytes()).PadLeft(32),
 	}
 	suite.client.On(
 		"CallBlocks",
 		mock.Anything,
-		ethereum.Call{
-			Address: ethereum.HexToAddress("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
-			Data:    ethereum.HexToBytes("0x035faf82"),
+		types.Call{
+			To:    types.MustAddressFromHexPtr("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
+			Input: hexutil.MustHexToBytes("0x035faf82"),
 		},
 		[]int64{0, 10, 20},
 	).Return(resp, nil).Once()
@@ -92,16 +92,16 @@ func (suite *WrappedStakedETHSuite) TestSuccessResponse() {
 
 func (suite *WrappedStakedETHSuite) TestSuccessResponse_Inverted() {
 	resp := [][]byte{
-		common.BigToHash(big.NewInt(0.94 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.98 * 1e18)).Bytes(),
-		common.BigToHash(big.NewInt(0.99 * 1e18)).Bytes(),
+		types.Bytes(big.NewInt(0.94 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.98 * ether).Bytes()).PadLeft(32),
+		types.Bytes(big.NewInt(0.99 * ether).Bytes()).PadLeft(32),
 	}
 	suite.client.On(
 		"CallBlocks",
 		mock.Anything,
-		ethereum.Call{
-			Address: ethereum.HexToAddress("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
-			Data:    ethereum.HexToBytes("0x9576a0c8"),
+		types.Call{
+			To:    types.MustAddressFromHexPtr("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
+			Input: hexutil.MustHexToBytes("0x9576a0c8"),
 		},
 		[]int64{0, 10, 20},
 	).Return(resp, nil).Once()

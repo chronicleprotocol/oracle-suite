@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
@@ -46,18 +46,18 @@ import (
 const prefixRef = "Ref:"
 
 //go:embed balancerv2_abi.json
-var balancerV2PoolABI string
+var balancerV2PoolABI []byte
 
 type BalancerV2 struct {
 	ethClient         ethereum.Client
 	ContractAddresses ContractAddresses
-	abi               abi.ABI
+	abi               *abi.Contract
 	variable          byte
 	blocks            []int64
 }
 
 func NewBalancerV2(ethClient ethereum.Client, addrs ContractAddresses, blocks []int64) (*BalancerV2, error) {
-	a, err := abi.JSON(strings.NewReader(balancerV2PoolABI))
+	a, err := abi.ParseJSON(balancerV2PoolABI)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 		return pairs[i].String() < pairs[j].String()
 	})
 	var frs []FetchResult
-	var cds = make([][]ethereum.Call, len(pairs))
+	var cds = make([][]types.Call, len(pairs))
 	// Prepare list of calls.
 	for n, pair := range pairs {
 		contract, indirect, err := s.ContractAddresses.AddressByPair(pair)
@@ -88,16 +88,16 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 				fmt.Errorf("cannot use indirect pair to retrieve price: %s", pair.String()),
 			)
 		}
-		callData, err := s.abi.Pack("getLatest", s.variable)
+		callData, err := s.abi.Methods["getLatest"].EncodeArgs(s.variable) // TODO: test
 		if err != nil {
 			return fetchResultListWithErrors(
 				pairs,
 				fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err),
 			)
 		}
-		cds[n] = append(cds[n], ethereum.Call{
-			Address: contract,
-			Data:    callData,
+		cds[n] = append(cds[n], types.Call{
+			To:    &contract,
+			Input: callData,
 		})
 		if err != nil {
 			return fetchResultListWithErrors(pairs, err)
@@ -110,7 +110,7 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 					fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String()),
 				)
 			}
-			callData, err := s.abi.Pack("getPriceRateCache", ethereum.HexToAddress(token)) //nolint:staticcheck
+			callData, err := s.abi.Methods["getPriceRateCache"].EncodeArgs(types.MustAddressFromHex(token))
 			if err != nil {
 				return fetchResultListWithErrors(
 					pairs,
@@ -121,9 +121,9 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 					),
 				)
 			}
-			cds[n] = append(cds[n], ethereum.Call{
-				Address: contract,
-				Data:    callData,
+			cds[n] = append(cds[n], types.Call{
+				To:    &contract,
+				Input: callData,
 			})
 		}
 	}
@@ -156,7 +156,8 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 // block delta defined in the blocks argument. The returned slice have the
 // same structure as the calls slice. In the last array dimension, the
 // returned slice contains the results of the multicall for each block delta.
-func nestedMultiCall(ethClient ethereum.Client, calls [][]ethereum.Call, blocks []int64) ([][][][]byte, error) {
+//nolint:staticcheck // deprecated ethereum.Client
+func nestedMultiCall(ethClient ethereum.Client, calls [][]types.Call, blocks []int64) ([][][][]byte, error) {
 	block, err := ethClient.BlockNumber(context.Background())
 	if err != nil {
 		return nil, err
@@ -168,7 +169,7 @@ func nestedMultiCall(ethClient ethereum.Client, calls [][]ethereum.Call, blocks 
 	// Perform multicall for each block delta.
 	for _, blockDelta := range blocks {
 		// Perform multicall.
-		cs := make([]ethereum.Call, 0, len(calls))
+		cs := make([]types.Call, 0, len(calls))
 		for _, call := range calls {
 			cs = append(cs, call...)
 		}

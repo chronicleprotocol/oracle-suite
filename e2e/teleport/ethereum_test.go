@@ -43,9 +43,9 @@ func TestEthereum(t *testing.T) {
 		require.Fail(t, err.Error())
 	}
 
-	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.json", "-v", "debug")
-	cmd2 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
-	cmd3 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair.hcl", "-v", "debug")
+	cmd2 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.hcl", "-v", "debug")
+	cmd3 := command(ctx, "../..", nil, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo2_ethereum.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = cmd1.Wait()
@@ -147,8 +147,8 @@ func TestEthereum_Replay(t *testing.T) {
 	eventDate := time.Unix(1655824479, 0)
 	replayAfter := time.Since(eventDate) + 40*time.Second
 
-	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair_test_replay.json", "-v", "debug")
-	cmd2 := command(ctx, "../..", []string{fmt.Sprintf("REPLAY_AFTER=%d", int(replayAfter.Seconds()))}, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.json", "-v", "debug")
+	cmd1 := command(ctx, "../..", nil, "./lair", "run", "-c", "./e2e/teleport/testdata/config/lair_test_replay.hcl", "-v", "debug")
+	cmd2 := command(ctx, "../..", []string{fmt.Sprintf("REPLAY_AFTER=%d", int(replayAfter.Seconds()))}, "./leeloo", "run", "-c", "./e2e/teleport/testdata/config/leeloo_ethereum.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = cmd1.Wait()

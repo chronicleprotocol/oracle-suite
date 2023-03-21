@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	testGraph  map[provider.Pair]nodes.Aggregator
+	testGraph  map[provider.Pair]nodes.Node
 	testFeeder *feeder.Feeder
 	testPairs  = map[string]provider.Pair{
 		"A/B": {Base: "A", Quote: "B"},
@@ -240,7 +240,7 @@ func init() {
 	xyGraph.AddChild(xyc1)
 	xyGraph.AddChild(xyc2)
 
-	testGraph = map[provider.Pair]nodes.Aggregator{
+	testGraph = map[provider.Pair]nodes.Node{
 		ab: abGraph,
 		xy: xyGraph,
 	}

@@ -19,7 +19,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/defiweb/go-eth/types"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -34,7 +35,7 @@ func NewMemoryStorage() *MemoryStorage {
 }
 
 // Add implements the store.Storage interface.
-func (p *MemoryStorage) Add(_ context.Context, from ethereum.Address, price *messages.Price) error {
+func (p *MemoryStorage) Add(_ context.Context, from types.Address, price *messages.Price) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	fp := FeederPrice{AssetPair: price.Price.Wat, Feeder: from}
@@ -71,7 +72,7 @@ func (p *MemoryStorage) GetByAssetPair(_ context.Context, pair string) ([]*messa
 }
 
 // GetByFeeder implements the store.Storage interface.
-func (p *MemoryStorage) GetByFeeder(_ context.Context, pair string, feeder ethereum.Address) (*messages.Price, error) {
+func (p *MemoryStorage) GetByFeeder(_ context.Context, pair string, feeder types.Address) (*messages.Price, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	fp := FeederPrice{

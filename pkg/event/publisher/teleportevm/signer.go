@@ -18,7 +18,8 @@ package teleportevm
 import (
 	"errors"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	"github.com/defiweb/go-eth/wallet"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -31,12 +32,12 @@ const SignatureKey = "ethereum"
 // fields in the data are ignored. The calculated signature is stored in the
 // "ethereum" field of the event's signatures map.
 type Signer struct {
-	signer ethereum.Signer
+	signer wallet.Key
 	types  []string
 }
 
 // NewSigner returns a new instance of the Signer struct.
-func NewSigner(signer ethereum.Signer, types []string) *Signer {
+func NewSigner(signer wallet.Key, types []string) *Signer {
 	return &Signer{signer: signer, types: types}
 }
 
@@ -59,7 +60,7 @@ func (l *Signer) Sign(event *messages.Event) (bool, error) {
 	if !ok {
 		return false, errors.New("missing hash field")
 	}
-	s, err := l.signer.Signature(h)
+	s, err := l.signer.SignMessage(h)
 	if err != nil {
 		return false, err
 	}

@@ -19,28 +19,26 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 //go:embed wsteth_abi.json
-var wrappedStakedETHABI string
-
-const ether uint64 = 1e18
+var wrappedStakedETHABI []byte
 
 type WrappedStakedETH struct {
 	ethClient ethereum.Client
 	addrs     ContractAddresses
-	abi       abi.ABI
+	abi       *abi.Contract
 	blocks    []int64
 }
 
 func NewWrappedStakedETH(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*WrappedStakedETH, error) {
-	a, err := abi.JSON(strings.NewReader(wrappedStakedETHABI))
+	a, err := abi.ParseJSON(wrappedStakedETHABI)
 	if err != nil {
 		return nil, err
 	}
@@ -64,15 +62,15 @@ func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
 
 	var callData []byte
 	if !inverted {
-		callData, err = s.abi.Pack("stEthPerToken")
+		callData, err = s.abi.Methods["stEthPerToken"].EncodeArgs()
 	} else {
-		callData, err = s.abi.Pack("tokensPerStEth")
+		callData, err = s.abi.Methods["tokensPerStEth"].EncodeArgs()
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get contract args for pair: %s", pair.String())
 	}
 
-	resp, err := s.ethClient.CallBlocks(context.Background(), ethereum.Call{Address: contract, Data: callData}, s.blocks)
+	resp, err := s.ethClient.CallBlocks(context.Background(), types.Call{To: &contract, Input: callData}, s.blocks)
 	if err != nil {
 		return nil, err
 	}

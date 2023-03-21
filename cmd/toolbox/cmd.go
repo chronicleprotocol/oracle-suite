@@ -19,9 +19,11 @@ import (
 	"github.com/spf13/cobra"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
 type options struct {
+	flag.LoggerFlag
 	ConfigFilePath string
 	Config         Config
 }
@@ -42,7 +44,7 @@ func NewRootCommand() *cobra.Command {
 		&opts.ConfigFilePath,
 		"config",
 		"c",
-		"./config.json",
+		"./config.hcl",
 		"spire config file",
 	)
 
@@ -50,7 +52,6 @@ func NewRootCommand() *cobra.Command {
 		NewMedianCmd(&opts),
 		NewPriceCmd(&opts),
 		NewSignerCmd(&opts),
-		NewSpectreCmd(&opts),
 	)
 
 	return rootCmd

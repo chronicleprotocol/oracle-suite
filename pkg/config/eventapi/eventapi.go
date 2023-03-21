@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/api"
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store/redis"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -31,43 +32,6 @@ import (
 
 const week = 3600 * 24 * 7
 
-//nolint
-var eventAPIFactory = func(cfg api.Config) (*api.EventAPI, error) {
-	return api.New(cfg)
-}
-
-type EventAPI struct {
-	ListenAddr string  `yaml:"listenAddr"`
-	Storage    storage `yaml:"storage"`
-}
-
-type storage struct {
-	Type   string        `yaml:"type"`
-	Memory storageMemory `yaml:"memory"`
-	Redis  storageRedis  `yaml:"redis"`
-}
-
-type storageMemory struct {
-	TTL int `yaml:"ttl"`
-}
-
-type storageRedis struct {
-	TTL                   int      `yaml:"ttl"`
-	Address               string   `yaml:"address"`
-	Username              string   `yaml:"username"`
-	Password              string   `yaml:"password"`
-	DB                    int      `yaml:"db"`
-	MemoryLimit           int64    `yaml:"memoryLimit"`
-	TLS                   bool     `yaml:"tls"`
-	TLSServerName         string   `yaml:"tlsServerName"`
-	TLSCertFile           string   `yaml:"tlsCertFile"`
-	TLSKeyFile            string   `yaml:"tlsKeyFile"`
-	TLSRootCAFile         string   `yaml:"tlsRootCAFile"`
-	TLSInsecureSkipVerify bool     `yaml:"tlsInsecureSkipVerify"`
-	Cluster               bool     `yaml:"cluster"`
-	ClusterAddresses      []string `yaml:"clusterAddresses"`
-}
-
 type Dependencies struct {
 	EventStore *store.EventStore
 	Transport  transport.Transport
@@ -75,48 +39,118 @@ type Dependencies struct {
 }
 
 type DatastoreDependencies struct {
-	Signer    ethereum.Signer
 	Transport transport.Transport
-	Feeds     []ethereum.Address
+	Feeds     []types.Address
 	Logger    log.Logger
 }
 
-func (c *EventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
-	return eventAPIFactory(api.Config{
+type ConfigEventAPI struct {
+	// ListenAddr is the address on which the event API will listen.
+	ListenAddr string `hcl:"listen_addr"`
+
+	// Memory is the configuration for the in-memory storage. Cannot be
+	// used together with storage_redis configuration.
+	Memory *storageMemory `hcl:"storage_memory,block"`
+
+	// Redis is the configuration for the Redis storage. Cannot be used
+	// together with storage_memory configuration.
+	Redis *storageRedis `hcl:"storage_redis,block"`
+}
+
+type storageMemory struct {
+	// TTL is the time to live for the events in the in-memory storage in
+	// seconds. Defaults to 604800 (one week).
+	TTL int `hcl:"ttl,optional"`
+}
+
+type storageRedis struct {
+	// TTL is the time to live for the events in the Redis storage in seconds.
+	// Defaults to 604800 (one week).
+	TTL int `hcl:"ttl,optional"`
+
+	// Address is the redis server address provided as the combination of IP
+	// address or host and port number, e.g. `0.0.0.0:8080`.
+	Address string `hcl:"addr,optional"`
+
+	// Username is the username for the ACL.
+	Username string `hcl:"user,optional"`
+
+	// Password is the password for the ACL.
+	Password string `hcl:"pass,optional"`
+
+	// DB is the database number. Ignored in cluster mode.
+	DB int `hcl:"db,optional"`
+
+	// MemoryLimit is a limit of data per feed in bytes. If 0 or not specified,
+	// no limit is applied.
+	MemoryLimit int64 `hcl:"memory_limit,optional"`
+
+	// TLS enables TLS for the connection to the Redis server.
+	TLS bool `hcl:"tls,optional"`
+
+	// TLSServerName is the server name used to verify the hostname on the
+	// returned certificates from the server. Ignored if empty
+	TLSServerName string `hcl:"tls_server_name,optional"`
+
+	// TLSCertFile is the path to PEM encoded certificate file.
+	TLSCertFile string `hcl:"tls_cert_file,optional"`
+
+	// TLSKeyFile is the path to PEM encoded private key file.
+	TLSKeyFile string `hcl:"tls_key_file,optional"`
+
+	// TLSRootCAFile is the path to PEM encoded root certificate file.
+	TLSRootCAFile string `hcl:"tls_root_ca_file,optional"`
+
+	// TLSInsecureSkipVerify disables TLS certificate verification.
+	TLSInsecureSkipVerify bool `hcl:"tls_insecure_skip_verify,optional"`
+
+	// Cluster enables cluster mode.
+	Cluster bool `hcl:"cluster,optional"`
+
+	// ClusterAddrs is a list of cluster node addresses provided as the
+	// combination of IP address or host and port number, e.g. `0.0.0.0:8080`.
+	ClusterAddrs []string `hcl:"cluster_addrs,optional"`
+}
+
+func (c *ConfigEventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
+	return api.New(api.Config{
 		EventStore: d.EventStore,
 		Address:    c.ListenAddr,
 		Logger:     d.Logger,
 	})
 }
 
-func (c *EventAPI) ConfigureStorage() (store.Storage, error) {
-	switch c.Storage.Type {
-	case "memory", "":
+func (c *ConfigEventAPI) ConfigureStorage() (store.Storage, error) {
+	if c.Memory != nil && c.Redis != nil {
+		return nil, fmt.Errorf(`eventapi config: "storage_memory" and "storage_redis" storage types are mutually exclusive`)
+	}
+	switch {
+	case c.Memory != nil:
 		ttl := week
-		if c.Storage.Memory.TTL > 0 {
-			ttl = c.Storage.Memory.TTL
+		if c.Memory.TTL > 0 {
+			ttl = c.Memory.TTL
 		}
 		return store.NewMemoryStorage(time.Second * time.Duration(ttl)), nil
-	case "redis":
+	case c.Redis != nil:
 		ttl := week
-		if c.Storage.Redis.TTL > 0 {
-			ttl = c.Storage.Redis.TTL
+		if c.Redis.TTL > 0 {
+			ttl = c.Redis.TTL
 		}
 		r, err := redis.New(redis.Config{
 			TTL:                   time.Duration(ttl) * time.Second,
-			Address:               c.Storage.Redis.Address,
-			Username:              c.Storage.Redis.Username,
-			Password:              c.Storage.Redis.Password,
-			DB:                    c.Storage.Redis.DB,
-			MemoryLimit:           c.Storage.Redis.MemoryLimit,
-			TLS:                   c.Storage.Redis.TLS,
-			TLSServerName:         c.Storage.Redis.TLSServerName,
-			TLSCertFile:           c.Storage.Redis.TLSCertFile,
-			TLSKeyFile:            c.Storage.Redis.TLSKeyFile,
-			TLSRootCAFile:         c.Storage.Redis.TLSRootCAFile,
-			TLSInsecureSkipVerify: c.Storage.Redis.TLSInsecureSkipVerify,
-			Cluster:               c.Storage.Redis.Cluster,
-			ClusterAddrs:          c.Storage.Redis.ClusterAddresses,
+			Address:               c.Redis.Address,
+			Username:              c.Redis.Username,
+			Password:              c.Redis.Password,
+			DB:                    c.Redis.DB,
+			MemoryLimit:           c.Redis.MemoryLimit,
+			TLS:                   c.Redis.TLS,
+			TLSServerName:         c.Redis.TLSServerName,
+			TLSCertFile:           c.Redis.TLSCertFile,
+			TLSKeyFile:            c.Redis.TLSKeyFile,
+			TLSRootCAFile:         c.Redis.TLSRootCAFile,
+			TLSInsecureSkipVerify: c.Redis.TLSInsecureSkipVerify,
+			Cluster:               c.Redis.Cluster,
+			ClusterAddrs:          c.Redis.ClusterAddrs,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("eventapi config: unable to initialize redis storage: %w", err)

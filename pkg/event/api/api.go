@@ -61,9 +61,11 @@ type EventAPI struct {
 type Config struct {
 	// EventStore is the event store to use.
 	EventStore *store.EventStore
+
 	// Address specifies the TCP address for the server to listen on in the
 	// form "host:port".
 	Address string
+
 	// Logger is a current logger used by the EventAPI.
 	Logger log.Logger
 }

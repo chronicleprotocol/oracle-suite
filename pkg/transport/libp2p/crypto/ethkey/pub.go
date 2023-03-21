@@ -19,17 +19,17 @@ import (
 	"bytes"
 	"errors"
 
+	cryptoETH "github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	cryptoPB "github.com/libp2p/go-libp2p-core/crypto/pb"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 type PubKey struct {
-	address ethereum.Address
+	address types.Address
 }
 
-func NewPubKey(address ethereum.Address) crypto.PubKey {
+func NewPubKey(address types.Address) crypto.PubKey {
 	return &PubKey{
 		address: address,
 	}
@@ -45,7 +45,6 @@ func (p *PubKey) Equals(key crypto.Key) bool {
 	if p.Type() != key.Type() {
 		return false
 	}
-
 	a, err := p.Raw()
 	if err != nil {
 		return false
@@ -54,7 +53,6 @@ func (p *PubKey) Equals(key crypto.Key) bool {
 	if err != nil {
 		return false
 	}
-
 	return bytes.Equal(a, b)
 }
 
@@ -71,7 +69,7 @@ func (p *PubKey) Type() cryptoPB.KeyType {
 // Verify implements the crypto.PubKey interface.
 func (p *PubKey) Verify(data []byte, sig []byte) (bool, error) {
 	// Fetch public address from signature:
-	addr, err := NewSigner().Recover(ethereum.SignatureFromBytes(sig), data)
+	addr, err := cryptoETH.ECRecoverer.RecoverMessage(data, types.MustSignatureFromBytes(sig))
 	if err != nil {
 		return false, err
 	}
@@ -82,11 +80,11 @@ func (p *PubKey) Verify(data []byte, sig []byte) (bool, error) {
 
 // UnmarshalEthPublicKey returns a public key from input bytes.
 func UnmarshalEthPublicKey(data []byte) (crypto.PubKey, error) {
-	if len(data) != ethereum.AddressLength {
+	if len(data) != types.AddressLength {
 		return nil, errors.New("expect eth public key data size to be 20")
 	}
 
-	var addr ethereum.Address
+	var addr types.Address
 	copy(addr[:], data)
 	return &PubKey{address: addr}, nil
 }

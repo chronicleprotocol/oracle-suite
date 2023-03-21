@@ -31,9 +31,11 @@ import (
 type Config struct {
 	// EventProvider is the event provider to replay events from.
 	EventProvider publisher.EventProvider
+
 	// Interval specifies the interval at which the event cache is checked for
 	// events that need to be replayed.
 	Interval time.Duration
+
 	// ReplayAfter is a list of time durations after which events should be
 	// replayed.
 	ReplayAfter []time.Duration

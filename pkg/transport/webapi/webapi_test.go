@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	logMocks "github.com/chronicleprotocol/oracle-suite/pkg/log/mocks"
@@ -23,6 +22,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/webapi/pb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
+
+var fakeSignature = types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65))
 
 type message struct {
 	data []byte
@@ -46,25 +47,25 @@ func (a *addressBook) Consumers(ctx context.Context) ([]string, error) {
 }
 
 func Test_WebAPI(t *testing.T) {
-	address1 := ethereum.HexToAddress("0x1234567890123456789012345678901234567890")
-	address2 := ethereum.HexToAddress("0x2345678901234567890123456789012345678901")
+	address1 := types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+	address2 := types.MustAddressFromHex("0x2345678901234567890123456789012345678901")
 
 	tests := []struct {
-		test func(T *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI)
+		test func(T *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI)
 	}{
 		{
 			// Single valid message.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now()
 				ch := c.Messages("test")
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return(&address1, nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), msgSig).Return(&address1, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", msgSig, fakeSignature).Return(&address1, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return(&address1, nil)
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -79,15 +80,15 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Invalid URL signature.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now()
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return((*ethereum.Address)(nil), errors.New("err")).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return((*types.Address)(nil), errors.New("invalid signature")).Once()
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -106,15 +107,15 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Feeder not allowed to broadcast.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now()
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return(&address2, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return(&address2, nil).Once()
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -133,15 +134,15 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Message too old.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now().Add(-time.Minute * 2)
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return(&address1, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return(&address1, nil).Once()
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -160,15 +161,15 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Message timestamp in the future.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now().Add(time.Minute)
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return(&address1, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return(&address1, nil).Once()
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -187,7 +188,7 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Message received too soon.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm1 := time.Now().Add(-time.Second * 45)
 				tm2 := time.Now()
 				ch := c.Messages("test")
@@ -196,14 +197,14 @@ func Test_WebAPI(t *testing.T) {
 				msgSig := []byte("testdata")
 				urlSig1 := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm1.Unix()))
 				urlSig2 := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm2.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig1).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig2).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig1).Return(&address1, nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig2).Return(&address1, nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), msgSig).Return(&address1, nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), msgSig).Return(&address1, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig1).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig2).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig1, fakeSignature).Return(&address1, nil).Once()
+				r.On("RecoverMessage", urlSig2, fakeSignature).Return(&address1, nil).Once()
+				r.On("RecoverMessage", msgSig, fakeSignature).Return(&address1, nil).Once()
+				r.On("RecoverMessage", msgSig, fakeSignature).Return(&address1, nil).Once()
 
 				// Send first message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -230,16 +231,16 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Invalid message signature.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now()
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return(&address1, nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), msgSig).Return((*ethereum.Address)(nil), errors.New("err")).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return(&address1, nil).Once()
+				r.On("RecoverMessage", msgSig, fakeSignature).Return((*types.Address)(nil), errors.New("err")).Once()
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -258,16 +259,16 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Request author does not match message author.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now()
 
 				// Prepare mocks:
 				msgSig := []byte("testdata")
 				urlSig := []byte(fmt.Sprintf("%d30313233343536373839616263646566", tm.Unix()))
-				s.On("Signature", msgSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Signature", urlSig).Return(ethereum.SignatureFromBytes([]byte("signature")), nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), urlSig).Return(&address1, nil).Once()
-				s.On("Recover", ethereum.SignatureFromBytes([]byte("signature")), msgSig).Return(&address2, nil).Once()
+				s.On("SignMessage", msgSig).Return(&fakeSignature, nil).Once()
+				s.On("SignMessage", urlSig).Return(&fakeSignature, nil).Once()
+				r.On("RecoverMessage", urlSig, fakeSignature).Return(&address1, nil).Once()
+				r.On("RecoverMessage", msgSig, fakeSignature).Return(&address2, nil).Once()
 
 				// Send message:
 				require.NoError(t, p.Broadcast("test", &message{data: []byte("data")}))
@@ -286,7 +287,7 @@ func Test_WebAPI(t *testing.T) {
 		},
 		{
 			// Channel must be closed after context is done.
-			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Signer, p, c *WebAPI) {
+			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				ch := c.Messages("test")
 				_, ok := <-ch
 				assert.False(t, ok)
@@ -304,7 +305,8 @@ func Test_WebAPI(t *testing.T) {
 			prodTick := timeutil.NewTicker(60 * time.Second)
 			rand := bytes.NewReader([]byte(strings.Repeat("0123456789abcdef", 32)))
 			ab := &addressBook{addresses: []string{}}
-			signer := &mocks.Signer{}
+			signer := &mocks.Key{}
+			recoverer := &mocks.Recoverer{}
 			logger := logMocks.New()
 			logger.Mock().On("WithError", mock.Anything).Return(logger)
 			logger.Mock().On("WithField", mock.Anything, mock.Anything).Return(logger)
@@ -317,7 +319,7 @@ func Test_WebAPI(t *testing.T) {
 			prod, err := New(Config{
 				ListenAddr:      "127.0.0.1:0",
 				Topics:          map[string]transport.Message{"test": (*message)(nil)},
-				AuthorAllowlist: []common.Address{address1},
+				AuthorAllowlist: []types.Address{address1},
 				AddressBook:     ab,
 				Signer:          signer,
 				Timeout:         0,
@@ -330,7 +332,7 @@ func Test_WebAPI(t *testing.T) {
 			// WebAPI instance for a producer.
 			cons, err := New(Config{
 				Topics:          map[string]transport.Message{"test": (*message)(nil)},
-				AuthorAllowlist: []common.Address{address1},
+				AuthorAllowlist: []types.Address{address1},
 				AddressBook:     ab,
 				Signer:          signer,
 				Timeout:         0,
@@ -341,13 +343,16 @@ func Test_WebAPI(t *testing.T) {
 			})
 			require.NoError(t, err)
 
+			prod.recover = recoverer
+			cons.recover = recoverer
+
 			// Start transport.
 			require.NoError(t, prod.Start(ctx))
 			require.NoError(t, cons.Start(ctx))
 			ab.addresses = []string{"http://" + consSrv.Addr().String()}
 
 			// Run test.
-			tt.test(t, logger, signer, prod, cons)
+			tt.test(t, logger, signer, recoverer, prod, cons)
 
 			// Consumer receives a message from the producer before the HTTP
 			// request is finished. Because of this, it may happen that the
@@ -364,54 +369,60 @@ func Test_WebAPI(t *testing.T) {
 }
 
 func Test_signMessage(t *testing.T) {
-	// Prepare mocks:
-	mp := &pb.MessagePack{
-		Messages: map[string]*pb.MessagePack_Messages{
-			"a": {
-				Data: [][]byte{
-					[]byte("1"),
-					[]byte("2"),
-					[]byte("3"),
+	var (
+		mp = &pb.MessagePack{
+			Messages: map[string]*pb.MessagePack_Messages{
+				"a": {
+					Data: [][]byte{
+						[]byte("1"),
+						[]byte("2"),
+						[]byte("3"),
+					},
+				},
+				"b": {
+					Data: [][]byte{
+						[]byte("1"),
+						[]byte("2"),
+						[]byte("3"),
+					},
 				},
 			},
-			"b": {
-				Data: [][]byte{
-					[]byte("1"),
-					[]byte("2"),
-					[]byte("3"),
-				},
-			},
-		},
-	}
-	expSig := "a123b123"
-	signature := ethereum.SignatureFromBytes([]byte("signature"))
-	address := ethereum.HexToAddress("0x1234567890123456789012345678901234567890")
-	signer := &mocks.Signer{}
-	signer.On("Signature", []byte(expSig)).Return(signature, nil)
-	signer.On("Recover", signature, []byte(expSig)).Return(&address, nil)
+		}
+		expSig    = "a123b123"
+		address   = types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		signer    = &mocks.Key{}
+		recoverer = &mocks.Recoverer{}
+	)
+
+	// Mock signer:
+	signer.On("SignMessage", []byte(expSig)).Return(&fakeSignature, nil)
+	recoverer.On("RecoverMessage", []byte(expSig), fakeSignature).Return(&address, nil)
 
 	// Sign message:
 	err := signMessage(mp, signer)
 	require.NoError(t, err)
 
 	// Check signature:
-	retAddress, err := verifyMessage(mp, signer)
+	retAddress, err := verifyMessage(mp, recoverer)
 	require.NoError(t, err)
 	assert.Equal(t, &address, retAddress)
 }
 
 func Test_signURL(t *testing.T) {
-	// Prepare mocks:
-	tm := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	rand := "0123456789ab"
-	url := "https://test.onion/consume"
-	expSig := "157783680030313233343536373839616200000000"
-	expURL := "https://test.onion/consume?t=1577836800&r=30313233343536373839616200000000&s=7369676e61747572650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	signature := ethereum.SignatureFromBytes([]byte("signature"))
-	address := ethereum.HexToAddress("0x1234567890123456789012345678901234567890")
-	signer := &mocks.Signer{}
-	signer.On("Signature", []byte(expSig)).Return(signature, nil)
-	signer.On("Recover", signature, []byte(expSig)).Return(&address, nil)
+	var (
+		tm        = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+		rand      = "0123456789ab"
+		url       = "https://test.onion/consume"
+		expSig    = "157783680030313233343536373839616200000000"
+		expURL    = "https://test.onion/consume?t=1577836800&r=30313233343536373839616200000000&s=0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+		address   = types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		signer    = &mocks.Key{}
+		recoverer = &mocks.Recoverer{}
+	)
+
+	// Mocks:
+	signer.On("SignMessage", []byte(expSig)).Return(&fakeSignature, nil)
+	recoverer.On("RecoverMessage", []byte(expSig), fakeSignature).Return(&address, nil)
 
 	// Sign URL:
 	got, err := signURL(url, tm, signer, bytes.NewReader([]byte(rand)))
@@ -419,7 +430,7 @@ func Test_signURL(t *testing.T) {
 	assert.Equal(t, expURL, got)
 
 	// Check signature:
-	retAddress, retTime, err := verifyURL(got, signer)
+	retAddress, retTime, err := verifyURL(got, recoverer)
 	require.NoError(t, err)
 	assert.Equal(t, &address, retAddress)
 	assert.Equal(t, tm.Unix(), retTime.Unix())

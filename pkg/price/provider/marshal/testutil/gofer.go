@@ -25,7 +25,7 @@ import (
 )
 
 func Gofer(ps ...provider.Pair) provider.Provider {
-	graphs := map[provider.Pair]nodes.Aggregator{}
+	graphs := map[provider.Pair]nodes.Node{}
 	for _, p := range ps {
 		root := nodes.NewMedianAggregatorNode(p, 1)
 

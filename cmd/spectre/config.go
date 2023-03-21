@@ -20,85 +20,86 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	spectreConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 type Config struct {
-	Transport transportConfig.Transport `json:"transport"`
-	Ethereum  ethereumConfig.Ethereum   `json:"ethereum"`
-	Spectre   spectreConfig.Spectre     `json:"spectre"`
-	Feeds     feedsConfig.Feeds         `json:"feeds"`
-	Logger    loggerConfig.Logger       `json:"logger"`
+	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
+	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
+	Spectre   spectreConfig.ConfigSpectre     `hcl:"spectre,block"`
+	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
+	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
+
+	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func PrepareServices(ctx context.Context, opts *options) (*supervisor.Supervisor, error) {
-	err := config.ParseFile(&opts.Config, opts.ConfigFilePath)
+func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
+	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	log, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
 		AppName:    "spectre",
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	sig, err := opts.Config.Ethereum.ConfigureSigner()
+	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	cli, err := opts.Config.Ethereum.ConfigureEthereumClient(sig, log)
+	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	fed, err := opts.Config.Feeds.Addresses()
+	feeds, err := opts.Config.Feeds.Addresses()
 	if err != nil {
 		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
-	tra, err := opts.Config.Transport.Configure(transportConfig.Dependencies{
-		Signer: sig,
-		Feeds:  fed,
-		Logger: log,
-	},
-		map[string]transport.Message{
+	transport, err := opts.Config.Transport.Transport(transportConfig.Dependencies{
+		Keys:    keys,
+		Clients: clients,
+		Messages: map[string]pkgTransport.Message{
 			messages.PriceV0MessageName: (*messages.Price)(nil),
 			messages.PriceV1MessageName: (*messages.Price)(nil),
 		},
-	)
+		Feeds:  feeds,
+		Logger: logger,
+	})
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	pst, err := opts.Config.Spectre.ConfigurePriceStore(spectreConfig.PriceStoreDependencies{
-		Signer:    sig,
-		Transport: tra,
-		Feeds:     fed,
-		Logger:    log,
+	priceStore, err := opts.Config.Spectre.PriceStore(spectreConfig.PriceStoreDependencies{
+		Transport: transport,
+		Logger:    logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
-	spe, err := opts.Config.Spectre.ConfigureRelayer(spectreConfig.Dependencies{
-		Signer:         sig,
-		PriceStore:     pst,
-		EthereumClient: cli,
-		Logger:         log,
+	spectre, err := opts.Config.Spectre.Relayer(spectreConfig.Dependencies{
+		Clients:    clients,
+		PriceStore: priceStore,
+		Logger:     logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf(`spectre config error: %w`, err)
 	}
-	sup := supervisor.New(log)
-	sup.Watch(tra, pst, spe, sysmon.New(time.Minute, log))
-	if l, ok := log.(supervisor.Service); ok {
-		sup.Watch(l)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(transport, priceStore, spectre, sysmon.New(time.Minute, logger))
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, nil
+	return supervisor, nil
 }

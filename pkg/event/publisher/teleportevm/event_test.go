@@ -19,9 +19,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/defiweb/go-eth/types"
 )
 
 func Test_packTeleportGUID(t *testing.T) {
@@ -37,11 +38,11 @@ func Test_unpackTeleportGUID(t *testing.T) {
 	g, err := unpackTeleportGUID(teleportTestGUID)
 
 	require.NoError(t, err)
-	assert.Equal(t, common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111"), g.sourceDomain)
-	assert.Equal(t, common.HexToHash("0x2222222222222222222222222222222222222222222222222222222222222222"), g.targetDomain)
-	assert.Equal(t, common.HexToHash("0x0000000000000000000000003333333333333333333333333333333333333333"), g.receiver)
-	assert.Equal(t, common.HexToHash("0x0000000000000000000000004444444444444444444444444444444444444444"), g.operator)
-	assert.Equal(t, big.NewInt(55), g.amount)
-	assert.Equal(t, big.NewInt(66), g.nonce)
-	assert.Equal(t, int64(77), g.timestamp)
+	assert.Equal(t, types.MustHashFromHex("0x1111111111111111111111111111111111111111111111111111111111111111", types.PadNone), g.SourceDomain)
+	assert.Equal(t, types.MustHashFromHex("0x2222222222222222222222222222222222222222222222222222222222222222", types.PadNone), g.TargetDomain)
+	assert.Equal(t, types.MustHashFromHex("0x0000000000000000000000003333333333333333333333333333333333333333", types.PadNone), g.Receiver)
+	assert.Equal(t, types.MustHashFromHex("0x0000000000000000000000004444444444444444444444444444444444444444", types.PadNone), g.Operator)
+	assert.Equal(t, big.NewInt(55), g.Amount)
+	assert.Equal(t, big.NewInt(66), g.Nonce)
+	assert.Equal(t, int64(77), g.Timestamp)
 }

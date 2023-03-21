@@ -16,82 +16,99 @@
 package spectre
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
+
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
-//nolint
-var relayerFactory = func(cfg relayer.Config) (*relayer.Relayer, error) {
-	return relayer.New(cfg)
-}
-
-//nolint
-var priceStoreFactory = func(cfg store.Config) (*store.PriceStore, error) {
-	return store.New(cfg)
-}
-
-type Spectre struct {
-	Interval    int64                 `yaml:"interval"`
-	Medianizers map[string]Medianizer `yaml:"medianizers"`
-}
-
-type Medianizer struct {
-	Contract         string  `yaml:"oracle"`
-	OracleSpread     float64 `yaml:"oracleSpread"`
-	OracleExpiration int64   `yaml:"oracleExpiration"`
-}
-
 type Dependencies struct {
-	Signer         ethereum.Signer
-	PriceStore     *store.PriceStore
-	EthereumClient ethereum.Client
-	Feeds          []ethereum.Address
-	Logger         log.Logger
+	Clients    ethereumConfig.ClientRegistry
+	PriceStore *store.PriceStore
+	Logger     log.Logger
 }
 
 type PriceStoreDependencies struct {
-	Signer    ethereum.Signer
 	Transport transport.Transport
-	Feeds     []ethereum.Address
 	Logger    log.Logger
 }
 
-func (c *Spectre) ConfigureRelayer(d Dependencies) (*relayer.Relayer, error) {
+type ConfigSpectre struct {
+	// Interval is a time interval in seconds between checking if the price
+	// needs to be updated.
+	Interval int64 `hcl:"interval"`
+
+	// Median is a list of Median contracts to watch.
+	Median []configMedian `hcl:"median,block"`
+}
+
+type configMedian struct {
+	// EthereumClient is a name of an Ethereum client to use.
+	EthereumClient string `hcl:"ethereum_client"`
+
+	// ContractAddr is an address of a Median contract.
+	ContractAddr string `hcl:"contract_addr"`
+
+	// Pair is a pair name in the format "base/quote".
+	Pair string `hcl:"pair"`
+
+	// Spread is a spread in percent points above which the price is considered
+	// stale.
+	Spread float64 `hcl:"spread"`
+
+	// Expiration is a time in seconds after which the price is considered
+	// stale.
+	Expiration int64 `hcl:"expiration"`
+}
+
+func (c *ConfigSpectre) Relayer(d Dependencies) (*relayer.Relayer, error) {
 	cfg := relayer.Config{
-		Signer:     d.Signer,
 		PokeTicker: timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		PriceStore: d.PriceStore,
 		Logger:     d.Logger,
 	}
-	for name, pair := range c.Medianizers {
+	for _, pair := range c.Median {
+		contractAddr, err := types.AddressFromHex(pair.ContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("spectre: invalid contract address %s", pair.ContractAddr)
+		}
+		rpcClient := d.Clients[pair.EthereumClient]
+		if rpcClient == nil {
+			return nil, fmt.Errorf("spectre: ethereum client %s not found", pair.EthereumClient)
+		}
+		ethClient := geth.NewClient(rpcClient)
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
-			AssetPair:                   name,
-			OracleSpread:                pair.OracleSpread,
-			OracleExpiration:            time.Second * time.Duration(pair.OracleExpiration),
-			Median:                      medianGeth.NewMedian(d.EthereumClient, ethereum.HexToAddress(pair.Contract)),
+			AssetPair:                   pair.Pair,
+			Spread:                      pair.Spread,
+			Expiration:                  time.Second * time.Duration(pair.Expiration),
+			Median:                      medianGeth.NewMedian(ethClient, contractAddr),
 			FeederAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
 		})
 	}
-	return relayerFactory(cfg)
+	return relayer.New(cfg)
 }
 
-func (c *Spectre) ConfigurePriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
+func (c *ConfigSpectre) PriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
+	var pairs []string
+	for _, pair := range c.Median {
+		pairs = append(pairs, pair.Pair)
+	}
 	cfg := store.Config{
 		Storage:   store.NewMemoryStorage(),
-		Signer:    d.Signer,
 		Transport: d.Transport,
-		Pairs:     maputil.Keys(c.Medianizers),
+		Pairs:     pairs,
 		Logger:    d.Logger,
 	}
-
-	return priceStoreFactory(cfg)
+	return store.New(cfg)
 }

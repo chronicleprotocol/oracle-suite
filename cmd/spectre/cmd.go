@@ -43,7 +43,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		&opts.ConfigFilePath,
 		"config",
 		"c",
-		"./config.json",
+		"./config.hcl",
 		"spectre config file",
 	)
 

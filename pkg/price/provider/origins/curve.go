@@ -21,29 +21,27 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
 
 	pkgEthereum "github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 //go:embed curve_abi.json
-var curvePoolABI string
+var curvePoolABI []byte
 
 type CurveFinance struct {
 	ethClient                 pkgEthereum.Client
 	addrs                     ContractAddresses
-	abi                       abi.ABI
+	abi                       *abi.Contract
 	baseIndex, quoteIndex, dx *big.Int
 	blocks                    []int64
 }
 
 func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses, blocks []int64) (*CurveFinance, error) {
-	a, err := abi.JSON(strings.NewReader(curvePoolABI))
+	a, err := abi.ParseJSON(curvePoolABI)
 	if err != nil {
 		return nil, err
 	}
@@ -53,19 +51,19 @@ func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses, blocks []i
 		abi:        a,
 		baseIndex:  big.NewInt(0),
 		quoteIndex: big.NewInt(1),
-		dx:         new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)),
+		dx:         new(big.Int).Mul(big.NewInt(1), new(big.Int).SetUint64(ether)),
 		blocks:     blocks,
 	}, nil
 }
 
-func (s CurveFinance) pairsToContractAddress(pair Pair) (common.Address, bool, error) {
+func (s CurveFinance) pairsToContractAddress(pair Pair) (types.Address, bool, error) {
 	contract, inverted, ok := s.addrs.ByPair(pair)
 	if !ok {
-		return common.Address{},
+		return types.Address{},
 			inverted,
 			fmt.Errorf("failed to get contract address for pair: %s", pair.String())
 	}
-	return common.HexToAddress(contract), inverted, nil
+	return types.MustAddressFromHex(contract), inverted, nil
 }
 
 func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
@@ -74,7 +72,7 @@ func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
 	})
 	var (
 		frs []FetchResult
-		cds []pkgEthereum.Call
+		cds []types.Call
 	)
 	for _, pair := range pairs {
 		contract, inverted, err := s.pairsToContractAddress(pair)
@@ -83,14 +81,14 @@ func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
 		}
 		var callData []byte
 		if !inverted {
-			callData, err = s.abi.Pack("get_dy", s.baseIndex, s.quoteIndex, s.dx)
+			callData, err = s.abi.Methods["get_dy"].EncodeArgs(s.baseIndex, s.quoteIndex, s.dx)
 		} else {
-			callData, err = s.abi.Pack("get_dy", s.quoteIndex, s.baseIndex, s.dx)
+			callData, err = s.abi.Methods["get_dy"].EncodeArgs(s.quoteIndex, s.baseIndex, s.dx)
 		}
 		if err != nil {
 			return fetchResultListWithErrors(pairs, err)
 		}
-		cds = append(cds, pkgEthereum.Call{Address: contract, Data: callData})
+		cds = append(cds, types.Call{To: &contract, Input: callData})
 	}
 	blockNumber, err := s.ethClient.BlockNumber(context.Background())
 	if err != nil {

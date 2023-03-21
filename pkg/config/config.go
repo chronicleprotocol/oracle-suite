@@ -1,126 +1,127 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
-//
-//  This program is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU Affero General Public License as
-//  published by the Free Software Foundation, either version 3 of the
-//  License, or (at your option) any later version.
-//
-//  This program is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU Affero General Public License for more details.
-//
-//  You should have received a copy of the GNU Affero General Public License
-//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
+	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/ext/tryfunc"
+	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/function"
+	"github.com/zclconf/go-cty/cty/function/stdlib"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/interpolate"
+	"github.com/hashicorp/hcl/v2/ext/dynblock"
 )
 
-var getEnv = os.LookupEnv
+var HCLContext = &hcl.EvalContext{
+	Variables: map[string]cty.Value{
+		"env": getEnvVars(),
+	},
+	Functions: map[string]function.Function{
+		// HCL extension functions:
+		"try": tryfunc.TryFunc,
+		"can": tryfunc.CanFunc,
 
-func LoadFile(fileName string) (b []byte, err error) {
-	f, err := os.Open(fileName)
+		// Stdlib functions taken from:
+		// https://github.com/hashicorp/terraform/blob/4fd832280200f57a747ea3f8c5a10f17c6e69ccc/internal/lang/functions.go
+		// TODO(mdobak): Not sure if we need all of these.
+		"abs":             stdlib.AbsoluteFunc,
+		"ceil":            stdlib.CeilFunc,
+		"chomp":           stdlib.ChompFunc,
+		"coalescelist":    stdlib.CoalesceListFunc,
+		"compact":         stdlib.CompactFunc,
+		"concat":          stdlib.ConcatFunc,
+		"contains":        stdlib.ContainsFunc,
+		"csvdecode":       stdlib.CSVDecodeFunc,
+		"distinct":        stdlib.DistinctFunc,
+		"element":         stdlib.ElementFunc,
+		"chunklist":       stdlib.ChunklistFunc,
+		"flatten":         stdlib.FlattenFunc,
+		"floor":           stdlib.FloorFunc,
+		"format":          stdlib.FormatFunc,
+		"formatdate":      stdlib.FormatDateFunc,
+		"formatlist":      stdlib.FormatListFunc,
+		"indent":          stdlib.IndentFunc,
+		"index":           stdlib.IndexFunc,
+		"join":            stdlib.JoinFunc,
+		"jsondecode":      stdlib.JSONDecodeFunc,
+		"jsonencode":      stdlib.JSONEncodeFunc,
+		"keys":            stdlib.KeysFunc,
+		"log":             stdlib.LogFunc,
+		"lower":           stdlib.LowerFunc,
+		"max":             stdlib.MaxFunc,
+		"merge":           stdlib.MergeFunc,
+		"min":             stdlib.MinFunc,
+		"parseint":        stdlib.ParseIntFunc,
+		"pow":             stdlib.PowFunc,
+		"range":           stdlib.RangeFunc,
+		"regex":           stdlib.RegexFunc,
+		"regexall":        stdlib.RegexAllFunc,
+		"reverse":         stdlib.ReverseListFunc,
+		"setintersection": stdlib.SetIntersectionFunc,
+		"setproduct":      stdlib.SetProductFunc,
+		"setsubtract":     stdlib.SetSubtractFunc,
+		"setunion":        stdlib.SetUnionFunc,
+		"signum":          stdlib.SignumFunc,
+		"slice":           stdlib.SliceFunc,
+		"sort":            stdlib.SortFunc,
+		"split":           stdlib.SplitFunc,
+		"strrev":          stdlib.ReverseFunc,
+		"substr":          stdlib.SubstrFunc,
+		"timeadd":         stdlib.TimeAddFunc,
+		"title":           stdlib.TitleFunc,
+		"trim":            stdlib.TrimFunc,
+		"trimprefix":      stdlib.TrimPrefixFunc,
+		"trimspace":       stdlib.TrimSpaceFunc,
+		"trimsuffix":      stdlib.TrimSuffixFunc,
+		"upper":           stdlib.UpperFunc,
+		"values":          stdlib.ValuesFunc,
+		"zipmap":          stdlib.ZipmapFunc,
+	},
+}
+
+func LoadFile(config any, path string) error {
+	src, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("could not open file %s: %w", fileName, err)
-	}
-	defer func() {
-		if errClose := f.Close(); err == nil && errClose != nil {
-			err = errClose
-		}
-	}()
-	b, err = ioutil.ReadAll(f)
-	return b, err
-}
-
-// ParseFile parses the given YAML config file from the byte slice and assigns
-// decoded values into the out value.
-func ParseFile(out interface{}, path string) error {
-	p, err := filepath.Abs(path)
-	if err != nil {
-		return err
-	}
-	f, err := os.Open(p)
-	if err != nil {
-		return fmt.Errorf("failed to load JSON config file: %w", err)
-	}
-	defer func() {
-		if errClose := f.Close(); err == nil && errClose != nil {
-			err = errClose
-		}
-	}()
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return fmt.Errorf("failed to load JSON config file: %w", err)
-	}
-	return Parse(out, b)
-}
-
-// Parse parses the given YAML config from the byte slice and assigns decoded
-// values into the out value.
-func Parse(out interface{}, config []byte) error {
-	n := yaml.Node{}
-	if err := yaml.Unmarshal(config, &n); err != nil {
-		return fmt.Errorf("failed to parse YAML config: %w", err)
-	}
-	if err := yamlReplaceEnvVars(&n); err != nil {
-		return fmt.Errorf("failed to parse YAML config: %w", err)
-	}
-	if err := n.Decode(out); err != nil {
-		return fmt.Errorf("failed to parse YAML config: %w", err)
-	}
-	return nil
-}
-
-// yamlReplaceEnvVars replaces recursively all environment variables in the
-// given YAML node.
-func yamlReplaceEnvVars(n *yaml.Node) error {
-	return yamlVisitScalarNodes(n, func(n *yaml.Node) error {
-		var err error
-		parsed := interpolate.Parse(n.Value)
-		if parsed.HasVars() {
-			n.Value = parsed.Interpolate(func(v interpolate.Variable) string {
-				env, ok := getEnv(v.Name)
-				if !ok {
-					if v.HasDefault {
-						return v.Default
-					}
-					err = fmt.Errorf("environment variable %s not set", v.Name)
-					return ""
-				}
-				return env
-			})
-			// Removing the style and tag will make the YAML decoder more
-			// forgiving. Otherwise, it will complain about type mismatches.
-			n.Style = 0
-			n.Tag = ""
-		}
-		return err
-	})
-}
-
-func yamlVisitScalarNodes(n *yaml.Node, fn func(n *yaml.Node) error) error {
-	switch n.Kind {
-	default:
-		for _, c := range n.Content {
-			if err := yamlVisitScalarNodes(c, fn); err != nil {
-				return err
+			return hcl.Diagnostics{
+				{
+					Severity: hcl.DiagError,
+					Summary:  "Configuration file not found",
+					Detail:   fmt.Sprintf("The configuration file %s does not exist.", path),
+				},
 			}
 		}
-	case yaml.ScalarNode:
-		return fn(n)
+		return hcl.Diagnostics{
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Failed to read configuration",
+				Detail:   fmt.Sprintf("Can't read %s: %s.", path, err),
+			},
+		}
 	}
+
+	file, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1})
+	if diags.HasErrors() {
+		return diags
+	}
+
+	diags = gohcl.DecodeBody(dynblock.Expand(file.Body, HCLContext), HCLContext, config)
+	if diags.HasErrors() {
+		return diags
+	}
+
 	return nil
+}
+
+func getEnvVars() cty.Value {
+	envs := map[string]cty.Value{}
+	for _, env := range os.Environ() {
+		idx := strings.Index(env, "=")
+		envs[env[:idx]] = cty.StringVal(env[idx+1:])
+	}
+	return cty.ObjectVal(envs)
 }

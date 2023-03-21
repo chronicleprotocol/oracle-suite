@@ -24,11 +24,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	logMocks "github.com/chronicleprotocol/oracle-suite/pkg/log/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -44,15 +44,17 @@ import (
 )
 
 var (
-	feedAddress  = ethereum.HexToAddress("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
+	feedAddress  = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
 	priceAAABBB1 = &messages.Price{
 		Price: &priceMedian.Price{
 			Wat: "AAABBB",
 			Val: big.NewInt(9),
 			Age: time.Now(),
-			V:   1,
-			R:   [32]byte{1},
-			S:   [32]byte{2},
+			Sig: types.Signature{
+				V: big.NewInt(1),
+				R: big.NewInt(1),
+				S: big.NewInt(2),
+			},
 		},
 		Trace: nil,
 	}
@@ -61,9 +63,11 @@ var (
 			Wat: "AAABBB",
 			Val: big.NewInt(10),
 			Age: time.Now(),
-			V:   1,
-			R:   [32]byte{1},
-			S:   [32]byte{2},
+			Sig: types.Signature{
+				V: big.NewInt(1),
+				R: big.NewInt(1),
+				S: big.NewInt(2),
+			},
 		},
 		Trace: nil,
 	}
@@ -72,9 +76,11 @@ var (
 			Wat: "AAABBB",
 			Val: big.NewInt(11),
 			Age: time.Now(),
-			V:   1,
-			R:   [32]byte{1},
-			S:   [32]byte{2},
+			Sig: types.Signature{
+				V: big.NewInt(1),
+				R: big.NewInt(1),
+				S: big.NewInt(2),
+			},
 		},
 		Trace: nil,
 	}
@@ -83,40 +89,39 @@ var (
 func TestRelayer_relay(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocks   func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger)
-		wait    func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) bool
-		asserts func(t *testing.T, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger)
+		mocks   func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger)
+		asserts func(t *testing.T, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger)
 	}{
 		{
 			name: "single-price",
-			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) {
+			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				priceStorage.On("GetByAssetPair", ctx, "AAABBB").Return([]*messages.Price{priceAAABBB1}, nil)
-				signer.On("Recover", mock.Anything, mock.Anything).Return(&feedAddress, nil)
-				median.On("Feeds", ctx).Return([]ethereum.Address{feedAddress}, nil)
+				recoverer.On("RecoverMessage", mock.Anything, mock.Anything).Return(&feedAddress, nil)
+				median.On("Feeds", ctx).Return([]types.Address{feedAddress}, nil)
 				median.On("Bar", ctx).Return(int64(1), nil)
 				median.On("Age", ctx).Return(time.Now().Add(-30*time.Second), nil)
 				median.On("Val", ctx).Return(big.NewInt(10), nil)
-				median.On("Poke", ctx, []*priceMedian.Price{priceAAABBB1.Price}, true).Return(&ethereum.Hash{}, nil)
+				median.On("Poke", ctx, []*priceMedian.Price{priceAAABBB1.Price}, true).Return(&types.Hash{}, nil)
 			},
 		},
 		{
 			name: "three-prices",
-			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) {
+			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				priceStorage.On("GetByAssetPair", ctx, "AAABBB").Return([]*messages.Price{priceAAABBB1, priceAAABBB2, priceAAABBB3}, nil)
-				signer.On("Recover", mock.Anything, mock.Anything).Return(&feedAddress, nil)
-				median.On("Feeds", ctx).Return([]ethereum.Address{feedAddress}, nil)
+				recoverer.On("RecoverMessage", mock.Anything, mock.Anything).Return(&feedAddress, nil)
+				median.On("Feeds", ctx).Return([]types.Address{feedAddress}, nil)
 				median.On("Bar", ctx).Return(int64(3), nil)
 				median.On("Age", ctx).Return(time.Now().Add(-30*time.Second), nil)
 				median.On("Val", ctx).Return(big.NewInt(10), nil)
-				median.On("Poke", ctx, []*priceMedian.Price{priceAAABBB1.Price, priceAAABBB2.Price, priceAAABBB3.Price}, true).Return(&ethereum.Hash{}, nil)
+				median.On("Poke", ctx, []*priceMedian.Price{priceAAABBB1.Price, priceAAABBB2.Price, priceAAABBB3.Price}, true).Return(&types.Hash{}, nil)
 			},
 		},
 		{
 			name: "spread-too-low",
-			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) {
+			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				priceStorage.On("GetByAssetPair", ctx, "AAABBB").Return([]*messages.Price{priceAAABBB2}, nil)
-				signer.On("Recover", mock.Anything, mock.Anything).Return(&feedAddress, nil)
-				median.On("Feeds", ctx).Return([]ethereum.Address{feedAddress}, nil)
+				recoverer.On("RecoverMessage", mock.Anything, mock.Anything).Return(&feedAddress, nil)
+				median.On("Feeds", ctx).Return([]types.Address{feedAddress}, nil)
 				median.On("Bar", ctx).Return(int64(1), nil)
 				median.On("Age", ctx).Return(time.Now().Add(-5*time.Second), nil)
 				median.On("Val", ctx).Return(big.NewInt(10), nil)
@@ -124,10 +129,10 @@ func TestRelayer_relay(t *testing.T) {
 		},
 		{
 			name: "unknown-feeder",
-			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) {
+			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				priceStorage.On("GetByAssetPair", ctx, "AAABBB").Return([]*messages.Price{priceAAABBB1}, nil)
-				signer.On("Recover", mock.Anything, mock.Anything).Return(&feedAddress, nil)
-				median.On("Feeds", ctx).Return([]ethereum.Address{}, nil)
+				recoverer.On("RecoverMessage", mock.Anything, mock.Anything).Return(&feedAddress, nil)
+				median.On("Feeds", ctx).Return([]types.Address{}, nil)
 				median.On("Bar", ctx).Return(int64(1), nil)
 				median.On("Age", ctx).Return(time.Now().Add(-30*time.Second), nil)
 				median.On("Val", ctx).Return(big.NewInt(10), nil)
@@ -135,15 +140,15 @@ func TestRelayer_relay(t *testing.T) {
 		},
 		{
 			name: "not-enough-prices",
-			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) {
+			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				priceStorage.On("GetByAssetPair", ctx, "AAABBB").Return([]*messages.Price{priceAAABBB1, priceAAABBB2}, nil)
-				signer.On("Recover", mock.Anything, mock.Anything).Return(&feedAddress, nil)
-				median.On("Feeds", ctx).Return([]ethereum.Address{feedAddress}, nil)
+				recoverer.On("RecoverMessage", mock.Anything, mock.Anything).Return(&feedAddress, nil)
+				median.On("Feeds", ctx).Return([]types.Address{feedAddress}, nil)
 				median.On("Bar", ctx).Return(int64(3), nil)
 				median.On("Age", ctx).Return(time.Now().Add(-30*time.Second), nil)
 				median.On("Val", ctx).Return(big.NewInt(10), nil)
 			},
-			asserts: func(t *testing.T, priceStorage *storeMocks.Storage, median *medianMocks.Median, signer *ethereumMocks.Signer, log *logMocks.Logger) {
+			asserts: func(t *testing.T, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				hasErr := false
 				for _, c := range log.Mock().Calls {
 					if c.Method == "WithError" && strings.Contains(c.Arguments[0].(error).Error(), "not enough prices to achieve quorum") {
@@ -163,7 +168,7 @@ func TestRelayer_relay(t *testing.T) {
 			// Prepare relayer dependencies.
 			pokeTicker := timeutil.NewTicker(0)
 			addressesTicker := timeutil.NewTicker(0)
-			signerMock := &ethereumMocks.Signer{}
+			recovererMock := &ethereumMocks.Recoverer{}
 			medianMock := &medianMocks.Median{}
 			storageMock := &storeMocks.Storage{}
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
@@ -172,10 +177,10 @@ func TestRelayer_relay(t *testing.T) {
 			mockLogger := logMocks.New()
 			priceStore, err := store.New(store.Config{
 				Storage:   storageMock,
-				Signer:    signerMock,
 				Transport: localTransport,
 				Pairs:     []string{"AAABBB"},
 				Logger:    null.New(),
+				Recoverer: recovererMock,
 			})
 			require.NoError(t, err)
 
@@ -186,21 +191,21 @@ func TestRelayer_relay(t *testing.T) {
 			mockLogger.Mock().On("Warn", mock.Anything).Return()
 			mockLogger.Mock().On("Info", mock.Anything)
 			mockLogger.Mock().On("Debug", mock.Anything)
-			tt.mocks(ctx, storageMock, medianMock, signerMock, mockLogger)
+			tt.mocks(ctx, storageMock, medianMock, recovererMock, mockLogger)
 
 			// Prepare relayer.
 			relayer, err := New(Config{
-				Signer:     signerMock,
 				PriceStore: priceStore,
 				PokeTicker: pokeTicker,
 				Pairs: []*Pair{{
 					AssetPair:                   "AAABBB",
-					OracleSpread:                1.0,
-					OracleExpiration:            10 * time.Second,
+					Spread:                      1.0,
+					Expiration:                  10 * time.Second,
 					Median:                      medianMock,
 					FeederAddressesUpdateTicker: addressesTicker,
 				}},
-				Logger: mockLogger,
+				Logger:    mockLogger,
+				Recoverer: recovererMock,
 			})
 			require.NoError(t, err)
 
@@ -235,10 +240,9 @@ func TestRelayer_relay(t *testing.T) {
 
 			storageMock.AssertExpectations(t)
 			medianMock.AssertExpectations(t)
-			signerMock.AssertExpectations(t)
 
 			if tt.asserts != nil {
-				tt.asserts(t, storageMock, medianMock, signerMock, mockLogger)
+				tt.asserts(t, storageMock, medianMock, recovererMock, mockLogger)
 			}
 		})
 	}
