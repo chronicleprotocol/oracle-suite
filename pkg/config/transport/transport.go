@@ -47,7 +47,6 @@ import (
 
 const (
 	LibP2P = "libp2p"
-	LibSSB = "ssb"
 	WebAPI = "webapi"
 )
 
@@ -61,10 +60,9 @@ var p2pTransportFactory = func(cfg libp2p.Config) (transport.Transport, error) {
 }
 
 type Transport struct {
-	Transport any               `yaml:"transport"`
-	P2P       LibP2PConfig      `yaml:"libp2p"`
-	SSB       ScuttlebuttConfig `yaml:"ssb"`
-	WebAPI    WebAPIConfig      `yaml:"webapi"`
+	Transport any          `yaml:"transport"`
+	P2P       LibP2PConfig `yaml:"libp2p"`
+	WebAPI    WebAPIConfig `yaml:"webapi"`
 }
 
 type LibP2PConfig struct {
@@ -74,16 +72,6 @@ type LibP2PConfig struct {
 	DirectPeersAddrs []string `yaml:"directPeersAddrs"`
 	BlockedAddrs     []string `yaml:"blockedAddrs"`
 	DisableDiscovery bool     `yaml:"disableDiscovery"`
-}
-
-type ScuttlebuttConfig struct {
-	Caps string `yaml:"caps"`
-}
-
-type ScuttlebuttCapsConfig struct {
-	Shs    string `yaml:"shs"`
-	Sign   string `yaml:"sign"`
-	Invite string `yaml:"invite,omitempty"`
 }
 
 type WebAPIConfig struct {
@@ -179,8 +167,6 @@ func (c *Transport) configureTransport(
 	t map[string]transport.Message) (transport.Transport, error) {
 
 	switch strings.ToLower(typ) {
-	case LibSSB:
-		return nil, errors.New("ssb not yet implemented")
 	case WebAPI:
 		if c.WebAPI.ListenAddr == "" {
 			return nil, errors.New("webapi listen addr not set")

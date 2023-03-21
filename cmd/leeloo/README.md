@@ -135,7 +135,7 @@ Leeloo supports JSON and YAML configuration files.
 ### Configuration reference
 
 - `transport` - Configuration parameters for transports mechanisms used to relay messages.
-    - `transport` (string|[]string) - Transport to use. Supported mechanism are: `libp2p`, `ssb` and `webapi`. If empty,
+    - `transport` (string|[]string) - Transport to use. Supported mechanism are: `libp2p` and `webapi`. If empty,
       the `libp2p` is used.
     - `libp2p` - Configuration parameters for the libp2p transport.
         - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the

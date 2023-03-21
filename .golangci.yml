@@ -168,7 +168,7 @@ linters:
     - govet
     - ineffassign
     #- interfacer
-    #- lll
+    - lll
     - nakedret
     - nolintlint
     #- rowserrcheck
