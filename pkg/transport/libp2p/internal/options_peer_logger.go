@@ -19,6 +19,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/libp2p/go-libp2p/core/protocol"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"
 
@@ -62,7 +63,7 @@ func PeerLogger() Options {
 
 func getPeerProtocols(ps peerstore.Peerstore, pid peer.ID) []string {
 	pp, _ := ps.GetProtocols(pid)
-	return pp
+	return protocol.ConvertToStrings(pp)
 }
 
 func getPeerUserAgent(ps peerstore.Peerstore, pid peer.ID) string {
