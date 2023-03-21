@@ -26,7 +26,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 )
@@ -38,12 +38,12 @@ type Config struct {
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func PrepareSupervisor(_ context.Context, opts *options) (*supervisor.Supervisor, error) {
+func PrepareSupervisor(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
 	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		BaseLogger: opts.Logger(),
 	})
 	if err != nil {
@@ -58,10 +58,10 @@ func PrepareSupervisor(_ context.Context, opts *options) (*supervisor.Supervisor
 	if _, ok := transport.(*libp2p.P2P); !ok {
 		return nil, errors.New("spire-bootstrap works only with the libp2p transport")
 	}
-	sup := supervisor.New(logger)
-	sup.Watch(transport, sysmon.New(time.Minute, logger))
-	if l, ok := logger.(supervisor.Service); ok {
-		sup.Watch(l)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(transport, sysmon.New(time.Minute, logger))
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, nil
+	return supervisor, nil
 }

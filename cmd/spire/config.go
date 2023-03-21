@@ -50,7 +50,7 @@ func PrepareAgentServices(_ context.Context, opts *options) (*pkgSupervisor.Supe
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})
@@ -82,7 +82,7 @@ func PrepareAgentServices(_ context.Context, opts *options) (*pkgSupervisor.Supe
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	priceStore, err := opts.Config.Spire.ConfigurePriceStore(spireConfig.PriceStoreDependencies{
+	priceStore, err := opts.Config.Spire.PriceStore(spireConfig.PriceStoreDependencies{
 		Transport: transport,
 		Feeds:     feeds,
 		Logger:    logger,
@@ -113,7 +113,7 @@ func PrepareClientServices(_ context.Context, opts *options) (*pkgSupervisor.Sup
 	if err != nil {
 		return nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})
@@ -151,7 +151,7 @@ func PrepareStreamServices(
 	if err != nil {
 		return nil, nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})

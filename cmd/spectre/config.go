@@ -49,7 +49,7 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spectre",
 		BaseLogger: opts.Logger(),
 	})

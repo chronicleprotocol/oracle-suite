@@ -41,9 +41,17 @@ type ConfigSpire struct {
 	// EthereumKey is a name of an Ethereum key to use for signing
 	// prices.
 	EthereumKey string `hcl:"ethereum_key,optional"`
+
+	// Configured services:
+	agent      *spire.Agent
+	client     *spire.Client
+	priceStore *store.PriceStore
 }
 
 func (c *ConfigSpire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) {
+	if c.agent != nil {
+		return c.agent, nil
+	}
 	signer, ok := d.Keys[c.EthereumKey]
 	if !ok {
 		return nil, fmt.Errorf("spire config: ethereum key %q not found", c.EthereumKey)
@@ -58,22 +66,39 @@ func (c *ConfigSpire) ConfigureAgent(d AgentDependencies) (*spire.Agent, error) 
 	if err != nil {
 		return nil, err
 	}
+	c.agent = agent
 	return agent, nil
 }
 
 func (c *ConfigSpire) ConfigureClient(d ClientDependencies) (*spire.Client, error) {
+	if c.client != nil {
+		return c.client, nil
+	}
 	signer := d.KeyRegistry[c.EthereumKey] // Signer may be nil.
-	return spire.NewClient(spire.ClientConfig{
+	client, err := spire.NewClient(spire.ClientConfig{
 		Signer:  signer,
 		Address: c.RPCListenAddr,
 	})
+	if err != nil {
+		return nil, err
+	}
+	c.client = client
+	return client, nil
 }
 
-func (c *ConfigSpire) ConfigurePriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
-	return store.New(store.Config{
+func (c *ConfigSpire) PriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
+	if c.priceStore != nil {
+		return c.priceStore, nil
+	}
+	priceStore, err := store.New(store.Config{
 		Storage:   store.NewMemoryStorage(),
 		Transport: d.Transport,
 		Pairs:     c.Pairs,
 		Logger:    d.Logger,
 	})
+	if err != nil {
+		return nil, err
+	}
+	c.priceStore = priceStore
+	return priceStore, nil
 }

@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 )
 
 // AddressBook provides a list of addresses to which the messages should be
@@ -69,30 +68,28 @@ func NewStaticAddressBook(addresses []string) *StaticAddressBook {
 }
 
 // Consumers implements the AddressBook interface.
-func (c *StaticAddressBook) Consumers(ctx context.Context) ([]string, error) {
+func (c *StaticAddressBook) Consumers(_ context.Context) ([]string, error) {
 	return c.addresses, nil
 }
 
 // EthereumAddressBook is an AddressBook implementation that uses an Ethereum
 // contract to store the list of addresses.
-//nolint:staticcheck // deprecated ethereum.Client
 type EthereumAddressBook struct {
 	mu sync.Mutex
 
-	client    ethereum.Client // Ethereum client
-	address   types.Address   // Address of the contract.
-	cache     []string        // Cached list of addresses.
-	cacheTime time.Time       // Time when the cache was last updated.
-	cacheTTL  time.Duration   // How long the cache should be valid.
+	client    rpc.RPC       // Ethereum client
+	address   types.Address // Address of the contract.
+	cache     []string      // Cached list of addresses.
+	cacheTime time.Time     // Time when the cache was last updated.
+	cacheTTL  time.Duration // How long the cache should be valid.
 }
 
 // NewEthereumAddressBook creates a new instance of EthereumAddressBook.
 // The cacheTTL parameter specifies how long the list of addresses should be
 // cached before it is fetched again from the Ethereum contract.
-//nolint:staticcheck // deprecated ethereum.Client
-func NewEthereumAddressBook(c ethereum.Client, addr types.Address, cacheTTL time.Duration) *EthereumAddressBook {
+func NewEthereumAddressBook(r rpc.RPC, addr types.Address, cacheTTL time.Duration) *EthereumAddressBook {
 	return &EthereumAddressBook{
-		client:   c,
+		client:   r,
 		address:  addr,
 		cacheTTL: cacheTTL,
 	}
@@ -121,7 +118,7 @@ func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, err
 	res, err := c.client.Call(ctx, types.Call{
 		To:    &c.address,
 		Input: cd,
-	})
+	}, types.LatestBlockNumber)
 	if err != nil {
 		return nil, err
 	}

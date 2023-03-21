@@ -49,7 +49,7 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "leeloo",
 		BaseLogger: opts.Logger(),
 	})
@@ -80,7 +80,7 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	leeloo, err := opts.Config.Leeloo.Configure(leelooConfig.Dependencies{
+	leeloo, err := opts.Config.Leeloo.EventPublisher(leelooConfig.Dependencies{
 		KeyRegistry:    keys,
 		ClientRegistry: clients,
 		Transport:      transport,

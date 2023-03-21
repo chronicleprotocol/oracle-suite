@@ -29,7 +29,7 @@ import (
 	goferConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -46,12 +46,12 @@ type Config struct {
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func PrepareServices(_ context.Context, opts *options) (*supervisor.Supervisor, error) {
+func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
 	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "leeloo",
 		BaseLogger: opts.Logger(),
 	})
@@ -66,7 +66,7 @@ func PrepareServices(_ context.Context, opts *options) (*supervisor.Supervisor, 
 	if err != nil {
 		return nil, fmt.Errorf(`ethereum config error: %w`, err)
 	}
-	gofer, err := opts.Config.Gofer.ConfigureGofer(goferConfig.Dependencies{
+	gofer, err := opts.Config.Gofer.Gofer(goferConfig.Dependencies{
 		Clients: clients,
 		Logger:  logger,
 	}, opts.GoferNoRPC)
@@ -99,13 +99,13 @@ func PrepareServices(_ context.Context, opts *options) (*supervisor.Supervisor, 
 	if err != nil {
 		return nil, fmt.Errorf(`ghost config error: %w`, err)
 	}
-	sup := supervisor.New(logger)
-	sup.Watch(transport, ghost, sysmon.New(time.Minute, logger))
-	if g, ok := gofer.(supervisor.Service); ok {
-		sup.Watch(g)
+	supervisor := pkgSupervisor.New(logger)
+	supervisor.Watch(transport, ghost, sysmon.New(time.Minute, logger))
+	if g, ok := gofer.(pkgSupervisor.Service); ok {
+		supervisor.Watch(g)
 	}
-	if l, ok := logger.(supervisor.Service); ok {
-		sup.Watch(l)
+	if l, ok := logger.(pkgSupervisor.Service); ok {
+		supervisor.Watch(l)
 	}
-	return sup, nil
+	return supervisor, nil
 }

@@ -52,7 +52,7 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "leeloo",
 		BaseLogger: opts.Logger(),
 	})
@@ -83,7 +83,7 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`transport config error: %w`, err)
 	}
-	storage, err := opts.Config.Lair.ConfigureStorage()
+	storage, err := opts.Config.Lair.Storage()
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
@@ -96,7 +96,7 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`lair config error: %w`, err)
 	}
-	api, err := opts.Config.Lair.Configure(eventAPIConfig.Dependencies{
+	api, err := opts.Config.Lair.Lair(eventAPIConfig.Dependencies{
 		EventStore: eventStore,
 		Transport:  transport,
 		Logger:     logger,

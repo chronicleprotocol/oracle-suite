@@ -42,7 +42,7 @@ func PrepareServices(opts *options) (*Services, error) {
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
-	logger, err := opts.Config.Logger.Configure(loggerConfig.Dependencies{
+	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: opts.Logger(),
 	})

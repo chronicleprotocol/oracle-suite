@@ -51,6 +51,10 @@ type ConfigSpectre struct {
 
 	// Median is a list of Median contracts to watch.
 	Median []configMedian `hcl:"median,block"`
+
+	// Configured services:
+	relayer    *relayer.Relayer
+	priceStore *store.PriceStore
 }
 
 type configMedian struct {
@@ -73,6 +77,9 @@ type configMedian struct {
 }
 
 func (c *ConfigSpectre) Relayer(d Dependencies) (*relayer.Relayer, error) {
+	if c.relayer != nil {
+		return c.relayer, nil
+	}
 	cfg := relayer.Config{
 		PokeTicker: timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		PriceStore: d.PriceStore,
@@ -81,11 +88,11 @@ func (c *ConfigSpectre) Relayer(d Dependencies) (*relayer.Relayer, error) {
 	for _, pair := range c.Median {
 		contractAddr, err := types.AddressFromHex(pair.ContractAddr)
 		if err != nil {
-			return nil, fmt.Errorf("spectre: invalid contract address %s", pair.ContractAddr)
+			return nil, fmt.Errorf("spectre config: invalid contract address %s", pair.ContractAddr)
 		}
 		rpcClient := d.Clients[pair.EthereumClient]
 		if rpcClient == nil {
-			return nil, fmt.Errorf("spectre: ethereum client %s not found", pair.EthereumClient)
+			return nil, fmt.Errorf("spectre config: ethereum client %s not found", pair.EthereumClient)
 		}
 		ethClient := geth.NewClient(rpcClient)
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
@@ -96,10 +103,18 @@ func (c *ConfigSpectre) Relayer(d Dependencies) (*relayer.Relayer, error) {
 			FeederAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
 		})
 	}
-	return relayer.New(cfg)
+	rel, err := relayer.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+	c.relayer = rel
+	return rel, nil
 }
 
 func (c *ConfigSpectre) PriceStore(d PriceStoreDependencies) (*store.PriceStore, error) {
+	if c.priceStore != nil {
+		return c.priceStore, nil
+	}
 	var pairs []string
 	for _, pair := range c.Median {
 		pairs = append(pairs, pair.Pair)
@@ -110,5 +125,10 @@ func (c *ConfigSpectre) PriceStore(d PriceStoreDependencies) (*store.PriceStore,
 		Pairs:     pairs,
 		Logger:    d.Logger,
 	}
-	return store.New(cfg)
+	priceStore, err := store.New(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("spectre config: failed to create price store: %w", err)
+	}
+	c.priceStore = priceStore
+	return priceStore, nil
 }

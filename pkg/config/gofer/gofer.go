@@ -109,6 +109,12 @@ type ConfigGofer struct {
 
 	// Hooks is a configuration of hooks.
 	Hooks []configHook `hcl:"hook,block"`
+
+	// Configured service:
+	priceProvider      provider.Provider
+	asyncPriceProvider provider.Provider
+	priceHook          provider.PriceHook
+	rpcAgent           *rpc.Agent
 }
 
 type configOrigin struct {
@@ -159,15 +165,18 @@ type configHook struct {
 	PostPriceHook cty.Value `hcl:"post_price,optional"`
 }
 
-// ConfigureAsyncGofer returns a new async gofer instance.
-func (c *ConfigGofer) ConfigureAsyncGofer(d AsyncDependencies) (provider.Provider, error) {
+// AsyncGofer returns a new async gofer instance.
+func (c *ConfigGofer) AsyncGofer(d AsyncDependencies) (provider.Provider, error) {
+	if c.asyncPriceProvider != nil {
+		return c.asyncPriceProvider, nil
+	}
 	rpcClient := d.Clients[c.EthereumClient]
 	if rpcClient == nil {
-		return nil, fmt.Errorf("gofer: ethereum client %q not found", c.EthereumClient)
+		return nil, fmt.Errorf("gofer config: ethereum client %q not found", c.EthereumClient)
 	}
 	gra, err := c.buildGraphs()
 	if err != nil {
-		return nil, fmt.Errorf("gofer: unable to build graphs: %w", err)
+		return nil, fmt.Errorf("gofer config: unable to build graphs: %w", err)
 	}
 	var ns []nodes.Node
 	for _, n := range gra {
@@ -177,74 +186,94 @@ func (c *ConfigGofer) ConfigureAsyncGofer(d AsyncDependencies) (provider.Provide
 	if err != nil {
 		return nil, err
 	}
-	fed := feeder.NewFeeder(originSet, d.Logger)
-	gof, err := graph.NewAsyncProvider(gra, fed, ns, d.Logger)
+	feed := feeder.NewFeeder(originSet, d.Logger)
+	asyncProvider, err := graph.NewAsyncProvider(gra, feed, ns, d.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("gofer: unable to initialize RPC client: %w", err)
+		return nil, fmt.Errorf("gofer config: unable to initialize RPC client: %w", err)
 	}
-	return gof, nil
+	c.asyncPriceProvider = asyncProvider
+	return asyncProvider, nil
 }
 
-// ConfigureRPCAgent returns a new rpc.Agent instance.
-func (c *ConfigGofer) ConfigureRPCAgent(d AgentDependencies) (*rpc.Agent, error) {
-	srv, err := rpc.NewAgent(rpc.AgentConfig{
+// RPCAgent returns a new rpc.Agent instance.
+func (c *ConfigGofer) RPCAgent(d AgentDependencies) (*rpc.Agent, error) {
+	if c.rpcAgent != nil {
+		return c.rpcAgent, nil
+	}
+	rpcAgent, err := rpc.NewAgent(rpc.AgentConfig{
 		Provider: d.Provider,
 		Network:  "tcp",
 		Address:  c.RPCListenAddr,
 		Logger:   d.Logger,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("gofer: unable to initialize RPC agent: %w", err)
+		return nil, fmt.Errorf("gofer config: unable to initialize RPC agent: %w", err)
 	}
-	return srv, nil
+	c.rpcAgent = rpcAgent
+	return rpcAgent, nil
 }
 
-func (c *ConfigGofer) ConfigurePriceHook(d HookDependencies) (provider.PriceHook, error) {
+func (c *ConfigGofer) PriceHook(d HookDependencies) (provider.PriceHook, error) {
+	if c.priceHook != nil {
+		return c.priceHook, nil
+	}
 	rpcClient := d.Clients[c.EthereumClient]
 	if rpcClient == nil {
-		return nil, fmt.Errorf("gofer: ethereum client %q not found", c.EthereumClient)
+		return nil, fmt.Errorf("gofer config: ethereum client %q not found", c.EthereumClient)
 	}
 	params := provider.NewHookParams()
 	for _, hook := range c.Hooks {
 		v, err := ctyToAny(hook.PostPriceHook)
 		if err != nil {
-			return nil, fmt.Errorf("gofer: invalid hook params: %w", err)
+			return nil, fmt.Errorf("gofer config: invalid hook params: %w", err)
 		}
 		m, ok := v.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("gofer: invalid hook params: %v", v)
+			return nil, fmt.Errorf("gofer config: invalid hook params: %v", v)
 		}
 		if len(m) > 0 {
 			params[hook.Pair] = m
 		}
 	}
-	return provider.NewPostPriceHook(d.Context, geth.NewClient(rpcClient), params)
+	priceHook, err := provider.NewPostPriceHook(d.Context, geth.NewClient(rpcClient), params)
+	if err != nil {
+		return nil, fmt.Errorf("gofer config: unable to initialize price hook: %w", err)
+	}
+	return priceHook, nil
 }
 
-// ConfigureGofer returns a new async gofer instance.
-func (c *ConfigGofer) ConfigureGofer(d Dependencies, noRPC bool) (provider.Provider, error) {
+// Gofer returns a new async gofer instance.
+func (c *ConfigGofer) Gofer(d Dependencies, noRPC bool) (provider.Provider, error) {
+	if c.priceProvider != nil {
+		return c.priceProvider, nil
+	}
+	var err error
 	if c.RPCAgentAddr == "" || noRPC {
 		rpcClient := d.Clients[c.EthereumClient]
 		if rpcClient == nil {
-			return nil, fmt.Errorf("gofer: ethereum client %q not found", c.EthereumClient)
+			return nil, fmt.Errorf("gofer config: ethereum client %q not found", c.EthereumClient)
 		}
-		gra, err := c.buildGraphs()
+		pricesGraph, err := c.buildGraphs()
 		if err != nil {
-			return nil, fmt.Errorf("unable to load price models: %w", err)
+			return nil, fmt.Errorf("gofer config: unable to load price models: %w", err)
 		}
 		originSet, err := c.buildOrigins(geth.NewClient(rpcClient))
 		if err != nil {
 			return nil, err
 		}
-		fed := feeder.NewFeeder(originSet, d.Logger)
-		gof := graph.NewProvider(gra, fed)
-		return gof, nil
+		feed := feeder.NewFeeder(originSet, d.Logger)
+		c.priceProvider = graph.NewProvider(pricesGraph, feed)
+	} else {
+		c.priceProvider, err = c.rpcClient(c.RPCAgentAddr)
+		if err != nil {
+			return nil, fmt.Errorf("gofer config: unable to initialize RPC client: %w", err)
+		}
 	}
-	return c.configureRPCClient(c.RPCAgentAddr)
+	return c.priceProvider, nil
 }
 
 // configureRPCClient returns a new rpc.RPC instance.
-func (c *ConfigGofer) configureRPCClient(listenAddr string) (*rpc.Provider, error) {
+func (c *ConfigGofer) rpcClient(listenAddr string) (*rpc.Provider, error) {
 	return rpc.NewProvider("tcp", listenAddr)
 }
 

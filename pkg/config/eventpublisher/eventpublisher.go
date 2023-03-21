@@ -50,6 +50,9 @@ type ConfigEventPublisher struct {
 
 	// TeleportStarknet is a list of Teleport listeners for Starknet.
 	TeleportStarknet []teleportStarknetListener `hcl:"teleport_starknet,block"`
+
+	// Configured service:
+	eventPublisher *publisher.EventPublisher
 }
 
 type teleportEVMListener struct {
@@ -108,7 +111,10 @@ type teleportStarknetListener struct {
 	ContractAddrs []string `hcl:"contract_addrs"`
 }
 
-func (c *ConfigEventPublisher) Configure(d Dependencies) (*publisher.EventPublisher, error) {
+func (c *ConfigEventPublisher) EventPublisher(d Dependencies) (*publisher.EventPublisher, error) {
+	if c.eventPublisher != nil {
+		return c.eventPublisher, nil
+	}
 	if d.Transport == nil {
 		return nil, fmt.Errorf("eventpublisher config: transport cannot be nil")
 	}
@@ -116,10 +122,10 @@ func (c *ConfigEventPublisher) Configure(d Dependencies) (*publisher.EventPublis
 		return nil, fmt.Errorf("eventpublisher config: logger cannot be nil")
 	}
 	var eventProviders []publisher.EventProvider
-	if err := c.configureTeleportEVM(&eventProviders, d); err != nil {
+	if err := c.teleportEVM(&eventProviders, d); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: teleport EVM: %w", err)
 	}
-	if err := c.configureTeleportStarknet(&eventProviders, d); err != nil {
+	if err := c.teleportStarknet(&eventProviders, d); err != nil {
 		return nil, fmt.Errorf("eventpublisher config: teleport Starknet: %w", err)
 	}
 	key, ok := d.KeyRegistry[c.EthereumKey]
@@ -139,10 +145,11 @@ func (c *ConfigEventPublisher) Configure(d Dependencies) (*publisher.EventPublis
 	if err != nil {
 		return nil, fmt.Errorf("eventpublisher config: %w", err)
 	}
+	c.eventPublisher = eventPublisher
 	return eventPublisher, nil
 }
 
-func (c *ConfigEventPublisher) configureTeleportEVM(eps *[]publisher.EventProvider, d Dependencies) error {
+func (c *ConfigEventPublisher) teleportEVM(eps *[]publisher.EventProvider, d Dependencies) error {
 	var err error
 	for _, cfg := range c.TeleportEVM {
 		client, ok := d.ClientRegistry[cfg.EthereumClient]
@@ -204,7 +211,7 @@ func (c *ConfigEventPublisher) configureTeleportEVM(eps *[]publisher.EventProvid
 	return nil
 }
 
-func (c *ConfigEventPublisher) configureTeleportStarknet(eps *[]publisher.EventProvider, d Dependencies) error {
+func (c *ConfigEventPublisher) teleportStarknet(eps *[]publisher.EventProvider, d Dependencies) error {
 	var err error
 	for _, cfg := range c.TeleportStarknet {
 		interval := cfg.Interval

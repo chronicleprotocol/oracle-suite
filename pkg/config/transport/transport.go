@@ -19,7 +19,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/chain"
@@ -145,7 +144,7 @@ func (c *ConfigTransport) Transport(d Dependencies) (transport.Transport, error)
 	}
 	switch {
 	case len(transports) == 0:
-		return nil, errors.New("no transports configured")
+		return nil, errors.New("no transport configured")
 	case len(transports) == 1:
 		c.transport = transports[0]
 	default:
@@ -156,7 +155,7 @@ func (c *ConfigTransport) Transport(d Dependencies) (transport.Transport, error)
 
 func (c *ConfigTransport) LibP2PBootstrap(d BootstrapDependencies) (transport.Transport, error) {
 	if c.LibP2P == nil {
-		return nil, errors.New("libp2p transport not configured")
+		return nil, errors.New("libP2P transport not configured")
 	}
 	peerPrivKey, err := c.generatePrivKey()
 	if err != nil {
@@ -175,7 +174,7 @@ func (c *ConfigTransport) LibP2PBootstrap(d BootstrapDependencies) (transport.Tr
 	}
 	p, err := libp2p.New(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("transport config error: %w", err)
+		return nil, fmt.Errorf("transport config: %w", err)
 	}
 	return p, nil
 }
@@ -211,7 +210,7 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 			return nil, fmt.Errorf("WebAPI config: invalid contract address %q", c.WebAPI.EthereumAddressBook.ContractAddr)
 		}
 		addressBooks = append(addressBooks, webapi.NewEthereumAddressBook(
-			geth.NewClient(rpcClient),
+			rpcClient,
 			contractAddr,
 			time.Hour,
 		))

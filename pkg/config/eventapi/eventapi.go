@@ -55,6 +55,10 @@ type ConfigEventAPI struct {
 	// Redis is the configuration for the Redis storage. Cannot be used
 	// together with storage_memory configuration.
 	Redis *storageRedis `hcl:"storage_redis,block"`
+
+	// Configured services:
+	eventAPI *api.EventAPI
+	storage  store.Storage
 }
 
 type storageMemory struct {
@@ -112,15 +116,26 @@ type storageRedis struct {
 	ClusterAddrs []string `hcl:"cluster_addrs,optional"`
 }
 
-func (c *ConfigEventAPI) Configure(d Dependencies) (*api.EventAPI, error) {
-	return api.New(api.Config{
+func (c *ConfigEventAPI) Lair(d Dependencies) (*api.EventAPI, error) {
+	if c.eventAPI != nil {
+		return c.eventAPI, nil
+	}
+	eventAPI, err := api.New(api.Config{
 		EventStore: d.EventStore,
 		Address:    c.ListenAddr,
 		Logger:     d.Logger,
 	})
+	if err != nil {
+		return nil, err
+	}
+	c.eventAPI = eventAPI
+	return eventAPI, nil
 }
 
-func (c *ConfigEventAPI) ConfigureStorage() (store.Storage, error) {
+func (c *ConfigEventAPI) Storage() (store.Storage, error) {
+	if c.storage != nil {
+		return c.storage, nil
+	}
 	if c.Memory != nil && c.Redis != nil {
 		return nil, fmt.Errorf(`eventapi config: "storage_memory" and "storage_redis" storage types are mutually exclusive`)
 	}
@@ -130,7 +145,8 @@ func (c *ConfigEventAPI) ConfigureStorage() (store.Storage, error) {
 		if c.Memory.TTL > 0 {
 			ttl = c.Memory.TTL
 		}
-		return store.NewMemoryStorage(time.Second * time.Duration(ttl)), nil
+		c.storage = store.NewMemoryStorage(time.Second * time.Duration(ttl))
+		return c.storage, nil
 	case c.Redis != nil:
 		ttl := week
 		if c.Redis.TTL > 0 {
@@ -158,7 +174,8 @@ func (c *ConfigEventAPI) ConfigureStorage() (store.Storage, error) {
 		if err := r.Ping(context.Background()); err != nil {
 			return nil, fmt.Errorf(`eventapi config: unable to connect to the Redis server: %w`, err)
 		}
-		return r, nil
+		c.storage = r
+		return c.storage, nil
 	default:
 		return nil, fmt.Errorf(`eventapi config: storage type must be "memory", "redis" or empty to use default one`)
 	}

@@ -37,6 +37,9 @@ type ConfigGhost struct {
 
 	// Pairs is the list of pairs to publish prices for.
 	Pairs []string `hcl:"pairs"`
+
+	// Configured service:
+	feeder *feeder.Feeder
 }
 
 type Dependencies struct {
@@ -47,9 +50,12 @@ type Dependencies struct {
 }
 
 func (c *ConfigGhost) Ghost(d Dependencies) (*feeder.Feeder, error) {
+	if c.feeder != nil {
+		return c.feeder, nil
+	}
 	ethereumKey, ok := d.Keys[c.EthereumKey]
 	if !ok {
-		return nil, fmt.Errorf("ghost: ethereum key %s not found", c.EthereumKey)
+		return nil, fmt.Errorf("ghost config: ethereum key %s not found", c.EthereumKey)
 	}
 	cfg := feeder.Config{
 		PriceProvider: d.Gofer,
@@ -59,5 +65,10 @@ func (c *ConfigGhost) Ghost(d Dependencies) (*feeder.Feeder, error) {
 		Interval:      timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		Pairs:         c.Pairs,
 	}
-	return feeder.New(cfg)
+	feed, err := feeder.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+	c.feeder = feed
+	return feed, nil
 }

@@ -37,6 +37,9 @@ type Dependencies struct {
 type ConfigLogger struct {
 	// Grafana is a configuration for a Grafana logger.
 	Grafana *grafanaLogger `hcl:"grafana,block"`
+
+	// Configured service:
+	logger log.Logger
 }
 
 type grafanaLogger struct {
@@ -86,26 +89,25 @@ type grafanaMetric struct {
 	OnDuplicate string `hcl:"on_duplicate"`
 }
 
-func (c *ConfigLogger) Configure(d Dependencies) (log.Logger, error) {
+func (c *ConfigLogger) Logger(d Dependencies) (log.Logger, error) {
 	if c == nil {
 		return d.BaseLogger, nil
 	}
-
+	if c.logger != nil {
+		return c.logger, nil
+	}
 	loggers := []log.Logger{d.BaseLogger}
-
 	if c.Grafana != nil {
-		logger, err := c.configureGrafanaLogger(d)
+		logger, err := c.grafanaLogger(d)
 		if err != nil {
 			return nil, fmt.Errorf("logger config: unable to create grafana logger: %s", err)
 		}
 		loggers = append(loggers, logger)
 	}
-
 	logger := chain.New(loggers...)
 	if len(loggers) == 1 {
 		logger = loggers[0]
 	}
-
 	logger = logger.
 		WithFields(log.Fields{
 			"x-appName":    d.AppName,
@@ -115,11 +117,11 @@ func (c *ConfigLogger) Configure(d Dependencies) (log.Logger, error) {
 			"x-goArch":     runtime.GOARCH,
 			"x-instanceID": fmt.Sprintf("%08x", rand.Uint64()), //nolint:gosec
 		})
-
+	c.logger = logger
 	return logger, nil
 }
 
-func (c *ConfigLogger) configureGrafanaLogger(d Dependencies) (log.Logger, error) {
+func (c *ConfigLogger) grafanaLogger(d Dependencies) (log.Logger, error) {
 	var err error
 	var ms []grafana.Metric
 	for _, cm := range c.Grafana.Metrics {
@@ -162,12 +164,10 @@ func (c *ConfigLogger) configureGrafanaLogger(d Dependencies) (log.Logger, error
 
 		ms = append(ms, gm)
 	}
-
 	interval := c.Grafana.Interval
 	if interval < 1 {
 		interval = 1
 	}
-
 	logger, err := grafana.New(d.BaseLogger.Level(), grafana.Config{
 		Metrics:          ms,
 		Interval:         uint(interval),
@@ -179,7 +179,6 @@ func (c *ConfigLogger) configureGrafanaLogger(d Dependencies) (log.Logger, error
 	if err != nil {
 		return nil, fmt.Errorf("unable to create grafana logger: %s", err)
 	}
-
 	return logger, nil
 }
 

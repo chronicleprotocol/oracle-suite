@@ -41,10 +41,13 @@ type Local struct {
 type subscription struct {
 	// typ is the structure type to which the message must be unmarshalled.
 	typ reflect.Type
+
 	// rawMsgCh is a channel used to broadcast raw message data.
 	rawMsgCh chan []byte
+
 	// msgCh is a channel used to broadcast unmarshalled messages.
 	msgCh chan transport.ReceivedMessage
+
 	// msgFanOut is a fan-out demultiplexer for the msgCh channel.
 	msgFanOut *chanutil.FanOut[transport.ReceivedMessage]
 }

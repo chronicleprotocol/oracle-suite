@@ -103,17 +103,14 @@ func LoadFile(config any, path string) error {
 			},
 		}
 	}
-
 	file, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1})
 	if diags.HasErrors() {
 		return diags
 	}
-
 	diags = gohcl.DecodeBody(dynblock.Expand(file.Body, HCLContext), HCLContext, config)
 	if diags.HasErrors() {
 		return diags
 	}
-
 	return nil
 }
 
