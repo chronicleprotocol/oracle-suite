@@ -142,4 +142,4 @@ func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, err
 	return addrs, nil
 }
 
-var consumersMethod = abi.MustParseMethod("function getConsumers() returns (string[])")
+var consumersMethod = abi.MustParseMethod("function list() returns (string[])")
