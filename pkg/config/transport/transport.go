@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	log2 "log"
 	"net"
 	"net/http"
 	"strings"
@@ -236,6 +237,15 @@ func (c *Transport) configureTransport(
 		default:
 			addressBook = webapi.NewMultiAddressBook(addressBooks...)
 		}
+
+		consumers, err := addressBook.Consumers(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("cannot get consumers: %w", err)
+		}
+		for _, consumer := range consumers {
+			log2.Println("consumer:", consumer)
+		}
+
 		httpClient := http.DefaultClient
 		if len(c.WebAPI.Socks5ProxyAddr) != 0 {
 			dialSocksProxy, err := proxy.SOCKS5("tcp", c.WebAPI.Socks5ProxyAddr, nil, proxy.Direct)
