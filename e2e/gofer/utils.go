@@ -40,7 +40,7 @@ func (s *SmockerAPISuite) Setup() {
 
 	goferConfigPath, exist := os.LookupEnv("GOFER_CONFIG")
 	if !exist {
-		goferConfigPath, err = filepath.Abs("./gofer_config.json")
+		goferConfigPath, err = filepath.Abs("./config.hcl")
 		s.Require().NoError(err)
 	}
 	s.ConfigPath = goferConfigPath

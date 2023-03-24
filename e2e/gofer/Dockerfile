@@ -22,6 +22,7 @@ ENV CGO_ENABLED=0 \
 
 ENV SMOCKER_HOST="http://smocker"
 ENV SMOCKER="${SMOCKER_HOST}:8080"
+ENV GOFER_CONFIG="/app/config.hcl"
 
 COPY ./e2e/gofer /app
 WORKDIR /app

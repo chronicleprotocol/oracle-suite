@@ -10,7 +10,7 @@
 *.dylib
 
 # Dependency directories
-/vendor/
+vendor/
 
 # Compiled binaries
 /bin/*

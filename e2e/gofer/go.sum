@@ -1,5 +1,7 @@
 github.com/chronicleprotocol/infestor v0.2.12 h1:JuYYm8dFxrgNsF9OB0VBPfBG1437GyjIkmj+zmGRxng=
 github.com/chronicleprotocol/infestor v0.2.12/go.mod h1:CGYBL65xIWTuh97/8zPM1lvnt+eFI41SAqDj5MW7ZVw=
+github.com/chronicleprotocol/infestor v0.2.13 h1:vvRB6Rp2uKu1UMeuStNyAd4bBJLYoMnpt4rbt1AhM5A=
+github.com/chronicleprotocol/infestor v0.2.13/go.mod h1:CGYBL65xIWTuh97/8zPM1lvnt+eFI41SAqDj5MW7ZVw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
