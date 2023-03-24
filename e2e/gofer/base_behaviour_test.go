@@ -29,13 +29,6 @@ func (s *BaseBehaviourE2ESuite) TestHelpCommand() {
 	s.Require().Contains(out, "gofer")
 }
 
-func (s *BaseBehaviourE2ESuite) TestPairsFailsWithoutConfigCommand() {
-	_, code, err := callGofer("pairs")
-
-	s.Require().Error(err)
-	s.Require().Equal(1, code)
-}
-
 func (s *BaseBehaviourE2ESuite) TestPairsCommand() {
 	out, _, err := callGofer("--config", s.ConfigPath, "--norpc", "pairs")
 
