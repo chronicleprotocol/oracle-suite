@@ -47,20 +47,24 @@ func Test_Teleport_Ethereum(t *testing.T) {
 		_ = cmd3.Wait()
 	}()
 
+	// Start the lair and wait for it to be ready.
 	if err := cmd1.Start(); err != nil {
 		require.Fail(t, err.Error())
 	}
-	go func() {
-		time.Sleep(5 * time.Second)
-		if err := cmd2.Start(); err != nil {
-			require.Fail(t, err.Error())
-		}
-		if err := cmd3.Start(); err != nil {
-			require.Fail(t, err.Error())
-		}
-	}()
-
 	waitForPort(ctx, "localhost", 30100)
+
+	// Start the leeloo nodes and wait for them to be ready.
+	// Signing leeloo events requires a lot of memory, if two instances are started at the same time
+	// it may happen, that both instances will try to sign the same event at the same time which
+	// may cause a OOM error on a staging environment. Because of that, we start the second instance
+	// with a 5-second delay.
+	if err := cmd2.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
+	time.Sleep(5 * time.Second)
+	if err := cmd3.Start(); err != nil {
+		require.Fail(t, err.Error())
+	}
 	waitForPort(ctx, "localhost", 30101)
 	waitForPort(ctx, "localhost", 30102)
 

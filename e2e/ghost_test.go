@@ -59,9 +59,11 @@ func Test_Ghost_ValidPrice(t *testing.T) {
 		_ = ghostCmd.Wait()
 	}()
 
+	// Start spire.
 	require.NoError(t, spireCmd.Start())
 	waitForPort(ctx, "localhost", 30100)
 
+	// Start ghost.
 	require.NoError(t, ghostCmd.Start())
 	waitForPort(ctx, "localhost", 30101)
 
