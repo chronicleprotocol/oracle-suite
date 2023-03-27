@@ -182,7 +182,7 @@ func (c *ConfigGofer) AsyncGofer(d AsyncDependencies) (provider.Provider, error)
 	for _, n := range gra {
 		ns = append(ns, n)
 	}
-	originSet, err := c.buildOrigins(geth.NewClient(rpcClient))
+	originSet, err := c.buildOrigins(geth.NewClient(rpcClient)) //nolint:staticcheck // ethereum.Client is deprecated
 	if err != nil {
 		return nil, err
 	}
@@ -235,6 +235,7 @@ func (c *ConfigGofer) PriceHook(d HookDependencies) (provider.PriceHook, error) 
 			params[hook.Pair] = m
 		}
 	}
+	//nolint:staticcheck // ethereum.Client is deprecated
 	priceHook, err := provider.NewPostPriceHook(d.Context, geth.NewClient(rpcClient), params)
 	if err != nil {
 		return nil, fmt.Errorf("gofer config: unable to initialize price hook: %w", err)
@@ -257,7 +258,7 @@ func (c *ConfigGofer) Gofer(d Dependencies, noRPC bool) (provider.Provider, erro
 		if err != nil {
 			return nil, fmt.Errorf("gofer config: unable to load price models: %w", err)
 		}
-		originSet, err := c.buildOrigins(geth.NewClient(rpcClient))
+		originSet, err := c.buildOrigins(geth.NewClient(rpcClient)) //nolint:staticcheck // deprecated ethereum.Client
 		if err != nil {
 			return nil, err
 		}

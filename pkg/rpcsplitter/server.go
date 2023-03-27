@@ -495,6 +495,8 @@ func (s *server) taggedBlockToNumber(ctx context.Context, blockID types.BlockNum
 // canceled before the call has successfully returned, call returns immediately.
 //
 // The result must be a pointer with a proper type.
+//
+//nolint:funlen
 func (s *server) call(
 	ctx context.Context,
 	resolver resolver,

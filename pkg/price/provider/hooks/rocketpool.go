@@ -59,6 +59,7 @@ func NewRocketPoolCircuitBreaker(params map[string]interface{}) (*RocketPoolCirc
 	return &ret, nil
 }
 
+//nolint:staticcheck // ethereum.Client is deprecated
 func (o *RocketPoolCircuitBreaker) Check(ctx context.Context,
 	cli ethereum.Client, medianPrice, refPrice float64) error {
 

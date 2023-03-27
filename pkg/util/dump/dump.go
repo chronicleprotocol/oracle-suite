@@ -19,6 +19,8 @@ import (
 // Complex data structures are represented as JSON.
 //
 // It does not support recursive data.
+//
+//nolint:gocyclo
 func Dump(v interface{}) interface{} {
 	switch tv := v.(type) {
 	case nil:

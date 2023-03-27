@@ -82,7 +82,7 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(data) > eventMessageMaxSize {
+		if len(data) > priceMessageMaxSize {
 			return nil, ErrEventMessageTooLarge
 		}
 		return data, nil
@@ -91,7 +91,7 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(data) > eventMessageMaxSize {
+		if len(data) > priceMessageMaxSize {
 			return nil, ErrPriceMessageTooLarge
 		}
 		return data, nil
@@ -101,7 +101,7 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 
 // UnmarshallBinary implements the transport.Message interface.
 func (p *Price) UnmarshallBinary(data []byte) error {
-	if len(data) > eventMessageMaxSize {
+	if len(data) > priceMessageMaxSize {
 		return ErrPriceMessageTooLarge
 	}
 	switch json.Valid(data) {

@@ -73,6 +73,7 @@ func NewMedianAgeCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			age, err := med.Age(context.Background())
@@ -106,6 +107,7 @@ func NewMedianBarCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			bar, err := med.Bar(context.Background())
@@ -138,6 +140,7 @@ func NewMedianWatCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			wat, err := med.Wat(context.Background())
@@ -170,6 +173,7 @@ func NewMedianValCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			price, err := med.Val(context.Background())
@@ -202,6 +206,7 @@ func NewMedianFeedsCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			feeds, err := med.Feeds(context.Background())
@@ -236,6 +241,7 @@ func NewMedianPokeCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			// Read JSON and parse it:
@@ -285,6 +291,7 @@ func NewMedianLiftCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			var addresses []types.Address
@@ -322,6 +329,7 @@ func NewMedianDropCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			var addresses []types.Address
@@ -359,6 +367,7 @@ func NewMedianSetBarCmd(opts *options) *cobra.Command {
 				return fmt.Errorf("unable to find client %s", args[0])
 			}
 
+			//nolint:staticcheck // ethereum.Client is deprecated
 			med := medianGeth.NewMedian(geth.NewClient(cli), types.MustAddressFromHex(args[1]))
 
 			bar, ok := (&big.Int{}).SetString(args[2], 10)

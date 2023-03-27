@@ -39,6 +39,7 @@ type RocketPool struct {
 //go:embed rocketpool_abi.json
 var rocketPoolABI []byte
 
+//nolint:staticcheck // deprecated ethereum.Client
 func NewRocketPool(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*RocketPool, error) {
 	a, err := abi.ParseJSON(rocketPoolABI)
 	if err != nil {

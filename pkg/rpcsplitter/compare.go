@@ -26,6 +26,7 @@ import (
 // If a structure contains unexported fields, compare will always return false.
 //
 // This function DOES NOT work with recursive data structures!
+//
 //nolint:funlen,gocyclo
 func compare(a, b any) bool {
 	if a == nil && b == nil {

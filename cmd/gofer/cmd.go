@@ -53,7 +53,7 @@ with aggregates that increase reliability in the DeFi environment.`,
 		&opts.NoRPC,
 		"norpc",
 		false,
-		"disable the use of RPCURLs agent",
+		"disable the use of RPC agent",
 	)
 
 	return rootCmd

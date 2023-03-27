@@ -81,6 +81,6 @@ func (p *PrivKey) GetPublic() crypto.PubKey {
 
 // UnmarshalEthPrivateKey should return private key from input bytes, but this
 // not supported for ethereum keys.
-func UnmarshalEthPrivateKey(data []byte) (crypto.PrivKey, error) {
+func UnmarshalEthPrivateKey(_ []byte) (crypto.PrivKey, error) {
 	return nil, errors.New("eth key type does not support unmarshalling")
 }

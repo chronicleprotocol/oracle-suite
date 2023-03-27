@@ -251,10 +251,7 @@ func (s *Relayer) syncFeederAddresses(p *Pair) error {
 	}
 
 	// Update the list.
-	p.FeederAddresses = nil
-	for _, addr := range addresses {
-		p.FeederAddresses = append(p.FeederAddresses, addr)
-	}
+	p.FeederAddresses = addresses
 	return nil
 }
 

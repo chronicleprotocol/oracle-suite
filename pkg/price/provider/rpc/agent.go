@@ -93,7 +93,7 @@ func (s *Agent) Start(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		err := http.Serve(s.listener, nil)
+		err := http.Serve(s.listener, nil) //nolint:gosec // we are not exposing the server to the internet
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			s.log.WithError(err).Error("RPC server crashed")
 		}

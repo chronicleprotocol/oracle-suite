@@ -49,13 +49,14 @@ const prefixRef = "Ref:"
 var balancerV2PoolABI []byte
 
 type BalancerV2 struct {
-	ethClient         ethereum.Client
+	ethClient         ethereum.Client //nolint:staticcheck // deprecated ethereum.Client
 	ContractAddresses ContractAddresses
 	abi               *abi.Contract
 	variable          byte
 	blocks            []int64
 }
 
+//nolint:staticcheck // deprecated ethereum.Client
 func NewBalancerV2(ethClient ethereum.Client, addrs ContractAddresses, blocks []int64) (*BalancerV2, error) {
 	a, err := abi.ParseJSON(balancerV2PoolABI)
 	if err != nil {
@@ -156,6 +157,7 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 // block delta defined in the blocks argument. The returned slice have the
 // same structure as the calls slice. In the last array dimension, the
 // returned slice contains the results of the multicall for each block delta.
+//
 //nolint:staticcheck // deprecated ethereum.Client
 func nestedMultiCall(ethClient ethereum.Client, calls [][]types.Call, blocks []int64) ([][][][]byte, error) {
 	block, err := ethClient.BlockNumber(context.Background())

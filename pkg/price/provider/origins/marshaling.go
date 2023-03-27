@@ -58,25 +58,6 @@ func (s *firstStringFromSliceAsFloat64) val() float64 {
 	return float64(*s)
 }
 
-type stringAsUnixTimestamp time.Time
-
-func (s *stringAsUnixTimestamp) UnmarshalJSON(bytes []byte) error {
-	var ss string
-	if err := json.Unmarshal(bytes, &ss); err != nil {
-		return err
-	}
-	i, err := strconv.ParseInt(ss, 10, 64)
-	if err != nil {
-		return err
-	}
-	*s = stringAsUnixTimestamp(time.Unix(i, 0))
-	return nil
-}
-
-func (s *stringAsUnixTimestamp) val() time.Time {
-	return time.Time(*s)
-}
-
 type stringAsUnixTimestampMs time.Time
 
 func (s *stringAsUnixTimestampMs) UnmarshalJSON(bytes []byte) error {
@@ -94,25 +75,6 @@ func (s *stringAsUnixTimestampMs) UnmarshalJSON(bytes []byte) error {
 
 func (s *stringAsUnixTimestampMs) val() time.Time {
 	return time.Time(*s)
-}
-
-type stringAsInt64 int64
-
-func (s *stringAsInt64) UnmarshalJSON(bytes []byte) error {
-	var ss string
-	if err := json.Unmarshal(bytes, &ss); err != nil {
-		return err
-	}
-	i, err := strconv.ParseInt(ss, 10, 64)
-	if err != nil {
-		return err
-	}
-	*s = stringAsInt64(i)
-	return nil
-}
-
-func (s *stringAsInt64) val() int64 {
-	return int64(*s)
 }
 
 type intAsUnixTimestamp time.Time

@@ -75,7 +75,6 @@ func (n *API) PublishPrice(arg *PublishPriceArg, _ *Nothing) error {
 	if err := n.transport.Broadcast(messages.PriceV1MessageName, arg.Price.AsV1()); err != nil {
 		return err
 	}
-
 	return nil
 }
 

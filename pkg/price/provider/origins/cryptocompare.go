@@ -26,7 +26,7 @@ import (
 
 const cryptoCompareMultiBaseURL = "https://min-api.cryptocompare.com"
 
-// nolint:lll
+//nolint:lll
 const cryptoCompareMultiURL = "%s/data/pricemultifull?fsyms=%s&tsyms=%s&tryConversion=false&extraParams=gofer&relaxedValidation=true"
 
 type cryptoCompareMultiResponse struct {

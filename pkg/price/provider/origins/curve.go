@@ -33,13 +33,14 @@ import (
 var curvePoolABI []byte
 
 type CurveFinance struct {
-	ethClient                 pkgEthereum.Client
+	ethClient                 pkgEthereum.Client //nolint:staticcheck // ethereum.Client is deprecated
 	addrs                     ContractAddresses
 	abi                       *abi.Contract
 	baseIndex, quoteIndex, dx *big.Int
 	blocks                    []int64
 }
 
+//nolint:staticcheck // ethereum.Client is deprecated
 func NewCurveFinance(cli pkgEthereum.Client, addrs ContractAddresses, blocks []int64) (*CurveFinance, error) {
 	a, err := abi.ParseJSON(curvePoolABI)
 	if err != nil {

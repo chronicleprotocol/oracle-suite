@@ -24,7 +24,7 @@ import (
 )
 
 type PostPriceHook struct {
-	cli      ethereum.Client
+	cli      ethereum.Client //nolint:staticcheck // ethereum.Client is deprecated
 	ctx      context.Context
 	handlers map[string]interface{}
 }
@@ -38,6 +38,7 @@ func NewHookParams() HookParams {
 	return make(HookParams)
 }
 
+//nolint:staticcheck // ethereum.Client is deprecated
 func NewPostPriceHook(ctx context.Context, cli ethereum.Client, params HookParams) (*PostPriceHook, error) {
 	handlers := make(map[string]interface{})
 	for k, v := range params {
@@ -67,7 +68,6 @@ func findPrice(a []*Price, selector func(*Price) bool) *Price {
 			if selector(price) {
 				return price
 			}
-			//nolint
 			if len(price.Prices) > 0 {
 				return findPrice(price.Prices, selector)
 			}
@@ -112,7 +112,6 @@ func (o *PostPriceHook) Check(prices map[Pair]*Price) error {
 					return nil
 				}
 				checkPrice = p.Price
-
 			}
 			err := o.handlers[RocketPoolPairETH].(*hooks.RocketPoolCircuitBreaker).Check(o.ctx,
 				o.cli, checkPrice, refPrice.Price)

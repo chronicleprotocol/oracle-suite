@@ -144,7 +144,8 @@ type Config struct {
 
 // New returns a new instance of a transport, implemented with
 // the libp2p library.
-// nolint:gocyclo,funlen
+//
+//nolint:gocyclo,funlen
 func New(cfg Config) (*P2P, error) {
 	var err error
 

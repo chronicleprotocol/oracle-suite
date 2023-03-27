@@ -1,4 +1,3 @@
-//nolint:gofmt,goimports // TODO(mdobak): remove nolint after upgrade Go to 1.19
 package webapi
 
 import (

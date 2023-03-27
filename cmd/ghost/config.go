@@ -40,7 +40,7 @@ type Config struct {
 	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
 	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
 	Ghost     ghostConfig.ConfigGhost         `hcl:"ghost,block"`
-	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds,block"`
+	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
 	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
 
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.

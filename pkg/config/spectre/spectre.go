@@ -94,7 +94,7 @@ func (c *ConfigSpectre) Relayer(d Dependencies) (*relayer.Relayer, error) {
 		if rpcClient == nil {
 			return nil, fmt.Errorf("spectre config: ethereum client %s not found", pair.EthereumClient)
 		}
-		ethClient := geth.NewClient(rpcClient)
+		ethClient := geth.NewClient(rpcClient) //nolint:staticcheck // deprecated ethereum.Client
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
 			AssetPair:                   pair.Pair,
 			Spread:                      pair.Spread,

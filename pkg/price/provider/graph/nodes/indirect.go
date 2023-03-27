@@ -89,13 +89,13 @@ func (e ErrDivByZero) Error() string {
 // IndirectAggregatorNode calculates a price which is a cross rate between all
 // child prices.
 //
-//                             -- [Origin A/B]
-//                            /
-//  [IndirectAggregatorNode] ---- [Origin B/C]       -- ...
-//                            \                     /
-//                             -- [Aggregator C/D] ---- ...
-//                                                  \
-//                                                   -- ...
+//	                           -- [Origin A/B]
+//	                          /
+//	[IndirectAggregatorNode] ---- [Origin B/C]       -- ...
+//	                          \                     /
+//	                           -- [Aggregator C/D] ---- ...
+//	                                                \
+//	                                                 -- ...
 //
 // For above node, cross rate for the A/D pair will be calculated. It is important
 // to add child nodes in the correct order, because prices will be calculated from
@@ -204,6 +204,7 @@ func (n *IndirectAggregatorNode) Price() AggregatorPrice {
 // is important because prices are calculated from first to last.
 //
 // TODO: Decide what to do with division by zero during calculating Bid/Ask prices.
+//
 //nolint:gocyclo,funlen
 func crossRate(t []PairPrice) (PairPrice, error) {
 	var err error

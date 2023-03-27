@@ -66,7 +66,6 @@ func (k *Kyber) parseResponse(pairs []Pair, res *query.HTTPResponse) []FetchResu
 	}
 
 	for _, pair := range pairs {
-		//nolint:gocritic
 		if t, is := tickers[pair.Quote+"_"+pair.Base]; !is {
 			results = append(results, FetchResult{
 				Price: Price{Pair: pair},

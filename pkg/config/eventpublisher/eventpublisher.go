@@ -185,7 +185,7 @@ func (c *ConfigEventPublisher) teleportEVM(eps *[]publisher.EventProvider, d Dep
 		}
 		var eventProvider publisher.EventProvider
 		eventProvider, err = teleportevm.New(teleportevm.Config{
-			Client:             geth.NewClient(client),
+			Client:             geth.NewClient(client), //nolint:staticcheck // deprecated ethereum.Client
 			Addresses:          contractAddrs,
 			Interval:           time.Second * time.Duration(interval),
 			PrefetchPeriod:     time.Duration(cfg.PrefetchPeriod) * time.Second,

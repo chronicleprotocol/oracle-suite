@@ -31,12 +31,13 @@ import (
 var wrappedStakedETHABI []byte
 
 type WrappedStakedETH struct {
-	ethClient ethereum.Client
+	ethClient ethereum.Client //nolint:staticcheck // deprecated ethereum.Client
 	addrs     ContractAddresses
 	abi       *abi.Contract
 	blocks    []int64
 }
 
+//nolint:staticcheck // deprecated ethereum.Client
 func NewWrappedStakedETH(cli ethereum.Client, addrs ContractAddresses, blocks []int64) (*WrappedStakedETH, error) {
 	a, err := abi.ParseJSON(wrappedStakedETHABI)
 	if err != nil {

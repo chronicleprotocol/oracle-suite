@@ -37,11 +37,12 @@ const delayBetweenReadRetries = 5 * time.Second
 
 // Median implements the oracle.Median interface using go-ethereum packages.
 type Median struct {
-	ethereum ethereum.Client
+	ethereum ethereum.Client //nolint:staticcheck // deprecated ethereum.Client
 	address  types.Address
 }
 
 // NewMedian creates the new Median instance.
+//
 //nolint:staticcheck // deprecated ethereum.Client
 func NewMedian(ethereum ethereum.Client, address types.Address) *Median {
 	return &Median{
