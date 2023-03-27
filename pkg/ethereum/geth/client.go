@@ -49,8 +49,10 @@ var multiCallContracts = map[uint64]types.Address{
 	xdaiChainID:    types.MustAddressFromHex("0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"),
 }
 
+// Deprecated: use the github.com/defiweb/go-eth package instead.
 type Client struct{ client rpc.RPC }
 
+// Deprecated: use the github.com/defiweb/go-eth package instead.
 func NewClient(client rpc.RPC) *Client {
 	return &Client{client: client}
 }
@@ -72,9 +74,13 @@ func (c *Client) Call(ctx context.Context, call types.Call) ([]byte, error) {
 }
 
 func (c *Client) CallBlocks(ctx context.Context, call types.Call, blocks []int64) ([][]byte, error) {
+	blockNumber, err := c.client.BlockNumber(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block number: %w", err)
+	}
 	var res [][]byte
 	for _, block := range blocks {
-		bn := types.BlockNumberFromUint64(uint64(block))
+		bn := types.BlockNumberFromBigInt(new(big.Int).Sub(blockNumber, big.NewInt(block)))
 		r, err := c.client.Call(ctx, call, bn)
 		if err != nil {
 			return nil, err

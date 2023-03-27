@@ -19,12 +19,3 @@ package ptrutil
 func Ptr[T any](v T) *T {
 	return &v
 }
-
-// Ptrs returns a slice of pointers to the given values.
-func Ptrs[T any](v ...T) []*T {
-	ptrs := make([]*T, len(v))
-	for i := range v {
-		ptrs[i] = &v[i]
-	}
-	return ptrs
-}

@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/mock"
 )
@@ -23,3 +24,5 @@ func (r *Recoverer) RecoverTransaction(tx *types.Transaction) (*types.Address, e
 	args := r.Called(tx)
 	return args.Get(0).(*types.Address), args.Error(1)
 }
+
+var _ crypto.Recoverer = (*Recoverer)(nil)

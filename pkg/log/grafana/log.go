@@ -42,16 +42,21 @@ const LoggerTag = "GRAFANA"
 type Config struct {
 	// Metrics is a list of metric definitions.
 	Metrics []Metric
+
 	// Interval specifies how often logs should be sent to the Grafana Cloud
 	// server. Logs with the same name in that interval will be replaced with
 	// never ones.
 	Interval uint
+
 	// Graphite server endpoint.
 	GraphiteEndpoint string
+
 	// Graphite API key.
 	GraphiteAPIKey string
+
 	// HTTPClient used to send metrics to Grafana Cloud.
 	HTTPClient *http.Client
+
 	// Logger used to log errors related to this logger, such as connection errors.
 	Logger log.Logger
 }
@@ -60,23 +65,30 @@ type Config struct {
 type Metric struct {
 	// MatchMessage is a regexp that must match the log message.
 	MatchMessage *regexp.Regexp
+
 	// MatchFields is a list of regexp's that must match the values of the
 	// fields defined in the map keys.
 	MatchFields map[string]*regexp.Regexp
+
 	// Value is the dot-separated path of the field with the metric value.
 	// If empty, the value 1 will be used as the metric value.
 	Value string
+
 	// Name is the name of the metric. It can contain references to log fields
 	// in the format ${path}, where path is the dot-separated path to the field.
 	Name string
+
 	// Tag is a list of metric tags. They can contain references to log fields
 	// in the format ${path}, where path is the dot-separated path to the field.
 	Tags map[string][]string
+
 	// OnDuplicate specifies how duplicated values in the same interval should
 	// be handled.
 	OnDuplicate OnDuplicate
+
 	// TransformFunc defines the function applied to the value before setting it.
 	TransformFunc func(float64) float64
+
 	// ParserFunc is going to be applied to transform the value reflection to an actual float64 value
 	ParserFunc func(reflect.Value) (float64, bool)
 

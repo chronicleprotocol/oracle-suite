@@ -228,6 +228,7 @@ func (ep *EventProvider) handleEvents(ctx context.Context, from, to *big.Int) {
 		}
 		for _, l := range logs {
 			if l.Address != address {
+				// PANIC!
 				// This should never happen. All logs returned by
 				// eth_filterLogs should be emitted by the specified
 				// contract. If it happens, there is a bug somewhere.

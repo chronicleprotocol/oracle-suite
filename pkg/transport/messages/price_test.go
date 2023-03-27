@@ -182,3 +182,9 @@ func TestPrice_Marshalling(t *testing.T) {
 		})
 	}
 }
+
+func FuzzPrice_UnmarshallBinary(f *testing.F) {
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_ = (&Price{}).UnmarshallBinary(data)
+	})
+}

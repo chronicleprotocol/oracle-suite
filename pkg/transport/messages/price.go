@@ -33,8 +33,11 @@ const PriceV1MessageName = "price/v1"
 
 const priceMessageMaxSize = 1 * 1024 * 1024 // 1MB
 
-var ErrPriceMessageTooLarge = errors.New("price message too large")
-var ErrUnknownPriceMessageVersion = errors.New("unknown message version")
+var (
+	ErrPriceMessageTooLarge       = errors.New("price message too large")
+	ErrUnknownPriceMessageVersion = errors.New("unknown message version")
+	ErrInvalidPriceMessage        = errors.New("invalid price message")
+)
 
 type Price struct {
 	Price   *median.Price   `json:"price"`
@@ -131,6 +134,9 @@ func (p *Price) UnmarshallBinary(data []byte) error {
 		}
 	default:
 		return ErrUnknownPriceMessageVersion
+	}
+	if p.Price == nil {
+		return ErrInvalidPriceMessage
 	}
 	if p.Price.Val == nil {
 		p.Price.Val = big.NewInt(0)

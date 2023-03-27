@@ -69,7 +69,7 @@ const (
 // is sent in the query string of the request. The signature is calculated
 // using the following formula:
 //
-//   signature = sign(timestamp + rand)
+//	signature = sign(timestamp + rand)
 //
 // Where timestamp is the current UNIX timestamp in seconds encoded as a
 // 10-base string, rand is a random 16-byte string encoded as a hex string.
@@ -77,15 +77,15 @@ const (
 //
 // Signature is stored in three query parameters:
 //
-//   s - hex encoded signature
-//   t - timestamp in seconds encoded as a 10-base string
-//   r - 16-byte random string encoded as a hex string
+//	s - hex encoded signature
+//	t - timestamp in seconds encoded as a 10-base string
+//	r - 16-byte random string encoded as a hex string
 //
 // Consumer verifies the signature and checks if message producer is on the
 // allowlist. Timestamp must be within following ranges:
 //
-//   now - maxClockSkew <= timestamp <= now + flushInterval + maxClockSkew
-//   lastRequest <= now + flushInterval - maxClockSkew
+//	now - maxClockSkew <= timestamp <= now + flushInterval + maxClockSkew
+//	lastRequest <= now + flushInterval - maxClockSkew
 //
 // Where now is the current UNIX timestamp in seconds, lastRequest is the
 // timestamp of the last request received from the message producer and
@@ -97,8 +97,8 @@ const (
 // The request body is a protobuf message (see pb/tor.proto) that contains
 // the following fields:
 //
-//   messages - a list of messages grouped by topic
-//   signature - signature of the message pack
+//	messages - a list of messages grouped by topic
+//	signature - signature of the message pack
 //
 // The signature of the request body is calculated using Signer interface. The
 // signing data is a concatenation of all messages in the batch prefixed with
@@ -174,7 +174,7 @@ type Config struct {
 	// Flush interval must be less or equal to timeout.
 	FlushTicker *timeutil.Ticker
 
-	// Signer used to sign and verify messages.
+	// Signer used to sign messages.
 	Signer wallet.Key
 
 	// Timeout is a timeout for HTTP requests.
@@ -352,6 +352,14 @@ func (w *WebAPI) flushMessages(ctx context.Context, t time.Time) error {
 	if err != nil {
 		return err
 	}
+	// Consumer addresses may omit protocol scheme, so we add it here.
+	for n, addr := range cons {
+		if !strings.Contains(addr, "://") {
+			// Data transmitted over the WebAPI protocol is signed, hence
+			// there is no need to use HTTPS.
+			cons[n] = "http://" + addr
+		}
+	}
 	for _, addr := range cons {
 		go w.doHTTPRequest(ctx, addr, bin, t)
 	}
@@ -398,6 +406,7 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 //
 // Request must be a POST request to the /consume path with a protobuf-encoded
 // MessagePack in the body.
+//
 //nolint:funlen,gocyclo
 func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	w.mu.RLock()
@@ -580,9 +589,10 @@ func (w *WebAPI) contextCancelHandler() {
 // request comes from a specific feeder.
 //
 // The URL is signed by appending the following query parameters:
-//  t: Unix timestamp of the signature as a 10-base integer.
-//  r: Random 16-byte value encoded in hex.
-//  s: Signature created by signing the concatenation of t and r.
+//
+//	t: Unix timestamp of the signature as a 10-base integer.
+//	r: Random 16-byte value encoded in hex.
+//	s: Signature created by signing the concatenation of t and r.
 func signURL(url string, tm time.Time, signer wallet.Key, rand io.Reader) (string, error) {
 	r := make([]byte, 16)
 	if _, err := rand.Read(r); err != nil {

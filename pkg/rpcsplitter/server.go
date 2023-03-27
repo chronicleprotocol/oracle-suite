@@ -506,6 +506,18 @@ func (s *server) call(
 	if reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return fmt.Errorf("call result parameter must be pointer")
 	}
+
+	// Recover from panics.
+	defer func() {
+		if r := recover(); r != nil {
+			s.log.
+				WithField("method", method).
+				WithField("args", args).
+				WithError(fmt.Errorf("panic: %s", r)).
+				Error("Panic")
+		}
+	}()
+
 	// Send request to all endpoints.
 	ch := make(chan any, len(s.callers))
 	rt := reflect.TypeOf(result).Elem()

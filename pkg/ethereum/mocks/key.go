@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"github.com/defiweb/go-eth/types"
+	"github.com/defiweb/go-eth/wallet"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -38,3 +39,5 @@ func (k *Key) VerifyMessage(data []byte, sig types.Signature) bool {
 	args := k.Called(data, sig)
 	return args.Bool(0)
 }
+
+var _ wallet.Key = (*Key)(nil)

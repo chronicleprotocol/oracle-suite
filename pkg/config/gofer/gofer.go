@@ -99,7 +99,7 @@ type ConfigGofer struct {
 
 	// EthereumClient is the name of the Ethereum client to use for fetching
 	// on-chain prices.
-	EthereumClient string `hcl:"ethereum_client"`
+	EthereumClient string `hcl:"ethereum_client"` // TODO(mdobak): make optional and move it to the origins config
 
 	// Origins is a configuration of price origins.
 	Origins []configOrigin `hcl:"origin,block"`

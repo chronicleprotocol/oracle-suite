@@ -111,3 +111,9 @@ func TestEvent_Marshalling(t *testing.T) {
 		})
 	}
 }
+
+func FuzzEvent_UnmarshallBinary(f *testing.F) {
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_ = (&Event{}).UnmarshallBinary(data)
+	})
+}

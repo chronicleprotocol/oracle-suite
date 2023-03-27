@@ -32,7 +32,7 @@ type ConfigGhost struct {
 	// EthereumKey is the name of the Ethereum key to use for signing prices.
 	EthereumKey string `hcl:"ethereum_key"`
 
-	// Interval is the interval at which to publish prices.
+	// Interval is the interval at which to publish prices in seconds.
 	Interval int `hcl:"interval"`
 
 	// Pairs is the list of pairs to publish prices for.
