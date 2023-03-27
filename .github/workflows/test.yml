@@ -40,8 +40,8 @@ jobs:
           TEST_REDIS_ADDR: "127.0.0.1:6379"
           TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
-  test-e2e:
-    name: E2E Tests
+  test-e2e-gofer:
+    name: E2E Tests (Gofer)
     strategy:
       matrix:
         go-version: [ 1.20.x ]
@@ -58,6 +58,48 @@ jobs:
         run: go mod vendor
       - name: Start Smocker instance for testing
         run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
-      - name: Run E2E Test
+      - name: Run E2E Tests
         working-directory: ./e2e
-        run: go test -v -p 1 ./
+        run: go test -v -p 1 -run ^Test_Gofer
+  test-e2e-ghost:
+    name: E2E Tests (Ghost)
+    strategy:
+      matrix:
+        go-version: [ 1.20.x ]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Download vendors
+        run: go mod vendor
+      - name: Start Smocker instance for testing
+        run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
+      - name: Run E2E Tests
+        working-directory: ./e2e
+        run: go test -v -p 1 -run ^Test_Ghost
+  test-e2e-teleport:
+    name: E2E Tests (Teleport)
+    strategy:
+      matrix:
+        go-version: [ 1.20.x ]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Download vendors
+        run: go mod vendor
+      - name: Start Smocker instance for testing
+        run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
+      - name: Run E2E Tests
+        working-directory: ./e2e
+        run: go test -v -p 1 -run ^Test_Teleport

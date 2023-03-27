@@ -23,7 +23,7 @@ type lairResponseSignature struct {
 func waitForLair(ctx context.Context, url string, responses int) (lairResponse, error) {
 	lairResponse := lairResponse{}
 	for ctx.Err() == nil {
-		time.Sleep(time.Second)
+		time.Sleep(10 * time.Second)
 		res, err := http.Get(url)
 		if err != nil {
 			return nil, err
