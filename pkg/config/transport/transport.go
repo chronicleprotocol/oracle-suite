@@ -231,7 +231,7 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 
 	// Configure signer:
 	key := d.Keys[c.WebAPI.EthereumKey]
-	if key == nil {
+	if c.WebAPI.EthereumKey != "" && key == nil {
 		return nil, fmt.Errorf("WebAPI config: key %q not found", c.WebAPI.EthereumKey)
 	}
 
@@ -253,15 +253,20 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 }
 
 func (c *ConfigTransport) configureLibP2P(d Dependencies) (transport.Transport, error) {
+	// Configure signer:
+	key := d.Keys[c.LibP2P.EthereumKey]
+	if c.LibP2P.EthereumKey != "" && key == nil {
+		return nil, fmt.Errorf("WebAPI config: key %q not found", c.WebAPI.EthereumKey)
+	}
+
 	// Configure LibP2P private keys:
-	ethereumKey := d.Keys[c.LibP2P.EthereumKey] // Key is optional.
 	peerPrivKey, err := c.generatePrivKey()
 	if err != nil {
 		return nil, fmt.Errorf("LibP2P config: %w", err)
 	}
 	var messagePrivKey crypto.PrivKey
-	if ethereumKey != nil {
-		messagePrivKey = ethkey.NewPrivKey(ethereumKey)
+	if key != nil {
+		messagePrivKey = ethkey.NewPrivKey(key)
 	}
 
 	// Configure LibP2P transport:
@@ -276,7 +281,7 @@ func (c *ConfigTransport) configureLibP2P(d Dependencies) (transport.Transport, 
 		BlockedAddrs:     c.LibP2P.BlockedAddrs,
 		AuthorAllowlist:  d.Feeds,
 		Discovery:        !c.LibP2P.DisableDiscovery,
-		Signer:           ethereumKey,
+		Signer:           key,
 		Logger:           d.Logger,
 		AppName:          "spire",
 		AppVersion:       suite.Version,

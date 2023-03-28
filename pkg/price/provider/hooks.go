@@ -19,34 +19,41 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/hooks"
 )
 
 type PostPriceHook struct {
-	cli      ethereum.Client //nolint:staticcheck // ethereum.Client is deprecated
 	ctx      context.Context
-	handlers map[string]interface{}
+	clients  ethereumConfig.ClientRegistry
+	handlers map[string]any
 }
 
 const RocketPoolPairETH = "RETH/ETH"
 const RocketPoolPairUSD = "RETH/USD"
 
-type HookParams map[string]map[string]interface{}
+type HookParams map[string]map[string]any
 
 func NewHookParams() HookParams {
 	return make(HookParams)
 }
 
-//nolint:staticcheck // ethereum.Client is deprecated
-func NewPostPriceHook(ctx context.Context, cli ethereum.Client, params HookParams) (*PostPriceHook, error) {
-	handlers := make(map[string]interface{})
+func NewPostPriceHook(
+	ctx context.Context,
+	clients ethereumConfig.ClientRegistry,
+	params HookParams,
+) (
+	*PostPriceHook,
+	error,
+) {
+
+	handlers := make(map[string]any)
 	for k, v := range params {
 		switch k {
 		case RocketPoolPairUSD:
 			fallthrough
 		case RocketPoolPairETH:
-			h, err := hooks.NewRocketPoolCircuitBreaker(v)
+			h, err := hooks.NewRocketPoolCircuitBreaker(clients, v)
 			if err != nil {
 				return nil, err
 			}
@@ -54,10 +61,9 @@ func NewPostPriceHook(ctx context.Context, cli ethereum.Client, params HookParam
 		default:
 		}
 	}
-
 	return &PostPriceHook{
-		cli:      cli,
 		ctx:      ctx,
+		clients:  clients,
 		handlers: handlers,
 	}, nil
 }
@@ -85,7 +91,6 @@ func (o *PostPriceHook) Check(prices map[Pair]*Price) error {
 			if _, ok := o.handlers[RocketPoolPairETH]; !ok {
 				return fmt.Errorf("no post price hook handler found for %s", pair.String())
 			}
-
 			checkPrice := price.Price
 			refPrice := findPrice(price.Prices,
 				func(p *Price) bool {
@@ -107,14 +112,20 @@ func (o *PostPriceHook) Check(prices map[Pair]*Price) error {
 					},
 				)
 				if p == nil {
-					prices[pair].Error = fmt.Sprintf("post price hook failed for %s, unable to find aggregate %s price",
-						pair.String(), RocketPoolPairETH)
+					prices[pair].Error = fmt.Sprintf(
+						"post price hook failed for %s, unable to find aggregate %s price",
+						pair.String(),
+						RocketPoolPairETH,
+					)
 					return nil
 				}
 				checkPrice = p.Price
 			}
-			err := o.handlers[RocketPoolPairETH].(*hooks.RocketPoolCircuitBreaker).Check(o.ctx,
-				o.cli, checkPrice, refPrice.Price)
+			err := o.handlers[RocketPoolPairETH].(*hooks.RocketPoolCircuitBreaker).Check(
+				o.ctx,
+				checkPrice,
+				refPrice.Price,
+			)
 			if err != nil {
 				prices[pair].Error = err.Error()
 			}

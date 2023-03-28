@@ -1,3 +1,4 @@
+# List of feeds that are allowed to send price updates and event attestations.
 feeds = [
   "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
   "0x4b0E327C08e23dD08cb87Ec994915a5375619aa2",
@@ -27,25 +28,11 @@ feeds = [
   "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42"
 ]
 
-transport {
-  libp2p {
-    priv_key_seed   = try(env.CFG_LIBP2P_PK_SEED, "")
-    listen_addrs    = try(split(env.CFG_LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
-    bootstrap_addrs = try(split(env.CFG_LIBP2P_BOOTSTRAP_ADDRS, ","), [
-      "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
-      "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
-    ])
-    direct_peers_addrs = []
-    blocked_addrs      = []
-    disable_discovery  = false
-  }
-}
-
 ethereum {
   client "default" {
     rpc_urls     = try(split(env.CFG_ETH_RPC_URLS, ","), ["https://eth.public-rpc.com"])
     chain_id     = try(env.CFG_ETH_CHAIN_ID, 1)
-    ethereum_key = try(env.CFG_ETH_KEY, "") != "" ? "default" : ""
+    ethereum_key = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
   }
 
   dynamic "key" {
@@ -59,9 +46,54 @@ ethereum {
   }
 }
 
+transport {
+  # LibP2P transport configuration. Always enabled.
+  libp2p {
+    priv_key_seed   = try(env.CFG_LIBP2P_PK_SEED, "")
+    listen_addrs    = try(split(env.CFG_LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
+    bootstrap_addrs = try(split(env.CFG_LIBP2P_BOOTSTRAP_ADDRS, ","), [
+      "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
+      "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
+    ])
+    direct_peers_addrs = []
+    blocked_addrs      = []
+    disable_discovery  = false
+    ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
+  }
+
+  # WebAPI transport configuration. Enabled if CFG_WEBAPI_LISTEN_ADDR is set to a listen address.
+  dynamic "webapi" {
+    for_each = try(env.CFG_WEBAPI_LISTEN_ADDR, "") == "" ? [] : [1]
+    content {
+      listen_addr       = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0.8080")
+      socks5_proxy_addr = try(env.CFG_WEBAPI_SOCKS5_PROXY_ADDR, "127.0.0.1:9050")
+
+      # Ethereum based address book. Enabled if CFG_WEBAPI_ETH_ADDR_BOOK is set to a contract address.
+      dynamic "ethereum_address_book" {
+        for_each = try(env.CFG_WEBAPI_ETH_ADDR_BOOK, "") == "" ? [] : [1]
+        content {
+          contract_addr   = try(env.CFG_WEBAPI_ETH_ADDR_BOOK, "")
+          ethereum_client = "default"
+        }
+      }
+
+      # Static address book. Enabled if CFG_WEBAPI_STATIC_ADDR_BOOK is set to a comma separated list of addresses.
+      dynamic "static_address_book" {
+        for_each = try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "") == "" ? [] : [1]
+        content {
+          addresses = try(split(env.CFG_WEBAPI_STATIC_ADDR_BOOK, ","), "")
+        }
+      }
+    }
+  }
+}
+
 spire {
   rpc_listen_addr = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
-  pairs           = [
+  rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
+
+  # List of pairs that are collected by the spire node. Other pairs are ignored.
+  pairs = [
     "AAVEUSD",
     "AVAXUSD",
     "BALUSD",
@@ -99,12 +131,11 @@ spire {
 }
 
 gofer {
-  ethereum_client = "default"
-
   origin "balancerV2" {
-    type = "balancerV2"
+    type   = "balancerV2"
     params = {
-      symbol_aliases = {
+      ethereum_client = "default"
+      symbol_aliases  = {
         "ETH" = "WETH"
       }
       contracts = {
@@ -118,8 +149,10 @@ gofer {
   }
 
   origin "binance_us" {
-    type = "binance"
-    url  = "https://www.binance.us"
+    type   = "binance"
+    params = {
+      url = "https://www.binance.us"
+    }
   }
 
   origin "bittrex" {
@@ -134,7 +167,8 @@ gofer {
   origin "curve" {
     type   = "curve"
     params = {
-      contracts = {
+      ethereum_client = "default"
+      contracts       = {
         "RETH/WSTETH" = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
         "ETH/STETH"   = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
       }
@@ -164,7 +198,8 @@ gofer {
   origin "rocketpool" {
     type   = "rocketpool"
     params = {
-      contracts = {
+      ethereum_client = "default"
+      contracts       = {
         "RETH/ETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393"
       }
     }
@@ -225,7 +260,8 @@ gofer {
   origin "wsteth" {
     type   = "wsteth"
     params = {
-      contracts = {
+      ethereum_client = "default"
+      contracts       = {
         "WSTETH/STETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
       }
     }
@@ -392,6 +428,7 @@ gofer {
   }
   hook "RETH/ETH" {
     post_price = {
+      ethereum_client  = "default"
       circuit_contract = "0xa3105dee5ec73a7003482b1a8968dc88666f3589"
     }
   }
@@ -475,13 +512,15 @@ leeloo {
 }
 
 lair {
-  listen_addr = try(env.CFG_LAIR_LISTEN_ADDR, "127.0.0.1:8082")
+  listen_addr = try(env.CFG_LAIR_LISTEN_ADDR, "0.0.0.0:8082")
 
+  # Configuration for memory storage. Enabled if CFG_LAIR_STORAGE is "memory" or unset.
   dynamic "storage_memory" {
     for_each = try(env.CFG_LAIR_STORAGE, "memory") == "memory" ? [1] : []
     content {}
   }
 
+  # Configuration for redis storage. Enabled if CFG_LAIR_STORAGE is "redis".
   dynamic "storage_redis" {
     for_each = try(env.CFG_LAIR_STORAGE, "") == "redis" ? [1] : []
     content {

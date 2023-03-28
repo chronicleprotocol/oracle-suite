@@ -174,6 +174,7 @@ type Config struct {
 	FlushTicker *timeutil.Ticker
 
 	// Signer used to sign messages.
+	// If not provided, message broadcast will not be available.
 	Signer wallet.Key
 
 	// Timeout is a timeout for HTTP requests.
@@ -209,9 +210,6 @@ func New(cfg Config) (*WebAPI, error) {
 	}
 	if cfg.AddressBook == nil {
 		return nil, errors.New("address book must be provided")
-	}
-	if cfg.Signer == nil {
-		return nil, errors.New("signer must be provided")
 	}
 	if cfg.FlushTicker == nil {
 		return nil, errors.New("flush interval must be provided")
@@ -296,6 +294,9 @@ func (w *WebAPI) Wait() <-chan error {
 
 // Broadcast implements the transport.Transport interface.
 func (w *WebAPI) Broadcast(topic string, message transport.Message) error {
+	if w.signer == nil {
+		return fmt.Errorf("unable to broadcast messages: signer is not set")
+	}
 	w.log.WithField("topic", topic).Debug("Broadcasting message")
 	bin, err := message.MarshallBinary()
 	if err != nil {
@@ -558,6 +559,9 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 // flushRoutine periodically sends the buffered messages to the
 // consumers.
 func (w *WebAPI) flushRoutine(ctx context.Context) {
+	if w.signer == nil {
+		return
+	}
 	for {
 		select {
 		case <-ctx.Done():

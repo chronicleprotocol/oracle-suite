@@ -34,9 +34,9 @@ import (
 )
 
 type Config struct {
-	Ethereum ethereumConfig.ConfigEthereum `hcl:"ethereum,block"`
-	Gofer    goferConfig.ConfigGofer       `hcl:"gofer,block"`
-	Logger   *loggerConfig.ConfigLogger    `hcl:"logger,block"`
+	Gofer    goferConfig.ConfigGofer        `hcl:"gofer,block"`
+	Ethereum *ethereumConfig.ConfigEthereum `hcl:"ethereum,block"`
+	Logger   *loggerConfig.ConfigLogger     `hcl:"logger,block"`
 
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }

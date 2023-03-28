@@ -25,7 +25,8 @@ import (
 	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 )
 
 //go:embed circuit_abi.json
@@ -34,15 +35,33 @@ var circuitABI []byte
 const circuitContractKey = "circuit_contract"
 
 type RocketPoolCircuitBreaker struct {
+	client     *geth.Client //nolint:staticcheck // ethereum.Client is deprecated
 	contract   types.Address
 	circuitABI *abi.Contract
 }
 
-func NewRocketPoolCircuitBreaker(params map[string]interface{}) (*RocketPoolCircuitBreaker, error) {
+func NewRocketPoolCircuitBreaker(
+	clients ethereumConfig.ClientRegistry,
+	params map[string]interface{},
+) (
+	*RocketPoolCircuitBreaker,
+	error,
+) {
+
 	var ret RocketPoolCircuitBreaker
 	if _, ok := params[circuitContractKey]; !ok {
 		return nil, fmt.Errorf("post price hook failed, could not find %s parameter for RETH", circuitContractKey)
 	}
+
+	clientName, ok := params["ethereum_client"].(string)
+	if !ok {
+		return nil, fmt.Errorf("ethereum_client parameter not found for hook")
+	}
+	client, ok := clients[clientName]
+	if !ok {
+		return nil, fmt.Errorf("no ethereum client found for hook")
+	}
+	ret.client = geth.NewClient(client) //nolint:staticcheck // ethereum.Client is deprecated
 
 	c, ok := params[circuitContractKey].(string)
 	if !ok {
@@ -59,16 +78,13 @@ func NewRocketPoolCircuitBreaker(params map[string]interface{}) (*RocketPoolCirc
 	return &ret, nil
 }
 
-//nolint:staticcheck // ethereum.Client is deprecated
-func (o *RocketPoolCircuitBreaker) Check(ctx context.Context,
-	cli ethereum.Client, medianPrice, refPrice float64) error {
-
+func (o *RocketPoolCircuitBreaker) Check(ctx context.Context, medianPrice, refPrice float64) error {
 	// read()
 	callData, err := o.circuitABI.Methods["read"].EncodeArgs()
 	if err != nil {
 		return fmt.Errorf("failed to get contract args for %s: %w", circuitContractKey, err)
 	}
-	response, err := cli.Call(ctx, types.Call{To: &o.contract, Input: callData})
+	response, err := o.client.Call(ctx, types.Call{To: &o.contract, Input: callData})
 	if err != nil {
 		return err
 	}
@@ -78,7 +94,7 @@ func (o *RocketPoolCircuitBreaker) Check(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("failed to get contract args for %s: %w", circuitContractKey, err)
 	}
-	response, err = cli.Call(ctx, types.Call{To: &o.contract, Input: callData})
+	response, err = o.client.Call(ctx, types.Call{To: &o.contract, Input: callData})
 	if err != nil {
 		return err
 	}

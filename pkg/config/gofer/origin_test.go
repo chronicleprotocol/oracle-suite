@@ -26,20 +26,24 @@ import (
 )
 
 func TestParsingOriginParamsAliases(t *testing.T) {
-	// parsing empty aliases
+	// Empty aliases
 	parsed := parseParamsSymbolAliases(hclToAny(t, `{}`))
 	assert.Nil(t, parsed)
 
-	// Parsing only apiKey
+	// API key
 	key := parseParamsAPIKey(hclToAny(t, `{api_key: "test"}`))
 	assert.Equal(t, "test", key)
 
-	// Parsing contracts
+	// URL
+	url := parseParamsURL(hclToAny(t, `{url: "test"}`))
+	assert.Equal(t, "test", url)
+
+	// Parse contracts
 	contracts := parseParamsContracts(hclToAny(t, `{contracts: {"BTC/ETH":"0x00000"}}`))
 	assert.NotNil(t, contracts)
 	assert.Equal(t, "0x00000", contracts["BTC/ETH"])
 
-	// Parsing symbol aliases
+	// Symbol aliases
 	aliases := parseParamsSymbolAliases(hclToAny(t, `{symbol_aliases: {"ETH":"WETH"}}`))
 	assert.NotNil(t, aliases)
 	assert.Equal(t, "WETH", aliases["ETH"])

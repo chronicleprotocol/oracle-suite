@@ -3,8 +3,8 @@ package ethereum
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -218,7 +218,7 @@ func (k *ConfigKey) readAccountPassphrase(path string) (string, error) {
 	if path == "" {
 		return "", nil
 	}
-	passphrase, err := ioutil.ReadFile(path)
+	passphrase, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}

@@ -30,7 +30,6 @@ import (
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 
@@ -40,7 +39,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/rpc"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -97,10 +95,6 @@ type ConfigGofer struct {
 	// RPCAgentAddr is the address of the RPC agent.
 	RPCAgentAddr string `hcl:"rpc_agent_addr,optional"`
 
-	// EthereumClient is the name of the Ethereum client to use for fetching
-	// on-chain prices.
-	EthereumClient string `hcl:"ethereum_client"` // TODO(mdobak): make optional and move it to the origins config
-
 	// Origins is a configuration of price origins.
 	Origins []configOrigin `hcl:"origin,block"`
 
@@ -123,9 +117,6 @@ type configOrigin struct {
 
 	// Type is the type of the origin, e.g. "uniswap", "kraken" etc.
 	Type string `hcl:"type"`
-
-	// URL is the URL of the origin.
-	URL string `hcl:"url,optional"`
 
 	// Params is the configuration of the origin.
 	Params cty.Value `hcl:"params,optional"`
@@ -170,10 +161,6 @@ func (c *ConfigGofer) AsyncGofer(d AsyncDependencies) (provider.Provider, error)
 	if c.asyncPriceProvider != nil {
 		return c.asyncPriceProvider, nil
 	}
-	rpcClient := d.Clients[c.EthereumClient]
-	if rpcClient == nil {
-		return nil, fmt.Errorf("gofer config: ethereum client %q not found", c.EthereumClient)
-	}
 	gra, err := c.buildGraphs()
 	if err != nil {
 		return nil, fmt.Errorf("gofer config: unable to build graphs: %w", err)
@@ -182,7 +169,7 @@ func (c *ConfigGofer) AsyncGofer(d AsyncDependencies) (provider.Provider, error)
 	for _, n := range gra {
 		ns = append(ns, n)
 	}
-	originSet, err := c.buildOrigins(geth.NewClient(rpcClient)) //nolint:staticcheck // ethereum.Client is deprecated
+	originSet, err := c.buildOrigins(d.Clients)
 	if err != nil {
 		return nil, err
 	}
@@ -217,10 +204,6 @@ func (c *ConfigGofer) PriceHook(d HookDependencies) (provider.PriceHook, error) 
 	if c.priceHook != nil {
 		return c.priceHook, nil
 	}
-	rpcClient := d.Clients[c.EthereumClient]
-	if rpcClient == nil {
-		return nil, fmt.Errorf("gofer config: ethereum client %q not found", c.EthereumClient)
-	}
 	params := provider.NewHookParams()
 	for _, hook := range c.Hooks {
 		v, err := ctyToAny(hook.PostPriceHook)
@@ -235,8 +218,7 @@ func (c *ConfigGofer) PriceHook(d HookDependencies) (provider.PriceHook, error) 
 			params[hook.Pair] = m
 		}
 	}
-	//nolint:staticcheck // ethereum.Client is deprecated
-	priceHook, err := provider.NewPostPriceHook(d.Context, geth.NewClient(rpcClient), params)
+	priceHook, err := provider.NewPostPriceHook(d.Context, d.Clients, params)
 	if err != nil {
 		return nil, fmt.Errorf("gofer config: unable to initialize price hook: %w", err)
 	}
@@ -250,15 +232,11 @@ func (c *ConfigGofer) Gofer(d Dependencies, noRPC bool) (provider.Provider, erro
 	}
 	var err error
 	if c.RPCAgentAddr == "" || noRPC {
-		rpcClient := d.Clients[c.EthereumClient]
-		if rpcClient == nil {
-			return nil, fmt.Errorf("gofer config: ethereum client %q not found", c.EthereumClient)
-		}
 		pricesGraph, err := c.buildGraphs()
 		if err != nil {
 			return nil, fmt.Errorf("gofer config: unable to load price models: %w", err)
 		}
-		originSet, err := c.buildOrigins(geth.NewClient(rpcClient)) //nolint:staticcheck // deprecated ethereum.Client
+		originSet, err := c.buildOrigins(d.Clients)
 		if err != nil {
 			return nil, err
 		}
@@ -278,7 +256,7 @@ func (c *ConfigGofer) rpcClient(listenAddr string) (*rpc.Provider, error) {
 	return rpc.NewProvider("tcp", listenAddr)
 }
 
-func (c *ConfigGofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) { //nolint:staticcheck // deprecated
+func (c *ConfigGofer) buildOrigins(clients ethereumConfig.ClientRegistry) (*origins.Set, error) {
 	const defaultWorkerCount = 10
 	wp := query.NewHTTPWorkerPool(defaultWorkerCount)
 	originSet := origins.DefaultOriginSet(wp)
@@ -287,7 +265,7 @@ func (c *ConfigGofer) buildOrigins(cli ethereum.Client) (*origins.Set, error) { 
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse params for origin %s: %w", origin.Origin, err)
 		}
-		handler, err := NewHandler(origin.Type, wp, cli, origin.URL, params)
+		handler, err := NewHandler(origin.Type, wp, clients, params)
 		if err != nil || handler == nil {
 			return nil, fmt.Errorf("failed to create handler for origin %s: %w", origin.Origin, err)
 		}
