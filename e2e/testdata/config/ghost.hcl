@@ -27,30 +27,38 @@ transport {
 }
 
 gofer {
-  ethereum_client = "default"
-
   origin "bitstamp" {
-    type = "bitstamp"
-    url  = "http://127.0.0.1:8080"
+    type   = "bitstamp"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "kraken" {
-    type = "kraken"
-    url  = "http://127.0.0.1:8080"
+    type   = "kraken"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
   origin "coinbasepro" {
-    type = "coinbasepro"
-    url  = "http://127.0.0.1:8080"
+    type   = "coinbasepro"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "gemini" {
-    type = "gemini"
-    url  = "http://127.0.0.1:8080"
+    type   = "gemini"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "binance_us" {
-    type = "binance"
-    url  = "http://127.0.0.1:8080"
+    type   = "binance"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   price_model "BTC/USD" "origin" {

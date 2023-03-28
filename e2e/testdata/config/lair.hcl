@@ -10,8 +10,6 @@ transport {
   }
 }
 
-ethereum {}
-
 lair {
   listen_addr = "0.0.0.0:30000"
   storage_memory {}

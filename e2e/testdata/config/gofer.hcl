@@ -1,31 +1,36 @@
 ethereum {
   client "default" {
-    rpc_urls     = ["http://127.0.0.1:8080"]
-    chain_id     = 1
+    rpc_urls = ["http://127.0.0.1:8080"]
+    chain_id = 1
   }
 }
 
 gofer {
-  ethereum_client = "default"
-
   origin "bitstamp" {
-    type = "bitstamp"
-    url  = "http://127.0.0.1:8080"
+    type   = "bitstamp"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "kraken" {
-    type = "kraken"
-    url  = "http://127.0.0.1:8080"
+    type   = "kraken"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
   origin "coinbasepro" {
-    type = "coinbasepro"
-    url  = "http://127.0.0.1:8080"
+    type   = "coinbasepro"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "balancerV2" {
     type   = "balancerV2"
     params = {
-      symbol_aliases = {
+      ethereum_client = "default"
+      symbol_aliases  = {
         "ETH" = "WETH"
       }
       contracts = {
@@ -39,19 +44,23 @@ gofer {
   }
 
   origin "gemini" {
-    type = "gemini"
-    url  = "http://127.0.0.1:8080"
+    type   = "gemini"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "binance_us" {
-    type = "binance"
-    url  = "http://127.0.0.1:8080"
+    type   = "binance"
+    params = {
+      url = "http://127.0.0.1:8080"
+    }
   }
 
   origin "bittrex" {
     type   = "bittrex"
-    url    = "http://127.0.0.1:8080"
     params = {
+      url            = "http://127.0.0.1:8080"
       symbol_aliases = {
         "REP" = "REPV2"
       }
@@ -61,7 +70,8 @@ gofer {
   origin "curve" {
     type   = "curve"
     params = {
-      contracts = {
+      ethereum_client = "default"
+      contracts       = {
         "RETH/WSTETH" = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
         "ETH/STETH"   = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
       }
@@ -72,17 +82,10 @@ gofer {
     type = "ishares"
   }
 
-  origin "openexchangerates" {
-    type   = "openexchangerates"
-    params = {
-      api_key = try(env.GOFER_OPENEXCHANGERATES_API_KEY, "")
-    }
-  }
-
   origin "poloniex" {
     type   = "poloniex"
-    url    = "http://127.0.0.1:8080"
     params = {
+      url            = "http://127.0.0.1:8080"
       symbol_aliases = {
         "REP" = "REPV2"
       }
@@ -92,7 +95,8 @@ gofer {
   origin "rocketpool" {
     type   = "rocketpool"
     params = {
-      contracts = {
+      ethereum_client = "default"
+      contracts       = {
         "RETH/ETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393"
       }
     }
@@ -153,7 +157,8 @@ gofer {
   origin "wsteth" {
     type   = "wsteth"
     params = {
-      contracts = {
+      ethereum_client = "default"
+      contracts       = {
         "WSTETH/STETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
       }
     }
@@ -189,6 +194,7 @@ gofer {
   }
   hook "RETH/ETH" {
     post_price = {
+      ethereum_client  = "default"
       circuit_contract = "0xa3105dee5ec73a7003482b1a8968dc88666f3589"
     }
   }
