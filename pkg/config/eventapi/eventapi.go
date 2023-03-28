@@ -74,7 +74,7 @@ type storageRedis struct {
 
 	// Address is the redis server address provided as the combination of IP
 	// address or host and port number, e.g. `0.0.0.0:8080`.
-	Address string `hcl:"addr,optional"`
+	Address string `hcl:"addr"`
 
 	// Username is the username for the ACL.
 	Username string `hcl:"user,optional"`

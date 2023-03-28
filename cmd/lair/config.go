@@ -39,7 +39,7 @@ import (
 
 type Config struct {
 	Lair      eventAPIConfig.ConfigEventAPI   `hcl:"lair,block"`
-	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
+	Ethereum  *ethereumConfig.ConfigEthereum  `hcl:"ethereum,block"`
 	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
 	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
 	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`

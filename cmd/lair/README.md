@@ -31,181 +31,144 @@ make
 
 To start working with Lair, you have to create configuration file first. By default, the default config file location
 is `config.hcl` in the current working directory. You can change the config file location using the `--config` flag.
-Lair supports JSON and YAML configuration files.
+Lair supports HCL configuration format.
 
-```bash
+```hcl
+lair {
+  # Listen address for the Lair server. The address must be in the format of "host:port".
+  listen_addr = "0.0.0.0:8082"
 
-### Example configuration
+  # In-memory storage configuration. 
+  # Cannot be used together with storage_redis.
+  storage_memory {
+    # Specifies how long messages should be stored in seconds.
+    # Optional. If not specified, the default value is 604800 (7 days).
+    ttl = 604800
+  }
 
-```json
-{
-  "transport": {
-    "transport": "libp2p",
-    "libp2p": {
-      "privKeySeed": "02082cf471002b5c5dfefdd6cbd30666ff02c4df90169f766877caec26ed4f88",
-      "listenAddrs": [
-        "/ip4/0.0.0.0/tcp/8000"
-      ],
-      "bootstrapAddrs": [
-        "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
-        "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
-      ],
-      "directPeersAddrs": [],
-      "blockedAddrs": [],
-      "disableDiscovery": false
+  # Redis storage configuration.
+  # Cannot be used together with storage_memory.
+  storage_redis {
+    # Specifies how long messages should be stored in seconds.
+    # Optional. If not specified, the default value is 604800 (7 days).
+    ttl = 604800
+
+    # Redis server address. The address must be in the format of "host:port".
+    addr = "127.0.0.1:6379"
+
+    # Redis server username.
+    # Optional.
+    user = "user"
+
+    # Redis server password.
+    # Optional.
+    pass = "pass"
+
+    # Redis server database.
+    # Optional. If not specified, the default value is 0.
+    db = 0
+
+    # Memory limit per feed in bytes.
+    # Optional. If not specified, the default value is 0 (no limit).
+    memory_limit = 0
+
+    # Enable TLS.
+    tls = true
+
+    # TLS server name.
+    tls_server_name = "redis-server"
+
+    # TLS certificate file path.
+    tls_cert_file = "/path/to/cert.pem"
+
+    # TLS key file path.
+    tls_key_file = "/path/to/key.pem"
+
+    # TLS root CA file path.
+    tls_root_ca_file = "/path/to/ca.pem"
+
+    # Skip TLS certificate verification.
+    tls_insecure_skip_verify = false
+
+    # Enable Redis cluster mode.
+    cluster = true
+
+    # Redis cluster addrs. The addresses must be in the format of "host:port".
+    cluster_addrs = ["198.51.100.0:6379", "203.0.113.0:6379"]
+  }
+}
+
+# Configuration for the transport layer. 
+# Currently, libP2P and WebAPI transports are supported. At least one transport must be configured.
+transport {
+  # Configuration for the LibP2P transport. LibP2P transport uses peer-to-peer communication.
+  # Optional.
+  libp2p {
+    # Seed used to generate the private key for the LibP2P node. 
+    # Optional. If not specified, the private key is generated randomly.
+    priv_key_seed = "8c8eba62d853d3abdd7f3298341a622a8a9df37c3aba788028c646bdd915227c"
+
+    # Listen addresses for the LibP2P node. The addresses are encoded using multiaddr format.
+    listen_addrs = ["/ip4/0.0.0.0/tcp/8000"]
+
+    # Addresses of bootstrap nodes. The addresses are encoded using multiaddr format.
+    bootstrap_addrs = [
+      "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
+      "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
+    ]
+
+    # Addresses of direct peers to connect to. The addresses are encoded using multiaddr format.
+    # This option must be configured symmetrically on both ends.
+    direct_peers_addrs = []
+
+    # Addresses of peers to block. The addresses are encoded using multiaddr format.
+    blocked_addrs = []
+
+    # Disables node discovery. If disabled, the IP address of a node will not be broadcast to other peers. This option
+    # should be used together with direct_peers_addrs.
+    disable_discovery = false
+  }
+
+  # Configuration for the WebAPI transport. WebAPI transport allows to send messages using HTTP API. It is designed to 
+  # use over secure network, e.g. Tor, I2P or VPN. WebAPI sends messages to other nodes using HTTP requests. The list of 
+  # nodes is retrieved from the address book.
+  # Optional.
+  webapi {
+    # Listen address for the WebAPI transport. The address must be in the format `host:port`.
+    # If used with Tor, it is recommended to listen on 0.0.0.0 address.
+    listen_addr = "0.0.0.0.8080"
+
+    # Address of SOCKS5 proxy to use for the WebAPI transport. The address must be in the format `host:port`.
+    # Optional.
+    socks5_proxy_addr = "127.0.0.1:9050"
+
+    # Ethereum key to sign messages that are sent to other nodes. The key must be present in the `ethereum` section.
+    # Other nodes only accept messages that are signed by the key that is on the feeds list.
+    ethereum_key = "default"
+
+    # Ethereum address book that uses an Ethereum contract to fetch the list of node's addresses.
+    # Optional.
+    ethereum_address_book {
+      # Ethereum contract address where the list of node's addresses is stored.
+      contract_addr = "0x1234567890123456789012345678901234567890"
+
+      # Ethereum client to use for fetching the list of node's addresses.
+      ethereum_client = "default"
     }
-  },
-  "feeds": [
-    "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
-    "0x4b0E327C08e23dD08cb87Ec994915a5375619aa2",
-    "0x75ef8432566A79C86BBF207A47df3963B8Cf0753",
-    "0x83e23C207a67a9f9cB680ce84869B91473403e7d",
-    "0xFbaF3a7eB4Ec2962bd1847687E56aAEE855F5D00",
-    "0xfeEd00AA3F0845AFE52Df9ECFE372549B74C69D2",
-    "0x71eCFF5261bAA115dcB1D9335c88678324b8A987",
-    "0x8ff6a38A1CD6a42cAac45F08eB0c802253f68dfD",
-    "0x16655369Eb59F3e1cAFBCfAC6D3Dd4001328f747",
-    "0xD09506dAC64aaA718b45346a032F934602e29cca",
-    "0xc00584B271F378A0169dd9e5b165c0945B4fE498",
-    "0x60da93D9903cb7d3eD450D4F81D402f7C4F71dd9",
-    "0xa580BBCB1Cee2BCec4De2Ea870D20a12A964819e",
-    "0xD27Fa2361bC2CfB9A591fb289244C538E190684B",
-    "0x8de9c5F1AC1D4d02bbfC25fD178f5DAA4D5B26dC",
-    "0xE6367a7Da2b20ecB94A25Ef06F3b551baB2682e6",
-    "0xA8EB82456ed9bAE55841529888cDE9152468635A",
-    "0x130431b4560Cd1d74A990AE86C337a33171FF3c6",
-    "0x8aFBD9c3D794eD8DF903b3468f4c4Ea85be953FB",
-    "0xd94BBe83b4a68940839cD151478852d16B3eF891",
-    "0xC9508E9E3Ccf319F5333A5B8c825418ABeC688BA",
-    "0x77EB6CF8d732fe4D92c427fCdd83142DB3B742f7",
-    "0x3CB645a8f10Fb7B0721eaBaE958F77a878441Cb9",
-    "0x4f95d9B4D842B2E2B1d1AC3f2Cf548B93Fd77c67",
-    "0xaC8519b3495d8A3E3E44c041521cF7aC3f8F63B3",
-    "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42"
-  ],
-  "lair": {
-    "listenAddr": "127.0.0.1:8082",
-    "storage": {
-      "type": "redis",
-      "redis": {
-        "address": "127.0.0.1:7001",
-        "password": "password",
-        "db": 0,
-        "tls": true 
-      }
+
+    # Static address book that uses a static list of node's addresses.
+    # Optional.
+    static_address_book {
+      addresses = ["0x1234567890123456789012345678901234567890", "0x1234567890123456789012345678901234567891"]
     }
   }
 }
 ```
 
-### Configuration reference
-
-- `transport` - Configuration parameters for transports mechanisms used to relay messages.
-    - `transport` (string|[]string) - Transport to use. Supported mechanism are: `libp2p` and `webapi`. If empty,
-      the `libp2p` is used.
-    - `libp2p` - Configuration parameters for the libp2p transport.
-        - `privKeySeed` (`string`) - The random hex-encoded 32 bytes. It is used to generate a unique identity on the
-          libp2p network. The value may be empty to generate a random seed.
-        - `listenAddrs` (`[]string`) - List of listening addresses for libp2p node encoded using the
-          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-        - `bootstrapAddrs` (`[]string`) - List of addresses of bootstrap nodes for the libp2p node encoded using the
-          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-        - `directPeersAddrs` (`[]string`) - List of direct peer addresses to which messages will be sent directly.
-          Addresses are encoded using the format. [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-          This option must be configured symmetrically on both ends.
-        - `blockedAddrs` (`[]string`) - List of blocked peers or IP addresses encoded using the
-          [multiaddress](https://docs.libp2p.io/concepts/addressing/) format.
-        - `disableDiscovery` (`bool`) - Disables node discovery. If enabled, the IP address of a node will not be
-          broadcast to other peers. This option must be used together with `directPeersAddrs`.
-    - `webapi` - Configuration parameters for the webapi transport. WebAPI transport uses the HTTP protocol to send
-      and receive messages. It should be used over a secure network like TOR, I2P or VPN.
-        - `listenAddr` - Address on which the WebAPI server will listen for incoming connections. The address must be
-          in the format `host:port`. When used with a TOR hidden service, the server should listen on localhost.
-        - `socks5ProxyAddr` - Address of the SOCKS5 proxy server. The address must be in the format `host:port`.
-        - `addressBookType` (`string|[]string`) - Type of address book to use. Supported types are: `ethereum`
-          and `static`.
-          `ethereum` type uses a contract deployed on the Ethereum-compatible blockchain to store the list of addresses,
-          `static` type uses a static list of addresses defined in the configuration file. It is possible to use
-          multiple
-          address book types at the same time.
-        - `ethereumAddressBook` - Configuration parameters for the Ethereum address book.
-            - `addressBookAddr` - Ethereum address of the address book contract.
-            - `ethereum` - Ethereum client configuration that is used to interact with the address book contract.
-                - `rpc` (`string|[]string`) - List of RPC server addresses. It is recommended to use at least three
-                  addresses from different providers.
-                - `timeout` (`int`) - total timeout in seconds (default: 10).
-                - `gracefulTimeout` (`int`) - timeout to graceful finish requests to slower RPC nodes, it is used only
-                  when it is possible to return a correct response using responses from the remaining RPC nodes (
-                  default: 1).
-                - `maxBlocksBehind` (`int`) - if multiple RPC nodes are used, determines how far one node can be behind
-                  the last known block (default: 0).
-        - `staticAddressBook` - Configuration parameters for the static address book.
-            - `remoteAddrs` (`[]string`) - List of remote addresses to which messages will be sent.
-- `feeds` (`[]string`) - List of hex-encoded addresses of other Oracles. Event messages from Oracles outside that list
-  will be ignored.
-- `logger` - Optional logger configuration.
-    - `grafana` - Configuration of Grafana logger. Grafana logger can extract values from log messages and send them to
-      Grafana Cloud.
-        - `enable` (`string`) - Enable Grafana metrics.
-        - `interval` (`int`) - Specifies how often, in seconds, logs should be sent to the Grafana Cloud server. Logs
-          with the same name in that interval will be replaced with never ones.
-        - `endpoint` (`string`) - Graphite server endpoint.
-        - `apiKey` (`string`) - Graphite API key.
-        - `[]metrics` - List of metric definitions
-            - `matchMessage` (`string`) - Regular expression that must match a log message.
-            - `matchFields` (`[string]string`) - Map of fields whose values must match a regular expression.
-            - `name` (`string`) - Name of metric. It can contain references to log fields in the format `%{path}`,
-              where path is the dot-separated path to the field.
-            - `tags` (`[string][]string`) - List of metric tags. They can contain references to log fields in the
-              format `%{path}`, where path is the dot-separated path to the field.
-            - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be
-              used as the metric value.
-            - `scaleFactor` (`float`) - Scales the value by the specified number. If it is zero, scaling is not
-              applied (default: 0).
-            - `onDuplicate` (`string`) - Specifies how duplicated values in the same interval should be handled. Allowed
-              options are:
-                - `sum` - Add values.
-                - `sub` - Subtract values.
-                - `max` - Use higher value.
-                - `min` - Use lower value.
-                - `replace` (default) - Replace the value with a newer one.
-- `lair` - Lair configuration.
-    - `value` (`string`) - Dot-separated path of the field with the metric value. If empty, the value 1 will be used as
-      the metric value.
-        - `listenAddr` (`string`) - Listen address for the HTTP server provided as the combination of IP address and
-          port number.
-        - `storage` - Configure the data storage mechanism used by Lair.
-            - `type` (`string`) - Type of the storage mechanism. Supported mechanism are: `redis` and `memory` (
-              default: `memory`).
-            - `redis` - Configuration for the Redis storage mechanism. Ignored if `type` is not `redis`.
-                - `ttl` (`integer`) - Specifies how long messages should be stored in seconds (default: 604800 seconds
-                  about one week).
-                - `address` (`string`) - Redis server address provided as the combination of IP address or host and port
-                  number, e.g. `0.0.0.0:8080`.
-                - `username` (`string`) - Redis server username for ACL (default: `""`).
-                - `password` (`string`) - Redis server password (default: `""`).
-                - `db` (`int`) - Redis server database number. Ignored in cluster mode (default: 0).
-                - `memoryLimit` (`int`) - Memory limit per Oracle in bytes. If 0 or not specified, no limit is applied.
-                - `tls` (`bool`) - Enables TLS connection to Redis server (default: `false`).
-                - `tlsServerName` (`string`) - Server name used to verify the hostname on the returned certificates from
-                  the server. Ignored if empty (default: `""`).
-                - `tlsCertFile` (`string`) - Path to the PEM encoded certificate file (default: `""`).
-                - `tlsKeyFile` (`string`) - Path to the PEM encoded private key file (default: `""`).
-                - `tlsRootCAFile` (`string`) - Path to the PEM encoded root certificate file (default: `""`).
-                - `tlsInsecureSkipVerify` (`bool`) - Disables TLS certificate verification (default: `false`).
-                - `cluster` (`bool`) - Enables Redis cluster mode (default: `false`).
-                - `clusterAddresses` (`[]string`) - List of Redis cluster addresses provided as the combination of IP
-                  address or host and port number, e.g. `0.0.0.0:8080`.
-            - `memory` - Configuration the memory storage mechanism. Ignored if `type` is not `memory`.
-                - `ttl` (`int`) - Specifies how long messages should be stored in seconds (default: 604800 seconds -
-                  about one week).
-
 ### Environment variables
 
-It is possible to use environment variables anywhere in the configuration file. The syntax is similar as in the
-shell: `${ENV_VAR}`. If the environment variable is not set, the error will be returned during the application
-startup. To escape the dollar sign, use `\$` It is possible to define default values for environment variables.
-To do so, use the following syntax: `${ENV_VAR-default}`.
+It is possible to use environment variables anywhere in the configuration file. Environment variables are accessible
+in the `env` object. For example, to use the `HOME` environment variable in the configuration file, use `env.HOME`.
 
 ## API
 
