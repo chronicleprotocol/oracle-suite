@@ -64,7 +64,7 @@ type ConfigKey struct {
 
 	// Passphrase is the path to the file containing the passphrase for the
 	// key. If empty, then the passphrase is not provided.
-	PassphraseFile string `hcl:"passphrase_file"`
+	PassphraseFile string `hcl:"passphrase_file,optional"`
 
 	// Configured key:
 	key wallet.Key

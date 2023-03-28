@@ -35,6 +35,9 @@ type ConfigSpire struct {
 	// RPCListenAddr is an address to listen for RPC requests.
 	RPCListenAddr string `hcl:"rpc_listen_addr"`
 
+	// RPCAgentAddr is an address of the agent to connect to.
+	RPCAgentAddr string `hcl:"rpc_agent_addr"`
+
 	// Pairs is a list of pairs to store in the price store.
 	Pairs []string `hcl:"pairs"`
 
@@ -77,7 +80,7 @@ func (c *ConfigSpire) ConfigureClient(d ClientDependencies) (*spire.Client, erro
 	signer := d.KeyRegistry[c.EthereumKey] // Signer may be nil.
 	client, err := spire.NewClient(spire.ClientConfig{
 		Signer:  signer,
-		Address: c.RPCListenAddr,
+		Address: c.RPCAgentAddr,
 	})
 	if err != nil {
 		return nil, err

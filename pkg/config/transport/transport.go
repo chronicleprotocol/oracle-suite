@@ -92,7 +92,7 @@ type webAPIConfig struct {
 
 	// Socks5ProxyAddr is the address of the SOCKS5 proxy server. The address
 	// must be in the format `host:port`.
-	Socks5ProxyAddr string `hcl:"socks5_proxy_addr"`
+	Socks5ProxyAddr string `hcl:"socks5_proxy_addr,optional"`
 
 	// EthereumKey is the name of the Ethereum key to use for signing messages.
 	// Required if the transport is used for sending messages.

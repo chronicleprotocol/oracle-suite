@@ -17,6 +17,7 @@ ethereum {
 spire {
   ethereum_key    = "default"
   rpc_listen_addr = "127.0.0.1:9101"
+  rpc_agent_addr  = "127.0.0.1:9101"
   pairs           = [
     "BTCUSD",
     "ETHBTC",
