@@ -111,6 +111,9 @@ type ConfigClient struct {
 
 // KeyRegistry returns the list of configured Ethereum keys.
 func (e *ConfigEthereum) KeyRegistry(d Dependencies) (KeyRegistry, error) {
+	if e == nil {
+		return nil, nil
+	}
 	if err := e.prepare(d); err != nil {
 		return nil, err
 	}
@@ -119,6 +122,9 @@ func (e *ConfigEthereum) KeyRegistry(d Dependencies) (KeyRegistry, error) {
 
 // ClientRegistry returns the list of configured Ethereum clients.
 func (e *ConfigEthereum) ClientRegistry(d Dependencies) (ClientRegistry, error) {
+	if e == nil {
+		return nil, nil
+	}
 	if err := e.prepare(d); err != nil {
 		return nil, err
 	}
@@ -186,6 +192,9 @@ func (e *ConfigEthereum) prepareClients(logger log.Logger) error {
 
 // Key returns the configured Ethereum key.
 func (k *ConfigKey) Key() (wallet.Key, error) {
+	if k == nil {
+		return nil, fmt.Errorf("ethereum config: key is not configured")
+	}
 	if k.key != nil {
 		return k.key, nil
 	}
@@ -218,6 +227,9 @@ func (k *ConfigKey) readAccountPassphrase(path string) (string, error) {
 
 // Client returns the configured RPC client.
 func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, error) {
+	if c == nil {
+		return nil, fmt.Errorf("ethereum config: client is not configured")
+	}
 	if c.client != nil {
 		return c.client, nil
 	}
