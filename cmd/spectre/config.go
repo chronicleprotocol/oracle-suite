@@ -35,9 +35,9 @@ import (
 )
 
 type Config struct {
+	Spectre   spectreConfig.ConfigSpectre     `hcl:"spectre,block"`
 	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
 	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
-	Spectre   spectreConfig.ConfigSpectre     `hcl:"spectre,block"`
 	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
 	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
 
