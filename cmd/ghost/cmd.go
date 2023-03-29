@@ -50,7 +50,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		&opts.GoferNoRPC,
 		"gofer.norpc",
 		false,
-		"disable the use of Graph RPCURLs agent",
+		"disable the use of Graph RPC agent",
 	)
 
 	return rootCmd
