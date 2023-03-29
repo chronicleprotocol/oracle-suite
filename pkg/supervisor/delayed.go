@@ -17,7 +17,7 @@ func NewDelayed(service Service, delay time.Duration) *Delayed {
 	return &Delayed{
 		service: service,
 		delay:   delay,
-		waitCh:  make(chan error),
+		waitCh:  make(chan error, 1),
 	}
 }
 
@@ -29,9 +29,22 @@ func (d *Delayed) Start(ctx context.Context) error {
 		defer close(d.waitCh)
 		select {
 		case <-ctx.Done():
-			d.waitCh <- ctx.Err()
+			err := ctx.Err()
+			switch err {
+			case context.Canceled:
+				d.waitCh <- nil
+			case context.DeadlineExceeded:
+				d.waitCh <- nil
+			default:
+				d.waitCh <- err
+			}
 		case <-t.C:
-			d.waitCh <- d.service.Start(ctx)
+			err := d.service.Start(ctx)
+			if err != nil {
+				d.waitCh <- err
+				return
+			}
+			d.waitCh <- <-d.service.Wait()
 		}
 	}()
 	return nil
@@ -39,9 +52,5 @@ func (d *Delayed) Start(ctx context.Context) error {
 
 // Wait implements the Service interface.
 func (d *Delayed) Wait() <-chan error {
-	err := <-d.waitCh
-	if err != nil {
-		return nil
-	}
-	return d.service.Wait()
+	return d.waitCh
 }
