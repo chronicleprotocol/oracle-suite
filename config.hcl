@@ -29,11 +29,7 @@ feeds = [
 ]
 
 ethereum {
-  client "default" {
-    rpc_urls     = try(split(env.CFG_ETH_RPC_URLS, ","), ["https://eth.public-rpc.com"])
-    chain_id     = try(env.CFG_ETH_CHAIN_ID, 1)
-    ethereum_key = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
-  }
+  rand_keys = try(env.CFG_ETH_FROM, "") == "" ? ["default"] : []
 
   dynamic "key" {
     for_each = try(env.CFG_ETH_FROM, "") == "" ? [] : [1]
@@ -43,6 +39,24 @@ ethereum {
       keystore_path   = try(env.CFG_ETH_KEYS, "")
       passphrase_file = try(env.CFG_ETH_PASS, "")
     }
+  }
+
+  client "default" {
+    rpc_urls     = try(split(env.CFG_ETH_RPC_URLS, ","), ["https://eth.public-rpc.com"])
+    chain_id     = try(env.CFG_ETH_CHAIN_ID, 1)
+    ethereum_key = "default"
+  }
+
+  client "arbitrum" {
+    rpc_urls     = try(split(env.CFG_ETH_ARB_RPC_URLS, ","), ["https://arbitrum.public-rpc.com"])
+    chain_id     = try(env.CFG_ETH_ARB_CHAIN_ID, 42161)
+    ethereum_key = "default"
+  }
+
+  client "optimism" {
+    rpc_urls     = try(split(env.CFG_ETH_OPT_RPC_URLS, ","), ["https://mainnet.optimism.io"])
+    chain_id     = try(env.CFG_ETH_OPT_CHAIN_ID, 10)
+    ethereum_key = "default"
   }
 }
 
@@ -127,6 +141,46 @@ spire {
     "STETHUSD",
     "WSTETHUSD",
     "MATICUSD"
+  ]
+}
+
+ghost {
+  ethereum_key = "default"
+  interval     = 60
+  pairs        = [
+    "AAVE/USD",
+    "AVAX/USD",
+    "BAL/USD",
+    "BAT/USD",
+    "BTC/USD",
+    "COMP/USD",
+    "CRV/USD",
+    "DOT/USD",
+    "ETH/BTC",
+    "ETH/USD",
+    "FIL/USD",
+    "GNO/USD",
+    "IBTA/USD",
+    "LINK/USD",
+    "LRC/USD",
+    "MANA/USD",
+    "MKR/ETH",
+    "MKR/USD",
+    "PAXG/USD",
+    "RETH/USD",
+    "SNX/USD",
+    "SOL/USD",
+    "UNI/USD",
+    "USDT/USD",
+    "WNXM/USD",
+    "XRP/USD",
+    "XTZ/USD",
+    "YFI/USD",
+    "ZEC/USD",
+    "ZRX/USD",
+    "STETH/USD",
+    "WSTETH/USD",
+    "MATIC/USD"
   ]
 }
 
@@ -502,12 +556,47 @@ gofer {
 leeloo {
   ethereum_key = "default"
 
-  teleport_starknet {
-    sequencer       = "https://alpha-mainnet.starknet.io"
-    contract_addrs  = ["0x070077337f82db40b34adc7458761ec193d6ab7444f3da5b44d750afdd065d4f"]
-    interval        = 10
-    prefetch_period = 3600
-    replay_after    = [60]
+  # Arbitrum
+  # Enabled if CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS is set.
+  dynamic "teleport_evm" {
+    for_each = try(env.CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS, "") == "" ? [] : [1]
+    content {
+      ethereum_client     = "arbitrum"
+      interval            = try(env.CFG_TELEPORT_EVM_ARB_INTERVAL, 60)
+      prefetch_period     = try(env.CFG_TELEPORT_EVM_ARB_PREFETCH_PERIOD, 3600 * 24 * 7)
+      block_confirmations = try(env.CFG_TELEPORT_EVM_ARB_BLOCK_CONFIRMATIONS, 35)
+      block_limit         = try(env.CFG_TELEPORT_EVM_ARB_BLOCK_LIMIT, 1000)
+      replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) : i])
+      contract_addrs      = try(split(",", env.CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS), [])
+    }
+  }
+
+  # Optimism
+  # Enabled if CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS is set.
+  dynamic "teleport_evm" {
+    for_each = try(env.CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS, "") == "" ? [] : [1]
+    content {
+      ethereum_client     = "optimism"
+      interval            = try(env.CFG_TELEPORT_EVM_OPT_INTERVAL, 60)
+      prefetch_period     = try(env.CFG_TELEPORT_EVM_OPT_PREFETCH_PERIOD, 3600 * 24 * 7)
+      block_confirmations = try(env.CFG_TELEPORT_EVM_OPT_BLOCK_CONFIRMATIONS, 35)
+      block_limit         = try(env.CFG_TELEPORT_EVM_OPT_BLOCK_LIMIT, 1000)
+      replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) : i])
+      contract_addrs      = try(split(",", env.CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS), [])
+    }
+  }
+
+  # Starknet
+  # Enabled if CFG_TELEPORT_STARKNET_CONTRACT_ADDRS is set.
+  dynamic "teleport_starknet" {
+    for_each = try(env.CFG_TELEPORT_STARKNET_CONTRACT_ADDRS, "") == "" ? [] : [1]
+    content {
+      sequencer       = try(env.CFG_TELEPORT_STARKNET_SEQUENCER, "https://alpha-mainnet.starknet.io")
+      interval        = try(env.CFG_TELEPORT_STARKNET_INTERVAL, 60)
+      prefetch_period = try(env.CFG_TELEPORT_STARKNET_PREFETCH_PERIOD, 3600 * 24 * 7)
+      replay_after    = concat([60, 300, 3600, 3600*2, 3600*4], [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) : i])
+      contract_addrs  = try(split(",", env.CFG_TELEPORT_STARKNET_CONTRACT_ADDRS), [])
+    }
   }
 }
 
