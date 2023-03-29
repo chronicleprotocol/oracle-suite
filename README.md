@@ -40,3 +40,17 @@ see: [Lair CLI Readme](cmd/lair/README.md)
 The Ethereum RPC proxy that splits the request across multiple endpoints to verify that none of them are compromised.
 
 see: [RPC-Splitter CLI Readme](cmd/rpc-splitter/README.md)
+
+## Ghost
+
+A tool used by feeds for broadcast signed prices.
+
+see: [Ghost CLI Readme](cmd/ghost/README.md)
+
+## Spectre
+
+A tool used by relays to update Oracle contracts.
+
+see: [Spectre CLI Readme](cmd/spectre/README.md)
+
+
