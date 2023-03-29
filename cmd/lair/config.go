@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/eventapi"
 	feedsConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feeds"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
@@ -39,7 +38,6 @@ import (
 
 type Config struct {
 	Lair      eventAPIConfig.ConfigEventAPI   `hcl:"lair,block"`
-	Ethereum  *ethereumConfig.ConfigEthereum  `hcl:"ethereum,block"`
 	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
 	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
 	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
@@ -59,21 +57,13 @@ func PrepareServices(_ context.Context, opts *options) (*pkgSupervisor.Superviso
 	if err != nil {
 		return nil, fmt.Errorf(`logger config error: %w`, err)
 	}
-	keys, err := opts.Config.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
-	if err != nil {
-		return nil, fmt.Errorf(`ethereum config error: %w`, err)
-	}
-	clients, err := opts.Config.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
-	if err != nil {
-		return nil, fmt.Errorf(`ethereum config error: %w`, err)
-	}
 	feeds, err := opts.Config.Feeds.Addresses()
 	if err != nil {
 		return nil, fmt.Errorf(`feeds config error: %w`, err)
 	}
 	transport, err := opts.Config.Transport.Transport(transportConfig.Dependencies{
-		Keys:    keys,
-		Clients: clients,
+		Keys:    nil,
+		Clients: nil,
 		Feeds:   feeds,
 		Logger:  logger,
 		Messages: map[string]pkgTransport.Message{

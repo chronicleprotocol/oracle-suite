@@ -33,6 +33,8 @@ To start working with Lair, you have to create configuration file first. By defa
 is `config.hcl` in the current working directory. You can change the config file location using the `--config` flag.
 Lair supports HCL configuration format.
 
+### Configuration reference
+
 ```hcl
 lair {
   # Listen address for the Lair server. The address must be in the format of "host:port".
@@ -97,6 +99,12 @@ lair {
     cluster_addrs = ["198.51.100.0:6379", "203.0.113.0:6379"]
   }
 }
+
+# List of feed addresses. Only messages signed by these addresses are accepted.
+feeds = [
+  "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
+  "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
+]
 
 # Configuration for the transport layer. 
 # Currently, libP2P and WebAPI transports are supported. At least one transport must be configured.

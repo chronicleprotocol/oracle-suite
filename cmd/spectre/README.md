@@ -1,6 +1,6 @@
 # Spectre CLI Readme
 
-Spectre is an application run by feeders. It sends a signed price message to the Spire network.
+Spectre is an application run by relays. It updates Oracles contracts.
 
 ## Table of contents
 

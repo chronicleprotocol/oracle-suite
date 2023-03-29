@@ -64,7 +64,7 @@ type configMedian struct {
 	// ContractAddr is an address of a Median contract.
 	ContractAddr string `hcl:"contract_addr"`
 
-	// Pair is a pair name in the format "base/quote".
+	// Pair is a pair name in the format "BASEQUOTE" (without slash).
 	Pair string `hcl:"pair"`
 
 	// Spread is a spread in percent points above which the price is considered

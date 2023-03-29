@@ -121,6 +121,12 @@ ethereum {
   }
 }
 
+# List of feed addresses. Only messages signed by these addresses are accepted.
+feeds = [
+  "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
+  "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
+]
+
 # Configuration for the transport layer. 
 # Currently, libP2P and WebAPI transports are supported. At least one transport must be configured.
 transport {

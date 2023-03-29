@@ -36,10 +36,10 @@ import (
 )
 
 type Config struct {
+	Ghost     ghostConfig.ConfigGhost         `hcl:"ghost,block"`
 	Gofer     goferConfig.ConfigGofer         `hcl:"gofer,block"`
 	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
 	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
-	Ghost     ghostConfig.ConfigGhost         `hcl:"ghost,block"`
 	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
 	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
 

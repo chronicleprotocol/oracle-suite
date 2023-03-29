@@ -36,9 +36,9 @@ import (
 )
 
 type Config struct {
+	Spire     spireConfig.ConfigSpire         `hcl:"spire,block"`
 	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
 	Ethereum  ethereumConfig.ConfigEthereum   `hcl:"ethereum,block"`
-	Spire     spireConfig.ConfigSpire         `hcl:"spire,block"`
 	Feeds     feedsConfig.ConfigFeeds         `hcl:"feeds"`
 	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
 

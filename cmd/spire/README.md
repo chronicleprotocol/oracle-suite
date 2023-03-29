@@ -31,6 +31,8 @@ To start working with Spire, you have to create configuration file first. By def
 is `config.hcl` in the current working directory. You can change the config file location using the `--config` flag.
 Spire supports HCL configuration format.
 
+### Configuration reference
+
 ```hcl
 spire {
   # Ethereum key to use for signing messages. The key must be present in the `ethereum` section.
@@ -85,6 +87,12 @@ ethereum {
     ethereum_key = "default"
   }
 }
+
+# List of feed addresses. Only messages signed by these addresses are accepted.
+feeds = [
+  "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
+  "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
+]
 
 # Configuration for the transport layer. 
 # Currently, libP2P and WebAPI transports are supported. At least one transport must be configured.
@@ -159,7 +167,7 @@ transport {
 
 ### Environment variables
 
-It is possible to use environment variables anywhere in the configuration file. Environment variables are accessiable
+It is possible to use environment variables anywhere in the configuration file. Environment variables are accessible
 in the `env` object. For example, to use the `HOME` environment variable in the configuration file, use `env.HOME`.
 
 ## Usage
@@ -178,13 +186,13 @@ cat <<"EOF" | spire push price
     "wat": "BTCUSD",
 		// price is 32 bytes (no 0x prefix) `seth --to-wei "$_price" eth`
 		// i.e. 1.32 * 10e18 => "13200000000000000000"
-    "val": "13200000000000000000",
+		"val": "13200000000000000000",
 		// unix epoch (seconds only)
 		"age": 123456789,
 		"r": <string>, // 64 chars long, hex encoded 32 byte value
 		"s": <string>, // 64 chars long, hex encoded 32 byte value
 		"v": <string>,  // 2 chars long, hex encoded 1 byte value
-    "trace": <string> // (optional) human readable price calculation description
+		"trace": <string> // (optional) human readable price calculation description
 }
 EOF
 ```

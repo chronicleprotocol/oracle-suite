@@ -1,6 +1,6 @@
 # Spire-Bootstrap CLI Readme
 
-Spire-Bootstrap starts the libp2p bootstrap node for the Spire network.
+Spire-Bootstrap starts the LibP2P bootstrap node for the Spire network.
 
 ## Table of contents
 
@@ -29,6 +29,8 @@ make
 To start working with Spire-Bootstrap, you have to create configuration file first. By default, the default config file
 location is `config.hcl` in the current working directory. You can change the config file location using the `--config`
 flag. Spire-Bootstrap supports HCL configuration format.
+
+### Configuration reference
 
 ```hcl
 # Configuration for the transport layer.
