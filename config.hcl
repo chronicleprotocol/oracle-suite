@@ -69,9 +69,9 @@ transport {
       "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
       "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
     ])
-    direct_peers_addrs = []
-    blocked_addrs      = []
-    disable_discovery  = false
+    direct_peers_addrs = try(split(env.CFG_LIBP2P_DIRECT_PEERS_ADDRS, ","), [])
+    blocked_addrs      = try(split(env.CFG_LIBP2P_BLOCKED_ADDRS, ","), [])
+    disable_discovery  = try(env.CFG_LIBP2P_DISABLE_DISCOVERY, "false") == "true"
     ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
   }
 
@@ -566,7 +566,9 @@ leeloo {
       prefetch_period     = try(env.CFG_TELEPORT_EVM_ARB_PREFETCH_PERIOD, 3600 * 24 * 7)
       block_confirmations = try(env.CFG_TELEPORT_EVM_ARB_BLOCK_CONFIRMATIONS, 35)
       block_limit         = try(env.CFG_TELEPORT_EVM_ARB_BLOCK_LIMIT, 1000)
-      replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) : i])
+      replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [
+        for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i
+      ])
       contract_addrs      = try(split(",", env.CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS), [])
     }
   }
@@ -581,7 +583,9 @@ leeloo {
       prefetch_period     = try(env.CFG_TELEPORT_EVM_OPT_PREFETCH_PERIOD, 3600 * 24 * 7)
       block_confirmations = try(env.CFG_TELEPORT_EVM_OPT_BLOCK_CONFIRMATIONS, 35)
       block_limit         = try(env.CFG_TELEPORT_EVM_OPT_BLOCK_LIMIT, 1000)
-      replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) : i])
+      replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [
+        for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i
+      ])
       contract_addrs      = try(split(",", env.CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS), [])
     }
   }

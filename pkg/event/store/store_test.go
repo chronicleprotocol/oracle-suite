@@ -74,7 +74,10 @@ func TestEventStore(t *testing.T) {
 	}
 	require.NoError(t, tra.Broadcast(messages.EventV1MessageName, event))
 
-	time.Sleep(100 * time.Millisecond)
+	assert.Eventually(t, func() bool {
+		events, _ := evs.Events(context.Background(), "test", []byte("idx"))
+		return len(events) >= 1
+	}, 1*time.Second, 100*time.Millisecond)
 
 	events, err := evs.Events(context.Background(), "test", []byte("idx"))
 	require.NoError(t, err)
