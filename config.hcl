@@ -29,33 +29,33 @@ feeds = [
 ]
 
 ethereum {
-  rand_keys = try(env.CFG_ETH_FROM, "") == "" ? ["default"] : []
+  rand_keys = try(env.ETH_FROM, "") == "" ? ["default"] : []
 
   dynamic "key" {
-    for_each = try(env.CFG_ETH_FROM, "") == "" ? [] : [1]
+    for_each = try(env.ETH_FROM, "") == "" ? [] : [1]
     labels   = ["default"]
     content {
-      address         = try(env.CFG_ETH_FROM, "")
-      keystore_path   = try(env.CFG_ETH_KEYS, "")
-      passphrase_file = try(env.CFG_ETH_PASS, "")
+      address         = try(env.ETH_FROM, "")
+      keystore_path   = try(env.ETH_KEYS, "")
+      passphrase_file = try(env.ETH_PASS, "")
     }
   }
 
   client "default" {
-    rpc_urls     = try(split(env.CFG_ETH_RPC_URLS, ","), ["https://eth.public-rpc.com"])
-    chain_id     = try(env.CFG_ETH_CHAIN_ID, 1)
+    rpc_urls     = try(split(env.ETH_RPC_URLS, ","), ["https://eth.public-rpc.com"])
+    chain_id     = try(env.ETH_CHAIN_ID, 1)
     ethereum_key = "default"
   }
 
   client "arbitrum" {
-    rpc_urls     = try(split(env.CFG_ETH_ARB_RPC_URLS, ","), ["https://arbitrum.public-rpc.com"])
-    chain_id     = try(env.CFG_ETH_ARB_CHAIN_ID, 42161)
+    rpc_urls     = try(split(env.ETH_ARB_RPC_URLS, ","), ["https://arbitrum.public-rpc.com"])
+    chain_id     = try(env.ETH_ARB_CHAIN_ID, 42161)
     ethereum_key = "default"
   }
 
   client "optimism" {
-    rpc_urls     = try(split(env.CFG_ETH_OPT_RPC_URLS, ","), ["https://mainnet.optimism.io"])
-    chain_id     = try(env.CFG_ETH_OPT_CHAIN_ID, 10)
+    rpc_urls     = try(split(env.ETH_OPT_RPC_URLS, ","), ["https://mainnet.optimism.io"])
+    chain_id     = try(env.ETH_OPT_CHAIN_ID, 10)
     ethereum_key = "default"
   }
 }
@@ -63,39 +63,39 @@ ethereum {
 transport {
   # LibP2P transport configuration. Always enabled.
   libp2p {
-    priv_key_seed   = try(env.CFG_LIBP2P_PK_SEED, "")
-    listen_addrs    = try(split(env.CFG_LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
-    bootstrap_addrs = try(split(env.CFG_LIBP2P_BOOTSTRAP_ADDRS, ","), [
+    priv_key_seed   = try(env.LIBP2P_PK_SEED, "")
+    listen_addrs    = try(split(env.LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
+    bootstrap_addrs = try(split(env.LIBP2P_BOOTSTRAP_ADDRS, ","), [
       "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
       "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
     ])
-    direct_peers_addrs = try(split(env.CFG_LIBP2P_DIRECT_PEERS_ADDRS, ","), [])
-    blocked_addrs      = try(split(env.CFG_LIBP2P_BLOCKED_ADDRS, ","), [])
-    disable_discovery  = try(env.CFG_LIBP2P_DISABLE_DISCOVERY, "false") == "true"
-    ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
+    direct_peers_addrs = try(split(env.LIBP2P_DIRECT_PEERS_ADDRS, ","), [])
+    blocked_addrs      = try(split(env.LIBP2P_BLOCKED_ADDRS, ","), [])
+    disable_discovery  = try(env.LIBP2P_DISABLE_DISCOVERY, "false") == "true"
+    ethereum_key       = try(env.ETH_FROM, "") == "" ? "" : "default"
   }
 
-  # WebAPI transport configuration. Enabled if CFG_WEBAPI_LISTEN_ADDR is set to a listen address.
+  # WebAPI transport configuration. Enabled if WEBAPI_LISTEN_ADDR is set to a listen address.
   dynamic "webapi" {
-    for_each = try(env.CFG_WEBAPI_LISTEN_ADDR, "") == "" ? [] : [1]
+    for_each = try(env.WEBAPI_LISTEN_ADDR, "") == "" ? [] : [1]
     content {
-      listen_addr       = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0.8080")
-      socks5_proxy_addr = try(env.CFG_WEBAPI_SOCKS5_PROXY_ADDR, "127.0.0.1:9050")
+      listen_addr       = try(env.WEBAPI_LISTEN_ADDR, "0.0.0.0.8080")
+      socks5_proxy_addr = try(env.WEBAPI_SOCKS5_PROXY_ADDR, "127.0.0.1:9050")
 
-      # Ethereum based address book. Enabled if CFG_WEBAPI_ETH_ADDR_BOOK is set to a contract address.
+      # Ethereum based address book. Enabled if WEBAPI_ETH_ADDR_BOOK is set to a contract address.
       dynamic "ethereum_address_book" {
-        for_each = try(env.CFG_WEBAPI_ETH_ADDR_BOOK, "") == "" ? [] : [1]
+        for_each = try(env.WEBAPI_ETH_ADDR_BOOK, "") == "" ? [] : [1]
         content {
-          contract_addr   = try(env.CFG_WEBAPI_ETH_ADDR_BOOK, "")
+          contract_addr   = try(env.WEBAPI_ETH_ADDR_BOOK, "")
           ethereum_client = "default"
         }
       }
 
-      # Static address book. Enabled if CFG_WEBAPI_STATIC_ADDR_BOOK is set to a comma separated list of addresses.
+      # Static address book. Enabled if WEBAPI_STATIC_ADDR_BOOK is set to a comma separated list of addresses.
       dynamic "static_address_book" {
-        for_each = try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "") == "" ? [] : [1]
+        for_each = try(env.WEBAPI_STATIC_ADDR_BOOK, "") == "" ? [] : [1]
         content {
-          addresses = try(split(env.CFG_WEBAPI_STATIC_ADDR_BOOK, ","), "")
+          addresses = try(split(env.WEBAPI_STATIC_ADDR_BOOK, ","), "")
         }
       }
     }
@@ -103,8 +103,8 @@ transport {
 }
 
 spire {
-  rpc_listen_addr = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
-  rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
+  rpc_listen_addr = try(env.SPIRE_RPC_ADDR, "127.0.0.1:9100")
+  rpc_agent_addr  = try(env.SPIRE_RPC_ADDR, "127.0.0.1:9100")
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
   pairs = [
@@ -557,79 +557,79 @@ leeloo {
   ethereum_key = "default"
 
   # Arbitrum
-  # Enabled if CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS is set.
+  # Enabled if TELEPORT_EVM_ARB_CONTRACT_ADDRS is set.
   dynamic "teleport_evm" {
-    for_each = try(env.CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS, "") == "" ? [] : [1]
+    for_each = try(env.TELEPORT_EVM_ARB_CONTRACT_ADDRS, "") == "" ? [] : [1]
     content {
       ethereum_client     = "arbitrum"
-      interval            = try(env.CFG_TELEPORT_EVM_ARB_INTERVAL, 60)
-      prefetch_period     = try(env.CFG_TELEPORT_EVM_ARB_PREFETCH_PERIOD, 3600 * 24 * 7)
-      block_confirmations = try(env.CFG_TELEPORT_EVM_ARB_BLOCK_CONFIRMATIONS, 35)
-      block_limit         = try(env.CFG_TELEPORT_EVM_ARB_BLOCK_LIMIT, 1000)
+      interval            = try(env.TELEPORT_EVM_ARB_INTERVAL, 60)
+      prefetch_period     = try(env.TELEPORT_EVM_ARB_PREFETCH_PERIOD, 3600 * 24 * 7)
+      block_confirmations = try(env.TELEPORT_EVM_ARB_BLOCK_CONFIRMATIONS, 35)
+      block_limit         = try(env.TELEPORT_EVM_ARB_BLOCK_LIMIT, 1000)
       replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [
         for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i
       ])
-      contract_addrs      = try(split(",", env.CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS), [])
+      contract_addrs      = try(split(",", env.TELEPORT_EVM_ARB_CONTRACT_ADDRS), [])
     }
   }
 
   # Optimism
-  # Enabled if CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS is set.
+  # Enabled if TELEPORT_EVM_OPT_CONTRACT_ADDRS is set.
   dynamic "teleport_evm" {
-    for_each = try(env.CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS, "") == "" ? [] : [1]
+    for_each = try(env.TELEPORT_EVM_OPT_CONTRACT_ADDRS, "") == "" ? [] : [1]
     content {
       ethereum_client     = "optimism"
-      interval            = try(env.CFG_TELEPORT_EVM_OPT_INTERVAL, 60)
-      prefetch_period     = try(env.CFG_TELEPORT_EVM_OPT_PREFETCH_PERIOD, 3600 * 24 * 7)
-      block_confirmations = try(env.CFG_TELEPORT_EVM_OPT_BLOCK_CONFIRMATIONS, 35)
-      block_limit         = try(env.CFG_TELEPORT_EVM_OPT_BLOCK_LIMIT, 1000)
+      interval            = try(env.TELEPORT_EVM_OPT_INTERVAL, 60)
+      prefetch_period     = try(env.TELEPORT_EVM_OPT_PREFETCH_PERIOD, 3600 * 24 * 7)
+      block_confirmations = try(env.TELEPORT_EVM_OPT_BLOCK_CONFIRMATIONS, 35)
+      block_limit         = try(env.TELEPORT_EVM_OPT_BLOCK_LIMIT, 1000)
       replay_after        = concat([60, 300, 3600, 3600*2, 3600*4], [
         for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i
       ])
-      contract_addrs      = try(split(",", env.CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS), [])
+      contract_addrs      = try(split(",", env.TELEPORT_EVM_OPT_CONTRACT_ADDRS), [])
     }
   }
 
   # Starknet
-  # Enabled if CFG_TELEPORT_STARKNET_CONTRACT_ADDRS is set.
+  # Enabled if TELEPORT_STARKNET_CONTRACT_ADDRS is set.
   dynamic "teleport_starknet" {
-    for_each = try(env.CFG_TELEPORT_STARKNET_CONTRACT_ADDRS, "") == "" ? [] : [1]
+    for_each = try(env.TELEPORT_STARKNET_CONTRACT_ADDRS, "") == "" ? [] : [1]
     content {
-      sequencer       = try(env.CFG_TELEPORT_STARKNET_SEQUENCER, "https://alpha-mainnet.starknet.io")
-      interval        = try(env.CFG_TELEPORT_STARKNET_INTERVAL, 60)
-      prefetch_period = try(env.CFG_TELEPORT_STARKNET_PREFETCH_PERIOD, 3600 * 24 * 7)
+      sequencer       = try(env.TELEPORT_STARKNET_SEQUENCER, "https://alpha-mainnet.starknet.io")
+      interval        = try(env.TELEPORT_STARKNET_INTERVAL, 60)
+      prefetch_period = try(env.TELEPORT_STARKNET_PREFETCH_PERIOD, 3600 * 24 * 7)
       replay_after    = concat([60, 300, 3600, 3600*2, 3600*4], [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) : i])
-      contract_addrs  = try(split(",", env.CFG_TELEPORT_STARKNET_CONTRACT_ADDRS), [])
+      contract_addrs  = try(split(",", env.TELEPORT_STARKNET_CONTRACT_ADDRS), [])
     }
   }
 }
 
 lair {
-  listen_addr = try(env.CFG_LAIR_LISTEN_ADDR, "0.0.0.0:8082")
+  listen_addr = try(env.LAIR_LISTEN_ADDR, "0.0.0.0:8082")
 
-  # Configuration for memory storage. Enabled if CFG_LAIR_STORAGE is "memory" or unset.
+  # Configuration for memory storage. Enabled if LAIR_STORAGE is "memory" or unset.
   dynamic "storage_memory" {
-    for_each = try(env.CFG_LAIR_STORAGE, "memory") == "memory" ? [1] : []
+    for_each = try(env.LAIR_STORAGE, "memory") == "memory" ? [1] : []
     content {}
   }
 
-  # Configuration for redis storage. Enabled if CFG_LAIR_STORAGE is "redis".
+  # Configuration for redis storage. Enabled if LAIR_STORAGE is "redis".
   dynamic "storage_redis" {
-    for_each = try(env.CFG_LAIR_STORAGE, "") == "redis" ? [1] : []
+    for_each = try(env.LAIR_STORAGE, "") == "redis" ? [1] : []
     content {
-      addr                     = try(env.CFG_LAIR_REDIS_ADDR, "127.0.0.1:6379")
-      user                     = try(env.CFG_LAIR_REDIS_USER, "")
-      pass                     = try(env.CFG_LAIR_REDIS_PASS, "")
-      db                       = try(env.CFG_LAIR_REDIS_DB, 0)
-      memory_limit             = try(env.CFG_LAIR_REDIS_MEMORY_LIMIT, 0)
-      tls                      = try(env.CFG_LAIR_REDIS_TLS == "true", false)
-      tls_server_name          = try(env.CFG_LAIR_REDIS_TLS_SERVER_NAME, "")
-      tls_cert_file            = try(env.CFG_LAIR_REDIS_TLS_CERT_FILE, "")
-      tls_key_file             = try(env.CFG_LAIR_REDIS_TLS_KEY_FILE, "")
-      tls_root_ca_file         = try(env.CFG_LAIR_REDIS_TLS_ROOT_CA_FILE, "")
-      tls_insecure_skip_verify = try(env.CFG_LAIR_REDIS_TLS_INSECURE == "true", false)
-      cluster                  = try(env.CFG_LAIR_REDIS_CLUSTER == "true", false)
-      cluster_addrs            = try(split(env.CFG_LAIR_REDIS_CLUSTER_ADDRS, ","), [])
+      addr                     = try(env.LAIR_REDIS_ADDR, "127.0.0.1:6379")
+      user                     = try(env.LAIR_REDIS_USER, "")
+      pass                     = try(env.LAIR_REDIS_PASS, "")
+      db                       = try(env.LAIR_REDIS_DB, 0)
+      memory_limit             = try(env.LAIR_REDIS_MEMORY_LIMIT, 0)
+      tls                      = try(env.LAIR_REDIS_TLS == "true", false)
+      tls_server_name          = try(env.LAIR_REDIS_TLS_SERVER_NAME, "")
+      tls_cert_file            = try(env.LAIR_REDIS_TLS_CERT_FILE, "")
+      tls_key_file             = try(env.LAIR_REDIS_TLS_KEY_FILE, "")
+      tls_root_ca_file         = try(env.LAIR_REDIS_TLS_ROOT_CA_FILE, "")
+      tls_insecure_skip_verify = try(env.LAIR_REDIS_TLS_INSECURE == "true", false)
+      cluster                  = try(env.LAIR_REDIS_CLUSTER == "true", false)
+      cluster_addrs            = try(split(env.LAIR_REDIS_CLUSTER_ADDRS, ","), [])
     }
   }
 }
