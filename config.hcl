@@ -25,7 +25,7 @@ feeds = [
   "0x3CB645a8f10Fb7B0721eaBaE958F77a878441Cb9",
   "0x4f95d9B4D842B2E2B1d1AC3f2Cf548B93Fd77c67",
   "0xaC8519b3495d8A3E3E44c041521cF7aC3f8F63B3",
-  "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42"
+  "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42",
 ]
 
 ethereum {
@@ -63,9 +63,9 @@ ethereum {
 transport {
   # LibP2P transport configuration. Always enabled.
   libp2p {
-    priv_key_seed   = try(env.CFG_LIBP2P_PK_SEED, "")
-    listen_addrs    = try(split(env.CFG_LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
-    bootstrap_addrs = try(split(env.CFG_LIBP2P_BOOTSTRAP_ADDRS, ","), [
+    priv_key_seed      = try(env.CFG_LIBP2P_PK_SEED, "")
+    listen_addrs       = try(split(env.CFG_LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
+    bootstrap_addrs    = try(split(env.CFG_LIBP2P_BOOTSTRAP_ADDRS, ","), [
       "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
       "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
     ])
@@ -140,7 +140,7 @@ spire {
     "ZRXUSD",
     "STETHUSD",
     "WSTETHUSD",
-    "MATICUSD"
+    "MATICUSD",
   ]
 }
 
@@ -180,7 +180,7 @@ ghost {
     "ZRX/USD",
     "STETH/USD",
     "WSTETH/USD",
-    "MATIC/USD"
+    "MATIC/USD",
   ]
 }
 
@@ -193,10 +193,10 @@ gofer {
         "ETH" = "WETH"
       }
       contracts = {
-        "WETH/GNO"      = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b",
-        "Ref:RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393",
-        "RETH/WETH"     = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
-        "STETH/WETH"    = "0x32296969ef14eb0c6d29669c550d4a0449130230",
+        "WETH/GNO"      = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b"
+        "Ref:RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393"
+        "RETH/WETH"     = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"
+        "STETH/WETH"    = "0x32296969ef14eb0c6d29669c550d4a0449130230"
         "WETH/YFI"      = "0x186084ff790c65088ba694df11758fae4943ee9e"
       }
     }
@@ -223,7 +223,7 @@ gofer {
     params = {
       ethereum_client = "default"
       contracts       = {
-        "RETH/WSTETH" = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
+        "RETH/WSTETH" = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08"
         "ETH/STETH"   = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
       }
     }
@@ -282,11 +282,11 @@ gofer {
         "USD" = "USDC"
       }
       contracts = {
-        "WETH/USDC" = "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
-        "LEND/WETH" = "0xab3f9bf1d81ddb224a2014e98b238638824bcf20",
-        "LRC/WETH"  = "0x8878df9e1a7c87dcbf6d3999d997f262c05d8c70",
-        "PAXG/WETH" = "0x9c4fe5ffd9a9fc5678cfbd93aa2d4fd684b67c4c",
-        "BAL/WETH"  = "0xa70d458a4d9bc0e6571565faee18a48da5c0d593",
+        "WETH/USDC" = "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc"
+        "LEND/WETH" = "0xab3f9bf1d81ddb224a2014e98b238638824bcf20"
+        "LRC/WETH"  = "0x8878df9e1a7c87dcbf6d3999d997f262c05d8c70"
+        "PAXG/WETH" = "0x9c4fe5ffd9a9fc5678cfbd93aa2d4fd684b67c4c"
+        "BAL/WETH"  = "0xa70d458a4d9bc0e6571565faee18a48da5c0d593"
         "YFI/WETH"  = "0x2fdbadf3c4d5a8666bc06645b8358ab803996e28"
       }
     }
@@ -296,16 +296,16 @@ gofer {
     type   = "uniswapV3"
     params = {
       symbol_aliases = {
-        "BTC" = "WBTC",
-        "ETH" = "WETH",
+        "BTC" = "WBTC"
+        "ETH" = "WETH"
         "USD" = "USDC"
       }
       contracts = {
-        "GNO/WETH"  = "0xf56d08221b5942c428acc5de8f78489a97fc5599",
-        "LINK/WETH" = "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8",
-        "MKR/USDC"  = "0xc486ad2764d55c7dc033487d634195d6e4a6917e",
-        "MKR/WETH"  = "0xe8c6c9227491c0a8156a0106a0204d881bb7e531",
-        "USDC/WETH" = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+        "GNO/WETH"  = "0xf56d08221b5942c428acc5de8f78489a97fc5599"
+        "LINK/WETH" = "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8"
+        "MKR/USDC"  = "0xc486ad2764d55c7dc033487d634195d6e4a6917e"
+        "MKR/WETH"  = "0xe8c6c9227491c0a8156a0106a0204d881bb7e531"
+        "USDC/WETH" = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"
         "YFI/WETH"  = "0x04916039b1f59d9745bf6e0a21f191d1e0a84287"
       }
     }
@@ -320,7 +320,6 @@ gofer {
       }
     }
   }
-
 
   price_model "BTC/USD" "median" {
     source "BTC/USD" "origin" { origin = "binance_us" }

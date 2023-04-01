@@ -13,24 +13,29 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cobra
 
 import (
-	"os"
+	"fmt"
 
-	cobraPkg "github.com/chronicleprotocol/oracle-suite/pkg/cobra"
+	"github.com/spf13/cobra"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
-func main() {
-	var opts options
-	rootCmd := NewRootCommand(&opts)
-
-	rootCmd.AddCommand(
-		NewRunCmd(&opts),
-		cobraPkg.NewConfigCmd[Config](opts.ConfigFilePath),
-	)
-
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+func NewConfigCmd[T any](path string) *cobra.Command {
+	return &cobra.Command{
+		Use:   "config",
+		Args:  cobra.NoArgs,
+		Short: "output the generated static config file",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			conf := new(T)
+			err := config.LoadFile(conf, path)
+			if err != nil {
+				return fmt.Errorf(`config error: %w`, err)
+			}
+			_, err = config.GenerateConfig(conf)
+			return err
+		},
 	}
 }

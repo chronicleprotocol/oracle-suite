@@ -17,6 +17,8 @@ package main
 
 import (
 	"os"
+
+	cobraPkg "github.com/chronicleprotocol/oracle-suite/pkg/cobra"
 )
 
 func main() {
@@ -25,6 +27,7 @@ func main() {
 
 	rootCmd.AddCommand(
 		NewRunCmd(&opts),
+		cobraPkg.NewConfigCmd[Config](opts.ConfigFilePath),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

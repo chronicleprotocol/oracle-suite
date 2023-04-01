@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
@@ -112,6 +114,14 @@ func LoadFile(config any, path string) error {
 		return diags
 	}
 	return nil
+}
+
+func GenerateConfig(config any) (int64, error) {
+	file := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(config, file.Body())
+	schema, partial := gohcl.ImpliedBodySchema(config)
+	log.Printf("%#v %t", schema, partial)
+	return file.WriteTo(os.Stdout)
 }
 
 func getEnvVars() cty.Value {

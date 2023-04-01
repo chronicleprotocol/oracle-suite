@@ -20,6 +20,7 @@ import (
 	"os"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	cobraPkg "github.com/chronicleprotocol/oracle-suite/pkg/cobra"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
@@ -37,6 +38,7 @@ func main() {
 		NewPairsCmd(&opts),
 		NewPricesCmd(&opts),
 		NewAgentCmd(&opts),
+		cobraPkg.NewConfigCmd[Config](opts.ConfigFilePath),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

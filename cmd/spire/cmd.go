@@ -18,6 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	cobraPkg "github.com/chronicleprotocol/oracle-suite/pkg/cobra"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
@@ -52,6 +53,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		NewStreamCmd(opts),
 		NewPullCmd(opts),
 		NewPushCmd(opts),
+		cobraPkg.NewConfigCmd[Config](opts.ConfigFilePath),
 	)
 
 	return rootCmd
