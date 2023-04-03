@@ -83,6 +83,9 @@ type StreamServices struct {
 
 // Start implements the supervisor.Service interface.
 func (s *ClientServices) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
 	s.supervisor.Watch(s.SpireClient, sysmon.New(time.Minute, s.Logger))
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
@@ -98,6 +101,9 @@ func (s *ClientServices) Wait() <-chan error {
 
 // Start implements the supervisor.Service interface.
 func (s *AgentServices) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
 	s.supervisor.Watch(s.Transport, s.PriceStore, s.SpireAgent, sysmon.New(time.Minute, s.Logger))
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
@@ -113,6 +119,9 @@ func (s *AgentServices) Wait() <-chan error {
 
 // Start implements the supervisor.Service interface.
 func (s *StreamServices) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
 	s.supervisor.Watch(s.Transport, sysmon.New(time.Minute, s.Logger))
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {

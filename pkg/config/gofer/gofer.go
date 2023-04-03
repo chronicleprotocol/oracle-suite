@@ -51,6 +51,9 @@ type AgentServices struct {
 
 // Start implements the supervisor.Service interface.
 func (s *ClientServices) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
 	if p, ok := s.PriceProvider.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(p)
@@ -68,6 +71,9 @@ func (s *ClientServices) Wait() <-chan error {
 
 // Start implements the supervisor.Service interface.
 func (s *AgentServices) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
 	s.supervisor.Watch(s.Agent, sysmon.New(time.Minute, s.Logger))
 	if p, ok := s.PriceProvider.(pkgSupervisor.Service); ok {

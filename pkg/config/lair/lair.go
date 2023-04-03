@@ -46,6 +46,9 @@ type Services struct {
 
 // Start implements the supervisor.Service interface.
 func (s *Services) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
 	s.supervisor.Watch(s.Transport, s.EventStore, s.EventAPI, sysmon.New(time.Minute, s.Logger))
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
