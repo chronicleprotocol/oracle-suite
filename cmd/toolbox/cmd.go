@@ -24,7 +24,7 @@ import (
 
 type options struct {
 	flag.LoggerFlag
-	ConfigFilePath string
+	ConfigFilePath []string
 	Config         Config
 }
 
@@ -40,11 +40,10 @@ func NewRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(
+	rootCmd.PersistentFlags().StringSliceVarP(
 		&opts.ConfigFilePath,
-		"config",
-		"c",
-		"./config.hcl",
+		"config", "c",
+		[]string{"./config.hcl"},
 		"spire config file",
 	)
 

@@ -11,13 +11,14 @@ import (
 
 func TestConfig(t *testing.T) {
 	tests := []struct {
-		path            string
-		asserts         func(*testing.T, *Config)
-		wantErrContains string
+		name string
+		path string
+		test func(*testing.T, *Config)
 	}{
 		{
-			path: "ethereum.hcl",
-			asserts: func(t *testing.T, cfg *Config) {
+			name: "valid",
+			path: "config.hcl",
+			test: func(t *testing.T, cfg *Config) {
 				assert.Equal(t, []string{"key"}, cfg.RandKeys)
 				assert.Equal(t, "key1", cfg.Keys[0].Name)
 				assert.Equal(t, "0x1234567890123456789012345678901234567890", cfg.Keys[0].Address.String())
@@ -44,15 +45,11 @@ func TestConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.path, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			var cfg Config
 			err := config.LoadFiles(&cfg, []string{"./testdata/" + test.path})
-			if test.wantErrContains != "" {
-				require.Containsf(t, err.Error(), test.wantErrContains, "unexpected error: %v", err)
-				return
-			}
 			require.NoError(t, err)
-			test.asserts(t, &cfg)
+			test.test(t, &cfg)
 		})
 	}
 }

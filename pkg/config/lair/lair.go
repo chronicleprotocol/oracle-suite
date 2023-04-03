@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	eventAPIConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/eventapi"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
@@ -24,6 +25,7 @@ import (
 // Config is the configuration for Lair.
 type Config struct {
 	EventAPI  eventAPIConfig.Config  `hcl:"lair,block"`
+	Ethereum  *ethereumConfig.Config `hcl:"ethereum,block"`
 	Transport transportConfig.Config `hcl:"transport,block"`
 	Logger    *loggerConfig.Config   `hcl:"logger,block"`
 
@@ -66,8 +68,18 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 	if err != nil {
 		return nil, err
 	}
+	keys, err := c.Ethereum.KeyRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, err
+	}
+	clients, err := c.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
+	if err != nil {
+		return nil, err
+	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Logger: logger,
+		Clients: clients,
+		Keys:    keys,
+		Logger:  logger,
 		Messages: map[string]pkgTransport.Message{
 			messages.EventV1MessageName: (*messages.Event)(nil),
 		},

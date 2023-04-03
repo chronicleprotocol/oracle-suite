@@ -38,6 +38,7 @@ type Config struct {
 	Interval uint32 `hcl:"interval"`
 
 	// Pairs is the list of pairs to publish prices for.
+	// Pairs must be in the format "BASE/QUOTE".
 	Pairs []provider.Pair `hcl:"pairs"`
 
 	// HCL fields:

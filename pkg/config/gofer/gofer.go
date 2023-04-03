@@ -149,7 +149,7 @@ func (c *Config) AgentServices(baseLogger log.Logger) (*AgentServices, error) {
 	}
 	priceProvider, err := c.Gofer.AsyncPriceProvider(priceProviderConfig.AsyncDependencies{
 		Clients: clients,
-		Logger:  nil,
+		Logger:  baseLogger,
 	})
 	if err != nil {
 		return nil, err

@@ -58,7 +58,7 @@ func (s *Services) Wait() <-chan error {
 }
 
 // Services returns the services configured for Lair.
-func (c *Config) Services(baseLogger log.Logger, disableRPC bool) (*Services, error) {
+func (c *Config) Services(baseLogger log.Logger, noRPC bool) (*Services, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "ghost",
 		BaseLogger: baseLogger,
@@ -89,7 +89,7 @@ func (c *Config) Services(baseLogger log.Logger, disableRPC bool) (*Services, er
 	gofer, err := c.Gofer.PriceProvider(priceproviderConfig.Dependencies{
 		Clients: clients,
 		Logger:  logger,
-	}, disableRPC)
+	}, noRPC)
 	if err != nil {
 		return nil, err
 	}

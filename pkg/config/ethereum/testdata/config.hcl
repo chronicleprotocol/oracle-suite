@@ -2,8 +2,8 @@ rand_keys = ["key"]
 
 # Without optionals
 key "key1" {
-  address         = "0x1234567890123456789012345678901234567890"
-  keystore_path   = "./keystore"
+  address       = "0x1234567890123456789012345678901234567890"
+  keystore_path = "./keystore"
 }
 
 # With optionals
