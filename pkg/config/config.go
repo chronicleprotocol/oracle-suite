@@ -18,7 +18,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/variables"
 )
 
-var HCLContext = &hcl.EvalContext{
+var hclContext = &hcl.EvalContext{
 	Variables: map[string]cty.Value{
 		"env": getEnvVars(),
 	},
@@ -98,13 +98,13 @@ func LoadFiles(config any, paths []string) error {
 	if body, diags = utilHCL.ParseFiles(paths, nil); diags.HasErrors() {
 		return diags
 	}
-	if body, diags = include.Include(HCLContext, body, wd, 10); diags.HasErrors() {
+	if body, diags = include.Include(hclContext, body, wd, 10); diags.HasErrors() {
 		return diags
 	}
-	if body, diags = variables.Variables(HCLContext, body); diags.HasErrors() {
+	if body, diags = variables.Variables(hclContext, body); diags.HasErrors() {
 		return diags
 	}
-	if diags = utilHCL.Decode(HCLContext, dynblock.Expand(body, HCLContext), config); diags.HasErrors() {
+	if diags = utilHCL.Decode(hclContext, dynblock.Expand(body, hclContext), config); diags.HasErrors() {
 		return diags
 	}
 	return nil
