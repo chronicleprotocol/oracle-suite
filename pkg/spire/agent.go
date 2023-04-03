@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/crypto"
-	"github.com/defiweb/go-eth/wallet"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -47,7 +46,6 @@ type Agent struct {
 type AgentConfig struct {
 	PriceStore *store.PriceStore
 	Transport  transport.Transport
-	Signer     wallet.Key
 	Address    string
 	Logger     log.Logger
 }
@@ -58,7 +56,6 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	err := rpcSrv.Register(&API{
 		priceStore: cfg.PriceStore,
 		transport:  cfg.Transport,
-		signer:     cfg.Signer,
 		recover:    crypto.ECRecoverer,
 		log:        logger,
 	})

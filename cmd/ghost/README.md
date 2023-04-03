@@ -33,6 +33,14 @@ Ghost supports HCL configuration format.
 ### Configuration reference
 
 ```hcl
+variables {
+  # Custom variables. Accessible in the configuration under the `var` object, e.g. `var.feeds`.
+  feeds = [
+    "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
+    "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
+  ]
+}
+
 ghost {
   # Ethereum key to use for signing price messages.
   ethereum_key = "default"
@@ -98,18 +106,15 @@ ethereum {
   }
 }
 
-# List of feed addresses. Only messages signed by these addresses are accepted.
-feeds = [
-  "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
-  "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
-]
-
 # Configuration for the transport layer. 
 # Currently, libP2P and WebAPI transports are supported. At least one transport must be configured.
 transport {
   # Configuration for the LibP2P transport. LibP2P transport uses peer-to-peer communication.
   # Optional.
   libp2p {
+    # List of feed addresses. Only messages signed by these addresses are accepted.
+    feeds = var.feeds
+    
     # Seed used to generate the private key for the LibP2P node. 
     # Optional. If not specified, the private key is generated randomly.
     priv_key_seed = "8c8eba62d853d3abdd7f3298341a622a8a9df37c3aba788028c646bdd915227c"
@@ -140,6 +145,9 @@ transport {
   # nodes is retrieved from the address book.
   # Optional.
   webapi {
+    # List of feed addresses. Only messages signed by these addresses are accepted.
+    feeds = var.feeds
+    
     # Listen address for the WebAPI transport. The address must be in the format `host:port`.
     # If used with Tor, it is recommended to listen on 0.0.0.0 address.
     listen_addr = "0.0.0.0.8080"

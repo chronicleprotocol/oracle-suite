@@ -23,7 +23,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
+
 	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/grafana"
@@ -34,9 +37,13 @@ type Dependencies struct {
 	BaseLogger log.Logger
 }
 
-type ConfigLogger struct {
+type Config struct {
 	// Grafana is a configuration for a Grafana logger.
 	Grafana *grafanaLogger `hcl:"grafana,block"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 
 	// Configured service:
 	logger log.Logger
@@ -47,13 +54,17 @@ type grafanaLogger struct {
 	Interval int `hcl:"interval"`
 
 	// Endpoint is a Graphite endpoint.
-	Endpoint string `hcl:"endpoint"`
+	Endpoint config.URL `hcl:"endpoint"`
 
 	// APIKey is a Graphite API key.
 	APIKey string `hcl:"api_key"`
 
 	// Metrics is a list of metrics to send to Grafana.
 	Metrics []grafanaMetric `hcl:"metric,block"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 }
 
 type grafanaMetric struct {
@@ -87,9 +98,13 @@ type grafanaMetric struct {
 	// - "min" - use the minimum value
 	// - "replace" - use the last value
 	OnDuplicate string `hcl:"on_duplicate"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 }
 
-func (c *ConfigLogger) Logger(d Dependencies) (log.Logger, error) {
+func (c *Config) Logger(d Dependencies) (log.Logger, error) {
 	if c == nil {
 		return d.BaseLogger, nil
 	}
@@ -100,7 +115,7 @@ func (c *ConfigLogger) Logger(d Dependencies) (log.Logger, error) {
 	if c.Grafana != nil {
 		logger, err := c.grafanaLogger(d)
 		if err != nil {
-			return nil, fmt.Errorf("logger config: unable to create grafana logger: %s", err)
+			return nil, err
 		}
 		loggers = append(loggers, logger)
 	}
@@ -121,63 +136,86 @@ func (c *ConfigLogger) Logger(d Dependencies) (log.Logger, error) {
 	return logger, nil
 }
 
-func (c *ConfigLogger) grafanaLogger(d Dependencies) (log.Logger, error) {
+func (c *Config) grafanaLogger(d Dependencies) (log.Logger, error) {
 	var err error
-	var ms []grafana.Metric
-	for _, cm := range c.Grafana.Metrics {
-		gm := grafana.Metric{
-			Value:         cm.Value,
-			Name:          cm.Name,
-			Tags:          cm.Tags,
-			TransformFunc: scalingFunc(cm.ScaleFactor),
+	var metrics []grafana.Metric
+	for _, cfg := range c.Grafana.Metrics {
+		metric := grafana.Metric{
+			Value:         cfg.Value,
+			Name:          cfg.Name,
+			Tags:          cfg.Tags,
+			TransformFunc: scalingFunc(cfg.ScaleFactor),
 		}
 
 		// Compile the regular expression for a message:
-		gm.MatchMessage, err = regexp.Compile(cm.MatchMessage)
+		metric.MatchMessage, err = regexp.Compile(cfg.MatchMessage)
 		if err != nil {
-			return nil, fmt.Errorf("unable to compile regexp: %s", cm.MatchMessage)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   fmt.Sprintf("Invalid regular expression: %s", cfg.MatchMessage),
+				Subject:  cfg.Content.Attributes["match_message"].NameRange.Ptr(),
+			}
 		}
 
 		// Compile regular expressions for log fields:
-		gm.MatchFields = map[string]*regexp.Regexp{}
-		for f, p := range cm.MatchFields {
+		metric.MatchFields = map[string]*regexp.Regexp{}
+		for f, p := range cfg.MatchFields {
 			rx, err := regexp.Compile(p)
 			if err != nil {
-				return nil, fmt.Errorf("unable to compile regexp: %s", p)
+				return nil, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Validation error",
+					Detail:   fmt.Sprintf("Invalid regular expression: %s", p),
+					Subject:  cfg.Content.Attributes["match_fields"].NameRange.Ptr(),
+				}
 			}
-			gm.MatchFields[f] = rx
+			metric.MatchFields[f] = rx
 		}
 
 		// On duplicate:
-		switch strings.ToLower(cm.OnDuplicate) {
+		switch strings.ToLower(cfg.OnDuplicate) {
 		case "sum":
-			gm.OnDuplicate = grafana.Sum
+			metric.OnDuplicate = grafana.Sum
 		case "min":
-			gm.OnDuplicate = grafana.Min
+			metric.OnDuplicate = grafana.Min
 		case "max":
-			gm.OnDuplicate = grafana.Max
+			metric.OnDuplicate = grafana.Max
 		case "replace", "":
-			gm.OnDuplicate = grafana.Replace
+			metric.OnDuplicate = grafana.Replace
 		default:
-			return nil, fmt.Errorf("unknown onDuplicate value: %s", cm.OnDuplicate)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail: fmt.Sprintf(
+					"Invalid value for on_duplicate: %s. Possible values are: sum, min, max, replace",
+					cfg.OnDuplicate,
+				),
+				Subject: cfg.Content.Attributes["on_duplicate"].NameRange.Ptr(),
+			}
 		}
 
-		ms = append(ms, gm)
+		metrics = append(metrics, metric)
 	}
 	interval := c.Grafana.Interval
 	if interval < 1 {
 		interval = 1
 	}
 	logger, err := grafana.New(d.BaseLogger.Level(), grafana.Config{
-		Metrics:          ms,
+		Metrics:          metrics,
 		Interval:         uint(interval),
-		GraphiteEndpoint: c.Grafana.Endpoint,
+		GraphiteEndpoint: c.Grafana.Endpoint.String(),
 		GraphiteAPIKey:   c.Grafana.APIKey,
 		HTTPClient:       http.DefaultClient,
 		Logger:           d.BaseLogger,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to create grafana logger: %s", err)
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Runtime error",
+			Detail:   fmt.Sprintf("Failed to create the Grafana logger: %s", err),
+			Subject:  c.Range.Ptr(),
+		}
 	}
 	return logger, nil
 }

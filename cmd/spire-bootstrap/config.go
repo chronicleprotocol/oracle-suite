@@ -32,14 +32,14 @@ import (
 )
 
 type Config struct {
-	Transport transportConfig.ConfigTransport `hcl:"transport,block"`
-	Logger    *loggerConfig.ConfigLogger      `hcl:"logger,block"`
+	Transport transportConfig.Config `hcl:"transport,block"`
+	Logger    *loggerConfig.Config   `hcl:"logger,block"`
 
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
 func PrepareSupervisor(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
-	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
+	err := config.LoadFiles(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}

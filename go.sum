@@ -72,10 +72,10 @@ github.com/deckarep/golang-set/v2 v2.1.0/go.mod h1:VAky9rY/yGXJOLEDv3OMci+7wtDpO
 github.com/decred/dcrd/crypto/blake256 v1.0.0 h1:/8DMNYp9SGi5f0w7uCm6d6M4OU2rGFK09Y2A4Xv7EE0=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 h1:HbphB4TFFXpv7MNrT52FGrrgVXF1owhMVTHFZIlnvd4=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0/go.mod h1:DZGJHZMqrU4JJqFAWUS2UO1+lbSKsdiOoYi9Zzey7Fc=
-github.com/defiweb/go-anymapper v0.0.0-20230314210910-241886f5c16d h1:ifyygzcShPxgisYrhiW3s6bzHUaeFsjwaaOMBylgnqA=
-github.com/defiweb/go-anymapper v0.0.0-20230314210910-241886f5c16d/go.mod h1:O8T4tH9Cyd1fi6M/M+XVX1kNYurlRlXRv3lTbut62tc=
-github.com/defiweb/go-eth v0.0.0-20230320223326-92a25855d420 h1:/LTGQqfra8dPKsSIYJqjTmkyWrgGU7ccmhPcNmfiEZI=
-github.com/defiweb/go-eth v0.0.0-20230320223326-92a25855d420/go.mod h1:JKJXqJU2MYG+2/yemwAzlNHUNpweBj2S251uDRcIBQI=
+github.com/defiweb/go-anymapper v0.0.0-20230401113130-7639d2c14959 h1:dCVe0YIPbLYligSEQxRtQmBbltlhNBmIjW0ysb4j/l0=
+github.com/defiweb/go-anymapper v0.0.0-20230401113130-7639d2c14959/go.mod h1:O8T4tH9Cyd1fi6M/M+XVX1kNYurlRlXRv3lTbut62tc=
+github.com/defiweb/go-eth v0.0.0-20230401144657-6385b248484a h1:99hGjPzs6EXB4pQzgk8nPm4s9zmSFnrqTIlfZU8AN30=
+github.com/defiweb/go-eth v0.0.0-20230401144657-6385b248484a/go.mod h1:8M45cWPaWnD3GjWihk+6HAzT17G38cik9Zc+VBV/Hnc=
 github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937 h1:R/f+QShq/LjTQE34x5PNJ4M1PgoyTFx0xAIVNKW27N8=
 github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937/go.mod h1:nLGzk10jAgynPvN2hL+tLnnyZ5Fcshv0wmpWDRtV0PA=
 github.com/defiweb/go-sigparser v0.0.0-20221125211146-2e4b90d8e269 h1:CxNESKI7WRY9w1pHrwL7/QS6RqflYXE09KU4+S5ZDLk=

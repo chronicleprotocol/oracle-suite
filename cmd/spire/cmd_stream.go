@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -47,20 +48,23 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
+			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+				return err
+			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, tra, err := PrepareStreamServices(ctx, opts)
+			services, err := opts.Config.StreamServices(opts.Logger())
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(ctx); err != nil {
+			if err = services.Start(ctx); err != nil {
 				return err
 			}
 			defer func() {
-				if sErr := <-sup.Wait(); err == nil {
+				if sErr := <-services.Wait(); err == nil {
 					err = sErr
 				}
 			}()
-			msgCh := tra.Messages(messages.PriceV1MessageName)
+			msgCh := services.Transport.Messages(messages.PriceV1MessageName)
 			for {
 				select {
 				case <-ctx.Done():

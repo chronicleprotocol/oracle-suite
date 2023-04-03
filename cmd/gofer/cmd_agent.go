@@ -21,6 +21,8 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
 func NewAgentCmd(opts *options) *cobra.Command {
@@ -28,16 +30,20 @@ func NewAgentCmd(opts *options) *cobra.Command {
 		Use:   "agent",
 		Args:  cobra.NoArgs,
 		Short: "Start an RPC server",
+		Long:  `Start an RPC server.`,
 		RunE: func(_ *cobra.Command, args []string) error {
+			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+				return err
+			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, err := PrepareAgentServices(ctx, opts)
+			services, err := opts.Config.AgentServices(opts.Logger())
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(ctx); err != nil {
+			if err = services.Start(ctx); err != nil {
 				return err
 			}
-			return <-sup.Wait()
+			return <-services.Wait()
 		},
 	}
 }

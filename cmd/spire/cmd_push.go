@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -44,17 +45,20 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Push a price message to the network",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
+			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+				return err
+			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, cli, err := PrepareClientServices(ctx, opts)
+			services, err := opts.Config.ClientServices(opts.Logger())
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(ctx); err != nil {
+			if err = services.Start(ctx); err != nil {
 				return err
 			}
 			defer func() {
 				ctxCancel()
-				if sErr := <-sup.Wait(); err == nil { // Ignore sErr if another error has already occurred.
+				if sErr := <-services.Wait(); err == nil { // Ignore sErr if another error has already occurred.
 					err = sErr
 				}
 			}()
@@ -76,7 +80,7 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 				return err
 			}
 			// Send price message to RPC client:
-			err = cli.PublishPrice(msg)
+			err = services.SpireClient.PublishPrice(msg)
 			if err != nil {
 				return err
 			}

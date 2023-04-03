@@ -36,11 +36,11 @@ with aggregates that increase reliability in the DeFi environment.`,
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringVarP(
+	rootCmd.PersistentFlags().StringSliceVarP(
 		&opts.ConfigFilePath,
 		"config",
 		"c",
-		"./config.hcl",
+		[]string{"./config.hcl"},
 		"config file",
 	)
 	rootCmd.PersistentFlags().VarP(

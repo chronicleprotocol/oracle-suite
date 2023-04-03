@@ -19,13 +19,14 @@ import (
 	"github.com/spf13/cobra"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
 type options struct {
 	flag.LoggerFlag
-	ConfigFilePath string
-	Config         Config
+	ConfigFilePath []string
+	Config         spectre.Config
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -39,11 +40,11 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringVarP(
+	rootCmd.PersistentFlags().StringSliceVarP(
 		&opts.ConfigFilePath,
 		"config",
 		"c",
-		"./config.hcl",
+		[]string{"./config.hcl"},
 		"spectre config file",
 	)
 

@@ -7,13 +7,15 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
-	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
+
+	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/include"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/variables"
 )
 
 var HCLContext = &hcl.EvalContext{
@@ -83,42 +85,39 @@ var HCLContext = &hcl.EvalContext{
 	},
 }
 
-func LoadFile(config any, path string) error {
-	src, err := os.ReadFile(path)
+// LoadFiles loads the given paths into the given config, merging contents of
+// multiple HCL files specified by the "include" attribute using glob patterns,
+// and expanding dynamic blocks before decoding the HCL content.
+func LoadFiles(config any, paths []string) error {
+	var body hcl.Body
+	var diags hcl.Diagnostics
+	wd, err := os.Getwd()
 	if err != nil {
-		if os.IsNotExist(err) {
-			return hcl.Diagnostics{
-				{
-					Severity: hcl.DiagError,
-					Summary:  "Configuration file not found",
-					Detail:   fmt.Sprintf("The configuration file %s does not exist.", path),
-				},
-			}
-		}
-		return hcl.Diagnostics{
-			{
-				Severity: hcl.DiagError,
-				Summary:  "Failed to read configuration",
-				Detail:   fmt.Sprintf("Can't read %s: %s.", path, err),
-			},
-		}
+		return fmt.Errorf("failed to get working directory: %w", err)
 	}
-	file, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
+	if body, diags = utilHCL.ParseFiles(paths, nil); diags.HasErrors() {
 		return diags
 	}
-	diags = gohcl.DecodeBody(dynblock.Expand(file.Body, HCLContext), HCLContext, config)
-	if diags.HasErrors() {
+	if body, diags = include.Include(HCLContext, body, wd, 10); diags.HasErrors() {
+		return diags
+	}
+	if body, diags = variables.Variables(HCLContext, body); diags.HasErrors() {
+		return diags
+	}
+	if diags = utilHCL.Decode(HCLContext, dynblock.Expand(body, HCLContext), config); diags.HasErrors() {
 		return diags
 	}
 	return nil
 }
 
+// getEnvVars retrieves environment variables from the system and returns
+// them as a cty object type, where keys are variable names and values are
+// their corresponding values.
 func getEnvVars() cty.Value {
-	envs := map[string]cty.Value{}
+	envVars := make(map[string]cty.Value)
 	for _, env := range os.Environ() {
-		idx := strings.Index(env, "=")
-		envs[env[:idx]] = cty.StringVal(env[idx+1:])
+		parts := strings.SplitN(env, "=", 2)
+		envVars[parts[0]] = cty.StringVal(parts[1])
 	}
-	return cty.ObjectVal(envs)
+	return cty.ObjectVal(envVars)
 }

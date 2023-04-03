@@ -22,7 +22,6 @@ import (
 
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
-	"github.com/defiweb/go-eth/wallet"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
@@ -37,7 +36,6 @@ type Nothing = struct{}
 type API struct {
 	transport  transport.Transport
 	priceStore *store.PriceStore
-	signer     wallet.Key
 	recover    crypto.Recoverer
 	log        log.Logger
 }

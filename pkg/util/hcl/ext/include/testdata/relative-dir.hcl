@@ -1,0 +1,3 @@
+include = [
+  "./subdir/included.hcl"
+]

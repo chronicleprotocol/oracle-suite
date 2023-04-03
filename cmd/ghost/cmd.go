@@ -19,13 +19,14 @@ import (
 	"github.com/spf13/cobra"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/ghost"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
 type options struct {
 	flag.LoggerFlag
-	ConfigFilePath string
-	Config         Config
+	ConfigFilePath []string
+	Config         ghost.Config
 	GoferNoRPC     bool
 }
 
@@ -40,10 +41,10 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringVarP(
+	rootCmd.PersistentFlags().StringSliceVarP(
 		&opts.ConfigFilePath,
 		"config", "c",
-		"./config.hcl",
+		[]string{"./config.hcl"},
 		"ghost config file",
 	)
 	rootCmd.PersistentFlags().BoolVar(

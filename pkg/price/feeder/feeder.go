@@ -36,6 +36,7 @@ const LoggerTag = "FEEDER"
 
 // Feeder is a service which periodically fetches prices and then sends them to
 // the Oracle network using transport layer.
+// TODO(mdobak): Rename to Feed.
 type Feeder struct {
 	ctx    context.Context
 	waitCh chan error

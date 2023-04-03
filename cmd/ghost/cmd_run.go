@@ -21,6 +21,8 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
 func NewRunCmd(opts *options) *cobra.Command {
@@ -31,15 +33,18 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Short:   "",
 		Long:    ``,
 		RunE: func(_ *cobra.Command, _ []string) error {
+			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+				return err
+			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, err := PrepareServices(ctx, opts)
+			services, err := opts.Config.Services(opts.Logger(), opts.GoferNoRPC)
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(ctx); err != nil {
+			if err = services.Start(ctx); err != nil {
 				return err
 			}
-			return <-sup.Wait()
+			return <-services.Wait()
 		},
 	}
 }

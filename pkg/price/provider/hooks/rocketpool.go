@@ -42,7 +42,7 @@ type RocketPoolCircuitBreaker struct {
 
 func NewRocketPoolCircuitBreaker(
 	clients ethereumConfig.ClientRegistry,
-	params map[string]interface{},
+	params map[string]any,
 ) (
 	*RocketPoolCircuitBreaker,
 	error,

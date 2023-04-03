@@ -44,7 +44,6 @@ type AsyncProvider struct {
 func NewAsyncProvider(
 	graph map[provider.Pair]nodes.Node,
 	feeder *feeder.Feeder,
-	nodes []nodes.Node,
 	logger log.Logger,
 ) (*AsyncProvider, error) {
 
@@ -52,7 +51,6 @@ func NewAsyncProvider(
 		Provider: NewProvider(graph, nil),
 		waitCh:   make(chan error),
 		feeder:   feeder,
-		nodes:    nodes,
 		log:      logger.WithField("tag", LoggerTag),
 	}, nil
 }

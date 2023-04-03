@@ -41,6 +41,7 @@ import (
 const LoggerTag = "RELAYER"
 
 // Relayer is a service that relays prices to the Medianizer contracts.
+// TODO(mdobak): Rename to Relay.
 type Relayer struct {
 	mu     sync.Mutex
 	ctx    context.Context

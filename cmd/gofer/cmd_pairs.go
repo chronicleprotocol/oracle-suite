@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
@@ -33,26 +34,29 @@ func NewPairsCmd(opts *options) *cobra.Command {
 		Short:   "List all supported asset pairs",
 		Long:    `List all supported asset pairs.`,
 		RunE: func(_ *cobra.Command, args []string) (err error) {
+			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+				return err
+			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, gof, mar, _, err := PrepareClientServices(ctx, opts)
+			services, err := opts.Config.ClientServices(ctx, opts.Logger(), opts.NoRPC, opts.Format.format)
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(ctx); err != nil {
+			if err = services.Start(ctx); err != nil {
 				return err
 			}
 			defer func() {
 				if err != nil {
 					exitCode = 1
-					_ = mar.Write(os.Stderr, err)
+					_ = services.Marshaller.Write(os.Stderr, err)
 				}
-				_ = mar.Flush()
+				_ = services.Marshaller.Flush()
 				// Set err to nil because error was already handled by marshaller.
 				err = nil
 			}()
 			defer func() {
 				ctxCancel()
-				if sErr := <-sup.Wait(); err == nil { // Ignore sErr if another error has already occurred.
+				if sErr := <-services.Wait(); err == nil { // Ignore sErr if another error has already occurred.
 					err = sErr
 				}
 			}()
@@ -60,13 +64,13 @@ func NewPairsCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			models, err := gof.Models(pairs...)
+			models, err := services.PriceProvider.Models(pairs...)
 			if err != nil {
 				return err
 			}
 			for _, p := range models {
-				if mErr := mar.Write(os.Stdout, p); mErr != nil {
-					_ = mar.Write(os.Stderr, mErr)
+				if mErr := services.Marshaller.Write(os.Stdout, p); mErr != nil {
+					_ = services.Marshaller.Write(os.Stderr, mErr)
 				}
 			}
 			return

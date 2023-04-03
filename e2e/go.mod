@@ -1,8 +1,6 @@
-module ghost
+module e2e
 
 go 1.20
-
-replace github.com/chronicleprotocol/oracle-suite => ./..
 
 require (
 	github.com/chronicleprotocol/infestor v0.2.13

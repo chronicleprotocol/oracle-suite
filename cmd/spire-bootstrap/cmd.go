@@ -24,7 +24,7 @@ import (
 
 type options struct {
 	flag.LoggerFlag
-	ConfigFilePath string
+	ConfigFilePath []string
 	Config         Config
 }
 
@@ -39,10 +39,10 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringVarP(
+	rootCmd.PersistentFlags().StringSliceVarP(
 		&opts.ConfigFilePath,
 		"config", "c",
-		"./config.hcl",
+		[]string{"./config.hcl"},
 		"ghost config file",
 	)
 

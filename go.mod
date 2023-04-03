@@ -4,7 +4,8 @@ go 1.20
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/defiweb/go-eth v0.0.0-20230320223326-92a25855d420
+	github.com/defiweb/go-anymapper v0.0.0-20230401113130-7639d2c14959
+	github.com/defiweb/go-eth v0.0.0-20230401144657-6385b248484a
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/hashicorp/go-multierror v1.1.1
@@ -42,7 +43,6 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
-	github.com/defiweb/go-anymapper v0.0.0-20230314210910-241886f5c16d // indirect
 	github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937 // indirect
 	github.com/defiweb/go-sigparser v0.0.0-20221125211146-2e4b90d8e269 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect

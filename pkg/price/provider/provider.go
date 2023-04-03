@@ -26,11 +26,14 @@ type Provider interface {
 	// Models describes price models which are used to calculate prices.
 	// If no pairs are specified, models for all pairs are returned.
 	Models(pairs ...Pair) (map[Pair]*Model, error)
+
 	// Price returns a Price for the given pair.
 	Price(pair Pair) (*Price, error)
+
 	// Prices returns prices for the given pairs. If no pairs are specified,
 	// prices for all pairs are returned.
 	Prices(pairs ...Pair) (map[Pair]*Price, error)
+
 	// Pairs returns all pairs.
 	Pairs() ([]Pair, error)
 }
@@ -44,11 +47,20 @@ type Pair struct {
 // NewPair returns a new Pair for given string. The string must be formatted
 // as "BASE/QUOTE".
 func NewPair(s string) (Pair, error) {
-	ss := strings.Split(s, "/")
+	var p Pair
+	err := p.UnmarshalText([]byte(s))
+	return p, err
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler interface.
+func (p *Pair) UnmarshalText(text []byte) error {
+	ss := strings.Split(string(text), "/")
 	if len(ss) != 2 {
-		return Pair{}, fmt.Errorf("couldn't parse pair \"%s\"", s)
+		return fmt.Errorf("invalid pair format: %s, expected BASE/QUOTE", text)
 	}
-	return Pair{Base: strings.ToUpper(ss[0]), Quote: strings.ToUpper(ss[1])}, nil
+	p.Base = strings.ToUpper(ss[0])
+	p.Quote = strings.ToUpper(ss[1])
+	return nil
 }
 
 // NewPairs returns a Pair slice for given strings. Given strings must be

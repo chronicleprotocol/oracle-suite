@@ -40,8 +40,8 @@ jobs:
           TEST_REDIS_ADDR: "127.0.0.1:6379"
           TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
-  test-e2e-gofer:
-    name: E2E Tests (Gofer)
+  test-e2e:
+    name: E2E Tests
     strategy:
       matrix:
         go-version: [ 1.20.x ]
@@ -54,36 +54,14 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Download vendors
-        run: go mod vendor
       - name: Start Smocker instance for testing
         run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
-      - name: Run E2E Tests
-        working-directory: ./e2e
-        run: go test -v -p 1 -run ^Test_Gofer
-  test-e2e-ghost:
-    name: E2E Tests (Ghost)
-    strategy:
-      matrix:
-        go-version: [ 1.20.x ]
-        os: [ ubuntu-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Download vendors
-        run: go mod vendor
-      - name: Start Smocker instance for testing
-        run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
-      - name: Run E2E Tests
-        working-directory: ./e2e
-        run: go test -v -p 1 -run ^Test_Ghost
+      - name: Build E2E Tests in Docker
+        run: docker build -t gofer_e2e -f e2e/gofer/Dockerfile .
+      - name: Run E2E Test
+        run: docker run -i --rm --link smocker gofer_e2e
   test-e2e-teleport:
-    name: E2E Tests (Teleport)
+    name: E2E Tests Teleport
     strategy:
       matrix:
         go-version: [ 1.20.x ]
@@ -100,6 +78,33 @@ jobs:
         run: go mod vendor
       - name: Start Smocker instance for testing
         run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
-      - name: Run E2E Tests
-        working-directory: ./e2e
-        run: go test -v -p 1 -run ^Test_Teleport
+      - name: Run E2E Test (Ethereum)
+        working-directory: ./e2e/teleport
+        run: go test -run ^TestEthereum$
+      - name: Run E2E Test (Ethereum - Replay)
+        working-directory: ./e2e/teleport
+        run: go test -run ^TestEthereum_Replay$
+      - name: Run E2E Test (Starknet)
+        working-directory: ./e2e/teleport
+        run: go test -run ^TestStarknet$
+  test-e2e-ghost:
+    name: E2E Tests Ghost
+    strategy:
+      matrix:
+        go-version: [ 1.20.x ]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Download vendors
+        run: go mod vendor
+      - name: Start Smocker instance for testing
+        run: docker run -d -p 8080:8080 -p 8081:8081 --name smocker thiht/smocker
+      - name: Run E2E Test (Ghost)
+        working-directory: ./e2e/ghost
+        run: go test -v -p 1 ./

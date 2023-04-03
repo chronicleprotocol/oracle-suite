@@ -55,13 +55,13 @@ func (e ErrIncompatiblePairs) Error() string {
 // MedianAggregatorNode gets Prices from all of its children and calculates
 // median price.
 //
-//	                         -- [Origin A/B]
-//	                        /
-//	[MedianAggregatorNode] ---- [Origin A/B]       -- ...
-//	                        \                     /
-//	                         -- [AggregatorNode A/B] ---- ...
-//	                                              \
-//	                                               -- ...
+//                           -- [Origin A/B]
+//                          /
+//  [MedianAggregatorNode] ---- [Origin A/B]       -- ...
+//                          \                     /
+//                           -- [AggregatorNode A/B] ---- ...
+//                                                \
+//                                                 -- ...
 //
 // All children of this node must return a Price for the same pair.
 type MedianAggregatorNode struct {

@@ -158,4 +158,19 @@ func (r *RPC) MaxPriorityFeePerGas(ctx context.Context) (*big.Int, error) {
 	return args.Get(0).(*big.Int), args.Error(1)
 }
 
+func (r *RPC) SubscribeLogs(ctx context.Context, query types.FilterLogsQuery) (chan types.Log, error) {
+	args := r.Called(ctx, query)
+	return args.Get(0).(chan types.Log), args.Error(1)
+}
+
+func (r *RPC) SubscribeNewHeads(ctx context.Context) (chan types.Block, error) {
+	args := r.Called(ctx)
+	return args.Get(0).(chan types.Block), args.Error(1)
+}
+
+func (r *RPC) SubscribeNewPendingTransactions(ctx context.Context) (chan types.Hash, error) {
+	args := r.Called(ctx)
+	return args.Get(0).(chan types.Hash), args.Error(1)
+}
+
 var _ rpc.RPC = (*RPC)(nil)

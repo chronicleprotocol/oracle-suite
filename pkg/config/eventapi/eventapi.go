@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/types"
+	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
 
@@ -30,7 +31,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
-const week = 3600 * 24 * 7
+const week uint32 = 3600 * 24 * 7
 
 type Dependencies struct {
 	EventStore *store.EventStore
@@ -44,7 +45,7 @@ type DatastoreDependencies struct {
 	Logger    log.Logger
 }
 
-type ConfigEventAPI struct {
+type Config struct {
 	// ListenAddr is the address on which the event API will listen.
 	ListenAddr string `hcl:"listen_addr"`
 
@@ -56,6 +57,10 @@ type ConfigEventAPI struct {
 	// together with storage_memory configuration.
 	Redis *storageRedis `hcl:"storage_redis,block"`
 
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
+
 	// Configured services:
 	eventAPI *api.EventAPI
 	storage  store.Storage
@@ -64,13 +69,13 @@ type ConfigEventAPI struct {
 type storageMemory struct {
 	// TTL is the time to live for the events in the in-memory storage in
 	// seconds. Defaults to 604800 (one week).
-	TTL int `hcl:"ttl,optional"`
+	TTL uint32 `hcl:"ttl,optional"`
 }
 
 type storageRedis struct {
 	// TTL is the time to live for the events in the Redis storage in seconds.
 	// Defaults to 604800 (one week).
-	TTL int `hcl:"ttl,optional"`
+	TTL uint32 `hcl:"ttl,optional"`
 
 	// Address is the redis server address provided as the combination of IP
 	// address or host and port number, e.g. `0.0.0.0:8080`.
@@ -114,9 +119,12 @@ type storageRedis struct {
 	// ClusterAddrs is a list of cluster node addresses provided as the
 	// combination of IP address or host and port number, e.g. `0.0.0.0:8080`.
 	ClusterAddrs []string `hcl:"cluster_addrs,optional"`
+
+	// HCL fields:
+	Range hcl.Range `hcl:",range"`
 }
 
-func (c *ConfigEventAPI) Lair(d Dependencies) (*api.EventAPI, error) {
+func (c *Config) EventAPI(d Dependencies) (*api.EventAPI, error) {
 	if c.eventAPI != nil {
 		return c.eventAPI, nil
 	}
@@ -132,12 +140,17 @@ func (c *ConfigEventAPI) Lair(d Dependencies) (*api.EventAPI, error) {
 	return eventAPI, nil
 }
 
-func (c *ConfigEventAPI) Storage() (store.Storage, error) {
+func (c *Config) Storage() (store.Storage, error) {
 	if c.storage != nil {
 		return c.storage, nil
 	}
 	if c.Memory != nil && c.Redis != nil {
-		return nil, fmt.Errorf(`eventapi config: "storage_memory" and "storage_redis" storage types are mutually exclusive`)
+		return nil, hcl.Diagnostics{{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   `"storage_memory" and "storage_redis" storage types are mutually exclusive`,
+			Subject:  c.Range.Ptr(),
+		}}
 	}
 	switch {
 	case c.Memory != nil:
@@ -153,7 +166,7 @@ func (c *ConfigEventAPI) Storage() (store.Storage, error) {
 			ttl = c.Redis.TTL
 		}
 		r, err := redis.New(redis.Config{
-			TTL:                   time.Duration(ttl) * time.Second,
+			TTL:                   time.Second * time.Duration(ttl),
 			Address:               c.Redis.Address,
 			Username:              c.Redis.Username,
 			Password:              c.Redis.Password,
@@ -169,14 +182,29 @@ func (c *ConfigEventAPI) Storage() (store.Storage, error) {
 			ClusterAddrs:          c.Redis.ClusterAddrs,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("eventapi config: unable to initialize redis storage: %w", err)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf(`Unable to create a Redis storage: %s`, err),
+				Subject:  c.Redis.Range.Ptr(),
+			}
 		}
 		if err := r.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf(`eventapi config: unable to connect to the Redis server: %w`, err)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf(`Unable to ping the Redis storage: %s`, err),
+				Subject:  c.Redis.Range.Ptr(),
+			}
 		}
 		c.storage = r
 		return c.storage, nil
 	default:
-		return nil, fmt.Errorf(`eventapi config: storage type must be "memory", "redis" or empty to use default one`)
+		return nil, hcl.Diagnostics{{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   `One of "storage_memory" or "storage_redis" storage types must be specified`,
+			Subject:  c.Range.Ptr(),
+		}}
 	}
 }

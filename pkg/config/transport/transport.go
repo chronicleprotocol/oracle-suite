@@ -6,13 +6,13 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/defiweb/go-eth/types"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/net/proxy"
 
@@ -33,7 +33,6 @@ type Dependencies struct {
 	Keys     ethereum.KeyRegistry
 	Clients  ethereum.ClientRegistry
 	Messages map[string]transport.Message
-	Feeds    []types.Address
 	Logger   log.Logger
 }
 
@@ -41,15 +40,23 @@ type BootstrapDependencies struct {
 	Logger log.Logger
 }
 
-type ConfigTransport struct {
+type Config struct {
 	LibP2P *libP2PConfig `hcl:"libp2p,block"`
 	WebAPI *webAPIConfig `hcl:"webapi,block"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 
 	// Configured transport:
 	transport transport.Transport
 }
 
 type libP2PConfig struct {
+	// Feeds is a list of Ethereum addresses that are allowed to send messages
+	// to the node.
+	Feeds []types.Address `hcl:"feeds"`
+
 	// ListenAddrs is the list of listening addresses for libp2p node encoded
 	// using the multiaddress format.
 	ListenAddrs []string `hcl:"listen_addrs"`
@@ -81,9 +88,17 @@ type libP2PConfig struct {
 	// EthereumKey is the name of the Ethereum key to use for signing messages.
 	// Required if the transport is used for sending messages.
 	EthereumKey string `hcl:"ethereum_key,optional"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 }
 
 type webAPIConfig struct {
+	// Feeds is a list of Ethereum addresses that are allowed to send messages
+	// to the node.
+	Feeds []types.Address `hcl:"feeds"`
+
 	// ListenAddr is the address on which the WebAPI server will listen for
 	// incoming connections. The address must be in the format `host:port`.
 	// When used with a TOR hidden service, the server should listen on
@@ -106,24 +121,36 @@ type webAPIConfig struct {
 
 	// StaticAddressBook is the configuration for the static address book.
 	StaticAddressBook *webAPIStaticAddressBook `hcl:"static_address_book,block"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 }
 
 type webAPIEthereumAddressBook struct {
 	// ContractAddr is the Ethereum address of the address book contract.
-	ContractAddr string `hcl:"contract_addr"`
+	ContractAddr types.Address `hcl:"contract_addr"`
 
 	// EthereumClient is the name of the Ethereum client to use for reading
 	// the address book.
 	EthereumClient string `hcl:"ethereum_client"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 }
 
 type webAPIStaticAddressBook struct {
 	// Addresses is the list of static addresses to which messages will be
 	// sent.
 	Addresses []string `hcl:"addresses"`
+
+	// HCL fields:
+	Range   hcl.Range       `hcl:",range"`
+	Content hcl.BodyContent `hcl:",content"`
 }
 
-func (c *ConfigTransport) Transport(d Dependencies) (transport.Transport, error) {
+func (c *Config) Transport(d Dependencies) (transport.Transport, error) {
 	if c.transport != nil {
 		return c.transport, nil
 	}
@@ -144,7 +171,12 @@ func (c *ConfigTransport) Transport(d Dependencies) (transport.Transport, error)
 	}
 	switch {
 	case len(transports) == 0:
-		return nil, errors.New("no transport configured")
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "At least one transport must be configured.",
+			Subject:  &c.Range,
+		}
 	case len(transports) == 1:
 		c.transport = transports[0]
 	default:
@@ -153,9 +185,14 @@ func (c *ConfigTransport) Transport(d Dependencies) (transport.Transport, error)
 	return c.transport, nil
 }
 
-func (c *ConfigTransport) LibP2PBootstrap(d BootstrapDependencies) (transport.Transport, error) {
+func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Transport, error) {
 	if c.LibP2P == nil {
-		return nil, errors.New("libP2P transport not configured")
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "LibP2P transport must be configured.",
+			Subject:  &c.Range,
+		}
 	}
 	peerPrivKey, err := c.generatePrivKey()
 	if err != nil {
@@ -174,18 +211,28 @@ func (c *ConfigTransport) LibP2PBootstrap(d BootstrapDependencies) (transport.Tr
 	}
 	p, err := libp2p.New(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("transport config: %w", err)
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Runtime error",
+			Detail:   fmt.Sprintf("Cannot create LibP2P bootstrap node: %v", err),
+			Subject:  &c.LibP2P.Range,
+		}
 	}
 	return p, nil
 }
 
-func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, error) {
+func (c *Config) configureWebAPI(d Dependencies) (transport.Transport, error) {
 	// Configure HTTP client:
 	httpClient := http.DefaultClient
 	if len(c.WebAPI.Socks5ProxyAddr) != 0 {
 		dialer, err := proxy.SOCKS5("tcp", c.WebAPI.Socks5ProxyAddr, nil, proxy.Direct)
 		if err != nil {
-			return nil, fmt.Errorf("cannot connect to the proxy: %w", err)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Cannot create SOCKS5 proxy: %v", err),
+				Subject:  &c.WebAPI.Content.Attributes["socks5_proxy_addr"].Range,
+			}
 		}
 		httpClient.Transport = &http.Transport{
 			DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -203,15 +250,16 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 	case c.WebAPI.EthereumAddressBook != nil:
 		rpcClient := d.Clients[c.WebAPI.EthereumAddressBook.EthereumClient]
 		if rpcClient == nil {
-			return nil, fmt.Errorf("WebAPI config: ethereum client %q not found", c.WebAPI.EthereumAddressBook.EthereumClient)
-		}
-		contractAddr, err := types.AddressFromHex(c.WebAPI.EthereumAddressBook.ContractAddr)
-		if err != nil || contractAddr == types.ZeroAddress {
-			return nil, fmt.Errorf("WebAPI config: invalid contract address %q", c.WebAPI.EthereumAddressBook.ContractAddr)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   fmt.Sprintf("Ethereum client %q is not configured", c.WebAPI.EthereumAddressBook.EthereumClient),
+				Subject:  c.WebAPI.EthereumAddressBook.Content.Attributes["ethereum_client"].Range.Ptr(),
+			}
 		}
 		addressBooks = append(addressBooks, webapi.NewEthereumAddressBook(
 			rpcClient,
-			contractAddr,
+			c.WebAPI.EthereumAddressBook.ContractAddr,
 			time.Hour,
 		))
 	case c.WebAPI.StaticAddressBook != nil:
@@ -222,7 +270,12 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 	}
 	switch {
 	case len(addressBooks) == 0:
-		return nil, errors.New("WebAPI config: no address book configured")
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "At least one address book must be configured.",
+			Subject:  &c.WebAPI.Range,
+		}
 	case len(addressBooks) == 1:
 		addressBook = addressBooks[0]
 	default:
@@ -232,7 +285,12 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 	// Configure signer:
 	key := d.Keys[c.WebAPI.EthereumKey]
 	if c.WebAPI.EthereumKey != "" && key == nil {
-		return nil, fmt.Errorf("WebAPI config: key %q not found", c.WebAPI.EthereumKey)
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   fmt.Sprintf("Ethereum key %q is not configured", c.WebAPI.EthereumKey),
+			Subject:  c.WebAPI.Content.Attributes["ethereum_key"].Range.Ptr(),
+		}
 	}
 
 	// Configure transport:
@@ -240,29 +298,39 @@ func (c *ConfigTransport) configureWebAPI(d Dependencies) (transport.Transport, 
 		ListenAddr:      c.WebAPI.ListenAddr,
 		AddressBook:     addressBook,
 		Topics:          d.Messages,
-		AuthorAllowlist: d.Feeds,
+		AuthorAllowlist: c.WebAPI.Feeds,
 		FlushTicker:     timeutil.NewTicker(time.Minute),
 		Signer:          key,
 		Client:          httpClient,
 		Logger:          d.Logger,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("WebAPI config: %w", err)
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Runtime error",
+			Detail:   fmt.Sprintf("Failed to create the WebAPI transport: %v", err),
+			Subject:  &c.WebAPI.Range,
+		}
 	}
 	return recoverer.New(webapiTransport, d.Logger), nil
 }
 
-func (c *ConfigTransport) configureLibP2P(d Dependencies) (transport.Transport, error) {
+func (c *Config) configureLibP2P(d Dependencies) (transport.Transport, error) {
 	// Configure signer:
 	key := d.Keys[c.LibP2P.EthereumKey]
 	if c.LibP2P.EthereumKey != "" && key == nil {
-		return nil, fmt.Errorf("WebAPI config: key %q not found", c.WebAPI.EthereumKey)
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   fmt.Sprintf("Ethereum key %q is not configured", c.LibP2P.EthereumKey),
+			Subject:  c.LibP2P.Content.Attributes["ethereum_key"].Range.Ptr(),
+		}
 	}
 
 	// Configure LibP2P private keys:
 	peerPrivKey, err := c.generatePrivKey()
 	if err != nil {
-		return nil, fmt.Errorf("LibP2P config: %w", err)
+		return nil, err
 	}
 	var messagePrivKey crypto.PrivKey
 	if key != nil {
@@ -279,7 +347,7 @@ func (c *ConfigTransport) configureLibP2P(d Dependencies) (transport.Transport, 
 		BootstrapAddrs:   c.LibP2P.BootstrapAddrs,
 		DirectPeersAddrs: c.LibP2P.DirectPeersAddrs,
 		BlockedAddrs:     c.LibP2P.BlockedAddrs,
-		AuthorAllowlist:  d.Feeds,
+		AuthorAllowlist:  c.LibP2P.Feeds,
 		Discovery:        !c.LibP2P.DisableDiscovery,
 		Signer:           key,
 		Logger:           d.Logger,
@@ -288,26 +356,46 @@ func (c *ConfigTransport) configureLibP2P(d Dependencies) (transport.Transport, 
 	}
 	libP2PTransport, err := libp2p.New(cfg)
 	if err != nil {
-		return nil, err
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Runtime error",
+			Detail:   fmt.Sprintf("Failed to create the LibP2P transport: %v", err),
+			Subject:  &c.LibP2P.Range,
+		}
 	}
 	return recoverer.New(libP2PTransport, d.Logger), nil
 }
 
-func (c *ConfigTransport) generatePrivKey() (crypto.PrivKey, error) {
+func (c *Config) generatePrivKey() (crypto.PrivKey, error) {
 	seedReader := rand.Reader
 	if len(c.LibP2P.PrivKeySeed) != 0 {
 		seed, err := hex.DecodeString(c.LibP2P.PrivKeySeed)
 		if err != nil {
-			return nil, fmt.Errorf("invalid privKeySeed value, failed to decode hex data: %w", err)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   fmt.Sprintf("Invalid privKeySeed value: %v", err),
+				Subject:  c.LibP2P.Content.Attributes["priv_key_seed"].Range.Ptr(),
+			}
 		}
 		if len(seed) != ed25519.SeedSize {
-			return nil, fmt.Errorf("invalid privKeySeed value, 32 bytes expected")
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   "Invalid privKeySeed value, 32 bytes expected",
+				Subject:  c.LibP2P.Content.Attributes["priv_key_seed"].Range.Ptr(),
+			}
 		}
 		seedReader = bytes.NewReader(seed)
 	}
 	privKey, _, err := crypto.GenerateEd25519Key(seedReader)
 	if err != nil {
-		return nil, fmt.Errorf("invalid privKeySeed value, failed to generate key: %w", err)
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Runtime error",
+			Detail:   fmt.Sprintf("Failed to generate LibP2P private key: %v", err),
+			Subject:  c.LibP2P.Content.Attributes["priv_key_seed"].Range.Ptr(),
+		}
 	}
 	return privKey, nil
 }

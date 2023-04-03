@@ -26,8 +26,8 @@ import (
 )
 
 type Config struct {
-	Ethereum ethereumConfig.ConfigEthereum `hcl:"ethereum,block"`
-	Logger   *loggerConfig.ConfigLogger    `hcl:"logger,block"`
+	Ethereum ethereumConfig.Config `hcl:"ethereum,block"`
+	Logger   *loggerConfig.Config  `hcl:"logger,block"`
 
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
@@ -38,7 +38,7 @@ type Services struct {
 }
 
 func PrepareServices(opts *options) (*Services, error) {
-	err := config.LoadFile(&opts.Config, opts.ConfigFilePath)
+	err := config.LoadFiles(&opts.Config, opts.ConfigFilePath)
 	if err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
