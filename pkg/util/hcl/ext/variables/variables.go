@@ -5,8 +5,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Variables is a custom block type that allows you to define variables
-// in the "variables" block. Variables are then available in "var" object.
+// Variables is a custom block type that allows to define variables in the
+// "variables" block. Variables are then available in "var" object.
 func Variables(ctx *hcl.EvalContext, body hcl.Body) (hcl.Body, hcl.Diagnostics) {
 	// Decode the "include" attribute.
 	content, remain, diags := body.PartialContent(&hcl.BodySchema{
@@ -23,8 +23,8 @@ func Variables(ctx *hcl.EvalContext, body hcl.Body) (hcl.Body, hcl.Diagnostics) 
 		if diags.HasErrors() {
 			return nil, diags
 		}
-		for name, attribute := range attributes {
-			if variables[name], diags = attribute.Expr.Value(ctx); diags.HasErrors() {
+		for name, attr := range attributes {
+			if variables[name], diags = attr.Expr.Value(ctx); diags.HasErrors() {
 				return nil, diags
 			}
 		}

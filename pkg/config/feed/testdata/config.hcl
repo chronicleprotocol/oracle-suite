@@ -1,4 +1,4 @@
-ethereum_key = "key1"
+ethereum_key = "key"
 interval     = 60
 
 pairs = [

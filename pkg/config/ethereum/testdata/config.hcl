@@ -1,16 +1,16 @@
-rand_keys = ["key"]
+rand_keys = ["rand_key"]
 
 # Without optionals
 key "key1" {
-  address       = "0x1234567890123456789012345678901234567890"
-  keystore_path = "./keystore"
+  address       = "0xd18d7f6d9e349d1d6bf33702192019f166a7201e"
+  keystore_path = "./testdata/keystore"
 }
 
 # With optionals
 key "key2" {
-  address         = "0x2345678901234567890123456789012345678901"
-  keystore_path   = "./keystore2"
-  passphrase_file = "./passphrase"
+  address         = "0x2d800d93b065ce011af83f316cef9f0d005b0aa4"
+  keystore_path   = "./testdata/keystore"
+  passphrase_file = "./testdata/keystore/passphrase"
 }
 
 # Without optionals

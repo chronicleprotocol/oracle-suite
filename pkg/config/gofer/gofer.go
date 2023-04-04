@@ -22,8 +22,8 @@ import (
 // Config is the configuration for Gofer.
 type Config struct {
 	Gofer    priceProviderConfig.Config `hcl:"gofer,block"`
-	Ethereum *ethereumConfig.Config     `hcl:"ethereum,block"`
-	Logger   *loggerConfig.Config       `hcl:"logger,block"`
+	Ethereum *ethereumConfig.Config     `hcl:"ethereum,block,optional"`
+	Logger   *loggerConfig.Config       `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.

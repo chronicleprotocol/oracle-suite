@@ -40,13 +40,13 @@ type PostDecodeBlock interface {
 // Decode decodes the given HCL body into the given value.
 // The value must be a pointer to a struct.
 //
-// It works similar to the Decode function from gohcl package, but it has
+// It works similar to the Decode function from the gohcl package, but it has
 // improved support for decoding values into maps and slices. It also supports
 // encoding.TextUnmarshaler interface and additional Unmarshaler interface that
 // allows to decode values into custom types directly from cty.Value.
 //
-// Only fields with hcl tag will be decoded. The tag contains the name of the
-// attribute or block and additional options separated by comma.
+// Only fields with the "hcl" tag will be decoded. The tag contains the name of
+// the attribute or block and additional options separated by comma.
 //
 // Supported options are
 //   - attr - the field is an attribute, it will be decoded from the HCL body
@@ -55,9 +55,8 @@ type PostDecodeBlock interface {
 //   - optional - the field is optional, if it is not present in the HCL body,
 //     the field will be left as zero value.
 //   - ignore - the field will be ignored but still be a part of the schema.
-//   - block - the field is a block, it will be decoded from the HCL body
-//     blocks. The field must be a struct, slice of structs or a map of
-//     structs. To make a block optional, use pointer.
+//   - block - the field is a block, it will be decoded from the HCL blocks.
+//     The field must be a struct, slice of structs or a map of structs.
 //   - remain - the field is populated with the remaining HCL body. The field
 //     must be hcl.Body.
 //   - body - the field is populated with the HCL body. The field must
@@ -186,12 +185,7 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 
 	// Check for missing or extraneous blocks.
 	for _, field := range meta.Blocks {
-		if field.Ignore {
-			continue
-		}
-		if field.Reflect.Type.Kind() != reflect.Struct {
-			// If type is not a struct, it means it is a pointer, slice, or map.
-			// If a block is defined as one of these types, it is optional.
+		if field.Ignore || field.Optional || field.Multiple {
 			continue
 		}
 		blocksOfType := content.Blocks.OfType(field.Name)
@@ -205,12 +199,12 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 		}
 		if len(blocksOfType) > 1 {
 			var diags hcl.Diagnostics
-			for _, b := range blocksOfType {
+			for _, block := range blocksOfType {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Decode error",
-					Detail:   fmt.Sprintf("Extraneous block %q", field.Name),
-					Subject:  &b.DefRange,
+					Detail:   fmt.Sprintf("Extraneous block %q, only one is allowed", field.Name),
+					Subject:  &block.DefRange,
 				})
 			}
 			return diags
@@ -422,35 +416,10 @@ func getStructMeta(s reflect.Type) (*structMeta, hcl.Diagnostics) {
 				}}
 			}
 		case fieldBlock:
-			fieldTyp := fieldRef.Type
-
-			// Check if the field is a slice of structs or map of structs.
-			if fieldTyp.Kind() == reflect.Slice || fieldTyp.Kind() == reflect.Map {
-				fieldTyp = fieldTyp.Elem()
-			}
-
-			// Dereference pointers and interfaces.
-			for fieldTyp.Kind() == reflect.Ptr || fieldTyp.Kind() == reflect.Interface {
-				fieldTyp = fieldTyp.Elem()
-			}
-
-			// Check if the field is a struct.
-			if fieldTyp.Kind() != reflect.Struct {
-				return nil, hcl.Diagnostics{{
-					Severity: hcl.DiagError,
-					Summary:  "Schema error",
-					Detail: fmt.Sprintf(
-						"Cannot use block tag on field %q of type %s, only structs, slices of structs, and maps of structs are supported",
-						fieldRef.Name,
-						fieldRef.Type,
-					),
-				}}
-			}
-
 			// Extract the labels from the struct.
 			var labels []string
-			for i := 0; i < fieldTyp.NumField(); i++ {
-				subFieldMeta, diags := getStructFieldMeta(fieldTyp.Field(i))
+			for i := 0; i < fieldMeta.StructReflect.NumField(); i++ {
+				subFieldMeta, diags := getStructFieldMeta(fieldMeta.StructReflect.Field(i))
 				if diags.HasErrors() {
 					return nil, diags
 				}
@@ -508,90 +477,126 @@ func getStructMeta(s reflect.Type) (*structMeta, hcl.Diagnostics) {
 func getStructFieldMeta(field reflect.StructField) (structFieldMeta, hcl.Diagnostics) {
 	var (
 		tag string
-		sf  = structFieldMeta{Reflect: field}
+		sfm = structFieldMeta{Reflect: field}
 	)
-	tag, sf.Tagged = field.Tag.Lookup("hcl")
-	if !sf.Tagged {
-		return sf, nil
+
+	// Parse the tag.
+	tag, sfm.Tagged = field.Tag.Lookup("hcl")
+	if !sfm.Tagged {
+		return sfm, nil
 	}
 	parts := strings.Split(tag, ",")
-	sf.Name = parts[0]
-	if len(sf.Name) == 0 {
-		sf.Name = field.Name
+	sfm.Name = parts[0]
+	if len(sfm.Name) == 0 {
+		sfm.Name = field.Name
 	}
 	for _, part := range parts[1:] {
 		switch part {
 		case "attr":
-			sf.Type = fieldAttr
+			sfm.Type = fieldAttr
 		case "label":
-			sf.Type = fieldLabel
+			sfm.Type = fieldLabel
 		case "block":
-			sf.Type = fieldBlock
+			sfm.Type = fieldBlock
 		case "remain":
-			sf.Type = fieldRemain
+			sfm.Type = fieldRemain
 		case "body":
-			sf.Type = fieldBody
+			sfm.Type = fieldBody
 		case "content":
-			sf.Type = fieldContent
+			sfm.Type = fieldContent
 		case "schema":
-			sf.Type = fieldSchema
+			sfm.Type = fieldSchema
 		case "range":
-			sf.Type = fieldRange
+			sfm.Type = fieldRange
 		case "optional":
-			sf.Optional = true
+			sfm.Optional = true
 		case "ignore":
-			sf.Ignore = true
+			sfm.Ignore = true
 		default:
-			return sf, hcl.Diagnostics{&hcl.Diagnostic{
+			return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Invalid tag",
 				Detail:   fmt.Sprintf("Invalid tag %q", part),
 			}}
 		}
 	}
-	if sf.Type != fieldAttr && sf.Optional {
-		return sf, hcl.Diagnostics{&hcl.Diagnostic{
+
+	// Find a struct type for this block.
+	// A field may be also a slice or map of structs, in which case the struct
+	// type must be extracted.
+	if sfm.Type == fieldBlock {
+		typ := deref(sfm.Reflect.Type)
+		if typ.Kind() == reflect.Slice || typ.Kind() == reflect.Map {
+			typ = deref(typ.Elem())
+			// If it is a slice or map, the block can be repeated.
+			sfm.Multiple = true
+		}
+		sfm.StructReflect = typ
+		if typ.Kind() != reflect.Struct {
+			return sfm, hcl.Diagnostics{{
+				Severity: hcl.DiagError,
+				Summary:  "Schema error",
+				Detail: fmt.Sprintf(
+					"Cannot use block tag on field %q of type %s, only structs, slices of structs, and maps of structs are supported",
+					sfm.Name,
+					sfm.Reflect.Type,
+				),
+			}}
+		}
+	}
+
+	// Validate the tag.
+	if sfm.Type != fieldAttr && sfm.Type != fieldBlock && sfm.Optional {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid tag",
-			Detail:   "A optional tag can only be used with attributes",
+			Detail:   "A optional tag can only be used with attributes and blocks",
 		}}
 	}
-	if sf.Type == fieldRemain && field.Type != bodyTy {
-		return sf, hcl.Diagnostics{&hcl.Diagnostic{
+	if sfm.Type == fieldBlock && sfm.Multiple && sfm.Optional {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Invalid tag",
+			Detail:   "A optional tag cannot be used with a block that can be repeated",
+		}}
+	}
+	if sfm.Type == fieldRemain && field.Type != bodyTy {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid tag",
 			Detail:   "A remain tag must be used with a field of type hcl.Body",
 		}}
 	}
-	if sf.Type == fieldBody && field.Type != bodyTy {
-		return sf, hcl.Diagnostics{&hcl.Diagnostic{
+	if sfm.Type == fieldBody && field.Type != bodyTy {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid tag",
 			Detail:   "A body tag must be used with a field of type hcl.Body",
 		}}
 	}
-	if sf.Type == fieldContent && field.Type != bodyContentTy {
-		return sf, hcl.Diagnostics{&hcl.Diagnostic{
+	if sfm.Type == fieldContent && field.Type != bodyContentTy {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid tag",
 			Detail:   "A body tag must be used with a field of type hcl.BodyContent",
 		}}
 	}
-	if sf.Type == fieldSchema && field.Type != bodySchemaTy {
-		return sf, hcl.Diagnostics{&hcl.Diagnostic{
+	if sfm.Type == fieldSchema && field.Type != bodySchemaTy {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid tag",
 			Detail:   "A body tag must be used with a field of type hcl.BodySchema",
 		}}
 	}
-	if sf.Type == fieldRange && field.Type != rangeTy {
-		return sf, hcl.Diagnostics{&hcl.Diagnostic{
+	if sfm.Type == fieldRange && field.Type != rangeTy {
+		return sfm, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid tag",
 			Detail:   "A range tag must be used with a field of type hcl.Range",
 		}}
 	}
-	return sf, nil
+
+	return sfm, nil
 }
 
 const (
@@ -621,12 +626,14 @@ type structMeta struct {
 
 // structFieldMeta contains the information about a struct field.
 type structFieldMeta struct {
-	Name     string              // Name of the field as defined in the hcl tag.
-	Tagged   bool                // True if the field has a hcl tag.
-	Type     int                 // Type of the field, one of the field* constants.
-	Optional bool                // True if the field is optional.
-	Ignore   bool                // True if the field is ignored.
-	Reflect  reflect.StructField // The reflect.StructField.
+	Name          string              // Name of the field as defined in the hcl tag.
+	Tagged        bool                // True if the field has a hcl tag.
+	Type          int                 // Type of the field, one of the field* constants.
+	Optional      bool                // True if the field is optional.
+	Multiple      bool                // True if the field is a block and can be repeated.
+	Ignore        bool                // True if the field is ignored.
+	Reflect       reflect.StructField // The reflect.StructField of the field.
+	StructReflect reflect.Type        // The reflect.Type of the struct to which block is decoded (if field is a block).
 }
 
 type structFieldsMeta []structFieldMeta
@@ -675,6 +682,14 @@ var (
 	anyTy         = reflect.TypeOf((*any)(nil)).Elem()
 )
 
+// deref dereferences the given type until it is not a pointer or an interface.
+func deref(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Interface {
+		t = t.Elem()
+	}
+	return t
+}
+
 // ctyMapper is a mapping function that maps cty.Value to other types.
 //
 //nolint:funlen,gocyclo
@@ -721,6 +736,8 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 					return err
 				}
 				dst.Set(reflect.ValueOf(aux))
+			case typ == cty.DynamicPseudoType:
+				dst.Set(reflect.Zero(dst.Type()))
 			default:
 				dst.Set(src)
 			}

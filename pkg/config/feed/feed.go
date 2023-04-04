@@ -50,10 +50,10 @@ type Config struct {
 }
 
 type Dependencies struct {
-	Keys      ethereumConfig.KeyRegistry
-	Gofer     provider.Provider
-	Transport transport.Transport
-	Logger    log.Logger
+	KeysRegistry  ethereumConfig.KeyRegistry
+	PriceProvider provider.Provider
+	Transport     transport.Transport
+	Logger        log.Logger
 }
 
 func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
@@ -68,7 +68,7 @@ func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
 			Subject:  c.Content.Attributes["interval"].Range.Ptr(),
 		}}
 	}
-	ethereumKey, ok := d.Keys[c.EthereumKey]
+	ethereumKey, ok := d.KeysRegistry[c.EthereumKey]
 	if !ok {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -82,7 +82,7 @@ func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
 		pairs[i] = p.String()
 	}
 	cfg := feeder.Config{
-		PriceProvider: d.Gofer,
+		PriceProvider: d.PriceProvider,
 		Signer:        ethereumKey,
 		Transport:     d.Transport,
 		Logger:        d.Logger,

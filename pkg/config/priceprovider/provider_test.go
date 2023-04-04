@@ -7,6 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 )
 
@@ -56,6 +59,21 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, provider.Pair{"XXX", "BBB"}, cfg.PriceModels[0].Sources[1].Sources[1].Pair)
 				assert.Equal(t, "origin", cfg.PriceModels[0].Sources[1].Sources[1].Type)
 				assert.Equal(t, "origin3", cfg.PriceModels[0].Sources[1].Sources[1].Origin.Origin)
+			},
+		},
+		{
+			name: "service",
+			path: "config.hcl",
+			test: func(t *testing.T, cfg *Config) {
+				clientRegistry := ethereum.ClientRegistry{
+					"client": &mocks.RPC{},
+				}
+				priceProvider, err := cfg.PriceProvider(Dependencies{
+					Clients: clientRegistry,
+					Logger:  null.New(),
+				}, false)
+				require.NoError(t, err)
+				assert.NotNil(t, priceProvider)
 			},
 		},
 	}

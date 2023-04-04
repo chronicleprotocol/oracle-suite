@@ -41,8 +41,8 @@ type BootstrapDependencies struct {
 }
 
 type Config struct {
-	LibP2P *libP2PConfig `hcl:"libp2p,block"`
-	WebAPI *webAPIConfig `hcl:"webapi,block"`
+	LibP2P *libP2PConfig `hcl:"libp2p,block,optional"`
+	WebAPI *webAPIConfig `hcl:"webapi,block,optional"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
@@ -117,10 +117,10 @@ type webAPIConfig struct {
 	// to which messages will be sent.
 
 	// EthereumAddressBook is the configuration for the Ethereum address book.
-	EthereumAddressBook *webAPIEthereumAddressBook `hcl:"ethereum_address_book,block"`
+	EthereumAddressBook *webAPIEthereumAddressBook `hcl:"ethereum_address_book,block,optional"`
 
 	// StaticAddressBook is the configuration for the static address book.
-	StaticAddressBook *webAPIStaticAddressBook `hcl:"static_address_book,block"`
+	StaticAddressBook *webAPIStaticAddressBook `hcl:"static_address_book,block,optional"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`

@@ -27,7 +27,7 @@ type Config struct {
 	Gofer     priceproviderConfig.Config `hcl:"gofer,block"`
 	Ethereum  ethereumConfig.Config      `hcl:"ethereum,block"`
 	Transport transportConfig.Config     `hcl:"transport,block"`
-	Logger    *loggerConfig.Config       `hcl:"logger,block"`
+	Logger    *loggerConfig.Config       `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
@@ -98,10 +98,10 @@ func (c *Config) Services(baseLogger log.Logger, noRPC bool) (*Services, error) 
 		return nil, err
 	}
 	ghost, err := c.Ghost.Feed(feedConfig.Dependencies{
-		Keys:      keys,
-		Gofer:     gofer,
-		Transport: transport,
-		Logger:    logger,
+		KeysRegistry:  keys,
+		PriceProvider: gofer,
+		Transport:     transport,
+		Logger:        logger,
 	})
 	if err != nil {
 		return nil, err

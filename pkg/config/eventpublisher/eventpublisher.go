@@ -36,10 +36,10 @@ import (
 )
 
 type Dependencies struct {
-	KeyRegistry    ethereumConfig.KeyRegistry
-	ClientRegistry ethereumConfig.ClientRegistry
-	Transport      transport.Transport
-	Logger         log.Logger
+	Keys      ethereumConfig.KeyRegistry
+	Clients   ethereumConfig.ClientRegistry
+	Transport transport.Transport
+	Logger    log.Logger
 }
 
 type Config struct {
@@ -135,7 +135,7 @@ func (c *Config) EventPublisher(d Dependencies) (*publisher.EventPublisher, erro
 	if err := c.teleportStarknet(&eventProviders, d); err != nil {
 		return nil, err
 	}
-	key, ok := d.KeyRegistry[c.EthereumKey]
+	key, ok := d.Keys[c.EthereumKey]
 	if !ok {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -185,7 +185,7 @@ func (c *Config) teleportEVM(eps *[]publisher.EventProvider, d Dependencies) err
 				Subject:  cfg.Content.Attributes["contract_addrs"].Range.Ptr(),
 			}}
 		}
-		client, ok := d.ClientRegistry[cfg.EthereumClient]
+		client, ok := d.Clients[cfg.EthereumClient]
 		if !ok {
 			return &hcl.Diagnostic{
 				Severity: hcl.DiagError,

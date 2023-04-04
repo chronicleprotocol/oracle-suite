@@ -22,47 +22,69 @@ func (t *textUnmarshaler) UnmarshalText(text []byte) error {
 	return nil
 }
 
+type hclUnmarshaler struct {
+	Val string
+}
+
+func (t *hclUnmarshaler) UnmarshalHCL(cty cty.Value) error {
+	t.Val = cty.AsString()
+	return nil
+}
+
 func TestDecode(t *testing.T) {
 	type basicTypes struct {
-		Var1 string         `hcl:"var1"`
-		Var2 int            `hcl:"var2"`
-		Var3 bool           `hcl:"var3"`
-		Var4 []int          `hcl:"var4"`
-		Var5 map[string]int `hcl:"var5"`
+		String          string           `hcl:"string"`
+		Int             int              `hcl:"int"`
+		Bool            bool             `hcl:"bool"`
+		Slice           []int            `hcl:"slice"`
+		Map             map[string]int   `hcl:"map"`
+		CTY             cty.Value        `hcl:"cty"`
+		TextUnmarshaler *textUnmarshaler `hcl:"text_unmarshaler"`
+		HCLUnmarshaler  *hclUnmarshaler  `hcl:"hcl_unmarshaler"`
 	}
 	type block struct {
-		Label string `hcl:"label,label"`
-		Var1  string `hcl:"var1,optional"`
+		Label string `hcl:",label"`
+		Attr  string `hcl:"attr,optional"`
 	}
 	type blocks struct {
-		Single   block             `hcl:"single,block"`
-		Optional *block            `hcl:"optional,block"`
-		Slice    []block           `hcl:"slice,block"`
-		SlicePtr []*block          `hcl:"slice_ptr,block"`
-		Map      map[string]block  `hcl:"map,block"`
-		MapPtr   map[string]*block `hcl:"map_ptr,block"`
+		Single      block              `hcl:"single,block"`
+		SinglePtr   *block             `hcl:"single_ptr,block"`
+		Slice       []block            `hcl:"slice,block"`
+		SlicePtr    []*block           `hcl:"slice_ptr,block"`
+		Map         map[string]block   `hcl:"map,block"`
+		MapPtr      map[string]*block  `hcl:"map_ptr,block"`
+		PtrSlice    *[]block           `hcl:"ptr_slice,block"`
+		PtrSlicePtr *[]*block          `hcl:"ptr_slice_ptr,block"`
+		PtrMap      *map[string]block  `hcl:"ptr_map,block"`
+		PtrMapPtr   *map[string]*block `hcl:"ptr_map_ptr,block"`
 	}
-	type optionalAttr struct {
-		Var1 string  `hcl:"var1,optional"`
-		Var2 *string `hcl:"var2,optional"`
-	}
-	type mapToCty struct {
-		Var1 cty.Value `hcl:"var1"`
-	}
-	type textUnmarshalerLabel struct {
-		Label textUnmarshaler `hcl:"label,label"`
-	}
-	type textUnmarshalerLabelBlock struct {
-		Block textUnmarshalerLabel `hcl:"block,block"`
-	}
-	type requiredBlock struct {
+	type singleBlock struct {
 		Block block `hcl:"block,block"`
 	}
-	type optionalBlock struct {
-		Block *block `hcl:"block,block"`
+	type requiredAttrs struct {
+		Var    string  `hcl:"var"`
+		VarPtr *string `hcl:"var_ptr"`
 	}
-	type ignoredAttr struct {
-		Ignored string `hcl:"ignored,ignore"`
+	type optionalAttrs struct {
+		Var    string  `hcl:"var,optional"`
+		VarPtr *string `hcl:"var_ptr,optional"`
+	}
+	type requiredBlocks struct {
+		Block    block  `hcl:"block,block"`
+		BlockPtr *block `hcl:"block_ptr,block"`
+	}
+	type optionalBlocks struct {
+		Block    *block `hcl:"block,block,optional"`
+		BlockPtr *block `hcl:"block_ptr,block,optional"`
+	}
+	type blockSlice struct {
+		Slice []block `hcl:"slice,block"`
+	}
+	type ignoredField struct {
+		Var string `hcl:"var,ignore"`
+	}
+	type anyField struct {
+		Var any `hcl:"var"`
 	}
 	tests := []struct {
 		input   string
@@ -73,190 +95,332 @@ func TestDecode(t *testing.T) {
 		// Basic types
 		{
 			input: `
-				var1 = "foo"
-				var2 = 1
-				var3 = true
-				var4 = [1, 2, 3]
-				var5 = {
+				string = "foo"
+				int = 1
+				bool = true
+				slice = [1, 2, 3]
+				map = {
 					"foo" = 1
 					"bar" = 2
 				}
+				cty = "foo"
+				text_unmarshaler = "foo"
+				hcl_unmarshaler = "foo"
 			`,
 			target: &basicTypes{},
 			want: &basicTypes{
-				Var1: "foo",
-				Var2: 1,
-				Var3: true,
-				Var4: []int{1, 2, 3},
-				Var5: map[string]int{
+				String: "foo",
+				Int:    1,
+				Bool:   true,
+				Slice:  []int{1, 2, 3},
+				Map: map[string]int{
 					"foo": 1,
 					"bar": 2,
 				},
+				CTY:             cty.StringVal("foo"),
+				TextUnmarshaler: &textUnmarshaler{Val: "foo"},
+				HCLUnmarshaler:  &hclUnmarshaler{Val: "foo"},
 			},
 		},
 		// Blocks
 		{
 			input: `
 				single "foo" {
-					var1 = "foo"
+					attr = "foo"
 				}
-				optional "bar" {
-					var1 = "bar"
+				single_ptr "foo" {
+					attr = "foo"
 				}
 				slice "foo" {
-					var1 = "foo"
+					attr = "foo"
 				}
 				slice "bar" {
-					var1 = "bar"
+					attr = "bar"
 				}
 				slice_ptr "foo" {
-					var1 = "foo"
+					attr = "foo"
 				}
 				slice_ptr "bar" {
-					var1 = "bar"
+					attr = "bar"
 				}
 				map "foo" {
-					var1 = "foo"
+					attr = "foo"
+				}
+				map "bar" {
+					attr = "bar"
 				}
 				map_ptr "foo" {
-					var1 = "foo"
+					attr = "foo"
+				}
+				map_ptr "bar" {
+					attr = "bar"
+				}
+				ptr_slice "foo" {
+					attr = "foo"
+				}
+				ptr_slice "bar" {
+					attr = "bar"
+				}
+				ptr_slice_ptr "foo" {
+					attr = "foo"
+				}
+				ptr_slice_ptr "bar" {
+					attr = "bar"
+				}
+				ptr_map "foo" {
+					attr = "foo"
+				}
+				ptr_map "bar" {
+					attr = "bar"
+				}
+				ptr_map_ptr "foo" {
+					attr = "foo"
+				}
+				ptr_map_ptr "bar" {
+					attr = "bar"
 				}
 			`,
 			target: &blocks{},
 			want: &blocks{
 				Single: block{
 					Label: "foo",
-					Var1:  "foo",
+					Attr:  "foo",
 				},
-				Optional: &block{
-					Label: "bar",
-					Var1:  "bar",
+				SinglePtr: &block{
+					Label: "foo",
+					Attr:  "foo",
 				},
 				Slice: []block{
 					{
 						Label: "foo",
-						Var1:  "foo",
+						Attr:  "foo",
 					},
 					{
 						Label: "bar",
-						Var1:  "bar",
+						Attr:  "bar",
 					},
 				},
 				SlicePtr: []*block{
 					{
 						Label: "foo",
-						Var1:  "foo",
+						Attr:  "foo",
 					},
 					{
 						Label: "bar",
-						Var1:  "bar",
+						Attr:  "bar",
 					},
 				},
 				Map: map[string]block{
 					"foo": {
 						Label: "foo",
-						Var1:  "foo",
+						Attr:  "foo",
+					},
+					"bar": {
+						Label: "bar",
+						Attr:  "bar",
 					},
 				},
 				MapPtr: map[string]*block{
 					"foo": {
 						Label: "foo",
-						Var1:  "foo",
+						Attr:  "foo",
+					},
+					"bar": {
+						Label: "bar",
+						Attr:  "bar",
+					},
+				},
+				PtrSlice: &[]block{
+					{
+						Label: "foo",
+						Attr:  "foo",
+					},
+					{
+						Label: "bar",
+						Attr:  "bar",
+					},
+				},
+				PtrSlicePtr: &[]*block{
+					{
+						Label: "foo",
+						Attr:  "foo",
+					},
+					{
+						Label: "bar",
+						Attr:  "bar",
+					},
+				},
+				PtrMap: &map[string]block{
+					"foo": {
+						Label: "foo",
+						Attr:  "foo",
+					},
+					"bar": {
+						Label: "bar",
+						Attr:  "bar",
+					},
+				},
+				PtrMapPtr: &map[string]*block{
+					"foo": {
+						Label: "foo",
+						Attr:  "foo",
+					},
+					"bar": {
+						Label: "bar",
+						Attr:  "bar",
 					},
 				},
 			},
 		},
-		// Optional attr (present)
+		// Missing block label
 		{
 			input: `
-				var1 = "foo"
-				var2 = "bar"
+				block {}
 			`,
-			target: &optionalAttr{},
-			want: &optionalAttr{
-				Var1: "foo",
-				Var2: ptrutil.Ptr("bar"),
-			},
-		},
-		// Optional attr (absent)
-		{
-			input:  ``,
-			target: &optionalAttr{},
-			want: &optionalAttr{
-				Var1: "",
-				Var2: nil,
-			},
-		},
-		// Map to cty.Value
-		{
-			input: `
-				var1 = "foo"
-			`,
-			target: &mapToCty{},
-			want: &mapToCty{
-				Var1: cty.StringVal("foo"),
-			},
-		},
-		// Label that implements TextUnmarshaler
-		{
-			input: `
-				block "foo" { }
-			`,
-			target: &textUnmarshalerLabelBlock{},
-			want: &textUnmarshalerLabelBlock{
-				Block: textUnmarshalerLabel{Label: textUnmarshaler{Val: "foo"}},
-			},
-		},
-		// String to int
-		{
-			input: `
-				var1 = "1"
-			`,
-			target: &struct {
-				Var1 int `hcl:"var1"`
-			}{},
+			target:  &singleBlock{},
 			wantErr: true,
 		},
-		// Int to string
-		{
-			input: `
-				var1 = 1
-			`,
-			target: &struct {
-				Var1 string `hcl:"var1"`
-			}{},
-			wantErr: true,
-		},
-		// Required block
+		// Missing required attribute
 		{
 			input:   ``,
-			target:  &requiredBlock{},
+			target:  &requiredAttrs{},
 			wantErr: true,
 		},
-		// Optional block
+		// Optional attributes (present)
 		{
-			input:  ``,
-			target: &optionalBlock{},
-			want: &optionalBlock{
-				Block: nil,
+			input: `
+				var = "foo"
+				var_ptr = "foo"
+			`,
+			target: &optionalAttrs{},
+			want: &optionalAttrs{
+				Var:    "foo",
+				VarPtr: ptrutil.Ptr("foo"),
 			},
 		},
-		// Extraneous block
+		// Optional attributes (missing)
 		{
-			input: `
-				block "foo" { }
-			    block "bar" { }
-			`,
-			target:  &requiredBlock{},
+			input:  ``,
+			target: &optionalAttrs{},
+			want:   &optionalAttrs{},
+		},
+		// Missing required block
+		{
+			input:   ``,
+			target:  &requiredBlocks{},
 			wantErr: true,
 		},
-		// Ignored attr
+		// Optional blocks (present)
 		{
 			input: `
-				ignored = "foo"
+				block "foo" {}
 			`,
-			target: &ignoredAttr{},
-			want:   &ignoredAttr{},
+			target: &optionalBlocks{},
+			want: &optionalBlocks{
+				Block: &block{Label: "foo"},
+			},
+		},
+		// Optional blocks (missing)
+		{
+			input:  ``,
+			target: &optionalBlocks{},
+			want:   &optionalBlocks{},
+		},
+		// Slice of blocks (present)
+		{
+			input: `
+				slice "foo" {}
+			`,
+			target: &blockSlice{},
+			want: &blockSlice{
+				Slice: []block{{Label: "foo"}},
+			},
+		},
+		// Slice of blocks (missing)
+		{
+			input:  ``,
+			target: &blockSlice{},
+			want:   &blockSlice{},
+		},
+		// Ignored field (present)
+		// Ignored field must be present if they are not optional, but they
+		// should not be decoded.
+		{
+			input: `
+				var = 1
+			`,
+			target: &ignoredField{},
+			want:   &ignoredField{},
+		},
+		// Ignored field (missing)
+		{
+			input:   ``,
+			target:  &ignoredField{},
+			wantErr: true,
+		},
+		// Any type (string)
+		{
+			input: `
+				var = "foo"
+			`,
+			target: &anyField{},
+			want: &anyField{
+				Var: "foo",
+			},
+		},
+		// Any type (number)
+		{
+			input: `
+				var = 1
+			`,
+			target: &anyField{},
+			want: &anyField{
+				Var: float64(1),
+			},
+		},
+		// Any type (bool)
+		{
+			input: `
+				var = true
+			`,
+			target: &anyField{},
+			want: &anyField{
+				Var: true,
+			},
+		},
+		// Any type (list)
+		{
+			input: `
+				var = [1, 2, 3]
+			`,
+			target: &anyField{},
+			want: &anyField{
+				Var: []any{float64(1), float64(2), float64(3)},
+			},
+		},
+		// Any type (map)
+		{
+			input: `
+				var = {
+					foo = "bar"
+				}
+			`,
+			target: &anyField{},
+			want: &anyField{
+				Var: map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+		// Any type (null)
+		{
+			input: `
+				var = null
+			`,
+			target: &anyField{},
+			want: &anyField{
+				Var: nil,
+			},
 		},
 	}
 	for n, tt := range tests {
@@ -280,6 +444,8 @@ func TestDecode(t *testing.T) {
 
 func TestSpecialTags(t *testing.T) {
 	type config struct {
+		Attr string `hcl:"attr"`
+
 		Remain  hcl.Body        `hcl:",remain"`
 		Body    hcl.Body        `hcl:",body"`
 		Content hcl.BodyContent `hcl:",content"`
@@ -287,12 +453,17 @@ func TestSpecialTags(t *testing.T) {
 		Range   hcl.Range       `hcl:",range"`
 	}
 	var dest config
-	file, diags := hclsyntax.ParseConfig([]byte(``), "test.hcl", hcl.Pos{})
+	file, diags := hclsyntax.ParseConfig([]byte(`attr = "foo"`), "test.hcl", hcl.Pos{})
 	if diags.HasErrors() {
 		assert.Fail(t, "parse config failed", diags)
 	}
 	diags = Decode(&hcl.EvalContext{}, file.Body, &dest)
 	require.False(t, diags.HasErrors(), diags.Error())
+	assert.NotNil(t, dest.Remain)
+	assert.NotNil(t, dest.Body)
+	assert.Len(t, dest.Content.Attributes, 1)
+	assert.Len(t, dest.Schema.Attributes, 1)
+	assert.Equal(t, ":0,0-0", dest.Range.String())
 }
 
 func TestRecursiveSchema(t *testing.T) {
@@ -309,5 +480,5 @@ func TestRecursiveSchema(t *testing.T) {
 		assert.Fail(t, "parse config failed", diags)
 	}
 	diags = Decode(&hcl.EvalContext{}, file.Body, &dest)
-	require.False(t, diags.HasErrors())
+	require.False(t, diags.HasErrors(), diags.Error())
 }

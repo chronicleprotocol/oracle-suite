@@ -39,7 +39,7 @@ type Dependencies struct {
 
 type Config struct {
 	// Grafana is a configuration for a Grafana logger.
-	Grafana *grafanaLogger `hcl:"grafana,block"`
+	Grafana *grafanaLogger `hcl:"grafana,block,optional"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`

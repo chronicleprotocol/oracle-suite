@@ -17,12 +17,12 @@ func Include(ctx *hcl.EvalContext, body hcl.Body, wd string, maxDeep int) (hcl.B
 	content, remain, diags := body.PartialContent(&hcl.BodySchema{
 		Attributes: []hcl.AttributeSchema{{Name: "include"}},
 	})
-	attribute := content.Attributes["include"]
-	if diags.HasErrors() || attribute == nil {
+	attr := content.Attributes["include"]
+	if diags.HasErrors() || attr == nil {
 		return body, diags
 	}
 	var include []string
-	if diags = utilHCL.DecodeExpression(ctx, attribute.Expr, &include); diags.HasErrors() {
+	if diags = utilHCL.DecodeExpression(ctx, attr.Expr, &include); diags.HasErrors() {
 		return nil, diags
 	}
 
@@ -31,8 +31,8 @@ func Include(ctx *hcl.EvalContext, body hcl.Body, wd string, maxDeep int) (hcl.B
 		return nil, hcl.Diagnostics{{
 			Severity: hcl.DiagError,
 			Summary:  "Too many nested includes",
-			Detail:   "Too many nested includes. Check your glob patterns.",
-			Subject:  attribute.Expr.Range().Ptr(),
+			Detail:   "Too many nested includes. Possible circular include.",
+			Subject:  attr.Expr.Range().Ptr(),
 		}}
 	}
 
@@ -46,7 +46,7 @@ func Include(ctx *hcl.EvalContext, body hcl.Body, wd string, maxDeep int) (hcl.B
 				Severity: hcl.DiagError,
 				Summary:  "Invalid glob pattern",
 				Detail:   fmt.Sprintf("Invalid glob pattern %s: %s.", pattern, err),
-				Subject:  attribute.Expr.Range().Ptr(),
+				Subject:  attr.Expr.Range().Ptr(),
 			}}
 		}
 
@@ -55,7 +55,7 @@ func Include(ctx *hcl.EvalContext, body hcl.Body, wd string, maxDeep int) (hcl.B
 			path = relativePath(wd, path)
 
 			// Parse the file.
-			fileBody, diags := utilHCL.ParseFile(path, attribute.Expr.Range().Ptr())
+			fileBody, diags := utilHCL.ParseFile(path, attr.Expr.Range().Ptr())
 			if diags.HasErrors() {
 				return nil, diags
 			}

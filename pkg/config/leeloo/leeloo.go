@@ -24,7 +24,7 @@ type Config struct {
 	Leeloo    leelooConfig.Config    `hcl:"leeloo,block"`
 	Ethereum  ethereumConfig.Config  `hcl:"ethereum,block"`
 	Transport transportConfig.Config `hcl:"transport,block"`
-	Logger    *loggerConfig.Config   `hcl:"logger,block"`
+	Logger    *loggerConfig.Config   `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
@@ -91,10 +91,10 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 		return nil, err
 	}
 	eventPublisher, err := c.Leeloo.EventPublisher(leelooConfig.Dependencies{
-		KeyRegistry:    keys,
-		ClientRegistry: clients,
-		Transport:      transport,
-		Logger:         logger,
+		Keys:      keys,
+		Clients:   clients,
+		Transport: transport,
+		Logger:    logger,
 	})
 	if err != nil {
 		return nil, &hcl.Diagnostic{

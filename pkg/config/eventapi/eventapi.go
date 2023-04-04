@@ -51,11 +51,11 @@ type Config struct {
 
 	// Memory is the configuration for the in-memory storage. Cannot be
 	// used together with storage_redis configuration.
-	Memory *storageMemory `hcl:"storage_memory,block"`
+	Memory *storageMemory `hcl:"storage_memory,block,optional"`
 
 	// Redis is the configuration for the Redis storage. Cannot be used
 	// together with storage_memory configuration.
-	Redis *storageRedis `hcl:"storage_redis,block"`
+	Redis *storageRedis `hcl:"storage_redis,block,optional"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`

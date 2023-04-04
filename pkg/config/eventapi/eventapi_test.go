@@ -7,6 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportevm"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/publisher/teleportstarknet"
+	"github.com/chronicleprotocol/oracle-suite/pkg/event/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 )
 
 func TestConfig(t *testing.T) {
@@ -38,6 +43,33 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, "./tls_root_ca.pem", cfg.Redis.TLSRootCAFile)
 				assert.Equal(t, false, cfg.Redis.Cluster)
 				assert.Equal(t, []string{"localhost:7000", "localhost:7001"}, cfg.Redis.ClusterAddrs)
+			},
+		},
+		{
+			name: "service",
+			path: "service.hcl",
+			test: func(t *testing.T, cfg *Config) {
+				transport := local.New([]byte("test"), 1, nil)
+				storage, err := cfg.Storage()
+				require.NoError(t, err)
+				logger := null.New()
+
+				eventStore, err := store.New(store.Config{
+					EventTypes: []string{teleportevm.TeleportEventType, teleportstarknet.TeleportEventType},
+					Storage:    storage,
+					Transport:  transport,
+					Logger:     logger,
+				})
+				require.NoError(t, err)
+				require.NotNil(t, eventStore)
+
+				eventAPI, err := cfg.EventAPI(Dependencies{
+					EventStore: eventStore,
+					Transport:  transport,
+					Logger:     logger,
+				})
+				require.NoError(t, err)
+				assert.NotNil(t, eventAPI)
 			},
 		},
 	}

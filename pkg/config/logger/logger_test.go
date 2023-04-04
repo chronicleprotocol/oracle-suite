@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
 func TestConfig(t *testing.T) {
@@ -33,6 +34,18 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, "example.message", metric.Name)
 				assert.Equal(t, map[string][]string{"environment": {"production"}}, metric.Tags)
 				assert.Equal(t, "sum", metric.OnDuplicate)
+			},
+		},
+		{
+			name: "service",
+			path: "config.hcl",
+			test: func(t *testing.T, cfg *Config) {
+				service, err := cfg.Logger(Dependencies{
+					AppName:    "app",
+					BaseLogger: null.New(),
+				})
+				require.NoError(t, err)
+				assert.NotNil(t, service)
 			},
 		},
 	}

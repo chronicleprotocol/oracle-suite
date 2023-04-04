@@ -25,7 +25,7 @@ type Config struct {
 	Spectre   relayConfig.Config     `hcl:"spectre,block"`
 	Transport transportConfig.Config `hcl:"transport,block"`
 	Ethereum  ethereumConfig.Config  `hcl:"ethereum,block"`
-	Logger    *loggerConfig.Config   `hcl:"logger,block"`
+	Logger    *loggerConfig.Config   `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.

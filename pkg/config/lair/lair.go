@@ -25,9 +25,9 @@ import (
 // Config is the configuration for Lair.
 type Config struct {
 	EventAPI  eventAPIConfig.Config  `hcl:"lair,block"`
-	Ethereum  *ethereumConfig.Config `hcl:"ethereum,block"`
+	Ethereum  *ethereumConfig.Config `hcl:"ethereum,block,optional"`
 	Transport transportConfig.Config `hcl:"transport,block"`
-	Logger    *loggerConfig.Config   `hcl:"logger,block"`
+	Logger    *loggerConfig.Config   `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.

@@ -1,7 +1,7 @@
 ethereum_key = "key"
 
 teleport_evm {
-  ethereum_client     = "client1"
+  ethereum_client     = "client"
   interval            = 60
   prefetch_period     = 120
   block_confirmations = 3
