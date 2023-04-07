@@ -233,6 +233,17 @@ func (e *Set) Fetch(originPairs map[string][]Pair) map[string][]FetchResult {
 		handler, ok := e.list[origin]
 
 		go func() {
+			defer func() {
+				wg.Done()
+				if r := recover(); r != nil {
+					mu.Lock()
+					frs[origin] = fetchResultListWithErrors(
+						pairs,
+						fmt.Errorf("PANIC: %v", r),
+					)
+					mu.Unlock()
+				}
+			}()
 			if !ok {
 				mu.Lock()
 				frs[origin] = fetchResultListWithErrors(
@@ -246,8 +257,6 @@ func (e *Set) Fetch(originPairs map[string][]Pair) map[string][]FetchResult {
 				frs[origin] = append(frs[origin], resp...)
 				mu.Unlock()
 			}
-
-			wg.Done()
 		}()
 	}
 
@@ -327,9 +336,12 @@ func buildOriginURL(template, configURL, defaultURL string, a ...interface{}) st
 	return fmt.Sprintf(template, replacement...)
 }
 
-func reduceEtherAverageFloat(r [][]byte) *big.Float {
+func reduceEtherAverageFloat(r [][]byte) (*big.Float, error) {
 	total := new(big.Float).SetInt64(0)
 	for _, resp := range r {
+		if len(resp) < 32 {
+			return nil, fmt.Errorf("expected 32 bytes, got %d", len(resp))
+		}
 		// TODO(jamesr) Always uint256, so even if resp is larger, truncate.
 		// However, this assumes that we only care about the first 32 bytes.
 		// You might want the last 32... perhaps revisit this.
@@ -339,5 +351,5 @@ func reduceEtherAverageFloat(r [][]byte) *big.Float {
 			new(big.Float).Quo(new(big.Float).SetInt(price), new(big.Float).SetUint64(ether)),
 		)
 	}
-	return new(big.Float).Quo(total, new(big.Float).SetUint64(uint64(len(r))))
+	return new(big.Float).Quo(total, new(big.Float).SetUint64(uint64(len(r)))), nil
 }

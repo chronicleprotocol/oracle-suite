@@ -76,10 +76,14 @@ func (s WrappedStakedETH) callOne(pair Pair) (*Price, error) {
 		return nil, err
 	}
 
-	price, _ := reduceEtherAverageFloat(resp).Float64()
+	price, err := reduceEtherAverageFloat(resp)
+	if err != nil {
+		return nil, err
+	}
+	priceFloat, _ := price.Float64()
 	return &Price{
 		Pair:      pair,
-		Price:     price,
+		Price:     priceFloat,
 		Timestamp: time.Now(),
 	}, nil
 }

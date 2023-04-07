@@ -117,11 +117,15 @@ func (s CurveFinance) PullPrices(pairs []Pair) []FetchResult {
 		}
 	}
 	for i, pair := range pairs {
-		price, _ := reduceEtherAverageFloat(resps[i]).Float64()
+		price, err := reduceEtherAverageFloat(resps[i])
+		if err != nil {
+			return fetchResultListWithErrors(pairs, err)
+		}
+		priceFloat, _ := price.Float64()
 		frs = append(frs, FetchResult{
 			Price: Price{
 				Pair:      pair,
-				Price:     price,
+				Price:     priceFloat,
 				Timestamp: time.Now(),
 			},
 		})

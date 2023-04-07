@@ -77,11 +77,14 @@ func (s RocketPool) callOne(pair Pair) (*Price, error) {
 	if err != nil {
 		return nil, err
 	}
-	price, _ := reduceEtherAverageFloat(resp).Float64()
-
+	price, err := reduceEtherAverageFloat(resp)
+	if err != nil {
+		return nil, err
+	}
+	priceFloat, _ := price.Float64()
 	return &Price{
 		Pair:      pair,
-		Price:     price,
+		Price:     priceFloat,
 		Timestamp: time.Now(),
 	}, nil
 }

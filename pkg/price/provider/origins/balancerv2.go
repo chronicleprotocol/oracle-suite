@@ -135,11 +135,18 @@ func (s BalancerV2) PullPrices(pairs []Pair) []FetchResult {
 	}
 	// Calculate prices.
 	for n, pair := range pairs {
-		priceFloat := reduceEtherAverageFloat(resps[n][0])
+		priceFloat, err := reduceEtherAverageFloat(resps[n][0])
+		if err != nil {
+			return fetchResultListWithErrors(pairs, err)
+		}
 		// If there are two calls, the second one is the reference price for the pair.
 		// We need to multiply the pair price by the reference price to get the final price.
 		if len(resps[n]) > 1 {
-			priceFloat = new(big.Float).Mul(reduceEtherAverageFloat(resps[n][1]), priceFloat)
+			refPrice, err := reduceEtherAverageFloat(resps[n][1])
+			if err != nil {
+				return fetchResultListWithErrors(pairs, err)
+			}
+			priceFloat = new(big.Float).Mul(refPrice, priceFloat)
 		}
 		price, _ := priceFloat.Float64()
 		frs = append(frs, FetchResult{
