@@ -158,14 +158,14 @@ func (ep *EventProvider) prefetchEventsRoutine(ctx context.Context) {
 		return // Context was canceled.
 	}
 	for d := ep.blockConfirms; ctx.Err() == nil; d += ep.blockLimit {
-		from := bn.IntFromBigInt(latestBlock).Sub(bn.IntFromUint64(d + ep.blockLimit - 1))
-		to := bn.IntFromBigInt(latestBlock).Sub(bn.IntFromUint64(d))
-		if from.Cmp(bn.IntFromUint64(0)) < 0 {
-			from = bn.IntFromUint64(0)
+		from := bn.Int(latestBlock).Sub(d + ep.blockLimit - 1)
+		to := bn.Int(latestBlock).Sub(d)
+		if from.Sign() < 0 {
+			from = bn.Int(0)
 		}
 
-		ep.handleEvents(ctx, from.BigInt(), to.BigInt())
-		ts, ok := ep.getBlockTimestamp(ctx, to.BigInt())
+		ep.handleEvents(ctx, from, to)
+		ts, ok := ep.getBlockTimestamp(ctx, to)
 		if !ok {
 			return // Context was canceled.
 		}
@@ -194,17 +194,17 @@ func (ep *EventProvider) fetchEventsRoutine(ctx context.Context) {
 				return // Context was canceled.
 			}
 			if currentBlock.Cmp(latestBlock) <= 0 {
-				continue // There is no new blocks.
+				continue // There are no new blocks.
 			}
 			ranges := splitBlockRanges(
-				bn.IntFromBigInt(latestBlock).Add(bn.IntFromUint64(1)),
-				bn.IntFromBigInt(currentBlock),
-				bn.IntFromUint64(ep.blockLimit),
+				bn.Int(latestBlock).Add(bn.Int(1)),
+				bn.Int(currentBlock),
+				bn.Int(ep.blockLimit),
 			)
 			for _, b := range ranges {
-				from := b[0].Sub(bn.IntFromUint64(ep.blockConfirms))
-				to := b[1].Sub(bn.IntFromUint64(ep.blockConfirms))
-				ep.handleEvents(ctx, from.BigInt(), to.BigInt())
+				from := b[0].Sub(bn.Int(ep.blockConfirms))
+				to := b[1].Sub(bn.Int(ep.blockConfirms))
+				ep.handleEvents(ctx, from, to)
 			}
 			latestBlock = currentBlock
 		}
@@ -213,7 +213,7 @@ func (ep *EventProvider) fetchEventsRoutine(ctx context.Context) {
 
 // handleEvents fetches TeleportGUID events from the given block range and
 // sends them to the eventCh channel.
-func (ep *EventProvider) handleEvents(ctx context.Context, from, to *big.Int) {
+func (ep *EventProvider) handleEvents(ctx context.Context, from, to *bn.IntNumber) {
 	for _, address := range ep.addresses {
 		ep.log.
 			WithFields(log.Fields{
@@ -296,13 +296,13 @@ func (ep *EventProvider) getBlockNumber(ctx context.Context) (*big.Int, bool) {
 // The only way to stop this method from trying again is to cancel the
 // context. In that case, the method will return false as a second return
 // value.
-func (ep *EventProvider) getBlockTimestamp(ctx context.Context, block *big.Int) (time.Time, bool) {
+func (ep *EventProvider) getBlockTimestamp(ctx context.Context, block *bn.IntNumber) (time.Time, bool) {
 	var err error
 	var res any
 	retry.TryForever(
 		ctx,
 		func() error {
-			res, err = ep.client.Block(ethereum.WithBlockNumber(ctx, block))
+			res, err = ep.client.Block(ethereum.WithBlockNumber(ctx, block.BigInt()))
 			if err != nil {
 				ep.log.WithError(err).Error("Unable to get block timestamp")
 			}
@@ -325,7 +325,7 @@ func (ep *EventProvider) getBlockTimestamp(ctx context.Context, block *big.Int) 
 func (ep *EventProvider) filterLogs(
 	ctx context.Context,
 	addr types.Address,
-	from, to *big.Int,
+	from, to *bn.IntNumber,
 	topic0 types.Hash,
 ) ([]types.Log, bool) {
 
@@ -334,8 +334,8 @@ func (ep *EventProvider) filterLogs(
 	retry.TryForever(
 		ctx,
 		func() error {
-			fromBlockNumber := types.BlockNumberFromBigInt(from)
-			toBlockNumber := types.BlockNumberFromBigInt(to)
+			fromBlockNumber := types.BlockNumberFromBigInt(from.BigInt())
+			toBlockNumber := types.BlockNumberFromBigInt(to.BigInt())
 			res, err = ep.client.FilterLogs(ctx, types.FilterLogsQuery{
 				FromBlock: &fromBlockNumber,
 				ToBlock:   &toBlockNumber,
@@ -359,23 +359,23 @@ func (ep *EventProvider) filterLogs(
 // "limit" blocks. Some RPC providers have a limit on the number of blocks
 // that can be fetched in a single request and this method is used to
 // keep the number of blocks in each request below that limit.
-func splitBlockRanges(from, to, limit *bn.Int) [][2]*bn.Int {
+func splitBlockRanges(from, to, limit *bn.IntNumber) [][2]*bn.IntNumber {
 	if from.Cmp(to) > 0 {
 		return nil
 	}
 	if to.Sub(from).Cmp(limit) <= 0 {
-		return [][2]*bn.Int{{from, to}}
+		return [][2]*bn.IntNumber{{from, to}}
 	}
-	var ranges [][2]*bn.Int
+	var ranges [][2]*bn.IntNumber
 	rangeFrom := from
 	rangeTo := from
 	for rangeTo.Cmp(to) < 0 {
-		rangeTo = rangeFrom.Add(limit).Sub(bn.IntFromInt64(1))
+		rangeTo = rangeFrom.Add(limit).Sub(bn.Int(1))
 		if rangeTo.Cmp(to) > 0 {
 			rangeTo = to
 		}
-		ranges = append(ranges, [2]*bn.Int{rangeFrom, rangeTo})
-		rangeFrom = rangeTo.Add(bn.IntFromInt64(1))
+		ranges = append(ranges, [2]*bn.IntNumber{rangeFrom, rangeTo})
+		rangeFrom = rangeTo.Add(bn.Int(1))
 	}
 	return ranges
 }
