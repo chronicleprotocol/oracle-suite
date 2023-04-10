@@ -1,4 +1,4 @@
-# Gofer CLI Readme
+[# Gofer CLI Readme
 
 > As in a [tool](https://en.wikipedia.org/wiki/Gofer) that specializes in the delivery of special items.
 
@@ -53,20 +53,36 @@ gofer {
 }
 ```
 
-All price models must be defined under as `price_model` blocks where label is an asset pair name written as `XXX/YYY`,
-where `XXX` is the base asset name and `YYY` is the quote asset name. These symbols are case-insensitive.
+Each `price_model` and `source` block has two labels. The first label is an asset pair name written as `XXX/YYY`,
+where `XXX` is the base asset name and `YYY` is the quote asset name. These symbols are case-insensitive. The second
+label defines how the price should be calculated. Currently, the following price calculation methods are supported:
 
-Each `price_model` and `source` block have two labels. First label is an asset pair name written as `XXX/YYY`,
-where `XXX` is the base asset name and `YYY` is the quote asset name. These symbols are case-insensitive. Second label
-defines how price should be calculated. Currently, following price calculation methods are supported:
-
-- `origin` - returns price from the first source that provides it. It required one argument `origin` which is a name
-  of a provided from which price will be obtained.
-- `median` - calculates median price from sources. It requires at least one `source` block and one optional argument
-  `min_sources` which is a minimum number of sources that must provide price for it to be considered reliable.
-- `indirect` - calculates indirect price using two or more asset pairs. It requires at least one `source` block.
-  Price is calculated be calculating cross rate between asset pairs. For example, to calculate price of `BTC/USD` a
-  following list of sources can be used: `BTC/ETH`, `ETH/USD`.
+- `origin` - returns the price from the first source that provides it. It requires one argument, `origin`, which is the
+  name of the provider from which the price will be obtained.
+  ```hcl
+    source "ETH/USD" "origin" {
+      origin = "coinbasepro"
+    }
+  ```
+- `median` - calculates the median price from sources. It requires at least one `source` block and one optional
+  argument, `min_sources`, which is the minimum number of sources that must provide a price for it to be considered
+  reliable.
+  ```hcl
+    source "ETH/USD" "median" {
+      source "ETH/USD" "origin" { origin = "coinbasepro" }
+      source "ETH/USD" "origin" { origin = "kraken" }
+      min_sources = 2
+    }
+  ```
+- `indirect` - calculates the indirect price using two or more asset pairs. It requires at least one `source` block. The
+  price is calculated by determining the cross rate between asset pairs. For example, to calculate the price
+  of `BTC/USD`, the following list of sources can be used: `BTC/ETH`, `ETH/USD`.
+  ```hcl
+    source "BTC/USD" "indirect" {
+      source "BTC/ETH" "origin" { origin = "coinbasepro" }
+      source "ETH/USD" "origin" { origin = "coinbasepro" }
+    }
+  ```
 
 Supported origins:
 
@@ -98,11 +114,12 @@ Supported origins:
 - `uniswapV2` - [Uniswap V2](https://uniswap.org/)
 - `uniswapV3` - [Uniswap V3](https://uniswap.org/blog/uniswap-v3/)
 - `upbit` - [Upbit](https://upbit.com/)
+- `.` - Special origin that refers to other price models.
 
 ### Origins configuration
 
-Some origins might require additional configuration parameters like an API key. You can define these parameters in the
-`origins` section of the config file.
+Some origins might require additional configuration parameters, such as an API key. You can define these parameters in
+the origins section of the config file.
 
 ```hcl
 gofer {
@@ -115,12 +132,12 @@ gofer {
 }
 ```
 
-The block label is the name of the origin. This name is used in the `source` block to reference the origin. The `type`
-parameter defines the origin type. If label and type are the same, the default origin is replaced.
+The block label is the name of the origin. The type parameter defines the origin type. If the label and type are the
+same, the default origin is replaced.
 
-All origins accept the `symbol_aliases` parameter, which is a map of asset symbols to their aliases. This is useful
-when the origin uses different symbols than the ones used in the price model. For example, to treat `USDC` as `USD` in
-a price model, you can use the following configuration under the `origin` block:
+All origins accept the `symbol_aliases` parameter, which is a map of asset symbols to their aliases. This is useful when
+the origin uses different symbols than those used in the price model. For example, to treat `USDC` as `USD` in a price
+model, you can use the following configuration under the origin block:
 
 ```hcl
 symbol_aliases = {
@@ -168,16 +185,38 @@ gofer {
 }
 ```
 
-### Example configuration
+### Configuration reference
+
+_This configuration is only a reference and not ready for use. The recommended configuration can be found in
+the `config.hcl` file located in the root directory._
 
 ```hcl
+# List of files to include. The files are included in the order they are specified.
+# It supports glob patterns.
+include = [
+  "config/*.hcl"
+]
+
+# Custom variables. Accessible in the configuration under the `var` object, e.g. `var.feeds`.
+variables {
+  myvar = "foo"
+}
+
 gofer {
+  # RPC listen address for the Gofer agent. The address must be in the format `host:port`.
+  # Required only for "gofer agent" command.
+  rpc_listen_addr = "127.0.0.1:9101"
+
+  # RPC agent address for the Gofer agent to connect to. The address must be in the format `host:port`.
+  # Optional. If empty, Gofer use local price models instead of asking the agent.
+  rpc_agent_addr = "127.0.0.1:9101"
+  
   # Origin configuration. If label and type are the same, the default origin is replaced with the one defined here.
   origin "uniswapV3" {
     # Base origin type.
     type = "uniswapV3"
 
-    # List of origin parameters
+    # List of origin parameters. See the Origins configuration section for more details.
     params = {
       ethereum_client = "default"
       symbol_aliases  = {
@@ -202,7 +241,7 @@ gofer {
   price_model "ETH/USD" "median" {
     source "ETH/USD" "indirect" {
       source "ETH/BTC" "origin" { origin = "binance" }
-      source "BTC/USD" "origin" { origin = "." }
+      source "BTC/USD" "origin" { origin = "coinbasepro" }
     }
     source "ETH/USD" "origin" { origin = "bitstamp" }
     source "ETH/USD" "origin" { origin = "coinbasepro" }
@@ -229,15 +268,12 @@ ethereum {
   # It is possible to have multiple clients in the configuration.
   client "default" {
     # RPC URLs is a list of Ethereum RPC URLs to use for the client. Ethereum client uses RPC-Splitter which compares
-    # responses from multiple RPC URLs to verify that none of them are compromised. At least three URLs are recommended.
+    # responses from multiple RPC URLs to verify that none of them are compromised. At least three URLs are recommended
+    # in case of using a 3rd party RPC service.
     rpc_urls = ["https://eth.public-rpc.com"]
 
     # Chain ID of the Ethereum network.
     chain_id = 1
-
-    # Ethereum key to use for signing transactions.
-    # Optional. If not specified, the default key is used, the signing is done by the Ethereum node.
-    ethereum_key = "default"
   }
 }
 ```
@@ -444,3 +480,4 @@ the origins. If you want to temporarily disable this behavior you have to use th
 ## License
 
 [The GNU Affero General Public License](https://www.notion.so/LICENSE)
+]()

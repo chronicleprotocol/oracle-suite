@@ -28,15 +28,15 @@ make
 
 ## How it works
 
-Using third-party RPC providers is convenient, but for tasks that require a high level of security, it makes the
-security of the entire system dependent on that one RPC provider. The RPC Splitter helps to solve this problem.
+Using third-party RPC providers offers convenience, but when tasks demand high levels of security, the entire system's
+security becomes dependent on a single RPC provider. The RPC Splitter addresses this issue.
 
-The RPC Splitter works similarly to a proxy, but instead of forwarding the request to one server, it forwards it to
-multiple servers and compares the results against each other, thereby guaranteeing data integrity.
+The RPC Splitter functions similarly to a proxy; however, instead of directing the request to one server, it forwards it
+to multiple servers and compares the results, ensuring data integrity.
 
-Depending on the number of endpoints provided, the behavior of the RPC Splitter changes slightly. For one endpoint, the
-value will be forwarded as is. For two endpoints, both responses must be identical. For three or more, one response may
-be different.
+The behavior of the RPC Splitter varies depending on the number of provided endpoints. With one endpoint, the value is
+forwarded as is. For two endpoints, both responses must be identical. When there are three or more endpoints, one
+response may differ.
 
 ## Supported methods
 
@@ -60,13 +60,13 @@ be different.
 - `eth_chainId`
 - `net_version`
 
-If the method requires a block number, the `newest` and `pending` tags will be replaced with the latest block number
-using the same algorithm as the `eth_blockNumber` endpoint. The `earliest` tag is not supported.
+If the method requires a block number, the newest and pending tags will be replaced with the latest block number using
+the same algorithm as the eth_blockNumber endpoint. The earliest tag is not supported.
 
 ## CORS
 
-It is possible to enable simple CORS support to allow using RPC-Splitter with tools such as Metamask. When CORS is
-enabled, then the `Access-Control-Allow-Origin` header will always equal the `Origin` header from the request.
+It is possible to enable basic CORS support, which allows the use of RPC-Splitter with tools like Metamask. When CORS is
+enabled, the `Access-Control-Allow-Origin` header will always match the `Origin` header from the request.
 
 ## Commands
 

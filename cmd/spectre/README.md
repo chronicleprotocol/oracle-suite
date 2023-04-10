@@ -32,15 +32,23 @@ Spectre supports HCL configuration format.
 
 ### Configuration reference
 
+_This configuration is only a reference and not ready for use. The recommended configuration can be found in
+the `config.hcl` file located in the root directory._
+
 ```hcl
+# List of files to include. The files are included in the order they are specified.
+# It supports glob patterns.
+include = [
+  "config/*.hcl"
+]
+
+# Custom variables. Accessible in the configuration under the `var` object, e.g. `var.feeds`.
 variables {
-  # Custom variables. Accessible in the configuration under the `var` object, e.g. `var.feeds`.
   feeds = [
     "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4",
     "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
   ]
 }
-
 spectre {
   # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
   interval = 60
@@ -87,7 +95,8 @@ ethereum {
   # It is possible to have multiple clients in the configuration.
   client "default" {
     # RPC URLs is a list of Ethereum RPC URLs to use for the client. Ethereum client uses RPC-Splitter which compares
-    # responses from multiple RPC URLs to verify that none of them are compromised. At least three URLs are recommended.
+    # responses from multiple RPC URLs to verify that none of them are compromised. At least three URLs are recommended
+    # in case of using a 3rd party RPC service.
     rpc_urls = ["https://eth.public-rpc.com"]
 
     # Chain ID of the Ethereum network.

@@ -189,6 +189,9 @@ ghost {
 }
 
 gofer {
+  rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "")
+  rpc_agent_addr = try(env.CFG_GOFER_RPC_ADDR, "")
+
   origin "balancerV2" {
     type   = "balancerV2"
     params = {

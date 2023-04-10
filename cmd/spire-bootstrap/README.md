@@ -32,7 +32,21 @@ flag. Spire-Bootstrap supports HCL configuration format.
 
 ### Configuration reference
 
+_This configuration is only a reference and not ready for use. The recommended configuration can be found in
+the `config.hcl` file located in the root directory._
+
 ```hcl
+# List of files to include. The files are included in the order they are specified.
+# It supports glob patterns.
+include = [
+  "config/*.hcl"
+]
+
+# Custom variables. Accessible in the configuration under the `var` object, e.g. `var.feeds`.
+variables {
+  myvar = "foo"
+}
+
 # Configuration for the transport layer.
 transport {
   # Configuration for the LibP2P transport. LibP2P transport uses peer-to-peer communication.
