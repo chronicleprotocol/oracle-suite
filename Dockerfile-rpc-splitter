@@ -11,5 +11,6 @@ FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
 WORKDIR /root
 COPY --from=builder /go/src/rpc-splitter/dist/ /usr/local/bin/
+COPY ./config.hcl ./config.hcl
 EXPOSE 9989
 ENTRYPOINT ["/usr/local/bin/rpc-splitter"]
