@@ -1,6 +1,6 @@
 variables {
   # List of feeds that are allowed to send price updates and event attestations.
-  feeds = try(split(env.CFG_FEEDS, ","), [
+  feeds = try(split(",",  env.CFG_FEEDS), [
     "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
     "0x4b0E327C08e23dD08cb87Ec994915a5375619aa2",
     "0x75ef8432566A79C86BBF207A47df3963B8Cf0753",
@@ -44,19 +44,19 @@ ethereum {
   }
 
   client "default" {
-    rpc_urls     = try(split(env.CFG_ETH_RPC_URLS, ","), ["https://eth.public-rpc.com"])
+    rpc_urls     = try(split(",", env.CFG_ETH_RPC_URLS), ["https://eth.public-rpc.com"])
     chain_id     = try(parseint(env.CFG_ETH_CHAIN_ID, 10), 1)
     ethereum_key = "default"
   }
 
   client "arbitrum" {
-    rpc_urls     = try(split(env.CFG_ETH_ARB_RPC_URLS, ","), ["https://arbitrum.public-rpc.com"])
+    rpc_urls     = try(split(",", env.CFG_ETH_ARB_RPC_URLS), ["https://arbitrum.public-rpc.com"])
     chain_id     = try(parseint(env.CFG_ETH_ARB_CHAIN_ID, 10), 42161)
     ethereum_key = "default"
   }
 
   client "optimism" {
-    rpc_urls     = try(split(env.CFG_ETH_OPT_RPC_URLS, ","), ["https://mainnet.optimism.io"])
+    rpc_urls     = try(split(",", env.CFG_ETH_OPT_RPC_URLS), ["https://mainnet.optimism.io"])
     chain_id     = try(parseint(env.CFG_ETH_OPT_CHAIN_ID, 10), 10)
     ethereum_key = "default"
   }
@@ -67,13 +67,13 @@ transport {
   libp2p {
     feeds           = var.feeds
     priv_key_seed   = try(env.CFG_LIBP2P_PK_SEED, "")
-    listen_addrs    = try(split(env.CFG_LIBP2P_LISTEN_ADDRS, ","), ["/ip4/0.0.0.0/tcp/8000"])
-    bootstrap_addrs = try(split(env.CFG_LIBP2P_BOOTSTRAP_ADDRS, ","), [
+    listen_addrs    = try(split(",", env.CFG_LIBP2P_LISTEN_ADDRS), ["/ip4/0.0.0.0/tcp/8000"])
+    bootstrap_addrs = try(split(",", env.CFG_LIBP2P_BOOTSTRAP_ADDRS), [
       "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
       "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
     ])
-    direct_peers_addrs = try(split(env.CFG_LIBP2P_DIRECT_PEERS_ADDRS, ","), [])
-    blocked_addrs      = try(split(env.CFG_LIBP2P_BLOCKED_ADDRS, ","), [])
+    direct_peers_addrs = try(split(",", env.CFG_LIBP2P_DIRECT_PEERS_ADDRS), [])
+    blocked_addrs      = try(split(",", env.CFG_LIBP2P_BLOCKED_ADDRS), [])
     disable_discovery  = try(env.CFG_LIBP2P_DISABLE_DISCOVERY, "false") == "true"
     ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
   }
@@ -99,7 +99,7 @@ transport {
       dynamic "static_address_book" {
         for_each = try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "") == "" ? [] : [1]
         content {
-          addresses = try(split(env.CFG_WEBAPI_STATIC_ADDR_BOOK, ","), "")
+          addresses = try(split(",", env.CFG_WEBAPI_STATIC_ADDR_BOOK), "")
         }
       }
     }
@@ -111,7 +111,7 @@ spire {
   rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
-  pairs = try(split(env.CFG_SPIRE_PAIRS, ","), [
+  pairs = try(split(",", env.CFG_SPIRE_PAIRS), [
     "AAVEUSD",
     "AVAXUSD",
     "BALUSD",
@@ -151,7 +151,7 @@ spire {
 ghost {
   ethereum_key = "default"
   interval     = try(parseint(env.CFG_GHOST_INTERVAL, 10), 60)
-  pairs        = try(split(env.CFG_GHOST_PAIRS, ","), [
+  pairs        = try(split(",", env.CFG_GHOST_PAIRS), [
     "AAVE/USD",
     "AVAX/USD",
     "BAL/USD",
@@ -640,7 +640,7 @@ lair {
       tls_root_ca_file         = try(env.CFG_LAIR_REDIS_TLS_ROOT_CA_FILE, "")
       tls_insecure_skip_verify = try(env.CFG_LAIR_REDIS_TLS_INSECURE == "true", false)
       cluster                  = try(env.CFG_LAIR_REDIS_CLUSTER == "true", false)
-      cluster_addrs            = try(split(env.CFG_LAIR_REDIS_CLUSTER_ADDRS, ","), [])
+      cluster_addrs            = try(split(",", env.CFG_LAIR_REDIS_CLUSTER_ADDRS), [])
     }
   }
 }
