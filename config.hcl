@@ -1,6 +1,6 @@
 variables {
   # List of feeds that are allowed to send price updates and event attestations.
-  feeds = [
+  feeds = try(split(env.CFG_FEEDS, ","), [
     "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
     "0x4b0E327C08e23dD08cb87Ec994915a5375619aa2",
     "0x75ef8432566A79C86BBF207A47df3963B8Cf0753",
@@ -27,7 +27,7 @@ variables {
     "0x4f95d9B4D842B2E2B1d1AC3f2Cf548B93Fd77c67",
     "0xaC8519b3495d8A3E3E44c041521cF7aC3f8F63B3",
     "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42"
-  ]
+  ])
 }
 
 ethereum {
@@ -111,7 +111,7 @@ spire {
   rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
-  pairs = [
+  pairs = try(split(env.CFG_SPIRE_PAIRS, ","), [
     "AAVEUSD",
     "AVAXUSD",
     "BALUSD",
@@ -145,13 +145,13 @@ spire {
     "STETHUSD",
     "WSTETHUSD",
     "MATICUSD"
-  ]
+  ])
 }
 
 ghost {
   ethereum_key = "default"
-  interval     = 60
-  pairs        = [
+  interval     = try(parseint(env.CFG_GHOST_INTERVAL, 10), 60)
+  pairs        = try(split(env.CFG_GHOST_PAIRS, ","), [
     "AAVE/USD",
     "AVAX/USD",
     "BAL/USD",
@@ -185,12 +185,12 @@ ghost {
     "STETH/USD",
     "WSTETH/USD",
     "MATIC/USD"
-  ]
+  ])
 }
 
 gofer {
   rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "")
-  rpc_agent_addr = try(env.CFG_GOFER_RPC_ADDR, "")
+  rpc_agent_addr  = try(env.CFG_GOFER_RPC_ADDR, "")
 
   origin "balancerV2" {
     type   = "balancerV2"
@@ -327,7 +327,6 @@ gofer {
       }
     }
   }
-
 
   price_model "BTC/USD" "median" {
     source "BTC/USD" "origin" { origin = "binance_us" }
