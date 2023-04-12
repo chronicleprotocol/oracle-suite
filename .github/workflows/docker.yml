@@ -8,6 +8,10 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
       - v[0-9]+.[0-9]+.[0-9]+-[a-z]+.[0-9]+
 
+  pull_request:
+    branches:
+      - 'master'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +27,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker Gofer metadata
         id: metagofer
         uses: docker/metadata-action@v3
@@ -33,6 +38,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker Spire metadata
         id: metaspire
         uses: docker/metadata-action@v3
@@ -43,6 +49,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker Ghost metadata
         id: metaghost
         uses: docker/metadata-action@v3
@@ -53,6 +60,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker Spectre metadata
         id: metaspectre
         uses: docker/metadata-action@v3
@@ -63,6 +71,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker Leeloo metadata
         id: metaleeloo
         uses: docker/metadata-action@v3
@@ -73,6 +82,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker Lair metadata
         id: metalair
         uses: docker/metadata-action@v3
@@ -83,6 +93,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Docker RPC Splitter metadata
         id: metarpcsplitter
         uses: docker/metadata-action@v3
@@ -93,6 +104,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
