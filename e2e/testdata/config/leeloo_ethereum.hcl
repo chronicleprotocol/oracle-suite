@@ -36,6 +36,6 @@ leeloo {
     prefetch_period     = 10
     block_confirmations = 0
     block_limit         = 1000
-    replay_after        = [try(parseint(env.REPLAY_AFTER, 10), 10)]
+    replay_after        = [try(tonumber(env.REPLAY_AFTER), 10)]
   }
 }

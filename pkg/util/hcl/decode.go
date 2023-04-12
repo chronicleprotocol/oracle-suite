@@ -356,7 +356,7 @@ func decodeAttribute(ctx *hcl.EvalContext, attr *hcl.Attribute, val reflect.Valu
 		return hcl.Diagnostics{{
 			Severity: hcl.DiagError,
 			Summary:  "Decode error",
-			Detail:   fmt.Sprintf("Cannot decode %q attribute into %s: %s", attr.Name, val.Type(), err),
+			Detail:   err.Error(),
 			Subject:  &attr.Range,
 		}}
 	}
@@ -703,7 +703,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 	// create an auxiliary variable based on the cty.Value type, and we use
 	// that variable as the destination.
 	if dst == anyTy {
-		return func(m *anymapper.Mapper, src, dst reflect.Value) error {
+		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 			typ := src.Interface().(cty.Value).Type()
 			switch {
 			case typ == cty.String:
@@ -747,7 +747,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 
 	// cty.Value -> cty.Value
 	if dst == ctyValTy {
-		return func(m *anymapper.Mapper, src, dst reflect.Value) error {
+		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 			dst.Set(src)
 			return nil
 		}
@@ -755,7 +755,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 
 	// cty.Value -> big.Int
 	if dst == bigIntTy {
-		return func(m *anymapper.Mapper, src, dst reflect.Value) error {
+		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 			val := src.Interface().(cty.Value)
 			if val.Type() != cty.Number {
 				return fmt.Errorf("cannot decode %s into big.Int", val.Type().FriendlyName())
@@ -771,7 +771,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 
 	// cty.Value -> big.Float
 	if dst == bigFloatTy {
-		return func(m *anymapper.Mapper, src, dst reflect.Value) error {
+		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 			val := src.Interface().(cty.Value)
 			if val.Type() != cty.Number {
 				return fmt.Errorf("cannot decode %s into big.Float", val.Type().FriendlyName())
@@ -790,7 +790,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 	// cty.Value -> float*
 	// cty.Value -> slice
 	// cty.Value -> map
-	return func(m *anymapper.Mapper, src, dst reflect.Value) error {
+	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 		ctyVal := src.Interface().(cty.Value)
 
 		// Try to use unmarshaler interfaces.
@@ -807,45 +807,90 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 		switch dst.Kind() {
 		case reflect.String:
 			if ctyVal.Type() != cty.String {
-				return fmt.Errorf("cannot decode %s type into a string type", ctyVal.Type().FriendlyName())
+				return fmt.Errorf(
+					"cannot decode %s type into a string",
+					ctyVal.Type().FriendlyName(),
+				)
 			}
 			dst.SetString(ctyVal.AsString())
 		case reflect.Bool:
 			if ctyVal.Type() != cty.Bool {
-				return fmt.Errorf("cannot decode %s type into a bool type", ctyVal.Type().FriendlyName())
+				return fmt.Errorf(
+					"cannot decode %s type into a bool",
+					ctyVal.Type().FriendlyName(),
+				)
 			}
 			dst.SetBool(ctyVal.True())
-
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			if ctyVal.Type() != cty.Number {
-				return fmt.Errorf("cannot decode %s type into a %s type", ctyVal.Type().FriendlyName(), dst.Kind())
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type",
+					ctyVal.Type().FriendlyName(), dst.Kind(),
+				)
+			}
+			if !ctyVal.AsBigFloat().IsInt() {
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type: not an integer",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
 			}
 			i64, acc := ctyVal.AsBigFloat().Int64()
 			if acc != big.Exact {
-				return fmt.Errorf("cannot decode %s type into a %s type", ctyVal.Type().FriendlyName(), dst.Kind())
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type: too large",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
 			}
-			dst.SetInt(i64)
+			return m.MapRefl(reflect.ValueOf(i64), dst)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			if ctyVal.Type() != cty.Number {
-				return fmt.Errorf("cannot decode %s type into a %s type", ctyVal.Type().FriendlyName(), dst.Kind())
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
+			}
+			if !ctyVal.AsBigFloat().IsInt() {
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type: not an integer",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
 			}
 			u64, acc := ctyVal.AsBigFloat().Uint64()
 			if acc != big.Exact {
-				return fmt.Errorf("cannot decode %s type into a %s type", ctyVal.Type().FriendlyName(), dst.Kind())
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type: too large",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
 			}
-			dst.SetUint(u64)
+			return m.MapRefl(reflect.ValueOf(u64), dst)
 		case reflect.Float32, reflect.Float64:
 			if ctyVal.Type() != cty.Number {
-				return fmt.Errorf("cannot decode %s type into a %s type", ctyVal.Type().FriendlyName(), dst.Kind())
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
 			}
 			f64, acc := ctyVal.AsBigFloat().Float64()
 			if acc != big.Exact {
-				return fmt.Errorf("cannot decode %s type into a %s type", ctyVal.Type().FriendlyName(), dst.Kind())
+				return fmt.Errorf(
+					"cannot decode %s type into a %s type: too large",
+					ctyVal.Type().FriendlyName(),
+					dst.Kind(),
+				)
 			}
-			dst.SetFloat(f64)
+			return m.MapRefl(reflect.ValueOf(f64), dst)
 		case reflect.Slice:
 			if !ctyVal.Type().IsListType() && !ctyVal.Type().IsSetType() && !ctyVal.Type().IsTupleType() {
-				return fmt.Errorf("cannot decode %s type into a slice type", ctyVal.Type().FriendlyName())
+				return fmt.Errorf(
+					"cannot decode %s type into a slice",
+					ctyVal.Type().FriendlyName(),
+				)
 			}
 			dstSlice := reflect.MakeSlice(dst.Type(), 0, ctyVal.LengthInt())
 			for it := ctyVal.ElementIterator(); it.Next(); {
@@ -859,7 +904,10 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 			dst.Set(dstSlice)
 		case reflect.Map:
 			if !ctyVal.Type().IsMapType() && !ctyVal.Type().IsObjectType() {
-				return fmt.Errorf("cannot decode %s type into a map type", ctyVal.Type().FriendlyName())
+				return fmt.Errorf(
+					"cannot decode %s type into a map",
+					ctyVal.Type().FriendlyName(),
+				)
 			}
 			dstMap := reflect.MakeMap(dst.Type())
 			for it := ctyVal.ElementIterator(); it.Next(); {
@@ -884,6 +932,5 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 
 func init() {
 	mapper = anymapper.New()
-	mapper.StrictTypes = true
 	mapper.Mappers[ctyValTy] = ctyMapper
 }

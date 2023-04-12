@@ -1,6 +1,6 @@
 variables {
   # List of feeds that are allowed to send price updates and event attestations.
-  feeds = try(split(",",  env.CFG_FEEDS), [
+  feeds = try(env.CFG_FEEDS == "" ? [] : split(",", env.CFG_FEEDS), [
     "0xDA1d2961Da837891f43235FddF66BAD26f41368b",
     "0x4b0E327C08e23dD08cb87Ec994915a5375619aa2",
     "0x75ef8432566A79C86BBF207A47df3963B8Cf0753",
@@ -44,20 +44,20 @@ ethereum {
   }
 
   client "default" {
-    rpc_urls     = try(split(",", env.CFG_ETH_RPC_URLS), ["https://eth.public-rpc.com"])
-    chain_id     = try(parseint(env.CFG_ETH_CHAIN_ID, 10), 1)
+    rpc_urls     = try(env.CFG_ETH_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_RPC_URLS), ["https://eth.public-rpc.com"])
+    chain_id     = tonumber(try(env.CFG_ETH_CHAIN_ID, "1"))
     ethereum_key = "default"
   }
 
   client "arbitrum" {
-    rpc_urls     = try(split(",", env.CFG_ETH_ARB_RPC_URLS), ["https://arbitrum.public-rpc.com"])
-    chain_id     = try(parseint(env.CFG_ETH_ARB_CHAIN_ID, 10), 42161)
+    rpc_urls     = try(env.CFG_ETH_ARB_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_ARB_RPC_URLS), ["https://arbitrum.public-rpc.com"])
+    chain_id     = tonumber(try(env.CFG_ETH_ARB_CHAIN_ID, "42161"))
     ethereum_key = "default"
   }
 
   client "optimism" {
-    rpc_urls     = try(split(",", env.CFG_ETH_OPT_RPC_URLS), ["https://mainnet.optimism.io"])
-    chain_id     = try(parseint(env.CFG_ETH_OPT_CHAIN_ID, 10), 10)
+    rpc_urls     = try(env.CFG_ETH_OPT_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_OPT_RPC_URLS), ["https://mainnet.optimism.io"])
+    chain_id     = tonumber(try(env.CFG_ETH_OPT_CHAIN_ID, "10"))
     ethereum_key = "default"
   }
 }
@@ -68,13 +68,13 @@ transport {
     feeds           = var.feeds
     priv_key_seed   = try(env.CFG_LIBP2P_PK_SEED, "")
     listen_addrs    = try(split(",", env.CFG_LIBP2P_LISTEN_ADDRS), ["/ip4/0.0.0.0/tcp/8000"])
-    bootstrap_addrs = try(split(",", env.CFG_LIBP2P_BOOTSTRAP_ADDRS), [
+    bootstrap_addrs = try(env.CFG_LIBP2P_BOOTSTRAP_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_BOOTSTRAP_ADDRS), [
       "/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
       "/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR"
     ])
-    direct_peers_addrs = try(split(",", env.CFG_LIBP2P_DIRECT_PEERS_ADDRS), [])
-    blocked_addrs      = try(split(",", env.CFG_LIBP2P_BLOCKED_ADDRS), [])
-    disable_discovery  = try(env.CFG_LIBP2P_DISABLE_DISCOVERY, "false") == "true"
+    direct_peers_addrs = try(env.CFG_LIBP2P_DIRECT_PEERS_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_DIRECT_PEERS_ADDRS), [])
+    blocked_addrs      = try(env.CFG_LIBP2P_BLOCKED_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_BLOCKED_ADDRS), [])
+    disable_discovery  = tobool(try(env.CFG_LIBP2P_DISABLE_DISCOVERY, false))
     ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
   }
 
@@ -111,7 +111,7 @@ spire {
   rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
-  pairs = try(split(",", env.CFG_SPIRE_PAIRS), [
+  pairs = try(env.CFG_SPIRE_PAIRS == "" ? [] : split(",", env.CFG_SPIRE_PAIRS), [
     "AAVEUSD",
     "AVAXUSD",
     "BALUSD",
@@ -150,8 +150,8 @@ spire {
 
 ghost {
   ethereum_key = "default"
-  interval     = try(parseint(env.CFG_GHOST_INTERVAL, 10), 60)
-  pairs        = try(split(",", env.CFG_GHOST_PAIRS), [
+  interval     = try(tonumber(env.CFG_GHOST_INTERVAL, 60))
+  pairs        = try(env.CFG_GHOST_PAIRS == "" ? [] : split(",", env.CFG_GHOST_PAIRS), [
     "AAVE/USD",
     "AVAX/USD",
     "BAL/USD",
@@ -568,10 +568,10 @@ leeloo {
     for_each = try(env.CFG_TELEPORT_EVM_ARB_CONTRACT_ADDRS, "") == "" ? [] : [1]
     content {
       ethereum_client     = "arbitrum"
-      interval            = try(parseint(env.CFG_TELEPORT_EVM_ARB_INTERVAL, 10), 60)
-      prefetch_period     = try(parseint(env.CFG_TELEPORT_EVM_ARB_PREFETCH_PERIOD, 10), 3600 * 24 * 7)
-      block_confirmations = try(parseint(env.CFG_TELEPORT_EVM_ARB_BLOCK_CONFIRMATIONS, 10), 0)
-      block_limit         = try(parseint(env.CFG_TELEPORT_EVM_ARB_BLOCK_LIMIT, 10), 1000)
+      interval            = tonumber(try(env.CFG_TELEPORT_EVM_ARB_INTERVAL, 60))
+      prefetch_period     = tonumber(try(env.CFG_TELEPORT_EVM_ARB_PREFETCH_PERIOD, 3600 * 24 * 7))
+      block_confirmations = tonumber(try(env.CFG_TELEPORT_EVM_ARB_BLOCK_CONFIRMATIONS, 0))
+      block_limit         = tonumber(try(env.CFG_TELEPORT_EVM_ARB_BLOCK_LIMIT, 1000))
       replay_after        = concat(
         [60, 300, 3600, 3600*2, 3600*4],
         [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i]
@@ -586,10 +586,10 @@ leeloo {
     for_each = try(env.CFG_TELEPORT_EVM_OPT_CONTRACT_ADDRS, "") == "" ? [] : [1]
     content {
       ethereum_client     = "optimism"
-      interval            = try(parseint(env.CFG_TELEPORT_EVM_OPT_INTERVAL, 10), 60)
-      prefetch_period     = try(parseint(env.CFG_TELEPORT_EVM_OPT_PREFETCH_PERIOD, 10), 3600 * 24 * 7)
-      block_confirmations = try(parseint(env.CFG_TELEPORT_EVM_OPT_BLOCK_CONFIRMATIONS, 10), 0)
-      block_limit         = try(parseint(env.CFG_TELEPORT_EVM_OPT_BLOCK_LIMIT, 10), 1000)
+      interval            = tonumber(try(env.CFG_TELEPORT_EVM_OPT_INTERVAL, 60))
+      prefetch_period     = tonumber(try(env.CFG_TELEPORT_EVM_OPT_PREFETCH_PERIOD, 3600 * 24 * 7))
+      block_confirmations = tonumber(try(env.CFG_TELEPORT_EVM_OPT_BLOCK_CONFIRMATIONS, 0))
+      block_limit         = tonumber(try(env.CFG_TELEPORT_EVM_OPT_BLOCK_LIMIT, 1000))
       replay_after        = concat(
         [60, 300, 3600, 3600*2, 3600*4],
         [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i]
@@ -604,8 +604,8 @@ leeloo {
     for_each = try(env.CFG_TELEPORT_STARKNET_CONTRACT_ADDRS, "") == "" ? [] : [1]
     content {
       sequencer       = try(env.CFG_TELEPORT_STARKNET_SEQUENCER, "https://alpha-mainnet.starknet.io")
-      interval        = try(parseint(env.CFG_TELEPORT_STARKNET_INTERVAL, 10), 60)
-      prefetch_period = try(parseint(env.CFG_TELEPORT_STARKNET_PREFETCH_PERIOD, 10), 3600 * 24 * 7)
+      interval        = tonumber(try(env.CFG_TELEPORT_STARKNET_INTERVAL, 60))
+      prefetch_period = tonumber(try(env.CFG_TELEPORT_STARKNET_PREFETCH_PERIOD, 3600 * 24 * 7))
       replay_after    = concat(
         [60, 300, 3600, 3600*2, 3600*4],
         [for i in range(3600 * 6, 3600 * 24 * 7, 3600 * 6) :i]
@@ -631,16 +631,16 @@ lair {
       addr                     = try(env.CFG_LAIR_REDIS_ADDR, "127.0.0.1:6379")
       user                     = try(env.CFG_LAIR_REDIS_USER, "")
       pass                     = try(env.CFG_LAIR_REDIS_PASS, "")
-      db                       = try(parseint(env.CFG_LAIR_REDIS_DB, 10), 0)
-      memory_limit             = try(parseint(env.CFG_LAIR_REDIS_MEMORY_LIMIT, 10), 0)
-      tls                      = try(env.CFG_LAIR_REDIS_TLS == "true", false)
+      db                       = tonumber(try(env.CFG_LAIR_REDIS_DB, 0))
+      memory_limit             = tonumber(try(env.CFG_LAIR_REDIS_MEMORY_LIMIT, 0))
+      tls                      = tobool(try(env.CFG_LAIR_REDIS_TLS, false))
       tls_server_name          = try(env.CFG_LAIR_REDIS_TLS_SERVER_NAME, "")
       tls_cert_file            = try(env.CFG_LAIR_REDIS_TLS_CERT_FILE, "")
       tls_key_file             = try(env.CFG_LAIR_REDIS_TLS_KEY_FILE, "")
       tls_root_ca_file         = try(env.CFG_LAIR_REDIS_TLS_ROOT_CA_FILE, "")
-      tls_insecure_skip_verify = try(env.CFG_LAIR_REDIS_TLS_INSECURE == "true", false)
-      cluster                  = try(env.CFG_LAIR_REDIS_CLUSTER == "true", false)
-      cluster_addrs            = try(split(",", env.CFG_LAIR_REDIS_CLUSTER_ADDRS), [])
+      tls_insecure_skip_verify = tobool(try(env.CFG_LAIR_REDIS_TLS_INSECURE, false))
+      cluster                  = tobool(try(env.CFG_LAIR_REDIS_CLUSTER, false))
+      cluster_addrs            = try(env.CFG_LAIR_REDIS_CLUSTER_ADDRS == "" ? [] : split(",", env.CFG_LAIR_REDIS_CLUSTER_ADDRS), [])
     }
   }
 }
