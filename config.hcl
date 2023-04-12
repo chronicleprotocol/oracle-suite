@@ -107,7 +107,7 @@ transport {
 }
 
 spire {
-  rpc_listen_addr = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
+  rpc_listen_addr = try(env.CFG_SPIRE_RPC_ADDR, "0.0.0.0:9100")
   rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
@@ -189,8 +189,8 @@ ghost {
 }
 
 gofer {
-  rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "")
-  rpc_agent_addr  = try(env.CFG_GOFER_RPC_ADDR, "")
+  rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "0.0.0.0:9200")
+  rpc_agent_addr = try(env.CFG_GOFER_RPC_ADDR, "127.0.0.1:9200")
 
   origin "balancerV2" {
     type   = "balancerV2"
