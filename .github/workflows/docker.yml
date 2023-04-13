@@ -6,103 +6,59 @@ on:
   push:
     tags:
       - v[0-9]+.[0-9]+.[0-9]+
-      - v[0-9]+.[0-9]+.[0-9]+-[a-z]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
+      
     branches:
-      - 'master'
+      - master
+      - main
+      - feat/parallelise-builds
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dockerfile: ./Dockerfile
+            image: ghcr.io/chronicleprotocol/oracle-suite
+          - dockerfile: ./Dockerfile-gofer
+            image: ghcr.io/chronicleprotocol/gofer
+          - dockerfile: ./Dockerfile-ghost
+            image: ghcr.io/chronicleprotocol/ghost
+          - dockerfile: ./Dockerfile-lair
+            image: ghcr.io/chronicleprotocol/lair
+          - dockerfile: ./Dockerfile-leeloo
+            image: ghcr.io/chronicleprotocol/leeloo
+          - dockerfile: ./Dockerfile-rpc-splitter
+            image: ghcr.io/chronicleprotocol/rpc-splitter
+          - dockerfile: ./Dockerfile-spectre
+            image: ghcr.io/chronicleprotocol/spectre
+          - dockerfile: ./Dockerfile-spire
+            image: ghcr.io/chronicleprotocol/spire
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - uses: actions/checkout@v2.3.5
-      - name: Docker Oracle-suite full metadata
-        id: metaoraclesuite
+
+      - name: Login to Github Packages
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Docker metadata (tags, labels, etc)
+        id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/chronicleprotocol/oracle-suite
+          images: ${{ matrix.dockerfile }}
           tags: |
             type=raw,value=latest
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha
-      - name: Docker Gofer metadata
-        id: metagofer
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/gofer
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      - name: Docker Spire metadata
-        id: metaspire
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/spire
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      - name: Docker Ghost metadata
-        id: metaghost
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/ghost
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      - name: Docker Spectre metadata
-        id: metaspectre
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/spectre
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      - name: Docker Leeloo metadata
-        id: metaleeloo
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/leeloo
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      - name: Docker Lair metadata
-        id: metalair
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/lair
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-      - name: Docker RPC Splitter metadata
-        id: metarpcsplitter
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/chronicleprotocol/rpc-splitter
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
@@ -115,105 +71,14 @@ jobs:
         with:
           install: true
 
-      - name: Login to Github Packages
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker image with all binaries
+      - name: Docker build and Push images
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./Dockerfile
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metaoraclesuite.outputs.tags }}
-          labels: ${{ steps.metaoraclesuite.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker image for Gofer
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-gofer
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metagofer.outputs.tags }}
-          labels: ${{ steps.metagofer.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker image for Spire
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-spire
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metaspire.outputs.tags }}
-          labels: ${{ steps.metaspire.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          
-      - name: Docker image for Ghost
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-ghost
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metaghost.outputs.tags }}
-          labels: ${{ steps.metaghost.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker image for Spectre
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-spectre
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metaspectre.outputs.tags }}
-          labels: ${{ steps.metaspectre.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker image for LeeLoo
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-leeloo
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metaleeloo.outputs.tags }}
-          labels: ${{ steps.metaleeloo.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker image for Lair
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-lair
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metalair.outputs.tags }}
-          labels: ${{ steps.metalair.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker image for RPC Splitter
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile-rpc-splitter
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.metarpcsplitter.outputs.tags }}
-          labels: ${{ steps.metarpcsplitter.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
