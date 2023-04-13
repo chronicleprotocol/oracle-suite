@@ -61,6 +61,9 @@ func TestEventAPI(t *testing.T) {
 		require.NoError(t, <-api.Wait())
 	}()
 
+	// Wait for services to start.
+	time.Sleep(time.Millisecond * 100)
+
 	require.NoError(t, loc.Broadcast(messages.EventV1MessageName, &messages.Event{
 		Type:        "event1",
 		ID:          []byte("id1"),
@@ -98,7 +101,8 @@ func TestEventAPI(t *testing.T) {
 		Signatures:  map[string]messages.EventSignature{"sig_key": {Signer: []byte("val"), Signature: []byte("val")}},
 	}))
 
-	time.Sleep(time.Second)
+	// Wait for events to be processed.
+	time.Sleep(time.Millisecond * 100)
 
 	// Test idx1 without 0x prefix:
 	res, err := http.Get(fmt.Sprintf("http://%s?type=event1&index=%x", api.srv.Addr().String(), "idx1"))
