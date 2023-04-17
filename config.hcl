@@ -44,19 +44,25 @@ ethereum {
   }
 
   client "default" {
-    rpc_urls     = try(env.CFG_ETH_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_RPC_URLS), ["https://eth.public-rpc.com"])
+    rpc_urls     = try(env.CFG_ETH_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_RPC_URLS), [
+      "https://eth.public-rpc.com"
+    ])
     chain_id     = tonumber(try(env.CFG_ETH_CHAIN_ID, "1"))
     ethereum_key = "default"
   }
 
   client "arbitrum" {
-    rpc_urls     = try(env.CFG_ETH_ARB_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_ARB_RPC_URLS), ["https://arbitrum.public-rpc.com"])
+    rpc_urls     = try(env.CFG_ETH_ARB_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_ARB_RPC_URLS), [
+      "https://arbitrum.public-rpc.com"
+    ])
     chain_id     = tonumber(try(env.CFG_ETH_ARB_CHAIN_ID, "42161"))
     ethereum_key = "default"
   }
 
   client "optimism" {
-    rpc_urls     = try(env.CFG_ETH_OPT_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_OPT_RPC_URLS), ["https://mainnet.optimism.io"])
+    rpc_urls     = try(env.CFG_ETH_OPT_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_OPT_RPC_URLS), [
+      "https://mainnet.optimism.io"
+    ])
     chain_id     = tonumber(try(env.CFG_ETH_OPT_CHAIN_ID, "10"))
     ethereum_key = "default"
   }
@@ -85,6 +91,7 @@ transport {
       feeds             = var.feeds
       listen_addr       = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0.8080")
       socks5_proxy_addr = try(env.CFG_WEBAPI_SOCKS5_PROXY_ADDR, "127.0.0.1:9050")
+      ethereum_key      = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
 
       # Ethereum based address book. Enabled if CFG_WEBAPI_ETH_ADDR_BOOK is set to a contract address.
       dynamic "ethereum_address_book" {
@@ -190,7 +197,7 @@ ghost {
 
 gofer {
   rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "0.0.0.0:9200")
-  rpc_agent_addr = try(env.CFG_GOFER_RPC_ADDR, "127.0.0.1:9200")
+  rpc_agent_addr  = try(env.CFG_GOFER_RPC_ADDR, "127.0.0.1:9200")
 
   origin "balancerV2" {
     type   = "balancerV2"
