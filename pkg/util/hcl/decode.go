@@ -72,6 +72,11 @@ func Decode(ctx *hcl.EvalContext, body hcl.Body, val any) hcl.Diagnostics {
 	return decodeSingleBlock(ctx, &hcl.Block{Body: body}, reflect.ValueOf(val))
 }
 
+// DecodeBlock decodes the given HCL block into the given value.
+func DecodeBlock(ctx *hcl.EvalContext, block *hcl.Block, val any) hcl.Diagnostics {
+	return decodeSingleBlock(ctx, block, reflect.ValueOf(val))
+}
+
 // DecodeExpression decodes the given HCL expression into the given value.
 func DecodeExpression(ctx *hcl.EvalContext, expr hcl.Expression, val any) hcl.Diagnostics {
 	ctyVal, diags := expr.Value(ctx)
@@ -93,36 +98,17 @@ func DecodeExpression(ctx *hcl.EvalContext, expr hcl.Expression, val any) hcl.Di
 //
 //nolint:funlen,gocyclo
 func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Value) hcl.Diagnostics {
-	if ptrVal.Kind() != reflect.Ptr {
-		return hcl.Diagnostics{{
-			Severity: hcl.DiagError,
-			Summary:  "Decode error",
-			Detail:   "Value must be a pointer to a struct",
-			Subject:  &block.DefRange,
-		}}
-	}
-	if ptrVal.IsNil() {
-		if !ptrVal.CanAddr() {
-			return hcl.Diagnostics{{
-				Severity: hcl.DiagError,
-				Summary:  "Decode error",
-				Detail:   "Value must be addressable",
-				Subject:  &block.DefRange,
-			}}
-		}
-		ptrVal.Set(reflect.New(ptrVal.Type().Elem()))
-	}
-	if ptrVal.Elem().Kind() != reflect.Struct {
-		return hcl.Diagnostics{{
-			Severity: hcl.DiagError,
-			Summary:  "Decode error",
-			Detail:   "Value must be a pointer to a struct",
-			Subject:  &block.DefRange,
-		}}
-	}
-
 	// Dereference the pointer to get the struct value.
-	val := ptrVal.Elem()
+	val := derefValue(ptrVal)
+
+	if !val.CanSet() || val.Kind() != reflect.Struct {
+		return hcl.Diagnostics{{
+			Severity: hcl.DiagError,
+			Summary:  "Decode error",
+			Detail:   "Value must be a pointer to a struct",
+			Subject:  &block.DefRange,
+		}}
+	}
 
 	// Build the schema for the given struct.
 	meta, diags := getStructMeta(val.Type())
@@ -377,8 +363,7 @@ func decodeAttribute(ctx *hcl.EvalContext, attr *hcl.Attribute, val reflect.Valu
 //nolint:funlen,gocyclo
 func getStructMeta(s reflect.Type) (*structMeta, hcl.Diagnostics) {
 	meta := &structMeta{BodySchema: &hcl.BodySchema{}}
-	for i := 0; i < s.NumField(); i++ {
-		fieldRef := s.Field(i)
+	for _, fieldRef := range reflect.VisibleFields(s) {
 		fieldMeta, diags := getStructFieldMeta(fieldRef)
 		if diags.HasErrors() {
 			return nil, diags
@@ -418,8 +403,8 @@ func getStructMeta(s reflect.Type) (*structMeta, hcl.Diagnostics) {
 		case fieldBlock:
 			// Extract the labels from the struct.
 			var labels []string
-			for i := 0; i < fieldMeta.StructReflect.NumField(); i++ {
-				subFieldMeta, diags := getStructFieldMeta(fieldMeta.StructReflect.Field(i))
+			for _, subFieldRef := range reflect.VisibleFields(fieldMeta.StructReflect) {
+				subFieldMeta, diags := getStructFieldMeta(subFieldRef)
 				if diags.HasErrors() {
 					return nil, diags
 				}
@@ -485,6 +470,19 @@ func getStructFieldMeta(field reflect.StructField) (structFieldMeta, hcl.Diagnos
 	if !sfm.Tagged {
 		return sfm, nil
 	}
+
+	// Tagged fields must be exported.
+	if !field.IsExported() {
+		return sfm, hcl.Diagnostics{{
+			Severity: hcl.DiagError,
+			Summary:  "Schema error",
+			Detail: fmt.Sprintf(
+				"Field %q is not exported but has an hcl tag",
+				field.Name,
+			),
+		}}
+	}
+
 	parts := strings.Split(tag, ",")
 	sfm.Name = parts[0]
 	if len(sfm.Name) == 0 {
@@ -525,9 +523,9 @@ func getStructFieldMeta(field reflect.StructField) (structFieldMeta, hcl.Diagnos
 	// A field may be also a slice or map of structs, in which case the struct
 	// type must be extracted.
 	if sfm.Type == fieldBlock {
-		typ := deref(sfm.Reflect.Type)
+		typ := derefType(sfm.Reflect.Type)
 		if typ.Kind() == reflect.Slice || typ.Kind() == reflect.Map {
-			typ = deref(typ.Elem())
+			typ = derefType(typ.Elem())
 			// If it is a slice or map, the block can be repeated.
 			sfm.Multiple = true
 		}
@@ -650,8 +648,8 @@ func (s *structFieldsMeta) add(field structFieldMeta) bool {
 
 // get returns the struct field with the given name. It returns false if the
 // field does not exist.
-func (s structFieldsMeta) get(name string) (structFieldMeta, bool) {
-	for _, f := range s {
+func (s *structFieldsMeta) get(name string) (structFieldMeta, bool) {
+	for _, f := range *s {
 		if f.Name == name {
 			return f, true
 		}
@@ -660,8 +658,8 @@ func (s structFieldsMeta) get(name string) (structFieldMeta, bool) {
 }
 
 // has returns true if the struct field with the given name exists.
-func (s structFieldsMeta) has(name string) bool {
-	for _, f := range s {
+func (s *structFieldsMeta) has(name string) bool {
+	for _, f := range *s {
 		if f.Name == name {
 			return true
 		}
@@ -682,12 +680,25 @@ var (
 	anyTy         = reflect.TypeOf((*any)(nil)).Elem()
 )
 
-// deref dereferences the given type until it is not a pointer or an interface.
-func deref(t reflect.Type) reflect.Type {
+// derefType dereferences the given type until it is not a pointer or an
+// interface.
+func derefType(t reflect.Type) reflect.Type {
 	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Interface {
 		t = t.Elem()
 	}
 	return t
+}
+
+// derefValue dereferences the given value until it is not a pointer or an
+// interface. If the value is a nil pointer, it is initialized.
+func derefValue(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.Kind() == reflect.Ptr && v.IsNil() && v.CanSet() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		v = v.Elem()
+	}
+	return v
 }
 
 // ctyMapper is a mapping function that maps cty.Value to other types.
@@ -759,6 +770,9 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 			val := src.Interface().(cty.Value)
 			if val.Type() != cty.Number {
 				return fmt.Errorf("cannot decode %s into big.Int", val.Type().FriendlyName())
+			}
+			if !val.AsBigFloat().IsInt() {
+				return fmt.Errorf("cannot decode a float number into big.Int")
 			}
 			bi, acc := val.AsBigFloat().Int(nil)
 			if acc != big.Exact {
@@ -843,7 +857,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 					dst.Kind(),
 				)
 			}
-			return m.MapRefl(reflect.ValueOf(i64), dst)
+			return m.MapReflContext(m.Context.WithStrictTypes(false), reflect.ValueOf(i64), dst)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			if ctyVal.Type() != cty.Number {
 				return fmt.Errorf(
@@ -867,7 +881,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 					dst.Kind(),
 				)
 			}
-			return m.MapRefl(reflect.ValueOf(u64), dst)
+			return m.MapReflContext(m.Context.WithStrictTypes(false), reflect.ValueOf(u64), dst)
 		case reflect.Float32, reflect.Float64:
 			if ctyVal.Type() != cty.Number {
 				return fmt.Errorf(
@@ -876,15 +890,7 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 					dst.Kind(),
 				)
 			}
-			f64, acc := ctyVal.AsBigFloat().Float64()
-			if acc != big.Exact {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type: too large",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			return m.MapRefl(reflect.ValueOf(f64), dst)
+			return m.MapReflContext(m.Context.WithStrictTypes(false), reflect.ValueOf(ctyVal.AsBigFloat()), dst)
 		case reflect.Slice:
 			if !ctyVal.Type().IsListType() && !ctyVal.Type().IsSetType() && !ctyVal.Type().IsTupleType() {
 				return fmt.Errorf(
@@ -932,5 +938,6 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 
 func init() {
 	mapper = anymapper.New()
+	mapper.Context.StrictTypes = true
 	mapper.Mappers[ctyValTy] = ctyMapper
 }

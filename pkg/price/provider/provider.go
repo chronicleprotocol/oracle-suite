@@ -63,7 +63,7 @@ func (p *Pair) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// NewPairs returns a Pair slice for given strings. Given strings must be
+// NewPairs returns a Pair slice for given strings. Pair strings must be
 // formatted as "BASE/QUOTE".
 func NewPairs(s ...string) ([]Pair, error) {
 	var r []Pair

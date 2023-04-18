@@ -65,11 +65,15 @@ type contextKey string
 const contextBlockNumber contextKey = "ethereum_block_number"
 
 // WithBlockNumber sets the block number in the context.
+//
+// Deprecated: use the github.com/defiweb/go-eth package instead.
 func WithBlockNumber(ctx context.Context, block *big.Int) context.Context {
 	return context.WithValue(ctx, contextBlockNumber, block)
 }
 
 // BlockNumberFromContext returns the block number from the context.
+//
+// Deprecated: use the github.com/defiweb/go-eth package instead.
 func BlockNumberFromContext(ctx context.Context) *big.Int {
 	n, ok := ctx.Value(contextBlockNumber).(*big.Int)
 	if ok {

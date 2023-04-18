@@ -8,7 +8,7 @@ import (
 // Variables is a custom block type that allows to define variables in the
 // "variables" block. Variables are then available in "var" object.
 func Variables(ctx *hcl.EvalContext, body hcl.Body) (hcl.Body, hcl.Diagnostics) {
-	// Decode the "include" attribute.
+	// Decode the "variables" block.
 	content, remain, diags := body.PartialContent(&hcl.BodySchema{
 		Blocks: []hcl.BlockHeaderSchema{{Type: "variables"}},
 	})

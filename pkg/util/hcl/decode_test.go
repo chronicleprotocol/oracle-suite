@@ -33,14 +33,15 @@ func (t *hclUnmarshaler) UnmarshalHCL(cty cty.Value) error {
 
 func TestDecode(t *testing.T) {
 	type basicTypes struct {
-		String          string           `hcl:"string"`
-		Int             int              `hcl:"int"`
-		Bool            bool             `hcl:"bool"`
-		Slice           []int            `hcl:"slice"`
-		Map             map[string]int   `hcl:"map"`
-		CTY             cty.Value        `hcl:"cty"`
-		TextUnmarshaler *textUnmarshaler `hcl:"text_unmarshaler"`
-		HCLUnmarshaler  *hclUnmarshaler  `hcl:"hcl_unmarshaler"`
+		String          string           `hcl:"string,optional"`
+		Int             int32            `hcl:"int,optional"`
+		Float           float32          `hcl:"float,optional"`
+		Bool            bool             `hcl:"bool,optional"`
+		Slice           []int            `hcl:"slice,optional"`
+		Map             map[string]int   `hcl:"map,optional"`
+		CTY             cty.Value        `hcl:"cty,optional"`
+		TextUnmarshaler *textUnmarshaler `hcl:"text_unmarshaler,optional"`
+		HCLUnmarshaler  *hclUnmarshaler  `hcl:"hcl_unmarshaler,optional"`
 	}
 	type block struct {
 		Label string `hcl:",label"`
@@ -97,6 +98,7 @@ func TestDecode(t *testing.T) {
 			input: `
 				string = "foo"
 				int = 1
+				float = 3.14
 				bool = true
 				slice = [1, 2, 3]
 				map = {
@@ -111,6 +113,7 @@ func TestDecode(t *testing.T) {
 			want: &basicTypes{
 				String: "foo",
 				Int:    1,
+				Float:  3.14,
 				Bool:   true,
 				Slice:  []int{1, 2, 3},
 				Map: map[string]int{
@@ -272,6 +275,14 @@ func TestDecode(t *testing.T) {
 				},
 			},
 		},
+		// Float to int
+		{
+			input: `
+				int = 3.14
+			`,
+			target:  &basicTypes{},
+			wantErr: true,
+		},
 		// Missing block label
 		{
 			input: `
@@ -424,7 +435,7 @@ func TestDecode(t *testing.T) {
 		},
 	}
 	for n, tt := range tests {
-		t.Run(fmt.Sprintf("case-%d", n), func(t *testing.T) {
+		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
 			file, diags := hclsyntax.ParseConfig([]byte(tt.input), "test.hcl", hcl.Pos{})
 			if diags.HasErrors() {
 				assert.Fail(t, "parse config failed", diags)
@@ -481,4 +492,36 @@ func TestRecursiveSchema(t *testing.T) {
 	}
 	diags = Decode(&hcl.EvalContext{}, file.Body, &dest)
 	require.False(t, diags.HasErrors(), diags.Error())
+}
+
+func TestEmbeddedStruct(t *testing.T) {
+	type embedded struct {
+		EmbLabel string `hcl:",label"`
+		EmbAttr  string `hcl:"emb_attr"`
+	}
+	type block struct {
+		Label string `hcl:",label"`
+		Attr  string `hcl:"attr"`
+		embedded
+	}
+	type config struct {
+		Block block `hcl:"block,block"`
+	}
+	var data = `
+		block "foo" "bar" { 
+			attr = "bar" 
+			emb_attr = "baz" 
+		}
+	`
+	var dest config
+	file, diags := hclsyntax.ParseConfig([]byte(data), "test.hcl", hcl.Pos{})
+	if diags.HasErrors() {
+		assert.Fail(t, "parse config failed", diags)
+	}
+	diags = Decode(&hcl.EvalContext{}, file.Body, &dest)
+	require.False(t, diags.HasErrors(), diags.Error())
+	assert.Equal(t, "foo", dest.Block.Label)
+	assert.Equal(t, "bar", dest.Block.EmbLabel)
+	assert.Equal(t, "bar", dest.Block.Attr)
+	assert.Equal(t, "baz", dest.Block.EmbAttr)
 }
