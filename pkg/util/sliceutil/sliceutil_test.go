@@ -16,6 +16,7 @@
 package sliceutil
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,4 +26,10 @@ func TestCopy(t *testing.T) {
 	m := []string{"a", "b", "c"}
 	assert.Equal(t, m, Copy(m))
 	assert.NotSame(t, m, Copy(m))
+}
+
+func TestMap(t *testing.T) {
+	m := []string{"a", "b", "c"}
+	assert.Equal(t, []string{"A", "B", "C"}, Map(m, strings.ToUpper))
+	assert.NotSame(t, m, Map(m, strings.ToUpper))
 }

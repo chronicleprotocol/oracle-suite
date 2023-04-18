@@ -31,3 +31,13 @@ func Contains[T comparable](s []T, e T) bool {
 	}
 	return false
 }
+
+// Map returns a new slice with the results of applying the function f to each
+// element of the original slice.
+func Map[T, U any](s []T, f func(T) U) []U {
+	out := make([]U, len(s))
+	for i, x := range s {
+		out[i] = f(x)
+	}
+	return out
+}

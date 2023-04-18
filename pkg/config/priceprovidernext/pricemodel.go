@@ -1,6 +1,7 @@
 package priceprovider
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/hcl/v2"
@@ -25,7 +26,7 @@ type configPriceModel struct {
 // configDynamicNode is an interface that is implemented by node types that
 // can be used in a price model.
 type configDynamicNode interface {
-	buildGraph() ([]graph.Node, error)
+	buildGraph(roots map[string]graph.Node) ([]graph.Node, error)
 	hclRange() hcl.Range
 }
 
@@ -50,6 +51,12 @@ type configNodeOrigin struct {
 	ExpiryThreshold    int    `hcl:"expiry_threshold,optional"`
 }
 
+type configNodeReference struct {
+	configNode
+
+	PriceModel string `hcl:"price_model"`
+}
+
 type configNodeInvert struct {
 	configNode
 }
@@ -67,6 +74,7 @@ type configNodeMedian struct {
 var nodeSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{Type: "origin", LabelNames: []string{"pair"}},
+		{Type: "reference", LabelNames: []string{"pair"}},
 		{Type: "invert", LabelNames: []string{"pair"}},
 		{Type: "indirect", LabelNames: []string{"pair"}},
 		{Type: "median", LabelNames: []string{"pair"}},
@@ -88,6 +96,8 @@ func (c *configNode) PostDecodeBlock(
 		switch block.Type {
 		case "origin":
 			node = &configNodeOrigin{}
+		case "reference":
+			node = &configNodeReference{}
 		case "invert":
 			node = &configNodeInvert{}
 		case "indirect":
@@ -103,8 +113,8 @@ func (c *configNode) PostDecodeBlock(
 	return nil
 }
 
-func (c *configPriceModel) ConfigurePriceModel() (graph.Node, error) {
-	nodes, err := c.buildGraph()
+func (c *configPriceModel) ConfigurePriceModel(roots map[string]graph.Node) (graph.Node, error) {
+	nodes, err := c.buildGraph(roots)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +129,7 @@ func (c *configPriceModel) ConfigurePriceModel() (graph.Node, error) {
 	return nodes[0], nil
 }
 
-func (c *configNode) buildGraph() ([]graph.Node, error) {
+func (c *configNode) buildGraph(roots map[string]graph.Node) ([]graph.Node, error) {
 	nodes := make([]graph.Node, len(c.Nodes))
 	for i, node := range c.Nodes {
 		switch node := node.(type) {
@@ -162,6 +172,17 @@ func (c *configNode) buildGraph() ([]graph.Node, error) {
 				freshnessThreshold,
 				expiryThreshold,
 			)
+		case *configNodeReference:
+			priceModel, ok := roots[node.PriceModel]
+			if !ok {
+				return nil, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Validation error",
+					Detail:   fmt.Sprintf("Unknown price model: %s", node.PriceModel),
+					Subject:  node.hclRange().Ptr(),
+				}
+			}
+			nodes[i] = priceModel
 		case *configNodeInvert:
 			nodes[i] = graph.NewInvertNode(node.Pair)
 		case *configNodeIndirect:
@@ -169,7 +190,7 @@ func (c *configNode) buildGraph() ([]graph.Node, error) {
 		case *configNodeMedian:
 			nodes[i] = graph.NewMedianNode(node.Pair, node.MinSources)
 		}
-		branches, err := node.buildGraph()
+		branches, err := node.buildGraph(roots)
 		if err != nil {
 			return nil, err
 		}

@@ -74,6 +74,7 @@ func (g GenericEVM) FetchTicks(ctx context.Context, pairs []provider.Pair) []pro
 				Pair:  pairs[i],
 				Error: fmt.Errorf("contract panicked: %s", abi.DecodePanic(results[i])),
 			}
+			continue
 		}
 		if len(results[i]) != abi.WordLength {
 			ticks[i] = provider.Tick{

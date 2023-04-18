@@ -18,12 +18,7 @@ func TestConfig(t *testing.T) {
 			name: "valid",
 			path: "config.hcl",
 			test: func(t *testing.T, cfg *Config) {
-				_, pm, err := cfg.PriceModels[0].ConfigurePriceModel()
-
-				println("a")
-				println(err)
-				println(pm)
-
+				cfg.PriceModels[0].ConfigurePriceModel(nil)
 			},
 		},
 	}

@@ -6,32 +6,29 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 )
 
-type InvertMeta struct {
-	// Tick is a tick used to calculate inverted price.
+type ReferenceMeta struct {
 	Tick provider.Tick
 }
 
-func (m InvertMeta) Meta() map[string]any {
+func (m ReferenceMeta) Meta() map[string]any {
 	return map[string]any{
-		"aggregator": "invert",
+		"aggregator": "reference",
 		"tick":       m.Tick,
 	}
 }
 
-// InvertNode is a node that inverts the pair and price. E.g. if the pair is
-// BTC/USD and the price is 1000, then the pair will be USD/BTC and the price
-// will be 0.001.
-type InvertNode struct {
+// ReferenceNode is a node that references another node.
+type ReferenceNode struct {
 	pair   provider.Pair
 	branch Node
 }
 
-func NewInvertNode(pair provider.Pair) *InvertNode {
-	return &InvertNode{pair: pair}
+func NewReferenceNode(pair provider.Pair) *ReferenceNode {
+	return &ReferenceNode{pair: pair}
 }
 
 // AddBranch implements the Node interface.
-func (i *InvertNode) AddBranch(branch ...Node) error {
+func (i *ReferenceNode) AddBranch(branch ...Node) error {
 	if len(branch) == 0 {
 		return nil
 	}
@@ -41,7 +38,7 @@ func (i *InvertNode) AddBranch(branch ...Node) error {
 	if len(branch) != 1 {
 		return fmt.Errorf("expected 1 branch, got %d", len(branch))
 	}
-	if !branch[0].Pair().Equal(i.pair.Invert()) {
+	if !branch[0].Pair().Equal(i.pair) {
 		return fmt.Errorf("expected pair %s, got %s", i.pair, branch[0].Pair())
 	}
 	i.branch = branch[0]
@@ -49,7 +46,7 @@ func (i *InvertNode) AddBranch(branch ...Node) error {
 }
 
 // Branches implements the Node interface.
-func (i *InvertNode) Branches() []Node {
+func (i *ReferenceNode) Branches() []Node {
 	if i.branch == nil {
 		return nil
 	}
@@ -57,12 +54,12 @@ func (i *InvertNode) Branches() []Node {
 }
 
 // Pair implements the Node interface.
-func (i *InvertNode) Pair() provider.Pair {
+func (i *ReferenceNode) Pair() provider.Pair {
 	return i.pair
 }
 
 // Tick implements the Node interface.
-func (i *InvertNode) Tick() provider.Tick {
+func (i *ReferenceNode) Tick() provider.Tick {
 	if i.branch == nil {
 		return provider.Tick{
 			Pair:  i.pair,
@@ -71,11 +68,11 @@ func (i *InvertNode) Tick() provider.Tick {
 	}
 	tick := i.branch.Tick()
 	return provider.Tick{
-		Pair:      tick.Pair.Invert(),
-		Price:     tick.Price.Inv(),
-		Volume24h: tick.Volume24h.Div(tick.Price),
+		Pair:      tick.Pair,
+		Price:     tick.Price,
+		Volume24h: tick.Volume24h,
 		Time:      tick.Time,
-		Meta:      &InvertMeta{Tick: tick},
+		Meta:      &ReferenceMeta{Tick: tick},
 		Warning:   tick.Warning,
 		Error:     tick.Error,
 	}

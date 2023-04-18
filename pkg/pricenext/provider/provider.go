@@ -96,11 +96,8 @@ func (t Tick) Validate() error {
 	if t.Error != nil {
 		return t.Error
 	}
-	if t.Pair.Base == "" {
-		return fmt.Errorf("base is empty")
-	}
-	if t.Pair.Quote == "" {
-		return fmt.Errorf("quote is empty")
+	if t.Pair.Empty() {
+		return fmt.Errorf("pair is not set")
 	}
 	if t.Price == nil {
 		return fmt.Errorf("price is nil")
@@ -163,8 +160,9 @@ func (p *Pair) UnmarshalText(text []byte) error {
 }
 
 // Empty returns true if the pair is empty.
+// Pair is considered empty if either base or quote is empty.
 func (p Pair) Empty() bool {
-	return p.Base == "" && p.Quote == ""
+	return p.Base == "" || p.Quote == ""
 }
 
 // Equal returns true if the pair is equal to the given pair.
