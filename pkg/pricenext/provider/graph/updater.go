@@ -139,13 +139,13 @@ type originPairKey struct {
 }
 
 func (m pairsMap) add(node *OriginNode) {
-	m[node.Origin()] = appendIfUnique(m[node.Origin()], node.Pair())
+	m[node.Origin()] = appendIfUnique(m[node.Origin()], node.FetchPair())
 }
 
 func (m nodesMap) add(node *OriginNode) {
 	originPair := originPairKey{
 		origin: node.Origin(),
-		pair:   node.Pair(),
+		pair:   node.FetchPair(),
 	}
 	m[originPair] = appendIfUnique(m[originPair], node)
 }

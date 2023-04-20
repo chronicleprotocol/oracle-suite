@@ -45,10 +45,10 @@ type configNode struct {
 type configNodeOrigin struct {
 	configNode
 
-	Origin             string `hcl:"origin"`
-	FetchPair          string `hcl:"fetch_pair,optional"`
-	FreshnessThreshold int    `hcl:"freshness_threshold,optional"`
-	ExpiryThreshold    int    `hcl:"expiry_threshold,optional"`
+	Origin             string        `hcl:"origin"`
+	FetchPair          provider.Pair `hcl:"fetch_pair,optional"`
+	FreshnessThreshold int           `hcl:"freshness_threshold,optional"`
+	ExpiryThreshold    int           `hcl:"expiry_threshold,optional"`
 }
 
 type configNodeReference struct {
@@ -166,9 +166,14 @@ func (c *configNode) buildGraph(roots map[string]graph.Node) ([]graph.Node, erro
 					Subject:  node.hclRange().Ptr(),
 				}
 			}
+			fetchPair := node.FetchPair
+			if node.FetchPair.Empty() {
+				fetchPair = node.Pair
+			}
 			nodes[i] = graph.NewOriginNode(
 				node.Origin,
 				node.Pair,
+				fetchPair,
 				freshnessThreshold,
 				expiryThreshold,
 			)
