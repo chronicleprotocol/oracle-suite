@@ -13,8 +13,8 @@ type InvertMeta struct {
 
 func (m InvertMeta) Meta() map[string]any {
 	return map[string]any{
-		"aggregator": "invert",
-		"tick":       m.Tick,
+		"node": "invert",
+		"tick": m.Tick,
 	}
 }
 
@@ -26,6 +26,7 @@ type InvertNode struct {
 	branch Node
 }
 
+// NewInvertNode creates a new InvertNode instance.
 func NewInvertNode(pair provider.Pair) *InvertNode {
 	return &InvertNode{pair: pair}
 }
@@ -39,7 +40,7 @@ func (i *InvertNode) AddBranch(branch ...Node) error {
 		return fmt.Errorf("branch already exists")
 	}
 	if len(branch) != 1 {
-		return fmt.Errorf("expected 1 branch, got %d", len(branch))
+		return fmt.Errorf("only 1 branch is allowed")
 	}
 	if !branch[0].Pair().Equal(i.pair.Invert()) {
 		return fmt.Errorf("expected pair %s, got %s", i.pair, branch[0].Pair())
@@ -66,17 +67,13 @@ func (i *InvertNode) Tick() provider.Tick {
 	if i.branch == nil {
 		return provider.Tick{
 			Pair:  i.pair,
-			Error: fmt.Errorf("branch is not set (this is likely a bug)"),
+			Error: fmt.Errorf("branch is not set"),
 		}
 	}
 	tick := i.branch.Tick()
-	return provider.Tick{
-		Pair:      tick.Pair.Invert(),
-		Price:     tick.Price.Inv(),
-		Volume24h: tick.Volume24h.Div(tick.Price),
-		Time:      tick.Time,
-		Meta:      &InvertMeta{Tick: tick},
-		Warning:   tick.Warning,
-		Error:     tick.Error,
-	}
+	tick.Pair = i.pair.Invert()
+	tick.Price = tick.Price.Inv()
+	tick.Volume24h = tick.Volume24h.Div(tick.Price)
+	tick.Meta = &InvertMeta{Tick: tick}
+	return tick
 }

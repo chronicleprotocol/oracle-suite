@@ -7,32 +7,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-type ErrIndirectNoCommonParts struct {
-	PairA provider.Pair
-	PairB provider.Pair
-}
-
-func (e ErrIndirectNoCommonParts) Error() string {
-	return fmt.Sprintf(
-		"unable to calculate cross rate for %s and %s because they have no common parts",
-		e.PairA,
-		e.PairB,
-	)
-}
-
-type ErrIndirectUnableToResolve struct {
-	Expected provider.Pair
-	Resolved provider.Pair
-}
-
-func (e ErrIndirectUnableToResolve) Error() string {
-	return fmt.Sprintf(
-		"the price was resolved to the %s pair but the %s pair was expected",
-		e.Resolved,
-		e.Expected,
-	)
-}
-
 type IndirectMeta struct {
 	// Ticks is a list of ticks used to calculate cross rate.
 	Ticks []provider.Tick
@@ -40,8 +14,8 @@ type IndirectMeta struct {
 
 func (m IndirectMeta) Meta() map[string]interface{} {
 	return map[string]interface{}{
-		"aggregator": "indirect",
-		"ticks":      m.Ticks,
+		"node":  "indirect",
+		"ticks": m.Ticks,
 	}
 }
 
@@ -68,25 +42,29 @@ func (i *IndirectNode) AddBranch(branch ...Node) error {
 	return nil
 }
 
+// Branches implements the Node interface.
 func (i *IndirectNode) Branches() []Node {
 	return i.branches
 }
 
+// Pair implements the Node interface.
 func (i *IndirectNode) Pair() provider.Pair {
 	return i.pair
 }
 
+// Tick implements the Node interface.
 func (i *IndirectNode) Tick() provider.Tick {
 	var ticks []provider.Tick
 	for _, branch := range i.branches {
 		ticks = append(ticks, branch.Tick())
 	}
+	meta := IndirectMeta{Ticks: ticks}
 	for _, tick := range ticks {
 		if err := tick.Validate(); err != nil {
 			return provider.Tick{
 				Pair:  i.pair,
-				Meta:  IndirectMeta{Ticks: ticks},
-				Error: ErrInvalidTick{Tick: tick},
+				Meta:  meta,
+				Error: fmt.Errorf("invalid tick: %w", err),
 			}
 		}
 	}
@@ -94,25 +72,22 @@ func (i *IndirectNode) Tick() provider.Tick {
 	if err != nil {
 		return provider.Tick{
 			Pair:  i.pair,
-			Meta:  IndirectMeta{Ticks: ticks},
+			Meta:  meta,
 			Error: err,
 		}
 	}
 	if !indirect.Pair.Equal(i.pair) {
 		return provider.Tick{
-			Pair: i.pair,
-			Meta: IndirectMeta{Ticks: ticks},
-			Error: ErrIndirectUnableToResolve{
-				Expected: i.pair,
-				Resolved: indirect.Pair,
-			},
+			Pair:  i.pair,
+			Meta:  meta,
+			Error: fmt.Errorf("expected pair %s, got %s", i.pair, indirect.Pair),
 		}
 	}
 	return provider.Tick{
 		Pair:  indirect.Pair,
 		Price: indirect.Price,
 		Time:  indirect.Time,
-		Meta:  IndirectMeta{Ticks: ticks},
+		Meta:  meta,
 	}
 }
 
@@ -161,10 +136,7 @@ func crossRate(t []provider.Tick) (provider.Tick, error) {
 				price = bn.Float(0)
 			}
 		default:
-			return a, ErrIndirectNoCommonParts{
-				PairA: a.Pair,
-				PairB: b.Pair,
-			}
+			return a, fmt.Errorf("unable to calculate cross rate for %s and %s", a.Pair, b.Pair)
 		}
 		b.Pair = pair
 		b.Price = price

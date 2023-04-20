@@ -132,13 +132,9 @@ func (g *GenericJQ) handle(ctx context.Context, pairs []provider.Pair, body io.R
 			for k, v := range v {
 				switch k {
 				case "price":
-					if price, ok := anyToFloat(v); ok {
-						tick.Price = price
-					}
+					tick.Price = bn.Float(v)
 				case "volume":
-					if volume, ok := anyToFloat(v); ok {
-						tick.Volume24h = volume
-					}
+					tick.Volume24h = bn.Float(v)
 				case "time":
 					if tm, ok := anyToTime(v); ok {
 						tick.Time = tm
@@ -148,26 +144,11 @@ func (g *GenericJQ) handle(ctx context.Context, pairs []provider.Pair, body io.R
 				}
 			}
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			if price, ok := anyToFloat(v); ok {
-				tick.Price = price
-			}
+			tick.Price = bn.Float(v)
 		}
 		ticks = append(ticks, tick)
 	}
 	return ticks
-}
-
-// anyToFlat converts an arbitrary value to a bn.Float.
-func anyToFloat(v any) (*bn.FloatNumber, bool) {
-	switch v := v.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, string:
-		number := bn.Float(v)
-		if number == nil {
-			return nil, false
-		}
-		return number, true
-	}
-	return nil, false
 }
 
 // anyToTime converts an arbitrary value to a time.Time.

@@ -8,30 +8,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 )
 
-type ErrOriginTickExpired struct{ Tick provider.Tick }
-
-func (e ErrOriginTickExpired) Error() string {
-	return fmt.Sprintf("tick expired: %s", e.Tick)
-}
-
-type ErrOriginInvalidTick struct{ Tick provider.Tick }
-
-func (e ErrOriginInvalidTick) Error() string {
-	return fmt.Sprintf("unable to update origin node: invalid tick %s", e.Tick)
-}
-
-type ErrOriginIncompatiblePair struct{ Pair provider.Pair }
-
-func (e ErrOriginIncompatiblePair) Error() string {
-	return fmt.Sprintf("unable to update origin node: incompatible pair %s", e.Pair)
-}
-
-type ErrOriginTickTooOld struct{ Tick provider.Tick }
-
-func (e ErrOriginTickTooOld) Error() string {
-	return fmt.Sprintf("unable to update origin node: tick too old %s", e.Tick)
-}
-
 type OriginMeta struct {
 	// Origin is an origin name.
 	Origin string
@@ -39,6 +15,7 @@ type OriginMeta struct {
 
 func (m OriginMeta) Meta() map[string]any {
 	return map[string]any{
+		"node":   "origin",
 		"origin": m.Origin,
 	}
 }
@@ -139,7 +116,7 @@ func (n *OriginNode) Tick() provider.Tick {
 		return n.tick
 	}
 	if n.IsExpired() {
-		n.tick.Error = ErrOriginTickExpired{Tick: n.tick}
+		n.tick.Error = fmt.Errorf("tick is expired")
 	}
 	return n.tick
 }
@@ -164,13 +141,13 @@ func (n *OriginNode) SetTick(tick provider.Tick) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if !n.FetchPair().Equal(tick.Pair) {
-		return ErrOriginIncompatiblePair{Pair: tick.Pair}
+		return fmt.Errorf("unable to set tick: tick pair %s does not match fetch pair %s", tick.Pair, n.FetchPair())
 	}
 	if err := tick.Validate(); err != nil {
-		return ErrOriginInvalidTick{Tick: tick}
+		return fmt.Errorf("unable to set tick: %w", err)
 	}
 	if n.tick.Time.After(tick.Time) {
-		return ErrOriginTickTooOld{Tick: tick}
+		return fmt.Errorf("unable to set tick: tick is older than the current tick")
 	}
 	tick.Pair = n.pair
 	tick.Meta = OriginMeta{Origin: n.origin}

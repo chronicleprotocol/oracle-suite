@@ -78,12 +78,6 @@ type Tick struct {
 	// Meta is an optional metadata for the price.
 	Meta Meta
 
-	// Warning is an optional error which occurred during obtaining the price
-	// but does not affect the price calculation process.
-	//
-	// To check if the price is valid, use Tick.Validate() method.
-	Warning error
-
 	// Error is an optional error which occurred during obtaining the price.
 	// If error is not nil, then the price is invalid and should not be used.
 	//
@@ -120,12 +114,11 @@ func (t Tick) Validate() error {
 // String implements the fmt.Stringer interface.
 func (t Tick) String() string {
 	return fmt.Sprintf(
-		"%s(price: %s, volume: %s, time: %s, warning: %v, error: %v)",
+		"%s(price: %s, volume: %s, time: %s, error: %v)",
 		t.Pair,
 		t.Price,
 		t.Volume24h,
 		t.Time,
-		t.Warning,
 		t.Error,
 	)
 }

@@ -9,34 +9,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-type NotEnoughSourcesErr struct {
-	Pair     provider.Pair
-	Expected int
-	Given    int
-}
-
-func (e NotEnoughSourcesErr) Error() string {
-	return fmt.Sprintf(
-		"not enough sources to calculate %s median, %d given but at least %d required",
-		e.Pair,
-		e.Given,
-		e.Expected,
-	)
-}
-
-type IncompatiblePairsErr struct {
-	Expected provider.Pair
-	Given    provider.Pair
-}
-
-func (e IncompatiblePairsErr) Error() string {
-	return fmt.Sprintf(
-		"unable to calculate median for different pairs, %s given but %s was expected",
-		e.Given,
-		e.Expected,
-	)
-}
-
 type MedianMeta struct {
 	// Min is a minimum number of sources required to calculate median.
 	Min int
@@ -47,9 +19,9 @@ type MedianMeta struct {
 
 func (m MedianMeta) Meta() map[string]any {
 	return map[string]any{
-		"aggregator": "median",
-		"min":        m.Min,
-		"ticks":      m.Ticks,
+		"node":  "median",
+		"min":   m.Min,
+		"ticks": m.Ticks,
 	}
 }
 
@@ -78,21 +50,26 @@ func (m *MedianNode) AddBranch(branch ...Node) error {
 	return nil
 }
 
+// Branches implements the Node interface.
 func (m *MedianNode) Branches() []Node {
 	return m.branches
 }
 
+// Pair implements the Node interface.
 func (m *MedianNode) Pair() provider.Pair {
 	return m.pair
 }
 
+// Tick implements the Node interface.
 func (m *MedianNode) Tick() provider.Tick {
 	var (
 		tm     time.Time
 		ticks  []provider.Tick
 		prices []*bn.FloatNumber
-		warns  Errors
 	)
+
+	// Collect all ticks from branches and prices from ticks
+	// that can be used to calculate median.
 	for _, branch := range m.branches {
 		tick := branch.Tick()
 		if tm.IsZero() {
@@ -103,36 +80,29 @@ func (m *MedianNode) Tick() provider.Tick {
 		}
 		ticks = append(ticks, tick)
 		if !m.pair.Equal(tick.Pair) {
-			warns = append(warns, IncompatiblePairsErr{
-				Given:    tick.Pair,
-				Expected: m.pair,
-			})
 			continue
 		}
 		if err := tick.Validate(); err != nil {
-			warns = append(warns, err)
 			continue
 		}
 		prices = append(prices, tick.Price)
 	}
+
+	// Verify that we have enough valid prices to calculate median.
 	if len(prices) < m.min {
 		return provider.Tick{
-			Pair:    m.pair,
-			Meta:    MedianMeta{Min: m.min, Ticks: ticks},
-			Warning: warns,
-			Error: NotEnoughSourcesErr{
-				Pair:     m.pair,
-				Given:    len(prices),
-				Expected: m.min,
-			},
+			Pair:  m.pair,
+			Meta:  MedianMeta{Min: m.min, Ticks: ticks},
+			Error: fmt.Errorf("not enough prices to calculate median"),
 		}
 	}
+
+	// Return median tick.
 	return provider.Tick{
-		Pair:    m.pair,
-		Price:   median(prices),
-		Time:    tm,
-		Meta:    MedianMeta{Min: m.min, Ticks: ticks},
-		Warning: warns,
+		Pair:  m.pair,
+		Price: median(prices),
+		Time:  tm,
+		Meta:  MedianMeta{Min: m.min, Ticks: ticks},
 	}
 }
 

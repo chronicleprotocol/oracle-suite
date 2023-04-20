@@ -12,8 +12,8 @@ type ReferenceMeta struct {
 
 func (m ReferenceMeta) Meta() map[string]any {
 	return map[string]any{
-		"aggregator": "reference",
-		"tick":       m.Tick,
+		"node": "reference",
+		"tick": m.Tick,
 	}
 }
 
@@ -23,6 +23,7 @@ type ReferenceNode struct {
 	branch Node
 }
 
+// NewReferenceNode creates a new ReferenceNode instance.
 func NewReferenceNode(pair provider.Pair) *ReferenceNode {
 	return &ReferenceNode{pair: pair}
 }
@@ -67,13 +68,6 @@ func (i *ReferenceNode) Tick() provider.Tick {
 		}
 	}
 	tick := i.branch.Tick()
-	return provider.Tick{
-		Pair:      tick.Pair,
-		Price:     tick.Price,
-		Volume24h: tick.Volume24h,
-		Time:      tick.Time,
-		Meta:      &ReferenceMeta{Tick: tick},
-		Warning:   tick.Warning,
-		Error:     tick.Error,
-	}
+	tick.Meta = &ReferenceMeta{Tick: tick}
+	return tick
 }

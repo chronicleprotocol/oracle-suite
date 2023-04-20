@@ -78,9 +78,12 @@ func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) (ticks
 			defer func() {
 				if r := recover(); r != nil {
 					mu.Lock()
-					ticks.add(originName, provider.Tick{
-						Error: fmt.Errorf("PANIC: %v", r),
-					})
+					for _, pair := range pairs {
+						ticks.add(originName, provider.Tick{
+							Pair:  pair,
+							Error: fmt.Errorf("PANIC: %v", r),
+						})
+					}
 					mu.Unlock()
 				}
 			}()

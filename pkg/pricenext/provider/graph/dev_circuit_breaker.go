@@ -14,7 +14,7 @@ type DevCircuitBreakerMeta struct {
 
 func (m DevCircuitBreakerMeta) Meta() map[string]any {
 	return map[string]any{
-		"aggregator":     "dev_circuit_breaker",
+		"node":           "dev_circuit_breaker",
 		"tick":           m.Tick,
 		"reference_tick": m.ReferenceTick,
 	}
@@ -32,6 +32,7 @@ type DevCircuitBreaker struct {
 	threshold       float64
 }
 
+// NewDevCircuitBreakerNode creates a new DevCircuitBreaker instance.
 func NewDevCircuitBreakerNode(pair provider.Pair, threshold float64) *DevCircuitBreaker {
 	return &DevCircuitBreaker{
 		pair:      pair,
@@ -39,6 +40,7 @@ func NewDevCircuitBreakerNode(pair provider.Pair, threshold float64) *DevCircuit
 	}
 }
 
+// Branches implements the Node interface.
 func (d *DevCircuitBreaker) Branches() []Node {
 	if d.priceBranch == nil || d.referenceBranch == nil {
 		return nil
@@ -46,10 +48,11 @@ func (d *DevCircuitBreaker) Branches() []Node {
 	return []Node{d.priceBranch, d.referenceBranch}
 }
 
+// AddBranch implements the Node interface.
 func (d *DevCircuitBreaker) AddBranch(nodes ...Node) error {
 	for _, node := range nodes {
 		if !node.Pair().Equal(d.pair) {
-			return fmt.Errorf("DevCircuitBreaker branch pair %s does not match %s", node.Pair(), d.pair)
+			return fmt.Errorf("expected pair %s, got %s", d.pair, node.Pair())
 		}
 	}
 	if len(nodes) > 0 && d.priceBranch == nil {
@@ -61,35 +64,37 @@ func (d *DevCircuitBreaker) AddBranch(nodes ...Node) error {
 		nodes = nodes[1:]
 	}
 	if len(nodes) > 0 {
-		return fmt.Errorf("DevCircuitBreaker can only have two branches")
+		return fmt.Errorf("only two branches are allowed")
 	}
 	return nil
 }
 
+// Pair implements the Node interface.
 func (d *DevCircuitBreaker) Pair() provider.Pair {
 	return d.pair
 }
 
+// Tick implements the Node interface.
 func (d *DevCircuitBreaker) Tick() provider.Tick {
 	// Validate branches.
 	if d.priceBranch == nil || d.referenceBranch == nil {
 		return provider.Tick{
 			Pair:  d.pair,
-			Error: fmt.Errorf("DevCircuitBreaker must have two branches (this is likely a bug)"),
+			Error: fmt.Errorf("two branches are required"),
 		}
 	}
 	meta := DevCircuitBreakerMeta{Tick: d.priceBranch.Tick(), ReferenceTick: d.referenceBranch.Tick()}
 	if err := d.priceBranch.Tick().Validate(); err != nil {
 		return provider.Tick{
 			Pair:  d.pair,
-			Error: err,
+			Error: fmt.Errorf("invalid price tick: %w", err),
 			Meta:  meta,
 		}
 	}
 	if err := d.referenceBranch.Tick().Validate(); err != nil {
 		return provider.Tick{
 			Pair:  d.pair,
-			Error: err,
+			Error: fmt.Errorf("invalid reference tick: %w", err),
 			Meta:  meta,
 		}
 	}
