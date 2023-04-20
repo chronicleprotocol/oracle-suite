@@ -72,7 +72,7 @@ func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) (ticks
 
 	ticks := make(ticksMap)
 	for originName, pairs := range pairs {
-		go func(originName string) {
+		go func(originName string, pairs []provider.Pair) {
 			defer wg.Done()
 
 			defer func() {
@@ -100,7 +100,7 @@ func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) (ticks
 				ticks.add(originName, tick)
 				mu.Unlock()
 			}
-		}(originName)
+		}(originName, pairs)
 	}
 
 	wg.Wait()

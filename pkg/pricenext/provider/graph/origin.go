@@ -137,7 +137,7 @@ func (n *OriginNode) Warning() error {
 // tick, and has the same pair as the node.
 //
 // Meta field of the given tick is ignored and replaced with the origin name.
-// It returns an error if the given price is incompatible with the node.
+// It returns an error if the given tick is incompatible with the node.
 func (n *OriginNode) SetTick(tick provider.Tick) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -176,5 +176,5 @@ func (n *OriginNode) IsFresh() bool {
 func (n *OriginNode) IsExpired() bool {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
-	return n.tick.Time.Add(-n.expiryThreshold).After(time.Now())
+	return n.tick.Time.Add(n.expiryThreshold).After(time.Now())
 }
