@@ -43,9 +43,10 @@ type configNode struct {
 }
 
 type configNodeOrigin struct {
+	Origin string `hcl:"origin,label"`
+
 	configNode
 
-	Origin             string        `hcl:"origin"`
 	FetchPair          provider.Pair `hcl:"fetch_pair,optional"`
 	FreshnessThreshold int           `hcl:"freshness_threshold,optional"`
 	ExpiryThreshold    int           `hcl:"expiry_threshold,optional"`
@@ -73,7 +74,7 @@ type configNodeMedian struct {
 
 var nodeSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
-		{Type: "origin", LabelNames: []string{"pair"}},
+		{Type: "origin", LabelNames: []string{"origin", "pair"}},
 		{Type: "reference", LabelNames: []string{"pair"}},
 		{Type: "invert", LabelNames: []string{"pair"}},
 		{Type: "indirect", LabelNames: []string{"pair"}},
