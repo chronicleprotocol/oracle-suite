@@ -72,6 +72,12 @@ type configNodeMedian struct {
 	MinSources int `hcl:"min_sources"`
 }
 
+type DeviationCircuitBreaker struct {
+	configNode
+
+	Threshold float64 `hcl:"threshold"`
+}
+
 var nodeSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{Type: "origin", LabelNames: []string{"origin", "pair"}},
@@ -79,6 +85,7 @@ var nodeSchema = &hcl.BodySchema{
 		{Type: "invert", LabelNames: []string{"pair"}},
 		{Type: "indirect", LabelNames: []string{"pair"}},
 		{Type: "median", LabelNames: []string{"pair"}},
+		{Type: "deviation_circuit_breaker", LabelNames: []string{"pair"}},
 	},
 }
 
@@ -105,6 +112,8 @@ func (c *configNode) PostDecodeBlock(
 			node = &configNodeIndirect{}
 		case "median":
 			node = &configNodeMedian{}
+		case "deviation_circuit_breaker":
+			node = &DeviationCircuitBreaker{}
 		}
 		if diags := utilHCL.DecodeBlock(ctx, block, node); diags.HasErrors() {
 			return diags
@@ -195,6 +204,8 @@ func (c *configNode) buildGraph(roots map[string]graph.Node) ([]graph.Node, erro
 			nodes[i] = graph.NewIndirectNode(node.Pair)
 		case *configNodeMedian:
 			nodes[i] = graph.NewMedianNode(node.Pair, node.MinSources)
+		case *DeviationCircuitBreaker:
+			nodes[i] = graph.NewDevCircuitBreakerNode(node.Pair, node.Threshold)
 		}
 		branches, err := node.buildGraph(roots)
 		if err != nil {
