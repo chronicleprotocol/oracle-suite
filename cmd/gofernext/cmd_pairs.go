@@ -52,11 +52,11 @@ func NewPairsCmd(opts *options) *cobra.Command {
 
 func marshalModels(models map[string]provider.Model, format string) ([]byte, error) {
 	switch format {
-	case "plain":
+	case formatPlain:
 		return marshalModelsPlain(models)
-	case "trace":
+	case formatTrace:
 		return marshalModelsTrace(models)
-	case "json":
+	case formatJSON:
 		return marshalModelsJSON(models)
 	default:
 		return nil, fmt.Errorf("unsupported format")

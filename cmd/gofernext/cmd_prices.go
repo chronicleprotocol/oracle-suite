@@ -52,11 +52,11 @@ func NewPricesCmd(opts *options) *cobra.Command {
 
 func marshalTicks(ticks map[string]provider.Tick, format string) ([]byte, error) {
 	switch format {
-	case "plain":
+	case formatPlain:
 		return marshalTicksPlain(ticks)
-	case "trace":
+	case formatTrace:
 		return marshalTicksTrace(ticks)
-	case "json":
+	case formatJSON:
 		return marshalTicksJSON(ticks)
 	default:
 		return nil, fmt.Errorf("unsupported format")
