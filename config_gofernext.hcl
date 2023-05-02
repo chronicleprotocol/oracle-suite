@@ -10,8 +10,4 @@ gofernext {
     url    = "https://api.binance.com/api/v3/ticker/24hr"
     jq     = ".[] | select(.symbol == ($ucbase + $ucquote)) | {price: .lastPrice, volume: .volume, time: (.closeTime / 1000)}"
   }
-
-  price_model "primary" "BTC/USD" {
-    origin "BTC/USD" { origin = "coinbase" }
-  }
 }
