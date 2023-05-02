@@ -66,6 +66,7 @@ func (c *configOrigin) PostDecodeBlock(
 	_ *hcl.BodySchema,
 	_ *hcl.Block,
 	_ *hcl.BodyContent) hcl.Diagnostics {
+
 	var config any
 	switch c.Origin {
 	case "generic_jq":

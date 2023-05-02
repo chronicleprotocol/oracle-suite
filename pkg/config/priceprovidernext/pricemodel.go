@@ -78,6 +78,22 @@ type DeviationCircuitBreaker struct {
 	Threshold float64 `hcl:"threshold"`
 }
 
+func (c *configPriceModel) ConfigurePriceModel(roots map[string]graph.Node) (graph.Node, error) {
+	nodes, err := c.buildGraph(roots)
+	if err != nil {
+		return nil, err
+	}
+	if len(nodes) != 1 {
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "Price model must have exactly one root node",
+			Subject:  c.Range.Ptr(),
+		}
+	}
+	return nodes[0], nil
+}
+
 var nodeSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{Type: "origin", LabelNames: []string{"origin", "pair"}},
@@ -123,89 +139,17 @@ func (c *configNode) PostDecodeBlock(
 	return nil
 }
 
-func (c *configPriceModel) ConfigurePriceModel(roots map[string]graph.Node) (graph.Node, error) {
-	nodes, err := c.buildGraph(roots)
-	if err != nil {
-		return nil, err
-	}
-	if len(nodes) != 1 {
-		return nil, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Validation error",
-			Detail:   "Price model must have exactly one root node",
-			Subject:  c.Range.Ptr(),
-		}
-	}
-	return nodes[0], nil
+func (c *configNode) hclRange() hcl.Range {
+	return c.Range
 }
 
 func (c *configNode) buildGraph(roots map[string]graph.Node) ([]graph.Node, error) {
 	nodes := make([]graph.Node, len(c.Nodes))
 	for i, node := range c.Nodes {
-		switch node := node.(type) {
-		case *configNodeOrigin:
-			freshnessThreshold := time.Duration(node.FreshnessThreshold)
-			expiryThreshold := time.Duration(node.ExpiryThreshold)
-			if freshnessThreshold == 0 {
-				freshnessThreshold = defaultFreshnessThreshold
-			}
-			if expiryThreshold == 0 {
-				expiryThreshold = defaultExpiryThreshold
-			}
-			if freshnessThreshold <= 0 {
-				return nil, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Validation error",
-					Detail:   "Freshness threshold must be greater than zero",
-					Subject:  node.hclRange().Ptr(),
-				}
-			}
-			if expiryThreshold <= 0 {
-				return nil, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Validation error",
-					Detail:   "Expiry threshold must be greater than zero",
-					Subject:  node.hclRange().Ptr(),
-				}
-			}
-			if freshnessThreshold > expiryThreshold {
-				return nil, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Validation error",
-					Detail:   "Freshness threshold must be less than expiry threshold",
-					Subject:  node.hclRange().Ptr(),
-				}
-			}
-			fetchPair := node.FetchPair
-			if node.FetchPair.Empty() {
-				fetchPair = node.Pair
-			}
-			nodes[i] = graph.NewOriginNode(
-				node.Origin,
-				node.Pair,
-				fetchPair,
-				freshnessThreshold,
-				expiryThreshold,
-			)
-		case *configNodeReference:
-			priceModel, ok := roots[node.PriceModel]
-			if !ok {
-				return nil, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Validation error",
-					Detail:   fmt.Sprintf("Unknown price model: %s", node.PriceModel),
-					Subject:  node.hclRange().Ptr(),
-				}
-			}
-			nodes[i] = priceModel
-		case *configNodeInvert:
-			nodes[i] = graph.NewInvertNode(node.Pair)
-		case *configNodeIndirect:
-			nodes[i] = graph.NewIndirectNode(node.Pair)
-		case *configNodeMedian:
-			nodes[i] = graph.NewMedianNode(node.Pair, node.MinSources)
-		case *DeviationCircuitBreaker:
-			nodes[i] = graph.NewDevCircuitBreakerNode(node.Pair, node.Threshold)
+		var err error
+		nodes[i], err = buildNode(node, roots)
+		if err != nil {
+			return nil, err
 		}
 		branches, err := node.buildGraph(roots)
 		if err != nil {
@@ -223,6 +167,80 @@ func (c *configNode) buildGraph(roots map[string]graph.Node) ([]graph.Node, erro
 	return nodes, nil
 }
 
-func (c *configNode) hclRange() hcl.Range {
-	return c.Range
+func buildNode(node configDynamicNode, roots map[string]graph.Node) (graph.Node, error) {
+	switch node := node.(type) {
+	case *configNodeOrigin:
+		return buildOriginNode(node)
+	case *configNodeReference:
+		return buildReferenceNode(node, roots)
+	case *configNodeInvert:
+		return graph.NewInvertNode(node.Pair), nil
+	case *configNodeIndirect:
+		return graph.NewIndirectNode(node.Pair), nil
+	case *configNodeMedian:
+		return graph.NewMedianNode(node.Pair, node.MinSources), nil
+	case *DeviationCircuitBreaker:
+		return graph.NewDevCircuitBreakerNode(node.Pair, node.Threshold), nil
+	default:
+		return nil, fmt.Errorf("unsupported node type")
+	}
+}
+
+func buildOriginNode(node *configNodeOrigin) (graph.Node, error) {
+	freshnessThreshold := time.Duration(node.FreshnessThreshold)
+	expiryThreshold := time.Duration(node.ExpiryThreshold)
+	if freshnessThreshold == 0 {
+		freshnessThreshold = defaultFreshnessThreshold
+	}
+	if expiryThreshold == 0 {
+		expiryThreshold = defaultExpiryThreshold
+	}
+	if freshnessThreshold <= 0 {
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "Freshness threshold must be greater than zero",
+			Subject:  node.hclRange().Ptr(),
+		}
+	}
+	if expiryThreshold <= 0 {
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "Expiry threshold must be greater than zero",
+			Subject:  node.hclRange().Ptr(),
+		}
+	}
+	if freshnessThreshold > expiryThreshold {
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   "Freshness threshold must be less than expiry threshold",
+			Subject:  node.hclRange().Ptr(),
+		}
+	}
+	fetchPair := node.FetchPair
+	if node.FetchPair.Empty() {
+		fetchPair = node.Pair
+	}
+	return graph.NewOriginNode(
+		node.Origin,
+		node.Pair,
+		fetchPair,
+		freshnessThreshold,
+		expiryThreshold,
+	), nil
+}
+
+func buildReferenceNode(node *configNodeReference, roots map[string]graph.Node) (graph.Node, error) {
+	priceModel, ok := roots[node.PriceModel]
+	if !ok {
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Validation error",
+			Detail:   fmt.Sprintf("Unknown price model: %s", node.PriceModel),
+			Subject:  node.hclRange().Ptr(),
+		}
+	}
+	return priceModel, nil
 }
