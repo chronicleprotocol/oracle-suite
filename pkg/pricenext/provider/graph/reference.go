@@ -6,17 +6,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 )
 
-type ReferenceMeta struct {
-	Tick provider.Tick
-}
-
-func (m ReferenceMeta) Meta() map[string]any {
-	return map[string]any{
-		"node": "reference",
-		"tick": m.Tick,
-	}
-}
-
 // ReferenceNode is a node that references another node.
 type ReferenceNode struct {
 	pair   provider.Pair
@@ -29,45 +18,51 @@ func NewReferenceNode(pair provider.Pair) *ReferenceNode {
 }
 
 // AddBranch implements the Node interface.
-func (i *ReferenceNode) AddBranch(branch ...Node) error {
+func (n *ReferenceNode) AddBranch(branch ...Node) error {
 	if len(branch) == 0 {
 		return nil
 	}
-	if i.branch != nil {
+	if n.branch != nil {
 		return fmt.Errorf("branch already exists")
 	}
 	if len(branch) != 1 {
 		return fmt.Errorf("expected 1 branch, got %d", len(branch))
 	}
-	if !branch[0].Pair().Equal(i.pair) {
-		return fmt.Errorf("expected pair %s, got %s", i.pair, branch[0].Pair())
+	if !branch[0].Pair().Equal(n.pair) {
+		return fmt.Errorf("expected pair %s, got %s", n.pair, branch[0].Pair())
 	}
-	i.branch = branch[0]
+	n.branch = branch[0]
 	return nil
 }
 
 // Branches implements the Node interface.
-func (i *ReferenceNode) Branches() []Node {
-	if i.branch == nil {
+func (n *ReferenceNode) Branches() []Node {
+	if n.branch == nil {
 		return nil
 	}
-	return []Node{i.branch}
+	return []Node{n.branch}
 }
 
 // Pair implements the Node interface.
-func (i *ReferenceNode) Pair() provider.Pair {
-	return i.pair
+func (n *ReferenceNode) Pair() provider.Pair {
+	return n.pair
 }
 
 // Tick implements the Node interface.
-func (i *ReferenceNode) Tick() provider.Tick {
-	if i.branch == nil {
+func (n *ReferenceNode) Tick() provider.Tick {
+	if n.branch == nil {
 		return provider.Tick{
-			Pair:  i.pair,
+			Pair:  n.pair,
 			Error: fmt.Errorf("branch is not set (this is likely a bug)"),
 		}
 	}
-	tick := i.branch.Tick()
-	tick.Meta = &ReferenceMeta{Tick: tick}
+	tick := n.branch.Tick()
+	tick.SubTicks = []provider.Tick{tick}
+	tick.Meta = n.Meta()
 	return tick
+}
+
+// Meta implements the Node interface.
+func (n *ReferenceNode) Meta() provider.Meta {
+	return MapMeta{"type": "reference"}
 }

@@ -2,56 +2,79 @@ package origin
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/interpolate"
 )
 
+const GenericHTTPLoggerTag = "GENERIC_HTTP_ORIGIN"
+
 type HTTPCallback func(ctx context.Context, pairs []provider.Pair, data io.Reader) []provider.Tick
+
+type GenericHTTPOptions struct {
+	// URL is an GenericHTTP endpoint that returns JSON data. It may contain
+	// the following variables:
+	//   - ${lcbase} - lower case base asset
+	//   - ${ucbase} - upper case base asset
+	//   - ${lcquote} - lower case quote asset
+	//   - ${ucquote} - upper case quote asset
+	//   - ${lcbases} - lower case base assets joined by commas
+	//   - ${ucbases} - upper case base assets joined by commas
+	//   - ${lcquotes} - lower case quote assets joined by commas
+	//   - ${ucquotes} - upper case quote assets joined by commas
+	URL string
+
+	// Headers is a set of GenericHTTP headers that are sent with each request.
+	Headers http.Header
+
+	// Callback is a function that is used to parse the response body.
+	Callback HTTPCallback
+
+	// Client is an GenericHTTP client that is used to fetch data from the
+	// GenericHTTP endpoint. If nil, http.DefaultClient is used.
+	Client *http.Client
+
+	// Logger is an GenericHTTP logger that is used to log errors. If nil,
+	// null logger is used.
+	Logger log.Logger
+}
 
 // GenericHTTP is a generic GenericHTTP price provider that can fetch prices from
 // an GenericHTTP endpoint. The callback function is used to parse the response body.
 type GenericHTTP struct {
-	// url is an GenericHTTP endpoint that returns JSON data.
-	url string
-
-	// client is an GenericHTTP client that is used to fetch data from the GenericHTTP endpoint.
-	client *http.Client
-
-	// headers is a set of GenericHTTP headers that are sent with each request.
-	headers http.Header
-
-	// callback is a function that is used to parse the response body.
+	url      string
+	client   *http.Client
+	headers  http.Header
 	callback HTTPCallback
+	logger   log.Logger
 }
 
 // NewGenericHTTP creates a new GenericHTTP instance.
-//
-// The client argument is an GenericHTTP client that is used to fetch data from the
-// GenericHTTP endpoint.
-//
-// The url argument is an GenericHTTP endpoint that returns JSON data. It may contain
-// the following variables:
-//   - ${lcbase} - lower case base asset
-//   - ${ucbase} - upper case base asset
-//   - ${lcquote} - lower case quote asset
-//   - ${ucquote} - upper case quote asset
-//   - ${lcbases} - lower case base assets joined by commas
-//   - ${ucbases} - upper case base assets joined by commas
-//   - ${lcquotes} - lower case quote assets joined by commas
-//   - ${ucquotes} - upper case quote assets joined by commas
-func NewGenericHTTP(client *http.Client, header http.Header, url string, cb HTTPCallback) (*GenericHTTP, error) {
-	if client == nil {
-		client = http.DefaultClient
+func NewGenericHTTP(opts GenericHTTPOptions) (*GenericHTTP, error) {
+	if opts.URL == "" {
+		return nil, fmt.Errorf("url cannot be empty")
+	}
+	if opts.Callback == nil {
+		return nil, fmt.Errorf("callback cannot be nil")
+	}
+	if opts.Client == nil {
+		opts.Client = http.DefaultClient
+	}
+	if opts.Logger == nil {
+		opts.Logger = null.New()
 	}
 	return &GenericHTTP{
-		url:      url,
-		client:   client,
-		headers:  header,
-		callback: cb,
+		url:      opts.URL,
+		client:   opts.Client,
+		headers:  opts.Headers,
+		callback: opts.Callback,
+		logger:   opts.Logger.WithField("tag", GenericHTTPLoggerTag),
 	}, nil
 }
 
@@ -59,6 +82,13 @@ func NewGenericHTTP(client *http.Client, header http.Header, url string, cb HTTP
 func (g *GenericHTTP) FetchTicks(ctx context.Context, pairs []provider.Pair) []provider.Tick {
 	var ticks []provider.Tick
 	for url, pairs := range g.group(pairs) {
+		g.logger.
+			WithFields(log.Fields{
+				"url":   url,
+				"pairs": pairs,
+			}).
+			Debug("HTTP request")
+
 		// Perform GenericHTTP request.
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {

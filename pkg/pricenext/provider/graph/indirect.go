@@ -7,21 +7,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-type IndirectMeta struct {
-	// Ticks is a list of ticks used to calculate cross rate.
-	Ticks []provider.Tick
-}
-
-func (m IndirectMeta) Meta() map[string]interface{} {
-	return map[string]interface{}{
-		"node":  "indirect",
-		"ticks": m.Ticks,
-	}
-}
-
 // IndirectNode is a node that calculates cross rate from the list
 // of ticks from its branches. The cross rate is calculated from the first
-// tick to the last tick hence the order of branches is important.
+// tick to the last tick.
+//
+// Order of branches is important because prices are calculated from first to
+// last. Adjacent branches must have one common asset.
 type IndirectNode struct {
 	pair     provider.Pair
 	branches []Node
@@ -37,58 +28,67 @@ func NewIndirectNode(pair provider.Pair) *IndirectNode {
 }
 
 // AddBranch implements the Node interface.
-func (i *IndirectNode) AddBranch(branch ...Node) error {
-	i.branches = append(i.branches, branch...)
+func (n *IndirectNode) AddBranch(branch ...Node) error {
+	n.branches = append(n.branches, branch...)
 	return nil
 }
 
 // Branches implements the Node interface.
-func (i *IndirectNode) Branches() []Node {
-	return i.branches
+func (n *IndirectNode) Branches() []Node {
+	return n.branches
 }
 
 // Pair implements the Node interface.
-func (i *IndirectNode) Pair() provider.Pair {
-	return i.pair
+func (n *IndirectNode) Pair() provider.Pair {
+	return n.pair
 }
 
 // Tick implements the Node interface.
-func (i *IndirectNode) Tick() provider.Tick {
+func (n *IndirectNode) Tick() provider.Tick {
 	var ticks []provider.Tick
-	for _, branch := range i.branches {
+	for _, branch := range n.branches {
 		ticks = append(ticks, branch.Tick())
 	}
-	meta := IndirectMeta{Ticks: ticks}
+	meta := n.Meta()
 	for _, tick := range ticks {
 		if err := tick.Validate(); err != nil {
 			return provider.Tick{
-				Pair:  i.pair,
-				Meta:  meta,
-				Error: fmt.Errorf("invalid tick: %w", err),
+				Pair:     n.pair,
+				SubTicks: ticks,
+				Meta:     meta,
+				Error:    fmt.Errorf("invalid tick: %w", err),
 			}
 		}
 	}
 	indirect, err := crossRate(ticks)
 	if err != nil {
 		return provider.Tick{
-			Pair:  i.pair,
-			Meta:  meta,
-			Error: err,
+			Pair:     n.pair,
+			SubTicks: ticks,
+			Meta:     meta,
+			Error:    err,
 		}
 	}
-	if !indirect.Pair.Equal(i.pair) {
+	if !indirect.Pair.Equal(n.pair) {
 		return provider.Tick{
-			Pair:  i.pair,
-			Meta:  meta,
-			Error: fmt.Errorf("expected pair %s, got %s", i.pair, indirect.Pair),
+			Pair:     n.pair,
+			SubTicks: ticks,
+			Meta:     meta,
+			Error:    fmt.Errorf("expected pair %s, got %s", n.pair, indirect.Pair),
 		}
 	}
 	return provider.Tick{
-		Pair:  indirect.Pair,
-		Price: indirect.Price,
-		Time:  indirect.Time,
-		Meta:  meta,
+		Pair:     indirect.Pair,
+		Price:    indirect.Price,
+		Time:     indirect.Time,
+		SubTicks: ticks,
+		Meta:     meta,
 	}
+}
+
+// Meta implements the Node interface.
+func (n *IndirectNode) Meta() provider.Meta {
+	return MapMeta{"type": "indirect"}
 }
 
 // crossRate returns a calculated price from the list of prices. Prices order
@@ -98,6 +98,9 @@ func (i *IndirectNode) Tick() provider.Tick {
 func crossRate(t []provider.Tick) (provider.Tick, error) {
 	if len(t) == 0 {
 		return provider.Tick{}, nil
+	}
+	if len(t) == 1 {
+		return t[0], nil
 	}
 	for i := 0; i < len(t)-1; i++ {
 		a := t[i]

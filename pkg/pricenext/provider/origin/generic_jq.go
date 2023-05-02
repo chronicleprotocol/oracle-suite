@@ -11,17 +11,65 @@ import (
 
 	"github.com/itchyny/gojq"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
+
+const GenericJQLoggerTag = "GENERIC_JQ_ORIGIN"
+
+type GenericJQOptions struct {
+	// URL is an GenericHTTP endpoint that returns JSON data. It may contain
+	// the following variables:
+	//   - ${lcbase} - lower case base asset
+	//   - ${ucbase} - upper case base asset
+	//   - ${lcquote} - lower case quote asset
+	//   - ${ucquote} - upper case quote asset
+	//   - ${lcbases} - lower case base assets joined by commas
+	//   - ${ucbases} - upper case base assets joined by commas
+	//   - ${lcquotes} - lower case quote assets joined by commas
+	//   - ${ucquotes} - upper case quote assets joined by commas
+	URL string
+
+	// Query is a JQ query that is used to parse JSON data. It must
+	// return a single value that will be used as a price or an object with the
+	// following fields:
+	//   - price - a price
+	//   - time - a timestamp (optional)
+	//   - volume - a 24h volume (optional)
+	//
+	// The JQ query may contain the following variables:
+	//   - $lcbase - lower case base asset
+	//   - $ucbase - upper case base asset
+	//   - $lcquote - lower case quote asset
+	//   - $ucquote - upper case quote asset
+	//
+	// Price and volume must be a number or a string that can be parsed as a number.
+	// Time must be a number or a string that can be parsed as a number or a string
+	// that can be parsed as a time.
+	Query string
+
+	// Headers is a set of GenericHTTP headers that are sent with each request.
+	Headers http.Header
+
+	// Client is an GenericHTTP client that is used to fetch data from the
+	// GenericHTTP endpoint. If nil, http.DefaultClient is used.
+	Client *http.Client
+
+	// Logger is an GenericHTTP logger that is used to log errors. If nil,
+	// null logger is used.
+	Logger log.Logger
+}
 
 // GenericJQ is a generic origin implementation that uses JQ to parse JSON data
 // from an GenericHTTP endpoint.
 type GenericJQ struct {
 	http *GenericHTTP
 
-	// query is a JQ query that is used to parse JSON data.
-	query *gojq.Code
+	rawQuery string
+	query    *gojq.Code
+	logger   log.Logger
 }
 
 // NewGenericJQ creates a new GenericJQ instance.
@@ -59,8 +107,20 @@ type GenericJQ struct {
 // a UNIX timestamp.
 //
 // If JQ query returns multiple values, the tick will be invalid.
-func NewGenericJQ(client *http.Client, header http.Header, url string, query string) (*GenericJQ, error) {
-	parsed, err := gojq.Parse(query)
+func NewGenericJQ(opts GenericJQOptions) (*GenericJQ, error) {
+	if opts.URL == "" {
+		return nil, fmt.Errorf("url cannot be empty")
+	}
+	if opts.Query == "" {
+		return nil, fmt.Errorf("query must be specified")
+	}
+	if opts.Client == nil {
+		opts.Client = http.DefaultClient
+	}
+	if opts.Logger == nil {
+		opts.Logger = null.New()
+	}
+	parsed, err := gojq.Parse(opts.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -74,12 +134,20 @@ func NewGenericJQ(client *http.Client, header http.Header, url string, query str
 		return nil, err
 	}
 	jq := &GenericJQ{}
-	gh, err := NewGenericHTTP(client, header, url, jq.handle)
+	gh, err := NewGenericHTTP(GenericHTTPOptions{
+		URL:      opts.URL,
+		Headers:  opts.Headers,
+		Callback: jq.handle,
+		Client:   opts.Client,
+		Logger:   opts.Logger,
+	})
 	if err != nil {
 		return nil, err
 	}
 	jq.http = gh
+	jq.rawQuery = opts.Query
 	jq.query = compiled
+	jq.logger = opts.Logger.WithField("tag", GenericJQLoggerTag)
 	return jq, nil
 }
 
@@ -99,6 +167,14 @@ func (g *GenericJQ) handle(ctx context.Context, pairs []provider.Pair, body io.R
 
 	// Run JQ query for each pair and parse the result.
 	for _, pair := range pairs {
+		g.logger.
+			WithFields(log.Fields{
+				"url":   g.http.url,
+				"query": g.rawQuery,
+				"pairs": pairs,
+			}).
+			Debug("JQ request")
+
 		tick := provider.Tick{
 			Pair: pair,
 			Time: time.Now(),
@@ -143,7 +219,7 @@ func (g *GenericJQ) handle(ctx context.Context, pairs []provider.Pair, body io.R
 					tick.Error = fmt.Errorf("unknown key in JQ result: %s", k)
 				}
 			}
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		case int, int32, int64, uint, uint32, uint64, float32, float64:
 			tick.Price = bn.Float(v)
 		}
 		ticks = append(ticks, tick)
@@ -172,9 +248,9 @@ func anyToTime(v any) (time.Time, bool) {
 				return t, true
 			}
 		}
-	case int, int8, int16, int32, int64:
+	case int, int32, int64:
 		return time.Unix(v.(int64), 0), true
-	case uint, uint8, uint16, uint32, uint64:
+	case uint, uint32, uint64:
 		return time.Unix(int64(v.(uint64)), 0), true
 	case float32, float64:
 		return time.Unix(int64(v.(float64)), 0), true

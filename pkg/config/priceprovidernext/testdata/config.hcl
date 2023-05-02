@@ -12,13 +12,13 @@ origin "binance" {
 
 price_model "primary" "BTC/USD" {
   median "BTC/USD" {
-    origin "BTC/USD" { origin = "coinbase" }
-    origin "BTC/USD" { origin = "coinbase" }
+    origin "coinbase" "BTC/USD" { }
+    origin "coinbase" "BTC/USD" { }
     indirect "BTC/USD" {
-      origin "BTC/USDC" { origin = "coinbase" }
-      origin "USDC/USD" { origin = "coinbase" }
+      origin "coinbase" "BTC/USDC" { }
+      origin "coinbase" "USDC/USD" { }
     }
-    origin "BTC/USD" { origin = "coinbase" }
+    origin "coinbase" "BTC/USD" { }
     min_sources = 2
   }
 }

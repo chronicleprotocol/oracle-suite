@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider/origin"
 
@@ -18,6 +19,7 @@ import (
 type OriginDependencies struct {
 	HTTPClient *http.Client
 	Clients    ethereum.ClientRegistry
+	Logger     log.Logger
 }
 
 type configOrigin struct {
@@ -88,7 +90,13 @@ func (c *configOrigin) PostDecodeBlock(
 func (c *configOrigin) ConfigureOrigin(d OriginDependencies) (origin.Origin, error) {
 	switch o := c.OriginConfig.(type) {
 	case *configOriginGenericJQ:
-		origin, err := origin.NewGenericJQ(d.HTTPClient, nil, o.URL, o.JQ)
+		origin, err := origin.NewGenericJQ(origin.GenericJQOptions{
+			URL:     o.URL,
+			Query:   o.JQ,
+			Headers: nil,
+			Client:  d.HTTPClient,
+			Logger:  d.Logger,
+		})
 		if err != nil {
 			return nil, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -126,7 +134,7 @@ func (c *configOrigin) ConfigureOrigin(d OriginDependencies) (origin.Origin, err
 				Decimals:  p.Decimals,
 			}
 		}
-		origin, err := origin.NewGenericEVM(client, pairs)
+		origin, err := origin.NewGenericEVM(client, pairs, 0)
 		if err != nil {
 			return nil, &hcl.Diagnostic{
 				Severity: hcl.DiagError,

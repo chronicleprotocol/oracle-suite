@@ -28,6 +28,12 @@ with aggregates that increase reliability in the DeFi environment.`,
 		[]string{"./config.hcl"},
 		"config file",
 	)
+	rootCmd.PersistentFlags().VarP(
+		&opts.Format,
+		"format",
+		"f",
+		"output format",
+	)
 
 	return rootCmd
 }

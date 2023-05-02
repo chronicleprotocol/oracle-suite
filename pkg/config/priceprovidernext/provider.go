@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider/graph"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider/origin"
@@ -17,6 +18,7 @@ import (
 type Dependencies struct {
 	HTTPClient *http.Client
 	Clients    ethereum.ClientRegistry
+	Logger     log.Logger
 }
 
 type Config struct {
@@ -37,6 +39,7 @@ func (c *Config) PriceProvider(d Dependencies) (provider.Provider, error) {
 		origins[o.Name], err = o.ConfigureOrigin(OriginDependencies{
 			HTTPClient: d.HTTPClient,
 			Clients:    d.Clients,
+			Logger:     d.Logger,
 		})
 		if err != nil {
 			return nil, err
@@ -76,5 +79,5 @@ func (c *Config) PriceProvider(d Dependencies) (provider.Provider, error) {
 		}
 	}
 
-	return graph.NewProvider(priceModels, graph.NewUpdater(origins)), nil
+	return graph.NewProvider(priceModels, graph.NewUpdater(origins, d.Logger)), nil
 }

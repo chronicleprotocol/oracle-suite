@@ -9,22 +9,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-type MedianMeta struct {
-	// Min is a minimum number of sources required to calculate median.
-	Min int
-
-	// Ticks is a list of ticks used to calculate median.
-	Ticks []provider.Tick
-}
-
-func (m MedianMeta) Meta() map[string]any {
-	return map[string]any{
-		"node":  "median",
-		"min":   m.Min,
-		"ticks": m.Ticks,
-	}
-}
-
 // MedianNode is a node that calculates median price from its
 // branches.
 type MedianNode struct {
@@ -45,32 +29,34 @@ func NewMedianNode(pair provider.Pair, min int) *MedianNode {
 }
 
 // AddBranch implements the Node interface.
-func (m *MedianNode) AddBranch(branch ...Node) error {
-	m.branches = append(m.branches, branch...)
+func (n *MedianNode) AddBranch(branch ...Node) error {
+	n.branches = append(n.branches, branch...)
 	return nil
 }
 
 // Branches implements the Node interface.
-func (m *MedianNode) Branches() []Node {
-	return m.branches
+func (n *MedianNode) Branches() []Node {
+	return n.branches
 }
 
 // Pair implements the Node interface.
-func (m *MedianNode) Pair() provider.Pair {
-	return m.pair
+func (n *MedianNode) Pair() provider.Pair {
+	return n.pair
 }
 
 // Tick implements the Node interface.
-func (m *MedianNode) Tick() provider.Tick {
+func (n *MedianNode) Tick() provider.Tick {
 	var (
 		tm     time.Time
 		ticks  []provider.Tick
 		prices []*bn.FloatNumber
 	)
 
+	meta := n.Meta()
+
 	// Collect all ticks from branches and prices from ticks
 	// that can be used to calculate median.
-	for _, branch := range m.branches {
+	for _, branch := range n.branches {
 		tick := branch.Tick()
 		if tm.IsZero() {
 			tm = tick.Time
@@ -79,7 +65,7 @@ func (m *MedianNode) Tick() provider.Tick {
 			tm = tick.Time
 		}
 		ticks = append(ticks, tick)
-		if !m.pair.Equal(tick.Pair) {
+		if !n.pair.Equal(tick.Pair) {
 			continue
 		}
 		if err := tick.Validate(); err != nil {
@@ -89,21 +75,28 @@ func (m *MedianNode) Tick() provider.Tick {
 	}
 
 	// Verify that we have enough valid prices to calculate median.
-	if len(prices) < m.min {
+	if len(prices) < n.min {
 		return provider.Tick{
-			Pair:  m.pair,
-			Meta:  MedianMeta{Min: m.min, Ticks: ticks},
-			Error: fmt.Errorf("not enough prices to calculate median"),
+			Pair:     n.pair,
+			Meta:     meta,
+			SubTicks: ticks,
+			Error:    fmt.Errorf("not enough prices to calculate median"),
 		}
 	}
 
 	// Return median tick.
 	return provider.Tick{
-		Pair:  m.pair,
-		Price: median(prices),
-		Time:  tm,
-		Meta:  MedianMeta{Min: m.min, Ticks: ticks},
+		Pair:     n.pair,
+		Price:    median(prices),
+		Time:     tm,
+		SubTicks: ticks,
+		Meta:     meta,
 	}
+}
+
+// Meta implements the Node interface.
+func (n *MedianNode) Meta() provider.Meta {
+	return MapMeta{"type": "median", "min_sources": n.min}
 }
 
 func median(xs []*bn.FloatNumber) *bn.FloatNumber {

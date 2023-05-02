@@ -6,18 +6,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 )
 
-type InvertMeta struct {
-	// Tick is a tick used to calculate inverted price.
-	Tick provider.Tick
-}
-
-func (m InvertMeta) Meta() map[string]any {
-	return map[string]any{
-		"node": "invert",
-		"tick": m.Tick,
-	}
-}
-
 // InvertNode is a node that inverts the pair and price. E.g. if the pair is
 // BTC/USD and the price is 1000, then the pair will be USD/BTC and the price
 // will be 0.001.
@@ -32,48 +20,57 @@ func NewInvertNode(pair provider.Pair) *InvertNode {
 }
 
 // AddBranch implements the Node interface.
-func (i *InvertNode) AddBranch(branch ...Node) error {
+//
+// Node requires one branch. If more than one branch is added, an error is
+// returned.
+func (n *InvertNode) AddBranch(branch ...Node) error {
 	if len(branch) == 0 {
 		return nil
 	}
-	if i.branch != nil {
+	if n.branch != nil {
 		return fmt.Errorf("branch already exists")
 	}
 	if len(branch) != 1 {
 		return fmt.Errorf("only 1 branch is allowed")
 	}
-	if !branch[0].Pair().Equal(i.pair.Invert()) {
-		return fmt.Errorf("expected pair %s, got %s", i.pair, branch[0].Pair())
+	if !branch[0].Pair().Equal(n.pair.Invert()) {
+		return fmt.Errorf("expected pair %s, got %s", n.pair, branch[0].Pair())
 	}
-	i.branch = branch[0]
+	n.branch = branch[0]
 	return nil
 }
 
 // Branches implements the Node interface.
-func (i *InvertNode) Branches() []Node {
-	if i.branch == nil {
+func (n *InvertNode) Branches() []Node {
+	if n.branch == nil {
 		return nil
 	}
-	return []Node{i.branch}
+	return []Node{n.branch}
 }
 
 // Pair implements the Node interface.
-func (i *InvertNode) Pair() provider.Pair {
-	return i.pair
+func (n *InvertNode) Pair() provider.Pair {
+	return n.pair
 }
 
 // Tick implements the Node interface.
-func (i *InvertNode) Tick() provider.Tick {
-	if i.branch == nil {
+func (n *InvertNode) Tick() provider.Tick {
+	if n.branch == nil {
 		return provider.Tick{
-			Pair:  i.pair,
+			Pair:  n.pair,
 			Error: fmt.Errorf("branch is not set"),
 		}
 	}
-	tick := i.branch.Tick()
-	tick.Pair = i.pair.Invert()
+	tick := n.branch.Tick()
+	tick.Pair = n.pair.Invert()
 	tick.Price = tick.Price.Inv()
 	tick.Volume24h = tick.Volume24h.Div(tick.Price)
-	tick.Meta = &InvertMeta{Tick: tick}
+	tick.SubTicks = []provider.Tick{tick}
+	tick.Meta = n.Meta()
 	return tick
+}
+
+// Meta implements the Node interface.
+func (n *InvertNode) Meta() provider.Meta {
+	return MapMeta{"type": "invert"}
 }

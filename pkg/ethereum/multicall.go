@@ -31,7 +31,13 @@ var multiCallContracts = map[uint64]types.Address{
 	xdaiChainID:    types.MustAddressFromHex("0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"),
 }
 
-func MultiCall(ctx context.Context, client rpc.RPC, calls []types.Call) ([][]byte, error) {
+func MultiCall(
+	ctx context.Context,
+	client rpc.RPC,
+	calls []types.Call,
+	blockNumber types.BlockNumber,
+) ([][]byte, error) {
+
 	type multicallCall struct {
 		Target types.Address `abi:"target"`
 		Data   []byte        `abi:"callData"`
@@ -64,7 +70,7 @@ func MultiCall(ctx context.Context, client rpc.RPC, calls []types.Call) ([][]byt
 	resp, err := client.Call(ctx, types.Call{
 		To:    &multicallContract,
 		Input: callata,
-	}, types.LatestBlockNumber)
+	}, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("multicall: call failed: %w", err)
 	}

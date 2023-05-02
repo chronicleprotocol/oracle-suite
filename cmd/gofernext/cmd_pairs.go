@@ -16,13 +16,13 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
-func NewPricesCmd(opts *options) *cobra.Command {
+func NewPairsCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:     "prices [PAIR...]",
-		Aliases: []string{"price"},
+		Use:     "pairs [PAIR...]",
+		Aliases: []string{"pair"},
 		Args:    cobra.MinimumNArgs(0),
-		Short:   "Return prices for given PAIRs",
-		Long:    `Return prices for given PAIRs.`,
+		Short:   "List all supported asset pairs",
+		Long:    `List all supported asset pairs.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
 			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
 				return err
@@ -36,11 +36,11 @@ func NewPricesCmd(opts *options) *cobra.Command {
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
-			ticks, err := services.PriceProvider.Ticks(ctx, services.PriceProvider.ModelNames(ctx)...)
+			models, err := services.PriceProvider.Models(ctx, services.PriceProvider.ModelNames(ctx)...)
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalTicks(ticks, opts.Format.format)
+			marshaled, err := marshalModels(models, opts.Format.format)
 			if err != nil {
 				return err
 			}
@@ -50,45 +50,45 @@ func NewPricesCmd(opts *options) *cobra.Command {
 	}
 }
 
-func marshalTicks(ticks map[string]provider.Tick, format string) ([]byte, error) {
+func marshalModels(models map[string]provider.Model, format string) ([]byte, error) {
 	switch format {
 	case "plain":
-		return marshalTicksPlain(ticks)
+		return marshalModelsPlain(models)
 	case "trace":
-		return marshalTicksTrace(ticks)
+		return marshalModelsTrace(models)
 	case "json":
-		return marshalTicksJSON(ticks)
+		return marshalModelsJSON(models)
 	default:
 		return nil, fmt.Errorf("unsupported format")
 	}
 }
 
-func marshalTicksPlain(ticks map[string]provider.Tick) ([]byte, error) {
+func marshalModelsPlain(models map[string]provider.Model) ([]byte, error) {
 	var buf bytes.Buffer
-	for _, name := range maputil.SortKeys(ticks, sort.Strings) {
-		bts, err := ticks[name].MarshalText()
+	for _, name := range maputil.SortKeys(models, sort.Strings) {
+		bts, err := models[name].MarshalText()
 		if err != nil {
 			return nil, err
 		}
-		buf.WriteString(fmt.Sprintf("Price for %s:\n", name))
+		buf.WriteString(fmt.Sprintf("Model for %s:\n", name))
 		buf.Write(bts)
 	}
 	return buf.Bytes(), nil
 }
 
-func marshalTicksTrace(ticks map[string]provider.Tick) ([]byte, error) {
+func marshalModelsTrace(models map[string]provider.Model) ([]byte, error) {
 	var buf bytes.Buffer
-	for _, name := range maputil.SortKeys(ticks, sort.Strings) {
-		bts, err := ticks[name].MarshalTrace()
+	for _, name := range maputil.SortKeys(models, sort.Strings) {
+		bts, err := models[name].MarshalTrace()
 		if err != nil {
 			return nil, err
 		}
-		buf.WriteString(fmt.Sprintf("Price for %s:\n", name))
+		buf.WriteString(fmt.Sprintf("Model for %s:\n", name))
 		buf.Write(bts)
 	}
 	return buf.Bytes(), nil
 }
 
-func marshalTicksJSON(ticks map[string]provider.Tick) ([]byte, error) {
-	return json.Marshal(ticks)
+func marshalModelsJSON(models map[string]provider.Model) ([]byte, error) {
+	return json.Marshal(models)
 }

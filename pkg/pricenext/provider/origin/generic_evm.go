@@ -26,14 +26,21 @@ type GenericETHContract struct {
 // It can fetch a price from a smart contract method that returns a price
 // as an uint256 value.
 type GenericEVM struct {
-	client    rpc.RPC
-	contracts map[provider.Pair]GenericETHContract
+	client      rpc.RPC
+	contracts   map[provider.Pair]GenericETHContract
+	blockOffset uint64
 }
 
-func NewGenericEVM(client rpc.RPC, contracts map[provider.Pair]GenericETHContract) (*GenericEVM, error) {
+func NewGenericEVM(
+	client rpc.RPC,
+	contracts map[provider.Pair]GenericETHContract,
+	blockOffset uint64,
+) (*GenericEVM, error) {
+
 	return &GenericEVM{
-		client:    client,
-		contracts: contracts,
+		client:      client,
+		contracts:   contracts,
+		blockOffset: blockOffset,
 	}, nil
 }
 
@@ -54,7 +61,16 @@ func (g GenericEVM) FetchTicks(ctx context.Context, pairs []provider.Pair) []pro
 			Input: input,
 		}
 	}
-	results, err := ethereum.MultiCall(ctx, g.client, calls)
+	blockNumber, err := g.client.BlockNumber(ctx)
+	if err != nil {
+		return withError(pairs, fmt.Errorf("failed to get block number: %w", err))
+	}
+	results, err := ethereum.MultiCall(
+		ctx,
+		g.client,
+		calls,
+		types.BlockNumberFromBigInt(bn.Int(blockNumber).Sub(g.blockOffset).BigInt()),
+	)
 	if err != nil {
 		return withError(pairs, fmt.Errorf("failed to call contract: %w", err))
 	}

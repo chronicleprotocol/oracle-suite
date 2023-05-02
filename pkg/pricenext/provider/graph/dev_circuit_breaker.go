@@ -7,60 +7,53 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-type DevCircuitBreakerMeta struct {
-	Tick          provider.Tick
-	ReferenceTick provider.Tick
-}
-
-func (m DevCircuitBreakerMeta) Meta() map[string]any {
-	return map[string]any{
-		"node":           "dev_circuit_breaker",
-		"tick":           m.Tick,
-		"reference_tick": m.ReferenceTick,
-	}
-}
-
-// DevCircuitBreaker is a circuit breaker that tips if the price deviation between
-// two branches is greater than the breaker value.
+// DevCircuitBreakerNode is a circuit breaker that tips if the price deviation
+// between two branches is greater than the breaker value.
 //
-// First branch is the price branch, second branch is the reference branch.
-// Deviation is calculated as abs(1.0 - (reference_price / price))
-type DevCircuitBreaker struct {
+// It must have two branches. First branch is the price branch, second branch
+// is the reference branch. Deviation is calculated as follows:
+// abs(1.0 - (reference_price / price))
+type DevCircuitBreakerNode struct {
 	pair            provider.Pair
 	priceBranch     Node
 	referenceBranch Node
 	threshold       float64
 }
 
-// NewDevCircuitBreakerNode creates a new DevCircuitBreaker instance.
-func NewDevCircuitBreakerNode(pair provider.Pair, threshold float64) *DevCircuitBreaker {
-	return &DevCircuitBreaker{
+// NewDevCircuitBreakerNode creates a new DevCircuitBreakerNode instance.
+func NewDevCircuitBreakerNode(pair provider.Pair, threshold float64) *DevCircuitBreakerNode {
+	return &DevCircuitBreakerNode{
 		pair:      pair,
 		threshold: threshold,
 	}
 }
 
 // Branches implements the Node interface.
-func (d *DevCircuitBreaker) Branches() []Node {
-	if d.priceBranch == nil || d.referenceBranch == nil {
+func (n *DevCircuitBreakerNode) Branches() []Node {
+	if n.priceBranch == nil || n.referenceBranch == nil {
 		return nil
 	}
-	return []Node{d.priceBranch, d.referenceBranch}
+	return []Node{n.priceBranch, n.referenceBranch}
 }
 
 // AddBranch implements the Node interface.
-func (d *DevCircuitBreaker) AddBranch(nodes ...Node) error {
+//
+// Node requires two branches, first branch is the price branch, second branch
+// is the reference branch.
+//
+// If more than two branches are added, an error is returned.
+func (n *DevCircuitBreakerNode) AddBranch(nodes ...Node) error {
 	for _, node := range nodes {
-		if !node.Pair().Equal(d.pair) {
-			return fmt.Errorf("expected pair %s, got %s", d.pair, node.Pair())
+		if !node.Pair().Equal(n.pair) {
+			return fmt.Errorf("expected pair %s, got %s", n.pair, node.Pair())
 		}
 	}
-	if len(nodes) > 0 && d.priceBranch == nil {
-		d.priceBranch = nodes[0]
+	if len(nodes) > 0 && n.priceBranch == nil {
+		n.priceBranch = NewWrapperNode(nodes[0], MapMeta{"type": "price"})
 		nodes = nodes[1:]
 	}
-	if len(nodes) > 0 && d.referenceBranch == nil {
-		d.referenceBranch = nodes[0]
+	if len(nodes) > 0 && n.referenceBranch == nil {
+		n.referenceBranch = NewWrapperNode(nodes[0], MapMeta{"type": "reference_price"})
 		nodes = nodes[1:]
 	}
 	if len(nodes) > 0 {
@@ -70,45 +63,52 @@ func (d *DevCircuitBreaker) AddBranch(nodes ...Node) error {
 }
 
 // Pair implements the Node interface.
-func (d *DevCircuitBreaker) Pair() provider.Pair {
-	return d.pair
+func (n *DevCircuitBreakerNode) Pair() provider.Pair {
+	return n.pair
 }
 
 // Tick implements the Node interface.
-func (d *DevCircuitBreaker) Tick() provider.Tick {
+func (n *DevCircuitBreakerNode) Tick() provider.Tick {
 	// Validate branches.
-	if d.priceBranch == nil || d.referenceBranch == nil {
+	if n.priceBranch == nil || n.referenceBranch == nil {
 		return provider.Tick{
-			Pair:  d.pair,
+			Pair:  n.pair,
 			Error: fmt.Errorf("two branches are required"),
 		}
 	}
-	meta := DevCircuitBreakerMeta{Tick: d.priceBranch.Tick(), ReferenceTick: d.referenceBranch.Tick()}
-	if err := d.priceBranch.Tick().Validate(); err != nil {
+	meta := n.Meta().(MapMeta)
+	if err := n.priceBranch.Tick().Validate(); err != nil {
 		return provider.Tick{
-			Pair:  d.pair,
+			Pair:  n.pair,
 			Error: fmt.Errorf("invalid price tick: %w", err),
 			Meta:  meta,
 		}
 	}
-	if err := d.referenceBranch.Tick().Validate(); err != nil {
+	if err := n.referenceBranch.Tick().Validate(); err != nil {
 		return provider.Tick{
-			Pair:  d.pair,
+			Pair:  n.pair,
 			Error: fmt.Errorf("invalid reference tick: %w", err),
 			Meta:  meta,
 		}
 	}
 
 	// Calculate deviation.
-	price := d.priceBranch.Tick().Price
-	reference := d.referenceBranch.Tick().Price
-	deviation := bn.Float(1.0).Sub(reference.Div(price)).Abs().Float64()
+	price := n.priceBranch.Tick()
+	reference := n.referenceBranch.Tick()
+	deviation := bn.Float(1.0).Sub(reference.Price.Div(price.Price)).Abs().Float64()
+	meta["deviation"] = deviation
 
 	// Return tick, if deviation is greater than threshold, add error.
-	tick := d.priceBranch.Tick()
+	tick := n.priceBranch.Tick()
+	tick.SubTicks = []provider.Tick{price, reference}
 	tick.Meta = meta
-	if deviation > d.threshold {
-		tick.Error = fmt.Errorf("deviation %f is greater than breaker %f", deviation, d.threshold)
+	if deviation > n.threshold {
+		tick.Error = fmt.Errorf("deviation %f is greater than threshold %f", deviation, n.threshold)
 	}
 	return tick
+}
+
+// Meta implements the Node interface.
+func (n *DevCircuitBreakerNode) Meta() provider.Meta {
+	return MapMeta{"type": "deviation_circuit_breaker", "threshold": n.threshold}
 }

@@ -2,16 +2,15 @@ package graph
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider/origin"
 )
 
-// ErrMissingTick is returned when an origin did not return a tick for a pair.
-var ErrMissingTick = errors.New("origin did not return a tick")
+const UpdaterLoggerTag = "GRAPH_UPDATER"
 
 // maxConcurrentUpdates represents the maximum number of concurrent tick
 // fetches from origins.
@@ -21,13 +20,18 @@ const maxConcurrentUpdates = 10
 type Updater struct {
 	origins map[string]origin.Origin
 	limiter chan struct{}
+	logger  log.Logger
 }
 
 // NewUpdater returns a new Updater instance.
-func NewUpdater(origins map[string]origin.Origin) *Updater {
+func NewUpdater(origins map[string]origin.Origin, logger log.Logger) *Updater {
+	if logger == nil {
+		logger = null.New()
+	}
 	return &Updater{
 		origins: origins,
 		limiter: make(chan struct{}, maxConcurrentUpdates),
+		logger:  logger.WithField("tag", UpdaterLoggerTag),
 	}
 }
 
@@ -75,23 +79,22 @@ func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) (ticks
 		go func(originName string, pairs []provider.Pair) {
 			defer wg.Done()
 
-			defer func() {
-				if r := recover(); r != nil {
-					mu.Lock()
-					for _, pair := range pairs {
-						ticks.add(originName, provider.Tick{
-							Pair:  pair,
-							Error: fmt.Errorf("PANIC: %v", r),
-						})
-					}
-					mu.Unlock()
-				}
-			}()
-
 			origin := u.origins[originName]
 			if origin == nil {
 				return
 			}
+
+			// Recover from panics that may occur during fetching ticks.
+			defer func() {
+				if r := recover(); r != nil {
+					u.logger.
+						WithFields(log.Fields{
+							"origin": originName,
+							"panic":  r,
+						}).
+						Error("Panic while fetching ticks")
+				}
+			}()
 
 			// Limit the number of concurrent updates.
 			u.limiter <- struct{}{}
@@ -120,11 +123,22 @@ func (u *Updater) updateNodesWithTicks(nodes nodesMap, ticks ticksMap) {
 		tick, ok := ticks[op]
 		for _, node := range nodes {
 			if !ok {
-				node.SetWarning(ErrMissingTick)
+				u.logger.
+					WithFields(log.Fields{
+						"origin": op.origin,
+						"pair":   op.pair,
+					}).
+					Warn("Origin did not return a tick for pair")
 				continue
 			}
 			if err := node.SetTick(tick); err != nil {
-				node.SetWarning(err)
+				u.logger.
+					WithFields(log.Fields{
+						"origin": op.origin,
+						"pair":   op.pair,
+					}).
+					WithError(err).
+					Warn("Failed to set tick on origin node")
 			}
 		}
 	}

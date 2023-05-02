@@ -8,18 +8,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 )
 
-type OriginMeta struct {
-	// Origin is an origin name.
-	Origin string
-}
-
-func (m OriginMeta) Meta() map[string]any {
-	return map[string]any{
-		"node":   "origin",
-		"origin": m.Origin,
-	}
-}
-
 // OriginNode is a node that provides a tick for a given asset pair from a
 // specific origin.
 type OriginNode struct {
@@ -29,7 +17,6 @@ type OriginNode struct {
 	pair      provider.Pair
 	fetchPair provider.Pair
 	tick      provider.Tick
-	warn      error
 
 	// freshnessThreshold describes the duration within which the price is
 	// considered fresh, and an update can be skipped.
@@ -74,7 +61,7 @@ func NewOriginNode(
 		origin:             origin,
 		pair:               pair,
 		fetchPair:          fetchPair,
-		tick:               provider.Tick{Pair: pair},
+		tick:               provider.Tick{Pair: pair, Error: fmt.Errorf("tick is not set")},
 		freshnessThreshold: freshnessThreshold,
 		expiryThreshold:    expiryThreshold,
 	}
@@ -121,13 +108,6 @@ func (n *OriginNode) Tick() provider.Tick {
 	return n.tick
 }
 
-// Warning returns the warning associated with the node.
-func (n *OriginNode) Warning() error {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-	return n.warn
-}
-
 // SetTick sets the node tick.
 //
 // Tick is updated only if the new tick is valid, is not older than the current
@@ -150,16 +130,9 @@ func (n *OriginNode) SetTick(tick provider.Tick) error {
 		return fmt.Errorf("unable to set tick: tick is older than the current tick")
 	}
 	tick.Pair = n.pair
-	tick.Meta = OriginMeta{Origin: n.origin}
+	tick.Meta = n.Meta()
 	n.tick = tick
 	return nil
-}
-
-// SetWarning sets the warning associated with the node.
-func (n *OriginNode) SetWarning(err error) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	n.warn = err
 }
 
 // IsFresh returns true if the price is considered fresh, that is, the price
@@ -177,4 +150,15 @@ func (n *OriginNode) IsExpired() bool {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.tick.Time.Add(n.expiryThreshold).Before(time.Now())
+}
+
+// Meta implements the Node interface.
+func (n *OriginNode) Meta() provider.Meta {
+	return MapMeta{
+		"type":                "origin",
+		"origin":              n.origin,
+		"fetch_pair":          n.fetchPair,
+		"freshness_threshold": n.freshnessThreshold,
+		"expiry_threshold":    n.expiryThreshold,
+	}
 }

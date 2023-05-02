@@ -11,7 +11,7 @@ type Node interface {
 	// Branches returns a list of nodes that are connected to the current node.
 	Branches() []Node
 
-	// AddBranch adds a new branch to the current node.
+	// AddBranch adds a branch to the current node.
 	AddBranch(...Node) error
 
 	// Pair returns a tick pair for the current node.
@@ -21,26 +21,47 @@ type Node interface {
 	// from a data source, while branch nodes return a tick calculated from
 	// the ticks of its branches.
 	Tick() provider.Tick
+
+	// Meta returns a map that contains meta information about the node used
+	// to debug price models. It should not contain data that is accessible
+	// from node's methods.
+	Meta() provider.Meta
+}
+
+// MapMeta is a map that contains meta information as a key-value pairs.
+type MapMeta map[string]any
+
+// Meta implements the provider.Meta interface.
+func (m MapMeta) Meta() map[string]any {
+	return m
 }
 
 // Walk walks through the graph recursively and calls the given function
 // for each node.
 func Walk(fn func(Node), nodes ...Node) {
-	r := map[Node]struct{}{}
+	visited := map[Node]struct{}{}
+
 	for _, node := range nodes {
-		var recur func(Node)
-		recur = func(node Node) {
-			if _, ok := r[node]; ok {
+		var walkNodes func(Node)
+		walkNodes = func(node Node) {
+			// Skip already visited nodes.
+			if _, ok := visited[node]; ok {
 				return
 			}
-			r[node] = struct{}{}
+
+			// Mark the node as visited.
+			visited[node] = struct{}{}
+
+			// Recursively walk through the branches.
 			for _, n := range node.Branches() {
-				recur(n)
+				walkNodes(n)
 			}
 		}
-		recur(node)
+		walkNodes(node)
 	}
-	for n := range r {
+
+	// Call the given callback function for each node.
+	for n := range visited {
 		fn(n)
 	}
 }
