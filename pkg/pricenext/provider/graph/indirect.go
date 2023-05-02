@@ -93,8 +93,6 @@ func (n *IndirectNode) Meta() provider.Meta {
 
 // crossRate returns a calculated price from the list of prices. Prices order
 // is important because prices are calculated from first to last.
-//
-//nolint:gocyclo,funlen
 func crossRate(t []provider.Tick) (provider.Tick, error) {
 	if len(t) == 0 {
 		return provider.Tick{}, nil

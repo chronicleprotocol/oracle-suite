@@ -40,11 +40,7 @@ func NewUpdater(origins map[string]origin.Origin, logger log.Logger) *Updater {
 // Only origin nodes that are not fresh will be updated.
 func (u *Updater) Update(ctx context.Context, graphs []Node) error {
 	nodes, pairs := u.identifyNodesAndPairsToUpdate(graphs)
-	ticks, err := u.fetchTicksForPairs(ctx, pairs)
-	if err != nil {
-		return err
-	}
-	u.updateNodesWithTicks(nodes, ticks)
+	u.updateNodesWithTicks(nodes, u.fetchTicksForPairs(ctx, pairs))
 	return nil
 }
 
@@ -69,7 +65,7 @@ func (u *Updater) identifyNodesAndPairsToUpdate(graphs []Node) (nodesMap, pairsM
 //
 // Ticks are fetched asynchronously, number of concurrent fetches is limited by
 // the maxConcurrentUpdates constant.
-func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) (ticksMap, error) {
+func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) ticksMap {
 	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(pairs))
@@ -111,7 +107,7 @@ func (u *Updater) fetchTicksForPairs(ctx context.Context, pairs pairsMap) (ticks
 
 	wg.Wait()
 
-	return ticks, nil
+	return ticks
 }
 
 // updateNodesWithTicks updates the nodes with the given ticks.

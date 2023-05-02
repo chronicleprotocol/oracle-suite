@@ -36,11 +36,7 @@ func (c *Config) PriceProvider(d Dependencies) (provider.Provider, error) {
 	// Configure origins.
 	origins := map[string]origin.Origin{}
 	for _, o := range c.Origins {
-		origins[o.Name], err = o.ConfigureOrigin(OriginDependencies{
-			HTTPClient: d.HTTPClient,
-			Clients:    d.Clients,
-			Logger:     d.Logger,
-		})
+		origins[o.Name], err = o.ConfigureOrigin(d)
 		if err != nil {
 			return nil, err
 		}

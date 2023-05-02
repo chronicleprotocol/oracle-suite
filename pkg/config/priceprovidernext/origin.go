@@ -2,25 +2,16 @@ package priceprovider
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider/origin"
 
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
-
-type OriginDependencies struct {
-	HTTPClient *http.Client
-	Clients    ethereum.ClientRegistry
-	Logger     log.Logger
-}
 
 type configOrigin struct {
 	// Name of the origin.
@@ -88,7 +79,7 @@ func (c *configOrigin) PostDecodeBlock(
 	return nil
 }
 
-func (c *configOrigin) ConfigureOrigin(d OriginDependencies) (origin.Origin, error) {
+func (c *configOrigin) ConfigureOrigin(d Dependencies) (origin.Origin, error) {
 	switch o := c.OriginConfig.(type) {
 	case *configOriginGenericJQ:
 		origin, err := origin.NewGenericJQ(origin.GenericJQOptions{
