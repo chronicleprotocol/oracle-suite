@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -12,64 +13,117 @@ import (
 )
 
 func TestDevCircuitBreakerNode(t *testing.T) {
+	pair := provider.Pair{Base: "BTC", Quote: "USD"}
 	tests := []struct {
-		name           string
-		priceValue     float64
-		referenceValue float64
-		wantErr        bool
+		name          string
+		priceTick     provider.Tick
+		referenceTick provider.Tick
+		wantErr       bool
 	}{
 		{
-			name:           "below threshold",
-			priceValue:     10,
-			referenceValue: 10.5,
-			wantErr:        false,
+			name: "below threshold",
+			priceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(10),
+				Time:  time.Now(),
+			},
+			referenceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(10.6),
+				Time:  time.Now(),
+			},
+			wantErr: false,
 		},
 		{
-			name:           "above threshold",
-			priceValue:     10,
-			referenceValue: 12,
-			wantErr:        true,
+			name: "above threshold (lower price than reference)",
+			priceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(10),
+				Time:  time.Now(),
+			},
+			referenceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(12),
+				Time:  time.Now(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "above threshold (higher price than reference)",
+			priceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(14),
+				Time:  time.Now(),
+			},
+			referenceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(12),
+				Time:  time.Now(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid price",
+			priceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(14),
+				Time:  time.Now(),
+				Error: errors.New("invalid price"),
+			},
+			referenceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(12),
+				Time:  time.Now(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid reference price",
+			priceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(14),
+				Time:  time.Now(),
+			},
+			referenceTick: provider.Tick{
+				Pair:  pair,
+				Price: bn.Float(14),
+				Time:  time.Now(),
+				Error: errors.New("invalid reference price"),
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Mock nodes
-			pair := provider.Pair{Base: "BTC", Quote: "USD"}
+			// Mock nodes.
 			priceNode := new(mockNode)
 			referenceNode := new(mockNode)
 			priceNode.On("Pair").Return(pair)
 			referenceNode.On("Pair").Return(pair)
-			priceNode.On("Tick").Return(provider.Tick{
-				Pair:  pair,
-				Price: bn.Float(tt.priceValue),
-				Time:  time.Now(),
-			})
-			referenceNode.On("Tick").Return(provider.Tick{
-				Pair:  pair,
-				Price: bn.Float(tt.referenceValue),
-				Time:  time.Now(),
-			})
+			priceNode.On("Tick").Return(tt.priceTick)
+			referenceNode.On("Tick").Return(tt.referenceTick)
 
-			// Create dev circuit breaker node
+			// Create dev circuit breaker node.
 			node := NewDevCircuitBreakerNode(provider.Pair{Base: "BTC", Quote: "USD"}, 0.1)
 			require.NoError(t, node.AddBranch(priceNode, referenceNode))
 
-			// Test
+			// Test.
 			tick := node.Tick()
-			assert.Equal(t, tick.Price.Float64(), tt.priceValue)
 			if tt.wantErr {
 				assert.Error(t, tick.Validate())
 			} else {
 				require.NoError(t, tick.Validate())
+				assert.Equal(t, tick.Price, tt.priceTick.Price)
 			}
 		})
 	}
 }
 
 func TestDevCircuitBreakerNode_AddBranch(t *testing.T) {
-	mockNode := new(mockNode)
-	mockNode.On("Pair").Return(provider.Pair{Base: "BTC", Quote: "USD"})
-
+	btcusdNode := new(mockNode)
+	ethusdNode := new(mockNode)
+	btcusdNode.On("Pair").Return(provider.Pair{Base: "BTC", Quote: "USD"})
+	ethusdNode.On("Pair").Return(provider.Pair{Base: "ETH", Quote: "USD"})
 	tests := []struct {
 		name    string
 		input   []Node
@@ -77,21 +131,25 @@ func TestDevCircuitBreakerNode_AddBranch(t *testing.T) {
 	}{
 		{
 			name:    "add one branch",
-			input:   []Node{mockNode},
+			input:   []Node{btcusdNode},
 			wantErr: false,
 		},
 		{
 			name:    "add two branches",
-			input:   []Node{mockNode, mockNode},
+			input:   []Node{btcusdNode, btcusdNode},
 			wantErr: false,
 		},
 		{
 			name:    "add three branches",
-			input:   []Node{mockNode, mockNode, mockNode},
+			input:   []Node{btcusdNode, btcusdNode, btcusdNode},
+			wantErr: true,
+		},
+		{
+			name:    "invalid pair",
+			input:   []Node{ethusdNode},
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			node := NewDevCircuitBreakerNode(provider.Pair{Base: "BTC", Quote: "USD"}, 0.1)
@@ -103,4 +161,23 @@ func TestDevCircuitBreakerNode_AddBranch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDevCircuitBreakerNode_Branches(t *testing.T) {
+	// Mock nodes.
+	priceNode := new(mockNode)
+	referenceNode := new(mockNode)
+	priceNode.On("Pair").Return(provider.Pair{Base: "BTC", Quote: "USD"})
+	referenceNode.On("Pair").Return(provider.Pair{Base: "BTC", Quote: "USD"})
+
+	// Test.
+	node := NewDevCircuitBreakerNode(provider.Pair{Base: "BTC", Quote: "USD"}, 0.1)
+	require.NoError(t, node.AddBranch(priceNode, referenceNode))
+	branches := node.Branches()
+	assert.Equal(t, 2, len(branches))
+}
+
+func TestDevCircuitBreakerNode_Pair(t *testing.T) {
+	node := NewDevCircuitBreakerNode(provider.Pair{Base: "BTC", Quote: "USD"}, 0.1)
+	assert.Equal(t, "BTC/USD", node.Pair().String())
 }
