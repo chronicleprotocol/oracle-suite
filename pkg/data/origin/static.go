@@ -49,7 +49,6 @@ func (s *Static) FetchDataPoints(_ context.Context, query []any) (map[any]data.P
 		default:
 			return nil, fmt.Errorf("invalid query type: %T", q)
 		}
-
 	}
 	return points, nil
 }
