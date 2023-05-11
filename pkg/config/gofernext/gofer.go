@@ -7,19 +7,19 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	dataproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
-	priceProviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/priceprovidernext"
+	"github.com/chronicleprotocol/oracle-suite/pkg/data"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/pricenext/provider"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 // Config is the configuration for Gofer.
 type Config struct {
-	Gofer    priceProviderConfig.Config `hcl:"gofernext,block"`
-	Ethereum *ethereumConfig.Config     `hcl:"ethereum,block,optional"`
-	Logger   *loggerConfig.Config       `hcl:"logger,block,optional"`
+	Gofer    dataproviderConfig.Config `hcl:"gofernext,block"`
+	Ethereum *ethereumConfig.Config    `hcl:"ethereum,block,optional"`
+	Logger   *loggerConfig.Config      `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
@@ -28,8 +28,8 @@ type Config struct {
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	PriceProvider provider.Provider
-	Logger        log.Logger
+	DataProvider data.Provider
+	Logger       log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
 }
@@ -40,7 +40,7 @@ func (s *Services) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	if p, ok := s.PriceProvider.(pkgSupervisor.Service); ok {
+	if p, ok := s.DataProvider.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(p)
 	}
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
@@ -67,7 +67,7 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 	if err != nil {
 		return nil, err
 	}
-	priceProvider, err := c.Gofer.PriceProvider(priceProviderConfig.Dependencies{
+	priceProvider, err := c.Gofer.DataProvider(dataproviderConfig.Dependencies{
 		HTTPClient: &http.Client{},
 		Clients:    clients,
 		Logger:     logger,
@@ -76,7 +76,7 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 		return nil, err
 	}
 	return &Services{
-		PriceProvider: priceProvider,
-		Logger:        logger,
+		DataProvider: priceProvider,
+		Logger:       logger,
 	}, nil
 }

@@ -18,7 +18,7 @@ var floatOne = big.NewFloat(1)
 //   - float32, float64
 //   - string - a string accepted by big.Float.SetString, otherwise it returns nil
 //
-// If the input value is not one of the supported types, Float will panic.
+// If the input value is not one of the supported types, nil is returned.
 func Float(x any) *FloatNumber {
 	switch x := x.(type) {
 	case IntNumber:
@@ -41,9 +41,8 @@ func Float(x any) *FloatNumber {
 		return convertFloat64ToFloat(anyToFloat64(x))
 	case string:
 		return convertStringToFloat(x)
-	default:
-		panic("bn: invalid type")
 	}
+	return nil
 }
 
 // FloatNumber represents a floating-point number.

@@ -19,7 +19,7 @@ var intOne = big.NewInt(1)
 //   - string - a string accepted by big.Int.SetString, otherwise it returns nil
 //   - []byte - big-endian representation of the integer
 //
-// If the input value is not one of the supported types, Int will panic.
+// If the input value is not one of the supported types, nil is returned.
 func Int(x any) *IntNumber {
 	switch x := x.(type) {
 	case IntNumber:
@@ -44,9 +44,8 @@ func Int(x any) *IntNumber {
 		return convertStringToInt(x)
 	case []byte:
 		return convertBytesToInt(x)
-	default:
-		panic("bn: invalid type")
 	}
+	return nil
 }
 
 // IntNumber represents an arbitrary-precision integer.

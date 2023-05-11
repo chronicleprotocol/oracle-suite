@@ -12,7 +12,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		Version: opts.Version,
 		Short:   "Tool for providing reliable data in the blockchain ecosystem",
 		Long: `
-Gofer is a tool that provides reliable asset prices taken from various sources.
+Gofer is a tool that provides reliable data points taken from various sources.
 
 It is a tool that allows for easy data retrieval from various sources
 with aggregates that increase reliability in the DeFi environment.`,

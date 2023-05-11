@@ -37,7 +37,7 @@ func (v *formatTypeValue) Set(s string) error {
 		v.format = formatPlain
 	case formatTrace:
 		v.format = formatTrace
-	case formatJSON:
+	case formatJSON, "":
 		v.format = formatJSON
 	default:
 		return fmt.Errorf("unsupported format")

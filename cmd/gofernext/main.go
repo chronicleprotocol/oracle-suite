@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/data"
 )
 
 // exitCode to be returned by the application.
@@ -17,8 +19,8 @@ func main() {
 
 	rootCmd := NewRootCommand(&opts)
 	rootCmd.AddCommand(
-		NewPairsCmd(&opts),
-		NewPricesCmd(&opts),
+		NewModelsCmd(&opts),
+		NewDataCmd(&opts),
 	)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -28,4 +30,11 @@ func main() {
 		}
 	}
 	os.Exit(exitCode)
+}
+
+func getModelsNames(ctx context.Context, provider data.Provider, args []string) []string {
+	if len(args) == 0 {
+		return provider.ModelNames(ctx)
+	}
+	return args
 }

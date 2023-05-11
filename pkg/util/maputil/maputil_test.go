@@ -54,3 +54,16 @@ func TestCopy(t *testing.T) {
 		assert.NotSame(t, m, Copy(m))
 	})
 }
+
+func TestMerge(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		m1 := map[string]string{"a": "a"}
+		m2 := map[string]string{"b": "b"}
+		assert.Equal(t, map[string]string{"a": "a", "b": "b"}, Merge(m1, m2))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		m1 := map[int]int{1: 1}
+		m2 := map[int]int{2: 2}
+		assert.Equal(t, map[int]int{1: 1, 2: 2}, Merge(m1, m2))
+	})
+}

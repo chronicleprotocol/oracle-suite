@@ -40,3 +40,15 @@ func Copy[T1 comparable, T2 any](m map[T1]T2) map[T1]T2 {
 	}
 	return newMap
 }
+
+// Merge returns a new map that contains all the elements of the given maps.
+func Merge[T1 comparable, T2 any](m1, m2 map[T1]T2) map[T1]T2 {
+	newMap := make(map[T1]T2, len(m1)+len(m2))
+	for k, v := range m1 {
+		newMap[k] = v
+	}
+	for k, v := range m2 {
+		newMap[k] = v
+	}
+	return newMap
+}
