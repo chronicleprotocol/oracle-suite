@@ -24,6 +24,11 @@ type Provider struct {
 }
 
 // NewProvider creates a new price data.
+//
+// Models are map of data models graphs keyed by their data model name.
+//
+// Updater is an optional updater which will be used to update the data models
+// before returning the data point.
 func NewProvider(models map[string]Node, updater *Updater) Provider {
 	return Provider{
 		models:  models,
@@ -42,8 +47,10 @@ func (p Provider) DataPoint(ctx context.Context, model string) (data.Point, erro
 	if !ok {
 		return data.Point{}, ErrModelNotFound{model: model}
 	}
-	if err := p.updater.Update(ctx, []Node{node}); err != nil {
-		return data.Point{}, err
+	if p.updater != nil {
+		if err := p.updater.Update(ctx, []Node{node}); err != nil {
+			return data.Point{}, err
+		}
 	}
 	return node.DataPoint(), nil
 }
@@ -58,8 +65,10 @@ func (p Provider) DataPoints(ctx context.Context, models ...string) (map[string]
 		}
 		nodes[i] = node
 	}
-	if err := p.updater.Update(ctx, nodes); err != nil {
-		return nil, err
+	if p.updater != nil {
+		if err := p.updater.Update(ctx, nodes); err != nil {
+			return nil, err
+		}
 	}
 	points := make(map[string]data.Point, len(models))
 	for i, model := range models {

@@ -94,7 +94,7 @@ func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Runtime error",
-			Detail:   fmt.Sprintf("Failed to create the Feed service: %v", err),
+			Detail:   fmt.Sprintf("Failed to create the ConfigureFeed service: %v", err),
 			Subject:  c.Range.Ptr(),
 		}
 	}

@@ -1,5 +1,5 @@
 include = [
-  "./config_gofernext.hcl"
+  "./config_next.hcl"
 ]
 
 variables {

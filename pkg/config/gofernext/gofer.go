@@ -67,7 +67,7 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 	if err != nil {
 		return nil, err
 	}
-	priceProvider, err := c.Gofer.DataProvider(dataproviderConfig.Dependencies{
+	priceProvider, err := c.Gofer.ConfigureDataProvider(dataproviderConfig.Dependencies{
 		HTTPClient: &http.Client{},
 		Clients:    clients,
 		Logger:     logger,

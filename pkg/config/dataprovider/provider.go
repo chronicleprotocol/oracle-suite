@@ -30,7 +30,7 @@ type Config struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
-func (c *Config) DataProvider(d Dependencies) (data.Provider, error) {
+func (c *Config) ConfigureDataProvider(d Dependencies) (data.Provider, error) {
 	var err error
 
 	// Configure origins:
@@ -45,6 +45,7 @@ func (c *Config) DataProvider(d Dependencies) (data.Provider, error) {
 		return nil, err
 	}
 
+	// Configure data provider:
 	return graph.NewProvider(models, graph.NewUpdater(origins, d.Logger)), nil
 }
 
