@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package config
 
 import (
@@ -25,19 +40,20 @@ var hclContext = &hcl.EvalContext{
 	},
 	Functions: map[string]function.Function{
 		// Standard library functions:
-		"try":    tryfunc.TryFunc,
-		"can":    tryfunc.CanFunc,
-		"range":  stdlib.RangeFunc,
-		"length": stdlib.LengthFunc,
-		"split":  stdlib.SplitFunc,
+		"can":     tryfunc.CanFunc,
+		"length":  stdlib.LengthFunc,
+		"range":   stdlib.RangeFunc,
+		"replace": stdlib.ReplaceFunc,
+		"split":   stdlib.SplitFunc,
+		"try":     tryfunc.TryFunc,
 
 		// Custom functions:
-		"tostring": funcs.MakeToFunc(cty.String),
-		"tonumber": funcs.MakeToFunc(cty.Number),
 		"tobool":   funcs.MakeToFunc(cty.Bool),
-		"toset":    funcs.MakeToFunc(cty.Set(cty.DynamicPseudoType)),
 		"tolist":   funcs.MakeToFunc(cty.List(cty.DynamicPseudoType)),
 		"tomap":    funcs.MakeToFunc(cty.Map(cty.DynamicPseudoType)),
+		"tonumber": funcs.MakeToFunc(cty.Number),
+		"toset":    funcs.MakeToFunc(cty.Set(cty.DynamicPseudoType)),
+		"tostring": funcs.MakeToFunc(cty.String),
 	},
 }
 

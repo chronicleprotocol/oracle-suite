@@ -1,7 +1,3 @@
-include = [
-  "./config_gofernext.hcl"
-]
-
 variables {
   # List of feeds that are allowed to send price updates and event attestations.
   feeds = try(env.CFG_FEEDS == "" ? [] : split(",", env.CFG_FEEDS), [
@@ -32,6 +28,80 @@ variables {
     "0xaC8519b3495d8A3E3E44c041521cF7aC3f8F63B3",
     "0xd72BA9402E9f3Ff01959D6c841DDD13615FFff42"
   ])
+  median_contracts = {
+    "BTC/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0xe0F30cb149fAADC7247E953746Be9BbBB6B5751f",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 1
+    },
+    "ETH/BTC" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0x81A679f98b63B3dDf2F17CB5619f4d6775b3c5ED",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    },
+    "ETH/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0x64DE91F5A373Cd4c28de3600cB34C7C6cE410C85",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 1
+    },
+    "GNO/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0x31BFA908637C29707e155Cfac3a50C9823bF8723",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    },
+    "IBTA/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0xa5d4a331125D7Ece7252699e2d3CB1711950fBc8",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 10
+    },
+    "LINK/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0xbAd4212d73561B240f10C56F27e6D9608963f17b",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    },
+    "MANA/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0x681c4F8f69cF68852BAd092086ffEaB31F5B812c",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    },
+    "MATIC/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0xfe1e93840D286C83cF7401cB021B94b5bc1763d2",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    },
+    "MKR/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0xdbbe5e9b1daa91430cf0772fcebe53f6c6f137df",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 3
+    },
+    "RETH/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0xf86360f0127f8a441cfca332c75992d1c692b3d1",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    },
+    "WSTETH/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0x2F73b6567B866302e132273f67661fB89b5a66F2",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 2
+    },
+    "YFI/USD" : {
+      "msgExpiration" : 1800,
+      "oracle" : "0x89AC26C0aFCB28EC55B6CD2F6b7DAD867Fa24639",
+      "oracleExpiration" : 86400,
+      "oracleSpread" : 4
+    }
+  }
 }
 
 ethereum {
@@ -48,7 +118,7 @@ ethereum {
   }
 
   client "default" {
-    rpc_urls     = try(env.CFG_ETH_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_RPC_URLS), [
+    rpc_urls = try(env.CFG_ETH_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_RPC_URLS), [
       "https://eth.public-rpc.com"
     ])
     chain_id     = tonumber(try(env.CFG_ETH_CHAIN_ID, "1"))
@@ -56,7 +126,7 @@ ethereum {
   }
 
   client "arbitrum" {
-    rpc_urls     = try(env.CFG_ETH_ARB_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_ARB_RPC_URLS), [
+    rpc_urls = try(env.CFG_ETH_ARB_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_ARB_RPC_URLS), [
       "https://arbitrum.public-rpc.com"
     ])
     chain_id     = tonumber(try(env.CFG_ETH_ARB_CHAIN_ID, "42161"))
@@ -64,7 +134,7 @@ ethereum {
   }
 
   client "optimism" {
-    rpc_urls     = try(env.CFG_ETH_OPT_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_OPT_RPC_URLS), [
+    rpc_urls = try(env.CFG_ETH_OPT_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_OPT_RPC_URLS), [
       "https://mainnet.optimism.io"
     ])
     chain_id     = tonumber(try(env.CFG_ETH_OPT_CHAIN_ID, "10"))
@@ -123,39 +193,18 @@ spire {
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
   pairs = try(env.CFG_SPIRE_PAIRS == "" ? [] : split(",", env.CFG_SPIRE_PAIRS), [
-    "AAVEUSD",
-    "AVAXUSD",
-    "BALUSD",
-    "BATUSD",
     "BTCUSD",
-    "COMPUSD",
-    "CRVUSD",
-    "DOTUSD",
     "ETHBTC",
     "ETHUSD",
-    "FILUSD",
     "GNOUSD",
     "IBTAUSD",
     "LINKUSD",
-    "LRCUSD",
     "MANAUSD",
-    "MKRETH",
+    "MATICUSD",
     "MKRUSD",
-    "PAXGUSD",
     "RETHUSD",
-    "SNXUSD",
-    "SOLUSD",
-    "UNIUSD",
-    "USDTUSD",
-    "WNXMUSD",
-    "XRPUSD",
-    "XTZUSD",
-    "YFIUSD",
-    "ZECUSD",
-    "ZRXUSD",
-    "STETHUSD",
     "WSTETHUSD",
-    "MATICUSD"
+    "YFIUSD",
   ])
 }
 
@@ -163,39 +212,18 @@ ghost {
   ethereum_key = "default"
   interval     = try(tonumber(env.CFG_GHOST_INTERVAL, 60))
   pairs        = try(env.CFG_GHOST_PAIRS == "" ? [] : split(",", env.CFG_GHOST_PAIRS), [
-    "AAVE/USD",
-    "AVAX/USD",
-    "BAL/USD",
-    "BAT/USD",
     "BTC/USD",
-    "COMP/USD",
-    "CRV/USD",
-    "DOT/USD",
     "ETH/BTC",
     "ETH/USD",
-    "FIL/USD",
     "GNO/USD",
     "IBTA/USD",
     "LINK/USD",
-    "LRC/USD",
     "MANA/USD",
-    "MKR/ETH",
+    "MATIC/USD",
     "MKR/USD",
-    "PAXG/USD",
     "RETH/USD",
-    "SNX/USD",
-    "SOL/USD",
-    "UNI/USD",
-    "USDT/USD",
-    "WNXM/USD",
-    "XRP/USD",
-    "XTZ/USD",
-    "YFI/USD",
-    "ZEC/USD",
-    "ZRX/USD",
-    "STETH/USD",
     "WSTETH/USD",
-    "MATIC/USD"
+    "YFI/USD",
   ])
 }
 
@@ -652,6 +680,32 @@ lair {
       tls_insecure_skip_verify = tobool(try(env.CFG_LAIR_REDIS_TLS_INSECURE, false))
       cluster                  = tobool(try(env.CFG_LAIR_REDIS_CLUSTER, false))
       cluster_addrs            = try(env.CFG_LAIR_REDIS_CLUSTER_ADDRS == "" ? [] : split(",", env.CFG_LAIR_REDIS_CLUSTER_ADDRS), [])
+    }
+  }
+}
+
+spectre {
+  # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
+  interval = 60
+
+  dynamic "median" {
+    for_each = var.median_contracts
+    iterator = contract
+    content {
+      # Ethereum client to use for interacting with the Median contract.
+      ethereum_client = "default"
+
+      # Address of the Median contract.
+      contract_addr = contract.value.oracle
+
+      # Name of the pair to fetch the price for.
+      pair = replace(contract.key, "/", "")
+
+      # Spread in percent points above which the price is considered stale.
+      spread = contract.value.oracleSpread
+
+      # Time in seconds after which the price is considered stale.
+      expiration = contract.value.oracleExpiration
     }
   }
 }
