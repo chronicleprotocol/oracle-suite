@@ -1,7 +1,3 @@
-include = [
-  "./config_next.hcl"
-]
-
 variables {
   # List of feeds that are allowed to send price updates and event attestations.
   feeds = try(env.CFG_FEEDS == "" ? [] : split(",", env.CFG_FEEDS), [
