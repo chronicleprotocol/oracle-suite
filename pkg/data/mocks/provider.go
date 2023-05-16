@@ -20,7 +20,6 @@ func (p *Provider) ModelNames(ctx context.Context) []string {
 func (p *Provider) DataPoint(ctx context.Context, model string) (data.Point, error) {
 	args := p.Called(ctx, model)
 	return args.Get(0).(data.Point), args.Error(1)
-
 }
 
 func (p *Provider) DataPoints(ctx context.Context, models ...string) (map[string]data.Point, error) {
