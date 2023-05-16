@@ -17,7 +17,8 @@ func (e ErrModelNotFound) Error() string {
 	return fmt.Sprintf("model %s not found", e.model)
 }
 
-// Provider is a price provider which uses a graph to calculate prices.
+// Provider is a data provider which uses a graph structure to provide data
+// points.
 type Provider struct {
 	models  map[string]Node
 	updater *Updater

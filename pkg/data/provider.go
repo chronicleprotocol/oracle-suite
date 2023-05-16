@@ -10,9 +10,17 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-// Provider provides prices for asset pairs.
+// Provider provides data points.
+//
+// A data point is a value obtained from an origin. Data point can be anything
+// from an asset price to a string value.
+//
+// A model describes how a data point is calculated and obtained. For example,
+// a model can describe from which origins data points are obtained and how
+// they are combined to calculate a final value. Details of how models work
+// depend on a specific implementation.
 type Provider interface {
-	// ModelNames returns a list of supported price models.
+	// ModelNames returns a list of supported data models.
 	ModelNames(ctx context.Context) []string
 
 	// DataPoint returns a data point for the given model.
@@ -29,9 +37,9 @@ type Provider interface {
 	Models(ctx context.Context, models ...string) (map[string]Model, error)
 }
 
-// Model is a simplified representation of a model which is used to calculate
-// asset pair prices. The main purpose of this structure is to help the end
-// user to understand how prices are derived and calculated.
+// Model is a simplified representation of a model which is used to obtain
+// a data point. The main purpose of this structure is to help the end
+// user to understand how data points values are calculated and obtained.
 //
 // This structure is purely informational. The way it is used depends on
 // a specific implementation.
@@ -39,8 +47,7 @@ type Model struct {
 	// Meta contains metadata for the model. It should contain information
 	// about the model and its parameters.
 	//
-	// Following keys are reserved:
-	// - models: a list of sub models
+	// The "type" metadata field is used to determine the type of the model.
 	Meta map[string]any
 
 	// Models is a list of sub models used to calculate price.
@@ -60,12 +67,12 @@ func (m Model) MarshalTrace() ([]byte, error) {
 		meta := map[string]any{}
 		model := node.(Model)
 		typ := "node"
-		if model.Meta != nil {
-			meta = model.Meta
-		}
-		if n, ok := meta["type"].(string); ok {
-			typ = n
-			delete(meta, "type")
+		for k, v := range model.Meta {
+			if k == "type" {
+				typ, _ = v.(string)
+				continue
+			}
+			meta[k] = v
 		}
 		var models []any
 		for _, m := range model.Models {
@@ -81,7 +88,9 @@ func (m Model) MarshalTrace() ([]byte, error) {
 }
 
 // Point represents a data point. It can represent any value obtained from
-// an origin. It can be a price, a volume, a market cap, etc.
+// an origin. It can be a price, a volume, a market cap, etc. The value
+// itself is represented by the Value interface and can be anything, a number,
+// a string, or even a complex structure.
 //
 // Before using this data, you should check if it is valid by calling
 // Point.Validate() method.
@@ -99,12 +108,6 @@ type Point struct {
 	// Meta contains metadata for the data point. It may contain additional
 	// information about the data point, such as the origin it was obtained
 	// from, etc.
-	//
-	// Following keys are reserved:
-	// - value: the value of the data point
-	// - time: the time when the data point was obtained
-	// - ticks: a list of sub data points
-	// - error: an error which occurred during obtaining the data point
 	Meta map[string]any
 
 	// Error is an optional error which occurred during obtaining the price.
@@ -136,7 +139,7 @@ func (p Point) Validate() error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (p Point) MarshalJSON() ([]byte, error) {
-	meta := p.Meta
+	meta := make(map[string]any)
 	meta["value"] = p.Value
 	meta["time"] = p.Time.In(time.UTC).Format(time.RFC3339Nano)
 	var ticks []any
@@ -149,6 +152,9 @@ func (p Point) MarshalJSON() ([]byte, error) {
 	if err := p.Validate(); err != nil {
 		meta["error"] = err.Error()
 	}
+	for k, v := range p.Meta {
+		meta["meta."+k] = v
+	}
 	return json.Marshal(meta)
 }
 
@@ -157,33 +163,30 @@ func (p Point) MarshalTrace() ([]byte, error) {
 	return treerender.RenderTree(func(node any) treerender.NodeData {
 		meta := make(map[string]any)
 		point := node.(Point)
-		err := point.Validate()
-		if point.Meta != nil {
-			meta = point.Meta
-		}
 		typ := "data_point"
-		if n, ok := meta["type"].(string); ok {
-			typ = n
-			delete(meta, "type")
-		}
+		meta["value"] = point.Value
 		meta["time"] = point.Time.In(time.UTC).Format(time.RFC3339Nano)
-		if point.Value != nil {
-			meta["value"] = point.Value.Print()
-		}
 		var ticks []any
 		for _, t := range point.SubPoints {
 			ticks = append(ticks, t)
+		}
+		for k, v := range point.Meta {
+			if k == "type" {
+				typ, _ = v.(string)
+				continue
+			}
+			meta["meta."+k] = v
 		}
 		return treerender.NodeData{
 			Name:      typ,
 			Params:    meta,
 			Ancestors: ticks,
-			Error:     err,
+			Error:     point.Validate(),
 		}
 	}, []any{p}, 0), nil
 }
 
-// Value is a data point value.
+// Value is a interface for data point values.
 type Value interface {
 	// Print returns a human-readable representation of the value.
 	Print() string
