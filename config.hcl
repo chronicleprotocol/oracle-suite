@@ -105,6 +105,11 @@ variables {
 }
 
 ethereum {
+  # Labels for generating random ethereum keys. They will be created anew on every app boot.
+  # These are used to reference the keys in other sections.
+  # If you want to use a specific key, you can set the CFG_ETH_FROM
+  # environment variable along with CFG_ETH_KEYS and CFG_ETH_PASS.
+  # (optional)
   rand_keys = try(env.CFG_ETH_FROM, "") == "" ? ["default"] : []
 
   dynamic "key" {
@@ -155,7 +160,7 @@ transport {
     direct_peers_addrs = try(env.CFG_LIBP2P_DIRECT_PEERS_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_DIRECT_PEERS_ADDRS), [])
     blocked_addrs      = try(env.CFG_LIBP2P_BLOCKED_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_BLOCKED_ADDRS), [])
     disable_discovery  = tobool(try(env.CFG_LIBP2P_DISABLE_DISCOVERY, false))
-    ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
+    ethereum_key       = try(env.CFG_ETH_FROM, "") == "" ? "default" : env.CFG_ETH_FROM
   }
 
   # WebAPI transport configuration. Enabled if CFG_WEBAPI_LISTEN_ADDR is set to a listen address.
@@ -163,9 +168,9 @@ transport {
     for_each = try(env.CFG_WEBAPI_LISTEN_ADDR, "") == "" ? [] : [1]
     content {
       feeds             = var.feeds
-      listen_addr       = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0.8080")
+      listen_addr       = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0:8080")
       socks5_proxy_addr = try(env.CFG_WEBAPI_SOCKS5_PROXY_ADDR, "127.0.0.1:9050")
-      ethereum_key      = try(env.CFG_ETH_FROM, "") == "" ? "" : "default"
+      ethereum_key      = try(env.CFG_ETH_FROM, "") == "" ? "default" : env.CFG_ETH_FROM
 
       # Ethereum based address book. Enabled if CFG_WEBAPI_ETH_ADDR_BOOK is set to a contract address.
       dynamic "ethereum_address_book" {
@@ -176,18 +181,17 @@ transport {
         }
       }
 
-      # Static address book. Enabled if CFG_WEBAPI_STATIC_ADDR_BOOK is set to a comma separated list of addresses.
-      dynamic "static_address_book" {
-        for_each = try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "") == "" ? [] : [1]
-        content {
-          addresses = try(split(",", env.CFG_WEBAPI_STATIC_ADDR_BOOK), "")
-        }
+      static_address_book {
+        addresses = try(split(",", env.CFG_WEBAPI_STATIC_ADDR_BOOK), [])
       }
     }
   }
 }
 
 spire {
+  # Ethereum key to use for signing messages. The key must be present in the `ethereum` section.
+  # (optional) if not set, the first key in the `ethereum` section is used.
+  ethereum_key    = "default"
   rpc_listen_addr = try(env.CFG_SPIRE_RPC_ADDR, "0.0.0.0:9100")
   rpc_agent_addr  = try(env.CFG_SPIRE_RPC_ADDR, "127.0.0.1:9100")
 
