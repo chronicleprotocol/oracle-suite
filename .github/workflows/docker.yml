@@ -5,8 +5,8 @@ on:
   workflow_dispatch: # Allow manual trigger
   push:
     tags:
-      - v[0-9]+.[0-9]+.[0-9]+
-      - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
+      - v[0-9]+\.[0-9]+\.[0-9]+
+      - v[0-9]+\.[0-9]+\.[0-9]+-[a-z]+\.[0-9]+
 
     branches:
       - master
@@ -47,7 +47,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Docker metadata (tags, labels, etc)
         id: meta
         uses: docker/metadata-action@v3

@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -55,7 +55,7 @@ func (logger *LoggerFlag) Logger() log.Logger {
 	return logrus2.New(l)
 }
 
-const defaultVerbosity = logrus.WarnLevel
+const defaultVerbosity = logrus.InfoLevel
 
 type verbosityFlag struct {
 	wasSet    bool
