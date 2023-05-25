@@ -188,8 +188,7 @@ transport {
       }
 
       static_address_book {
-        #        addresses = try(split(",", env.CFG_WEBAPI_STATIC_ADDR_BOOK), [])
-        addresses = split(",", try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, ""))
+        addresses = split(",", try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "bw7blxrzq526zdxvrvsknas6evzkd57tfwru7rgzh2eot3kcqk4cn7yd.onion:8888"))
       }
     }
   }
