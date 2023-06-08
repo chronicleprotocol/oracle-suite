@@ -41,3 +41,15 @@ func Map[T, U any](s []T, f func(T) U) []U {
 	}
 	return out
 }
+
+// IsUnique returns true if all elements in the slice are unique.
+func IsUnique[T comparable](s []T) bool {
+	seen := make(map[T]bool)
+	for _, x := range s {
+		if seen[x] {
+			return false
+		}
+		seen[x] = true
+	}
+	return true
+}

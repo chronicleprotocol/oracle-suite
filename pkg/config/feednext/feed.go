@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
+
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
 	"github.com/chronicleprotocol/oracle-suite/pkg/feed"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -34,7 +37,7 @@ type Config struct {
 
 type Dependencies struct {
 	KeysRegistry ethereumConfig.KeyRegistry
-	DataProvider data.Provider
+	DataProvider datapoint.Provider
 	Transport    transport.Transport
 	Logger       log.Logger
 }
@@ -63,7 +66,7 @@ func (c *Config) ConfigureFeed(d Dependencies) (*feed.Feed, error) {
 	cfg := feed.Config{
 		DataModels:   c.DataModels,
 		DataProvider: d.DataProvider,
-		Handlers:     []feed.DataPointHandler{feed.NewTickHandler(ethereumKey)},
+		Signers:      []datapoint.Signer{signer.NewTick(ethereumKey, crypto.ECRecoverer)},
 		Transport:    d.Transport,
 		Logger:       d.Logger,
 		Interval:     timeutil.NewTicker(time.Second * time.Duration(c.Interval)),

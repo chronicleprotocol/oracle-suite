@@ -7,8 +7,9 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/data/graph"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data/origin"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/graph"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
 
@@ -65,7 +66,7 @@ type configNodeInvert struct {
 
 // configNodeAlias is a configuration for an Alias node.
 type configNodeAlias struct {
-	Pair origin.Pair `hcl:"pair,label"`
+	Pair value.Pair `hcl:"pair,label"`
 
 	configNode
 }
@@ -198,13 +199,13 @@ func buildNode(
 	case *configNodeReference:
 		return buildReferenceNode(node, roots)
 	case *configNodeInvert:
-		return graph.NewInvertNode(), nil
+		return graph.NewTickInvertNode(), nil
 	case *configNodeAlias:
-		return graph.NewAliasNode(node.Pair), nil
+		return graph.NewTickAliasNode(node.Pair), nil
 	case *configNodeIndirect:
-		return graph.NewIndirectNode(), nil
+		return graph.NewTickIndirectNode(), nil
 	case *configNodeMedian:
-		return graph.NewMedianNode(node.MinValues), nil
+		return graph.NewTickMedianNode(node.MinValues), nil
 	case *DeviationCircuitBreaker:
 		return graph.NewDevCircuitBreakerNode(), nil
 	default:
@@ -262,7 +263,7 @@ func buildOriginNode(node *configNodeOrigin, origins map[string]origin.Origin) (
 	var query any
 	switch origins[node.Origin].(type) {
 	case *origin.TickGenericJQ:
-		pair, err := origin.PairFromString(node.Query.AsString())
+		pair, err := value.PairFromString(node.Query.AsString())
 		if err != nil {
 			return nil, &hcl.Diagnostic{
 				Severity: hcl.DiagError,

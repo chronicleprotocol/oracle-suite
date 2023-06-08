@@ -10,7 +10,6 @@ import (
 	dataproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
@@ -28,7 +27,7 @@ type Config struct {
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	DataProvider data.Provider
+	DataProvider datapoint.Provider
 	Logger       log.Logger
 
 	supervisor *pkgSupervisor.Supervisor

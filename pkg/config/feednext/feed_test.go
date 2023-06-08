@@ -8,7 +8,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data/graph"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/graph"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"

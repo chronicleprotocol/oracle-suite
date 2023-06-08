@@ -33,3 +33,8 @@ func TestMap(t *testing.T) {
 	assert.Equal(t, []string{"A", "B", "C"}, Map(m, strings.ToUpper))
 	assert.NotSame(t, m, Map(m, strings.ToUpper))
 }
+
+func TestIsUnique(t *testing.T) {
+	assert.True(t, IsUnique([]string{"a", "b", "c"}))
+	assert.False(t, IsUnique([]string{"a", "b", "a"}))
+}

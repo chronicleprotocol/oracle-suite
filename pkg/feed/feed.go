@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -20,22 +20,13 @@ const LoggerTag = "FEED"
 type Feed struct {
 	ctx    context.Context
 	waitCh chan error
+	log    log.Logger
 
-	dataProvider data.Provider
+	dataProvider datapoint.Provider
 	dataModels   []string
-	handlers     []DataPointHandler
+	signers      []datapoint.Signer
 	transport    transport.Transport
 	interval     *timeutil.Ticker
-	log          log.Logger
-}
-
-// DataPointHandler converts data point to the event message.
-type DataPointHandler interface {
-	// Supports returns true if the handler supports given data point.
-	Supports(data.Point) bool
-
-	// Handle converts data point to the event message.
-	Handle(model string, point data.Point) (*messages.Event, error)
 }
 
 // Config is the configuration for the Feed.
@@ -44,11 +35,10 @@ type Config struct {
 	DataModels []string
 
 	// DataProvider is a data provider which is used to fetch data points.
-	DataProvider data.Provider
+	DataProvider datapoint.Provider
 
-	// Handlers is a list of handlers used to convert data points to the
-	// event messages.
-	Handlers []DataPointHandler
+	// Signers is a list of signers used to sign data points.
+	Signers []datapoint.Signer
 
 	// Transport is an implementation of transport used to send prices to
 	// the network.
@@ -75,102 +65,107 @@ func New(cfg Config) (*Feed, error) {
 	}
 	g := &Feed{
 		waitCh:       make(chan error),
+		log:          cfg.Logger.WithField("tag", LoggerTag),
 		dataProvider: cfg.DataProvider,
 		dataModels:   cfg.DataModels,
-		handlers:     cfg.Handlers,
+		signers:      cfg.Signers,
 		transport:    cfg.Transport,
 		interval:     cfg.Interval,
-		log:          cfg.Logger.WithField("tag", LoggerTag),
 	}
 	return g, nil
 }
 
 // Start implements the supervisor.Service interface.
-func (g *Feed) Start(ctx context.Context) error {
-	if g.ctx != nil {
+func (f *Feed) Start(ctx context.Context) error {
+	if f.ctx != nil {
 		return errors.New("service can be started only once")
 	}
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	g.log.Infof("Starting")
-	g.ctx = ctx
-	g.interval.Start(g.ctx)
-	go g.broadcasterRoutine()
-	go g.contextCancelHandler()
+	f.log.Infof("Starting")
+	f.ctx = ctx
+	f.interval.Start(f.ctx)
+	go f.broadcasterRoutine()
+	go f.contextCancelHandler()
 	return nil
 }
 
 // Wait implements the supervisor.Service interface.
-func (g *Feed) Wait() <-chan error {
-	return g.waitCh
+func (f *Feed) Wait() <-chan error {
+	return f.waitCh
 }
 
 // broadcast sends data point to the network.
-func (g *Feed) broadcast(model string, point data.Point) {
-	handlerFound := false
-	for _, handler := range g.handlers {
-		if !handler.Supports(point) {
+func (f *Feed) broadcast(model string, point datapoint.Point) {
+	found := false
+	for _, signer := range f.signers {
+		if !signer.Supports(f.ctx, point) {
 			continue
 		}
-		handlerFound = true
-		event, err := handler.Handle(model, point)
+		found = true
+		sig, err := signer.Sign(f.ctx, model, point)
 		if err != nil {
-			g.log.
+			f.log.
 				WithError(err).
 				WithField("dataPoint", point).
-				Error("Unable to handle data point")
+				Error("Unable to sign data point")
 		}
-		if err := g.transport.Broadcast(messages.EventV1MessageName, event); err != nil {
-			g.log.
+		msg := &messages.DataPoint{
+			Model:     model,
+			Value:     point,
+			Signature: *sig,
+		}
+		if err := f.transport.Broadcast(messages.DataPointV1MessageName, msg); err != nil {
+			f.log.
 				WithError(err).
 				WithField("dataPoint", point).
 				Error("Unable to broadcast data point")
 		}
-		g.log.
+		f.log.
 			WithField("dataPoint", point).
 			Info("Data point broadcast")
 	}
-	if !handlerFound {
-		g.log.
+	if !found {
+		f.log.
 			WithField("dataPoint", point).
 			Warn("Unable to find handler for data point")
 	}
 }
 
-func (g *Feed) broadcasterRoutine() {
+func (f *Feed) broadcasterRoutine() {
 	for {
 		select {
-		case <-g.ctx.Done():
+		case <-f.ctx.Done():
 			return
-		case <-g.interval.TickCh():
+		case <-f.interval.TickCh():
 			// Fetch all data points from the provider to update them
 			// at once.
-			_, err := g.dataProvider.DataPoints(g.ctx, g.dataModels...)
+			_, err := f.dataProvider.DataPoints(f.ctx, f.dataModels...)
 			if err != nil {
-				g.log.
+				f.log.
 					WithError(err).
 					Error("Unable to update data points")
 				continue
 			}
 
 			// Send data points to the network.
-			for _, model := range g.dataModels {
-				point, err := g.dataProvider.DataPoint(g.ctx, model)
+			for _, model := range f.dataModels {
+				point, err := f.dataProvider.DataPoint(f.ctx, model)
 				if err != nil {
-					g.log.
+					f.log.
 						WithError(err).
 						Error("Unable to get data points")
 					continue
 				}
-				g.broadcast(model, point)
+				f.broadcast(model, point)
 			}
 		}
 	}
 }
 
-func (g *Feed) contextCancelHandler() {
-	defer func() { close(g.waitCh) }()
-	defer g.log.Info("Stopped")
-	<-g.ctx.Done()
+func (f *Feed) contextCancelHandler() {
+	defer func() { close(f.waitCh) }()
+	defer f.log.Info("Stopped")
+	<-f.ctx.Done()
 }

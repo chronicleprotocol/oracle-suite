@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
@@ -50,7 +49,7 @@ func NewDataCmd(opts *options) *cobra.Command {
 	}
 }
 
-func marshalDataPoints(points map[string]data.Point, format string) ([]byte, error) {
+func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte, error) {
 	switch format {
 	case formatPlain:
 		return marshalDataPointsPlain(points)
@@ -63,7 +62,7 @@ func marshalDataPoints(points map[string]data.Point, format string) ([]byte, err
 	}
 }
 
-func marshalDataPointsPlain(points map[string]data.Point) ([]byte, error) {
+func marshalDataPointsPlain(points map[string]datapoint.Point) ([]byte, error) {
 	var buf bytes.Buffer
 	for i, name := range maputil.SortKeys(points, sort.Strings) {
 		if i > 0 {
@@ -78,7 +77,7 @@ func marshalDataPointsPlain(points map[string]data.Point) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func marshalDataPointsTrace(points map[string]data.Point) ([]byte, error) {
+func marshalDataPointsTrace(points map[string]datapoint.Point) ([]byte, error) {
 	var buf bytes.Buffer
 	for _, name := range maputil.SortKeys(points, sort.Strings) {
 		bts, err := points[name].MarshalTrace()
@@ -91,6 +90,6 @@ func marshalDataPointsTrace(points map[string]data.Point) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func marshalDataPointsJSON(points map[string]data.Point) ([]byte, error) {
+func marshalDataPointsJSON(points map[string]datapoint.Point) ([]byte, error) {
 	return json.Marshal(points)
 }

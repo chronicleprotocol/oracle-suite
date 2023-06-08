@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb";
+
+message Price {
+  // Price:
+  string wat = 1; // asset name
+  bytes val = 2; // big.Int encoded as bytes
+  int64 age = 3; // timestamp
+
+  // Ethereum Signature:
+  bytes vrs = 4; // v, r, s combined into one byte array
+
+  // Fields 5, 6 and 7 are not longer used. They must not be used in the future.
+
+  // Additional data:
+  bytes trace = 8;
+  string version = 9;
+}
+
+message Event {
+  message Signature {
+    bytes signer = 1;
+    bytes signature = 2;
+  }
+
+  string type = 1;
+  bytes id = 2;
+  bytes index = 3;
+  int64 eventTimestamp = 4;
+  int64 messageTimestamp = 5;
+  map<string, bytes> data = 6;
+  map<string, Signature> signatures = 7;
+}
+
+message DataPointMessage {
+  message Signature {
+    bytes signer = 1;
+    bytes signature = 2;
+  }
+
+  string model = 1;
+  bytes value = 2;
+  bytes signature = 3;
+}
+
+message MuSigInitializeMessage {
+  bytes sessionID = 1;
+  int64 startedAtTimestamp = 2;
+  string msgType = 3;
+  bytes msgBody = 4;
+  map<string, bytes> msgMeta = 5;
+  repeated bytes signers = 6;
+}
+
+message MuSigTerminateMessage {
+  bytes sessionID = 1;
+  string reason = 2;
+}
+
+message MuSigCommitmentMessage {
+  bytes sessionID = 1;
+  bytes commitment = 2;
+  bytes pubKeyX = 3;
+  bytes pubKeyY = 4;
+}
+
+message MuSigNonceMessage {
+  bytes sessionID = 1;
+  bytes nonce = 2;
+}
+
+message MuSigPartialSignatureMessage {
+  bytes sessionID = 1;
+  bytes partialSignature = 2;
+}
+
+message MuSigSignatureMessage {
+  bytes sessionID = 1;
+  string type = 2;
+  bytes data = 3;
+  bytes signature = 4;
+}

@@ -82,7 +82,7 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 		Keys:    keys,
 		Clients: clients,
 		Messages: map[string]pkgTransport.Message{
-			messages.EventV1MessageName: (*messages.Event)(nil),
+			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 		},
 		Logger: logger,
 	})

@@ -6,30 +6,42 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
-	dataMocks "github.com/chronicleprotocol/oracle-suite/pkg/data/mocks"
-	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	dataMocks "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-type mockHandler struct {
-	mock.Mock
+var (
+	testSignature = types.MustSignatureFromHex("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00")
+	testAddress   = types.MustAddressFromHex("0x00112233445566778899aabbccddeeff00112233")
+)
+
+type mockSigner struct{}
+
+func (s mockSigner) Supports(_ context.Context, data datapoint.Point) bool {
+	_, ok := data.Value.(pointValue)
+	return ok
 }
 
-func (m *mockHandler) Supports(point data.Point) bool {
-	args := m.Called(point)
-	return args.Bool(0)
+func (s mockSigner) Sign(_ context.Context, _ string, _ datapoint.Point) (*types.Signature, error) {
+	return &testSignature, nil
 }
 
-func (m *mockHandler) Handle(model string, point data.Point) (*messages.Event, error) {
-	args := m.Called(model, point)
-	return args.Get(0).(*messages.Event), args.Error(1)
+func (s mockSigner) Recover(_ context.Context, _ string, _ datapoint.Point, signature types.Signature) (*types.Address, error) {
+	if signature != testSignature {
+		return nil, errors.New("invalid signature")
+	}
+	return &testAddress, nil
 }
 
 type pointValue struct {
@@ -40,52 +52,62 @@ func (p pointValue) Print() string {
 	return p.value
 }
 
+func (p pointValue) MarshalBinary() (data []byte, err error) {
+	return []byte(p.value), nil
+}
+
+func (p *pointValue) UnmarshalBinary(data []byte) error {
+	p.value = string(data)
+	return nil
+}
+
 func TestFeeder_Broadcast(t *testing.T) {
+	// Test type must be registered to be able to marshal/unmarshal it.
+	value.RegisterType(&pointValue{}, 0x80000000)
+
 	tests := []struct {
 		name             string
 		dataModels       []string
-		mocks            func(*dataMocks.Provider, *mockHandler, *ethereumMocks.Key)
-		asserts          func(t *testing.T, events []*messages.Event)
+		mocks            func(*dataMocks.Provider)
+		asserts          func(t *testing.T, dataPoints []*messages.DataPoint)
 		expectedMessages int
 	}{
 		{
 			name:       "valid data point",
 			dataModels: []string{"AAABBB"},
-			mocks: func(p *dataMocks.Provider, h *mockHandler, s *ethereumMocks.Key) {
-				point := data.Point{
+			mocks: func(p *dataMocks.Provider) {
+				point := datapoint.Point{
 					Value: pointValue{value: "foo"},
 					Time:  time.Unix(100, 0),
 				}
 				p.On("DataPoints", mock.Anything, []string{"AAABBB"}).Return(
-					map[string]data.Point{"AAABBB": point},
+					map[string]datapoint.Point{"AAABBB": point},
 					nil,
 				)
 				p.On("DataPoint", mock.Anything, "AAABBB").Return(
 					point,
 					nil,
 				)
-				h.On("Supports", point).Return(true)
-				h.On("Handle", "AAABBB", point).Return(
-					&messages.Event{Type: "event"},
-					nil,
-				)
 			},
-			asserts: func(t *testing.T, events []*messages.Event) {
-				require.Len(t, events, 1)
-				require.Equal(t, "event", events[0].Type)
+			asserts: func(t *testing.T, dataPoints []*messages.DataPoint) {
+				require.Len(t, dataPoints, 1)
+				assert.Equal(t, "AAABBB", dataPoints[0].Model)
+				assert.Equal(t, pointValue{value: "foo"}, dataPoints[0].Value.Value)
+				assert.Equal(t, time.Unix(100, 0), dataPoints[0].Value.Time)
+				assert.Equal(t, testSignature, dataPoints[0].Signature)
 			},
 			expectedMessages: 1,
 		},
 		{
 			name:       "missing data model",
 			dataModels: []string{"AAABBB", "CCCDDD"},
-			mocks: func(p *dataMocks.Provider, h *mockHandler, s *ethereumMocks.Key) {
-				point := data.Point{
+			mocks: func(p *dataMocks.Provider) {
+				point := datapoint.Point{
 					Value: pointValue{value: "foo"},
 					Time:  time.Unix(100, 0),
 				}
 				p.On("DataPoints", mock.Anything, []string{"AAABBB", "CCCDDD"}).Return(
-					map[string]data.Point{"AAABBB": point},
+					map[string]datapoint.Point{"AAABBB": point},
 					nil,
 				)
 				p.On("DataPoint", mock.Anything, "AAABBB").Return(
@@ -93,45 +115,14 @@ func TestFeeder_Broadcast(t *testing.T) {
 					nil,
 				)
 				p.On("DataPoint", mock.Anything, "CCCDDD").Return(
-					data.Point{},
+					datapoint.Point{},
 					errors.New("not found"),
 				)
-				h.On("Supports", point).Return(true)
-
-				// Even if one of the data models is missing, the other one should be processed.
-				h.On("Handle", "AAABBB", point).Return(
-					&messages.Event{Type: "event"},
-					nil,
-				)
 			},
-			asserts: func(t *testing.T, events []*messages.Event) {
-				require.Len(t, events, 1)
-				require.Equal(t, "event", events[0].Type)
+			asserts: func(t *testing.T, dataPoints []*messages.DataPoint) {
+				require.Len(t, dataPoints, 1)
 			},
 			expectedMessages: 1,
-		},
-		{
-			name:       "unsupported data point",
-			dataModels: []string{"AAABBB"},
-			mocks: func(p *dataMocks.Provider, h *mockHandler, s *ethereumMocks.Key) {
-				point := data.Point{
-					Value: pointValue{value: "foo"},
-					Time:  time.Unix(100, 0),
-				}
-				p.On("DataPoints", mock.Anything, []string{"AAABBB"}).Return(
-					map[string]data.Point{"AAABBB": point},
-					nil,
-				)
-				p.On("DataPoint", mock.Anything, "AAABBB").Return(
-					point,
-					nil,
-				)
-				h.On("Supports", point).Return(false)
-			},
-			asserts: func(t *testing.T, events []*messages.Event) {
-				require.Len(t, events, 0)
-			},
-			expectedMessages: 0,
 		},
 	}
 	for _, tt := range tests {
@@ -139,24 +130,21 @@ func TestFeeder_Broadcast(t *testing.T) {
 			ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer ctxCancel()
 
-			// Prepare mocks.
-			dataProvider := &dataMocks.Provider{}
-			pointHandler := &mockHandler{}
-			signer := &ethereumMocks.Key{}
-
+			// Setup test environment.
 			ticker := timeutil.NewTicker(0)
+			dataProvider := &dataMocks.Provider{}
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
-				messages.EventV1MessageName: (*messages.Event)(nil),
+				messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 			})
 
 			// Prepare mocks.
-			tt.mocks(dataProvider, pointHandler, signer)
+			tt.mocks(dataProvider)
 
 			// Start feeder.
 			feeder, err := New(Config{
 				DataModels:   tt.dataModels,
 				DataProvider: dataProvider,
-				Handlers:     []DataPointHandler{pointHandler},
+				Signers:      []datapoint.Signer{mockSigner{}},
 				Transport:    localTransport,
 				Interval:     ticker,
 			})
@@ -169,20 +157,21 @@ func TestFeeder_Broadcast(t *testing.T) {
 				<-localTransport.Wait()
 			}()
 
+			// Trigger a tick manually to get the first message.
 			ticker.Tick()
 
 			// Get messages.
-			var events []*messages.Event
-			msgCh := localTransport.Messages(messages.EventV1MessageName)
-			for len(events) < tt.expectedMessages {
+			var dataPoints []*messages.DataPoint
+			msgCh := localTransport.Messages(messages.DataPointV1MessageName)
+			for len(dataPoints) < tt.expectedMessages {
 				select {
 				case msg := <-msgCh:
-					events = append(events, msg.Message.(*messages.Event))
+					dataPoints = append(dataPoints, msg.Message.(*messages.DataPoint))
 				}
 			}
 
-			// Asserts.
-			tt.asserts(t, events)
+			// Check that the broadcasted messages meet the expectations.
+			tt.asserts(t, dataPoints)
 		})
 	}
 }
@@ -191,6 +180,7 @@ func TestFeeder_Start(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer ctxCancel()
 
+	// Setup the test environment.
 	dataProvider := &dataMocks.Provider{}
 	localTransport := local.New([]byte("test"), 0, map[string]transport.Message{})
 	_ = localTransport.Start(ctx)
@@ -198,15 +188,23 @@ func TestFeeder_Start(t *testing.T) {
 		<-localTransport.Wait()
 	}()
 
-	gho, err := New(Config{
+	// Create a new feeder.
+	feed, err := New(Config{
 		DataModels:   []string{},
 		DataProvider: dataProvider,
 		Transport:    localTransport,
 		Interval:     timeutil.NewTicker(time.Second),
 	})
 	require.NoError(t, err)
-	require.Error(t, gho.Start(nil)) // Start without context should fail.
-	require.NoError(t, gho.Start(ctx))
-	require.Error(t, gho.Start(ctx)) // Second start should fail.
+
+	// Try to start the feeder without a context, which should fail.
+	require.Error(t, feed.Start(nil))
+
+	// Try to start the feeder with a context, which should be successful.
+	require.NoError(t, feed.Start(ctx))
+
+	// Try to start the feeder a second time, which should fail.
+	require.Error(t, feed.Start(ctx))
+
 	ctxCancel()
 }

@@ -31,6 +31,15 @@ func TestKeys(t *testing.T) {
 	})
 }
 
+func TestSlice(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		assert.ElementsMatch(t, []string{"a", "b"}, Slice(map[string]string{"a": "a", "b": "b"}))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		assert.ElementsMatch(t, []int{1, 2}, Slice(map[int]int{1: 1, 2: 2}))
+	})
+}
+
 func TestSortKeys(t *testing.T) {
 	t.Run("case-1", func(t *testing.T) {
 		m := map[string]string{"b": "b", "a": "a"}

@@ -7,10 +7,11 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/graph"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data/graph"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data/origin"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
@@ -30,7 +31,7 @@ type Config struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
-func (c *Config) ConfigureDataProvider(d Dependencies) (data.Provider, error) {
+func (c *Config) ConfigureDataProvider(d Dependencies) (datapoint.Provider, error) {
 	var err error
 
 	// Configure origins:

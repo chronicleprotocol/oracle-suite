@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/data"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
@@ -50,7 +49,7 @@ func NewModelsCmd(opts *options) *cobra.Command {
 	}
 }
 
-func marshalModels(models map[string]data.Model, format string) ([]byte, error) {
+func marshalModels(models map[string]datapoint.Model, format string) ([]byte, error) {
 	switch format {
 	case formatPlain:
 		return marshalModelsPlain(models)
@@ -63,7 +62,7 @@ func marshalModels(models map[string]data.Model, format string) ([]byte, error) 
 	}
 }
 
-func marshalModelsPlain(models map[string]data.Model) ([]byte, error) {
+func marshalModelsPlain(models map[string]datapoint.Model) ([]byte, error) {
 	var buf bytes.Buffer
 	for i, name := range maputil.SortKeys(models, sort.Strings) {
 		if i > 0 {
@@ -74,7 +73,7 @@ func marshalModelsPlain(models map[string]data.Model) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func marshalModelsTrace(models map[string]data.Model) ([]byte, error) {
+func marshalModelsTrace(models map[string]datapoint.Model) ([]byte, error) {
 	var buf bytes.Buffer
 	for _, name := range maputil.SortKeys(models, sort.Strings) {
 		bts, err := models[name].MarshalTrace()
@@ -87,6 +86,6 @@ func marshalModelsTrace(models map[string]data.Model) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func marshalModelsJSON(models map[string]data.Model) ([]byte, error) {
+func marshalModelsJSON(models map[string]datapoint.Model) ([]byte, error) {
 	return json.Marshal(models)
 }
