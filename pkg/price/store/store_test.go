@@ -43,6 +43,8 @@ func TestStore(t *testing.T) {
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)})
 	_ = tra.Start(ctx)
 
+	time.Sleep(100 * time.Millisecond)
+
 	ps, err := New(Config{
 		Storage:   NewMemoryStorage(),
 		Transport: tra,
