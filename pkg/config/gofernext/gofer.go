@@ -10,6 +10,7 @@ import (
 	dataproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
