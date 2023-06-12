@@ -14,15 +14,17 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
+const LoggerTag = "DATA_POINT_STORE"
+
 type Storage interface {
 	// Add adds a data point to the store.
-	Add(ctx context.Context, from types.Address, point datapoint.Point) error
+	Add(ctx context.Context, from types.Address, model string, point datapoint.Point) error
 
 	// LatestFrom returns the latest data point from a given address.
-	LatestFrom(ctx context.Context, from types.Address, model string) (datapoint.Point, error)
+	LatestFrom(ctx context.Context, from types.Address, model string) (point datapoint.Point, ok bool, err error)
 
 	// Latest returns the latest data points from all addresses.
-	Latest(ctx context.Context, model string) (map[types.Address]datapoint.Point, error)
+	Latest(ctx context.Context, model string) (points map[types.Address]datapoint.Point, err error)
 }
 
 // Store contains a list of prices.
@@ -49,6 +51,8 @@ type Config struct {
 	// Models is the list of models which are supported by the store.
 	Models []string
 
+	// Recoverers is the list of recoverers which are used to recover the
+	// feeder's address from the data point.
 	Recoverers []datapoint.Recoverer
 
 	// Logger is a current logger interface used by the PriceStore.
@@ -61,10 +65,16 @@ func New(cfg Config) (*Store, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
+	if cfg.Storage == nil {
+		return nil, errors.New("storage must not be nil")
+	}
+	if cfg.Transport == nil {
+		return nil, errors.New("transport must not be nil")
+	}
 	s := &Store{
 		ctx:        context.Background(),
 		waitCh:     make(chan error),
-		log:        cfg.Logger,
+		log:        cfg.Logger.WithField("tag", LoggerTag),
 		storage:    cfg.Storage,
 		transport:  cfg.Transport,
 		models:     cfg.Models,
@@ -93,6 +103,14 @@ func (p *Store) Wait() <-chan error {
 	return p.waitCh
 }
 
+func (p *Store) LatestFrom(_ context.Context, from types.Address, model string) (datapoint.Point, bool, error) {
+	return p.storage.LatestFrom(p.ctx, from, model)
+}
+
+func (p *Store) Latest(_ context.Context, model string) (map[types.Address]datapoint.Point, error) {
+	return p.storage.Latest(p.ctx, model)
+}
+
 func (p *Store) collectDataPoint(point *messages.DataPoint) error {
 	for _, recoverer := range p.recoverers {
 		if recoverer.Supports(p.ctx, point.Value) {
@@ -100,7 +118,7 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) error {
 			if err != nil {
 				return fmt.Errorf("unable to recover address: %w", err)
 			}
-			if err := p.storage.Add(p.ctx, *from, point.Value); err != nil {
+			if err := p.storage.Add(p.ctx, *from, point.Model, point.Value); err != nil {
 				return fmt.Errorf("unable to add data point: %w", err)
 			}
 			return nil
@@ -141,10 +159,10 @@ func (p *Store) dataPointCollectorRoutine() {
 			if err != nil {
 				p.log.
 					WithError(err).
-					Warn("Received invalid price")
+					Warn("Received invalid data point")
 			} else {
 				p.log.
-					Info("Price received")
+					Info("Data point received")
 			}
 		}
 	}
