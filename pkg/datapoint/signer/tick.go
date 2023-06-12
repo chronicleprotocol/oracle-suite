@@ -36,7 +36,12 @@ func (t Tick) Sign(_ context.Context, model string, data datapoint.Point) (*type
 	return t.signer.SignMessage(hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes())
 }
 
-func (t Tick) Recover(_ context.Context, model string, data datapoint.Point, signature types.Signature) (*types.Address, error) {
+func (t Tick) Recover(
+	_ context.Context,
+	model string,
+	data datapoint.Point,
+	signature types.Signature) (*types.Address, error) {
+
 	return t.recoverer.RecoverMessage(
 		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
 		signature,

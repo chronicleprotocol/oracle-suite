@@ -16,6 +16,8 @@ const RealNumberPrecision = 1e18
 // The 0 ID is reserved for unknown types.
 // Values larger than 0x80000000 are reserved for testing.
 // Changing these IDs will break backwards compatibility.
+//
+//nolint:gomnd
 var registeredTypes = map[reflect.Type]uint32{
 	reflect.TypeOf((*StaticValue)(nil)): 0x00000001,
 	reflect.TypeOf((*Tick)(nil)):        0x00000002,
@@ -124,7 +126,7 @@ func UnmarshalBinary(data []byte) (Value, error) {
 
 // uint32ToBytes takes an uint32 and returns its byte representation.
 func uint32ToBytes(value uint32) []byte {
-	return []byte{byte(value >> 24), byte(value >> 16), byte(value >> 8), byte(value)}
+	return []byte{byte(value >> 24), byte(value >> 16), byte(value >> 8), byte(value)} //nolint:gomnd
 }
 
 // bytesToUint32 takes a byte slice and returns its uint32 representation.

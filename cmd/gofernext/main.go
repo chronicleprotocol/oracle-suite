@@ -6,6 +6,7 @@ import (
 	"os"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
 // exitCode to be returned by the application.
