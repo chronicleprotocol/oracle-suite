@@ -8,10 +8,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-// RealNumberPrecision is a precision of real numbers.
-// All real numbers are multiplied by this value before being marshaled.
-const RealNumberPrecision = 1e18
-
 // Mapping from types to their unique IDs.
 // The 0 ID is reserved for unknown types.
 // Values larger than 0x80000000 are reserved for testing.

@@ -125,7 +125,7 @@ type ConfigClient struct {
 	// transactions.
 	EthereumKey string `hcl:"ethereum_key,optional"`
 
-	// ChainID is the chain SessionID to use for signing transactions.
+	// ChainID is the chain ID to use for signing transactions.
 	ChainID uint64 `hcl:"chain_id,optional"`
 
 	// HCL fields:

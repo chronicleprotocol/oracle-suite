@@ -15,11 +15,16 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
+const valPrecision = 1e18
+
+// Tick signs tick data points and recovers the signer address from a
+// signature.
 type Tick struct {
 	signer    wallet.Key
 	recoverer crypto.Recoverer
 }
 
+// NewTick creates a new Tick instance.
 func NewTick(signer wallet.Key, recoverer crypto.Recoverer) *Tick {
 	return &Tick{
 		signer:    signer,
@@ -27,24 +32,24 @@ func NewTick(signer wallet.Key, recoverer crypto.Recoverer) *Tick {
 	}
 }
 
-func (t Tick) Supports(_ context.Context, data datapoint.Point) bool {
+// Supports implements the Signer and Recoverer interfaces.
+func (t *Tick) Supports(_ context.Context, data datapoint.Point) bool {
 	_, ok := data.Value.(value.Tick)
 	return ok
 }
 
-func (t Tick) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
-	return t.signer.SignMessage(hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes())
+// Sign implements the Signer interface.
+func (t *Tick) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
+	return t.signer.SignMessage(
+		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
+	)
 }
 
-func (t Tick) Recover(
-	_ context.Context,
-	model string,
-	data datapoint.Point,
-	signature types.Signature) (*types.Address, error) {
-
+// Recover implements the Recoverer interface.
+func (t *Tick) Recover(_ context.Context, model string, data datapoint.Point, sig types.Signature) (*types.Address, error) {
 	return t.recoverer.RecoverMessage(
 		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
-		signature,
+		sig,
 	)
 }
 
@@ -52,7 +57,7 @@ func (t Tick) Recover(
 func hashTick(model string, price *bn.FloatNumber, time time.Time) types.Hash {
 	// Price (val):
 	val := make([]byte, 32)
-	price.Mul(value.RealNumberPrecision).BigInt().FillBytes(val)
+	price.Mul(valPrecision).BigInt().FillBytes(val)
 
 	// Time (age):
 	age := make([]byte, 32)

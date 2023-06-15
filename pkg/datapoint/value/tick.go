@@ -11,6 +11,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
+// TickPricePrecision is a precision of tick prices.
+// Price is multiplied by this value before being marshaled.
+const TickPricePrecision = 1e18
+
 // Tick contains a price, volume and other information for a given asset pair
 // at a given time.
 //
@@ -48,8 +52,8 @@ func (t Tick) Print() string {
 func (t Tick) MarshalBinary() ([]byte, error) {
 	return proto.Marshal(&pb.Tick{
 		Pair:      t.Pair.String(),
-		Price:     t.Price.Div(RealNumberPrecision).BigInt().Bytes(),
-		Volume24H: t.Volume24h.Div(RealNumberPrecision).BigInt().Bytes(),
+		Price:     t.Price.Div(TickPricePrecision).BigInt().Bytes(),
+		Volume24H: t.Volume24h.Div(TickPricePrecision).BigInt().Bytes(),
 	})
 }
 
@@ -64,8 +68,8 @@ func (t *Tick) UnmarshalBinary(bytes []byte) error {
 		return err
 	}
 	t.Pair = pair
-	t.Price = bn.Float(new(big.Int).SetBytes(pbTick.Price)).Div(RealNumberPrecision)
-	t.Volume24h = bn.Float(new(big.Int).SetBytes(pbTick.Volume24H)).Div(RealNumberPrecision)
+	t.Price = bn.Float(new(big.Int).SetBytes(pbTick.Price)).Div(TickPricePrecision)
+	t.Volume24h = bn.Float(new(big.Int).SetBytes(pbTick.Volume24H)).Div(TickPricePrecision)
 	return nil
 }
 

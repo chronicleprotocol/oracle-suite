@@ -7,8 +7,8 @@
 //
 // Different data point types are represented as unique types that implement
 // the Value interface from the value package. All of these types must support
-// binary format marshalling, which is essential for transmission across
-// the transport layer.
+// binary marshalling, which is essential for transmission across the transport
+// layer.
 //
 // A provider is a service that produces data points. All providers must
 // implement the Provider interface. Currently, the only implementation of
@@ -23,7 +23,7 @@
 // and USD/BTC prices.
 //
 // A specific graph within this system is often referred to as a 'model'.
-// However, within this package, the Model is a straightforward structure
+// However, within this package, the Model is a simple structure that is
 // designed to help users understand how data points are calculated and
 // retrieved.
 //

@@ -22,7 +22,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 		name           string
 		pairs          []any
 		options        TickGenericHTTPOptions
-		expectedResult []datapoint.Point
+		expectedResult map[any]datapoint.Point
 		expectedURLs   []string
 	}{
 		{
@@ -43,8 +43,8 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 					}
 				},
 			},
-			expectedResult: []datapoint.Point{
-				{
+			expectedResult: map[any]datapoint.Point{
+				value.Pair{Base: "BTC", Quote: "USD"}: {
 					Value: value.Tick{
 						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
 						Price:     bn.Float(1000),
@@ -81,8 +81,8 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 					}
 				},
 			},
-			expectedResult: []datapoint.Point{
-				{
+			expectedResult: map[any]datapoint.Point{
+				value.Pair{Base: "BTC", Quote: "USD"}: {
 					Value: value.Tick{
 						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
 						Price:     bn.Float(1000),
@@ -90,9 +90,9 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 					},
 					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
-				{
+				value.Pair{Base: "ETH", Quote: "USD"}: {
 					Value: value.Tick{
-						Pair:      value.Pair{Base: "ETC", Quote: "USD"},
+						Pair:      value.Pair{Base: "ETH", Quote: "USD"},
 						Price:     bn.Float(2000),
 						Volume24h: bn.Float(200),
 					},
@@ -137,8 +137,8 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 					return nil
 				},
 			},
-			expectedResult: []datapoint.Point{
-				{
+			expectedResult: map[any]datapoint.Point{
+				value.Pair{Base: "BTC", Quote: "USD"}: {
 					Value: value.Tick{
 						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
 						Price:     bn.Float(1000),
@@ -146,7 +146,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 					},
 					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
-				{
+				value.Pair{Base: "ETH", Quote: "USD"}: {
 					Value: value.Tick{
 						Pair:      value.Pair{Base: "ETC", Quote: "USD"},
 						Price:     bn.Float(2000),
@@ -179,16 +179,10 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 			for i, url := range tt.expectedURLs {
 				assert.Equal(t, url, requests[i].URL.String())
 			}
-			_ = points
-			/*
-				for i, dataPoint := range points {
-					assert.Equal(t, tt.expectedResult[i].Pair, dataPoint.Pair)
-					assert.Equal(t, tt.expectedResult[i].Price, dataPoint.Price)
-					assert.Equal(t, tt.expectedResult[i].Volume24h, dataPoint.Volume24h)
-					assert.Equal(t, tt.expectedResult[i].Time, dataPoint.Time)
-				}
-
-			*/
+			for i, dataPoint := range points {
+				assert.Equal(t, tt.expectedResult[i].Value.Print(), dataPoint.Value.Print())
+				assert.Equal(t, tt.expectedResult[i].Time, dataPoint.Time)
+			}
 		})
 	}
 }

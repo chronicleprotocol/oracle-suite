@@ -6,14 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func RemoveTestTypes() {
-	for k, v := range registeredTypes {
-		if v >= uint32(0x80000000) {
-			delete(registeredTypes, k)
-		}
-	}
-}
-
 type mockValue struct {
 	bin []byte
 }
@@ -32,8 +24,7 @@ func (m *mockValue) UnmarshalBinary(data []byte) error {
 }
 
 func TestMain(m *testing.M) {
-	RemoveTestTypes()
-	RegisterType(&mockValue{}, 0x80000003)
+	RegisterType(&mockValue{}, 0x80000000)
 	m.Run()
 }
 
@@ -44,7 +35,7 @@ func TestMarshalBinary(t *testing.T) {
 }
 
 func TestUnmarshalBinary(t *testing.T) {
-	data := []byte{128, 0, 0, 3, 1, 2, 3, 4}
+	data := []byte{128, 0, 0, 0, 1, 2, 3, 4}
 	m, err := UnmarshalBinary(data)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte{1, 2, 3, 4}, m.(mockValue).bin)

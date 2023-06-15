@@ -16,8 +16,12 @@ import (
 
 const LoggerTag = "DATA_POINT_STORE"
 
+// Storage is underlying storage implementation for the Store.
 type Storage interface {
 	// Add adds a data point to the store.
+	//
+	// Adding a data point with a timestamp older than the latest data point
+	// for the same address and model will be ignored.
 	Add(ctx context.Context, from types.Address, model string, point datapoint.Point) error
 
 	// LatestFrom returns the latest data point from a given address.
@@ -27,7 +31,7 @@ type Storage interface {
 	Latest(ctx context.Context, model string) (points map[types.Address]datapoint.Point, err error)
 }
 
-// Store contains a list of prices.
+// Store stores latest data points from feeds.
 type Store struct {
 	ctx    context.Context
 	waitCh chan error
@@ -55,7 +59,7 @@ type Config struct {
 	// feeder's address from the data point.
 	Recoverers []datapoint.Recoverer
 
-	// Logger is a current logger interface used by the PriceStore.
+	// Logger is a current logger interface used by the Store.
 	// The Logger is required to monitor asynchronous processes.
 	Logger log.Logger
 }
@@ -72,7 +76,6 @@ func New(cfg Config) (*Store, error) {
 		return nil, errors.New("transport must not be nil")
 	}
 	s := &Store{
-		ctx:        context.Background(),
 		waitCh:     make(chan error),
 		log:        cfg.Logger.WithField("tag", LoggerTag),
 		storage:    cfg.Storage,
@@ -103,12 +106,14 @@ func (p *Store) Wait() <-chan error {
 	return p.waitCh
 }
 
-func (p *Store) LatestFrom(_ context.Context, from types.Address, model string) (datapoint.Point, bool, error) {
-	return p.storage.LatestFrom(p.ctx, from, model)
+// LatestFrom returns the latest data point from a given address.
+func (p *Store) LatestFrom(ctx context.Context, from types.Address, model string) (datapoint.Point, bool, error) {
+	return p.storage.LatestFrom(ctx, from, model)
 }
 
-func (p *Store) Latest(_ context.Context, model string) (map[types.Address]datapoint.Point, error) {
-	return p.storage.Latest(p.ctx, model)
+// Latest returns the latest data points from all addresses.
+func (p *Store) Latest(ctx context.Context, model string) (map[types.Address]datapoint.Point, error) {
+	return p.storage.Latest(ctx, model)
 }
 
 func (p *Store) collectDataPoint(point *messages.DataPoint) error {
