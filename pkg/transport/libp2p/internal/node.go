@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -115,7 +115,7 @@ func (n *Node) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	n.tsLog.get().Info("Starting")
+	n.tsLog.get().Debug("Starting")
 	n.ctx = ctx
 
 	n.nodeEventHandler.Handle(sets.NodeStartingEvent{})
@@ -138,9 +138,11 @@ func (n *Node) Start(ctx context.Context) error {
 
 	n.nodeEventHandler.Handle(sets.NodeHostStartedEvent{})
 
-	n.tsLog.get().
-		WithField("listenAddrs", n.listenAddrStrs()).
-		Info("Listening")
+	for _, addr := range n.listenAddrStrs() {
+		n.tsLog.get().
+			WithField("addr", addr).
+			Info("Listening")
+	}
 
 	if !n.disablePubSub {
 		n.pubSub, err = pubsub.NewGossipSub(n.ctx, n.host, n.pubsubOpts...)
@@ -304,7 +306,7 @@ func (n *Node) Subscription(topic string) (*Subscription, error) {
 // contextCancelHandler handles context cancellation.
 func (n *Node) contextCancelHandler() {
 	defer func() { close(n.waitCh) }()
-	defer n.tsLog.get().Info("Stopped")
+	defer n.tsLog.get().Debug("Stopped")
 	defer n.nodeEventHandler.Handle(sets.NodeStoppedEvent{})
 	<-n.ctx.Done()
 

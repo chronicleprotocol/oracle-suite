@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -16,6 +16,7 @@
 package transport
 
 import (
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
@@ -34,6 +35,9 @@ type ReceivedMessage struct {
 
 	// Error contains an optional error returned by transport layer.
 	Error error
+
+	// Meta contains optional information about the message.
+	Meta Meta
 }
 
 // Message is a message that can be sent over transport.
@@ -57,4 +61,29 @@ type Transport interface {
 	// loops. In case of an error, an error will be returned in the
 	// ReceivedMessage structure.
 	Messages(topic string) <-chan ReceivedMessage
+}
+
+type Meta struct {
+	Transport            string
+	Topic                string
+	MessageID            string
+	PeerID               string
+	PeerAddr             string
+	ReceivedFromPeerID   string
+	ReceivedFromPeerAddr string
+}
+
+func (p *ReceivedMessage) Fields() log.Fields {
+	c := p.Meta.Transport
+	if p.Meta.Topic != "" {
+		c += ":" + p.Meta.Topic
+	}
+	return log.Fields{
+		"channel":              c,
+		"messageID":            p.Meta.MessageID,
+		"peerID":               p.Meta.PeerID,
+		"peerAddr":             p.Meta.PeerAddr,
+		"receivedFromPeerID":   p.Meta.ReceivedFromPeerID,
+		"receivedFromPeerAddr": p.Meta.ReceivedFromPeerAddr,
+	}
 }

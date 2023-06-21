@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/query"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/rpc"
@@ -174,7 +174,7 @@ func (c *Config) AsyncPriceProvider(d AsyncDependencies) (provider.Provider, err
 	if err != nil {
 		return nil, err
 	}
-	feed := feeder.NewFeeder(originSet, d.Logger)
+	feed := feed.NewFeeder(originSet, d.Logger)
 	asyncProvider, err := graph.NewAsyncProvider(graphs, feed, d.Logger)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
@@ -203,7 +203,7 @@ func (c *Config) PriceProvider(d Dependencies, noRPC bool) (provider.Provider, e
 		if err != nil {
 			return nil, err
 		}
-		feed := feeder.NewFeeder(originSet, d.Logger)
+		feed := feed.NewFeeder(originSet, d.Logger)
 		c.priceProvider = graph.NewProvider(pricesGraph, feed)
 	} else {
 		c.priceProvider, err = rpc.NewProvider("tcp", c.RPCAgentAddr)

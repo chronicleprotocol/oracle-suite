@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -45,9 +45,9 @@ func NewPullCmd(opts *options) *cobra.Command {
 
 func NewPullPriceCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
-		Use:   "price ASSET_PAIR FEEDER",
+		Use:   "price ASSET_PAIR FEED",
 		Args:  cobra.ExactArgs(2),
-		Short: "Pulls latest price for a given pair and feeder",
+		Short: "Pulls latest price for a given pair and feed",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
 				return err
@@ -71,7 +71,7 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 				return err
 			}
 			if p == nil {
-				return errors.New("there is no price in the datastore for a given feeder and asset pair")
+				return errors.New("there is no price in the datastore for a given feed and asset pair")
 			}
 			bts, err := json.Marshal(p)
 			if err != nil {

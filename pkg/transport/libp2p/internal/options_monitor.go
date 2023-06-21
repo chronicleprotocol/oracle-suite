@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -77,8 +77,8 @@ func Monitor() Options {
 	return func(n *Node) error {
 		log := func() {
 			n.tsLog.get().
-				WithField("peerCount", len(n.host.Network().Peers())).
-				Info("Connected peers")
+				WithField("count", len(n.host.Network().Peers())).
+				Info("Peers")
 		}
 		notifeeCh := make(chan struct{})
 		notifee := &monitorNotifee{notifeeCh: notifeeCh}

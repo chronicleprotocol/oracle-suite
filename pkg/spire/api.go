@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -82,7 +82,7 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 
 	n.log.
 		WithField("assetPair", arg.FilterAssetPair).
-		WithField("feeder", arg.FilterFeeder).
+		WithField("feed", arg.FilterFeeder).
 		Info("Pull prices")
 
 	var err error
@@ -90,7 +90,7 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 
 	switch {
 	case arg.FilterAssetPair != "" && arg.FilterFeeder != "":
-		price, err := n.priceStore.GetByFeeder(ctx, arg.FilterAssetPair, types.MustAddressFromHex(arg.FilterFeeder))
+		price, err := n.priceStore.GetByFeed(ctx, arg.FilterAssetPair, types.MustAddressFromHex(arg.FilterFeeder))
 		if err != nil {
 			return err
 		}
@@ -131,10 +131,10 @@ func (n *API) PullPrice(arg *PullPriceArg, resp *PullPriceResp) error {
 
 	n.log.
 		WithField("assetPair", arg.AssetPair).
-		WithField("feeder", arg.Feeder).
+		WithField("feed", arg.Feeder).
 		Info("Pull price")
 
-	price, err := n.priceStore.GetByFeeder(ctx, arg.AssetPair, types.MustAddressFromHex(arg.Feeder))
+	price, err := n.priceStore.GetByFeed(ctx, arg.AssetPair, types.MustAddressFromHex(arg.Feeder))
 	if err != nil {
 		return err
 	}

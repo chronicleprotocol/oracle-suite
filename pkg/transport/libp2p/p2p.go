@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -18,10 +18,10 @@ package libp2p
 import (
 	"context"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"time"
 
-	cryptoETH "github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/defiweb/go-eth/wallet"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -39,7 +39,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-const LoggerTag = "P2P"
+const LoggerTag = "LIBP2P"
+const TransportName = "libp2p"
 
 // Mode describes operating mode of the node.
 type Mode int
@@ -48,7 +49,7 @@ const (
 	// ClientMode operates the node as client. ClientMode can publish and read messages
 	// and provides peer discovery service for other nodes.
 	ClientMode Mode = iota
-	// BootstrapMode operates the node as a bootstrap node. BootstrapMode node provide
+	// BootstrapMode operates the node as a bootstrap node. BootstrapMode node provides
 	// only peer discovery service for other nodes.
 	BootstrapMode
 )
@@ -203,6 +204,17 @@ func New(cfg Config) (*P2P, error) {
 		opts = append(opts, internal.PeerPrivKey(cfg.PeerPrivKey))
 	}
 
+	for _, addr := range cfg.AuthorAllowlist {
+		logger.
+			WithField("addr", addr.String()).
+			Info("Feed")
+	}
+	for _, addr := range cfg.BootstrapAddrs {
+		logger.
+			WithField("addr", addr).
+			Info("Bootstrap")
+	}
+
 	switch cfg.Mode {
 	case ClientMode:
 		priceTopicScoreParams, err := calculatePriceTopicScoreParams(cfg)
@@ -226,9 +238,9 @@ func New(cfg Config) (*P2P, error) {
 				return nil
 			}),
 			messageValidator(cfg.Topics, logger), // must be registered before any other validator
-			feederValidator(cfg.AuthorAllowlist, logger),
-			eventValidator(logger),
-			priceValidator(logger, cryptoETH.ECRecoverer),
+			feedValidator(cfg.AuthorAllowlist, logger),
+			// eventValidator(logger),
+			// priceValidator(logger, cryptoETH.ECRecoverer),
 		)
 		if cfg.MessagePrivKey != nil {
 			opts = append(opts, internal.MessagePrivKey(cfg.MessagePrivKey))
@@ -329,6 +341,15 @@ func (p *P2P) messagesLoop(topic string, sub *internal.Subscription) {
 				Message: msg,
 				Author:  ethkey.PeerIDToAddress(nodeMsg.GetFrom()).Bytes(),
 				Data:    nodeMsg,
+				Meta: transport.Meta{
+					Transport:            TransportName,
+					Topic:                topic,
+					MessageID:            hex.EncodeToString([]byte(nodeMsg.ID)),
+					PeerID:               nodeMsg.GetFrom().String(),
+					PeerAddr:             ethkey.PeerIDToAddress(nodeMsg.GetFrom()).String(),
+					ReceivedFromPeerID:   nodeMsg.ReceivedFrom.String(),
+					ReceivedFromPeerAddr: ethkey.PeerIDToAddress(nodeMsg.ReceivedFrom).String(),
+				},
 			}
 		}
 	}

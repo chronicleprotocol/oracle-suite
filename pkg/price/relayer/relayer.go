@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -136,7 +136,7 @@ func (s *Relayer) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	s.log.Info("Starting")
+	s.log.Debug("Starting")
 	s.ctx = ctx
 	for _, p := range s.pairs {
 		if err := s.syncFeederAddresses(p); err != nil {
@@ -312,7 +312,7 @@ func (s *Relayer) syncFeederAddressesRoutine(p *Pair) {
 
 func (s *Relayer) contextCancelHandler() {
 	defer func() { close(s.waitCh) }()
-	defer s.log.Info("Stopped")
+	defer s.log.Debug("Stopped")
 	<-s.ctx.Done()
 }
 

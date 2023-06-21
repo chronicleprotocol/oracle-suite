@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -76,6 +76,6 @@ func TestPriceStore_Feeder(t *testing.T) {
 	require.NoError(t, ms.Add(ctx, testutil.Address2, testutil.PriceXXXYYY1))
 	require.NoError(t, ms.Add(ctx, testutil.Address2, testutil.PriceXXXYYY2))
 
-	assert.Equal(t, testutil.PriceAAABBB2, errutil.Must(ms.GetByFeeder(ctx, "AAABBB", testutil.Address1)))
-	assert.Equal(t, testutil.PriceXXXYYY2, errutil.Must(ms.GetByFeeder(ctx, "XXXYYY", testutil.Address1)))
+	assert.Equal(t, testutil.PriceAAABBB2, errutil.Must(ms.GetByFeed(ctx, "AAABBB", testutil.Address1)))
+	assert.Equal(t, testutil.PriceXXXYYY2, errutil.Must(ms.GetByFeed(ctx, "XXXYYY", testutil.Address1)))
 }

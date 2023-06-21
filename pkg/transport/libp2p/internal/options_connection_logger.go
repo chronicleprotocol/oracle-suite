@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -47,7 +47,7 @@ func (n *connectionLoggerNotifee) Connected(_ network.Network, conn network.Conn
 			"peerID": conn.RemotePeer().String(),
 			"addr":   conn.RemoteMultiaddr().String(),
 		}).
-		Info("Connected to a host")
+		Debug("Connected to a host")
 }
 
 // Disconnected implements the network.Notifiee interface.
@@ -57,7 +57,7 @@ func (n *connectionLoggerNotifee) Disconnected(_ network.Network, conn network.C
 			"peerID": conn.RemotePeer().String(),
 			"addr":   conn.RemoteMultiaddr().String(),
 		}).
-		Info("Disconnected from a host")
+		Debug("Disconnected from a host")
 }
 
 // OpenedStream implements the network.Notifiee interface.

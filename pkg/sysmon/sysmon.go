@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package sysmon
 
 import (
@@ -50,7 +65,7 @@ func (s *Sysmon) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	s.log.Info("Starting")
+	s.log.Debug("Starting")
 	fields := log.Fields{
 		"appVersion": suite.Version,
 		"goVersion":  runtime.Version(),
@@ -70,7 +85,9 @@ func (s *Sysmon) Start(ctx context.Context) error {
 			}
 		}
 	}
-	s.log.WithFields(fields).Debug("Build info")
+	s.log.
+		WithFields(fields).
+		Debug("Build info")
 	s.ctx = ctx
 	go s.monitorRoutine()
 	go s.contextCancelHandler()
@@ -122,6 +139,6 @@ func (s *Sysmon) monitorRoutine() {
 // contextCancelHandler handles context cancellation.
 func (s *Sysmon) contextCancelHandler() {
 	defer func() { close(s.waitCh) }()
-	defer s.log.Info("Stopped")
+	defer s.log.Debug("Stopped")
 	<-s.ctx.Done()
 }

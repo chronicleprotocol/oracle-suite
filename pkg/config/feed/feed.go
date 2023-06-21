@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ import (
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -46,7 +46,7 @@ type Config struct {
 	Content hcl.BodyContent `hcl:",content"`
 
 	// Configured service:
-	feeder *feeder.Feeder
+	feed *feed.Feed
 }
 
 type Dependencies struct {
@@ -56,9 +56,9 @@ type Dependencies struct {
 	Logger        log.Logger
 }
 
-func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
-	if c.feeder != nil {
-		return c.feeder, nil
+func (c *Config) Feed(d Dependencies) (*feed.Feed, error) {
+	if c.feed != nil {
+		return c.feed, nil
 	}
 	if c.Interval == 0 {
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
@@ -81,7 +81,7 @@ func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
 	for i, p := range c.Pairs {
 		pairs[i] = p.String()
 	}
-	cfg := feeder.Config{
+	cfg := feed.Config{
 		PriceProvider: d.PriceProvider,
 		Signer:        ethereumKey,
 		Transport:     d.Transport,
@@ -89,7 +89,7 @@ func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
 		Interval:      timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
 		Pairs:         pairs,
 	}
-	feed, err := feeder.New(cfg)
+	feed, err := feed.New(cfg)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -98,6 +98,6 @@ func (c *Config) Feed(d Dependencies) (*feeder.Feeder, error) {
 			Subject:  c.Range.Ptr(),
 		}
 	}
-	c.feeder = feed
+	c.feed = feed
 	return feed, nil
 }

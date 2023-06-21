@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package webapi
 
 import (
@@ -35,7 +50,8 @@ import (
 )
 
 const (
-	LoggerTag = "WEB_API"
+	LoggerTag     = "WEB_API"
+	TransportName = "webapi"
 
 	// consumePath is the URL path for the consume endpoint.
 	consumePath = "/consume"
@@ -273,7 +289,7 @@ func (w *WebAPI) Start(ctx context.Context) error {
 		return errors.New("context must not be nil")
 	}
 	w.ctx = ctx
-	w.log.Info("Starting")
+	w.log.Debug("Starting")
 	for topic := range w.topics {
 		w.msgCh[topic] = make(chan transport.ReceivedMessage, messageChanSize)
 		w.msgChFO[topic] = chanutil.NewFanOut(w.msgCh[topic])
@@ -422,32 +438,45 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		"url":    req.URL.String(),
 	}
 
-	w.log.WithFields(fields).Debug("Received request")
+	w.log.
+		WithFields(fields).
+		Debug("Received request")
 
 	// Only POST requests are allowed.
 	if req.Method != http.MethodPost {
-		w.log.WithFields(fields).Debug("Invalid request method")
+		w.log.
+			WithFields(fields).
+			Warn("Invalid request method")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Only requests to the /consume path are allowed.
 	if req.URL.Path != consumePath {
-		w.log.WithFields(fields).Debug("Invalid request path")
+		w.log.
+			WithFields(fields).
+			Warn("Invalid request path")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Only requests with the protobuf content type are allowed.
-	if req.Header.Get("Content-Type") != "application/x-protobuf" {
-		w.log.WithFields(fields).Debug("Invalid content type")
+
+	if h := req.Header.Get("Content-Type"); h != "application/x-protobuf" {
+		w.log.
+			WithFields(fields).
+			WithField("content-type", h).
+			Warn("Invalid content type")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Only requests with the gzip content encoding are allowed.
-	if req.Header.Get("Content-Encoding") != "gzip" {
-		w.log.WithFields(fields).Debug("Invalid request encoding")
+	if h := req.Header.Get("Content-Encoding"); h != "gzip" {
+		w.log.
+			WithFields(fields).
+			WithField("content-encoding", h).
+			Warn("Invalid request encoding")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -455,16 +484,21 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// Verify the request URL signature.
 	requestAuthor, timestamp, err := verifyURL(req.URL.String(), w.recover)
 	if err != nil {
-		w.log.WithFields(fields).WithError(err).Debug("Invalid request signature")
+		w.log.
+			WithFields(fields).
+			WithError(err).
+			Warn("Invalid request signature")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fields["feeder"] = requestAuthor
+	fields["author"] = requestAuthor
 	fields["timestamp"] = timestamp
 
-	// Verify if the feeder is allowed to send messages.
+	// Verify if the feed is allowed to send messages.
 	if !sliceutil.Contains(w.allowlist, *requestAuthor) {
-		w.log.WithFields(fields).Debug("Feeder not allowed to send messages")
+		w.log.
+			WithFields(fields).
+			Warn("Feed not allowed to send messages")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -473,12 +507,16 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// [now - flushInterval - maxClockSkew, now + maxClockSkew].
 	currentTimestamp := time.Now()
 	if timestamp.After(currentTimestamp.Add(w.maxClockSkew)) {
-		w.log.WithFields(fields).Warn("Timestamp too far in the future")
+		w.log.
+			WithFields(fields).
+			Warn("Timestamp too far in the future")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if timestamp.Before(currentTimestamp.Add(-w.flushTicker.Duration() - w.maxClockSkew)) {
-		w.log.WithFields(fields).Warn("Timestamp too far in the past")
+		w.log.
+			WithFields(fields).
+			Warn("Timestamp too far in the past")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -486,7 +524,9 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// Message timestamp must be newer than the last received message by
 	// flushInterval - maxClockSkew.
 	if timestamp.Before(w.lastReqs[*requestAuthor].Add(w.flushTicker.Duration() - w.maxClockSkew)) {
-		w.log.WithFields(fields).Warn("Too many messages received in a short time")
+		w.log.
+			WithFields(fields).
+			Warn("Too many messages received in a short time")
 		res.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
@@ -495,13 +535,17 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// Read the request body.
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		w.log.WithFields(fields).WithError(err).Warn("Unable to read request body")
+		w.log.WithFields(fields).
+			WithError(err).
+			Warn("Unable to read request body")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	body, err = gzipDecompress(body)
 	if err != nil {
-		w.log.WithFields(fields).WithError(err).Warn("Unable to decompress request body")
+		w.log.WithFields(fields).
+			WithError(err).
+			Warn("Unable to decompress request body")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -509,48 +553,65 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	// Unmarshal protobuf-encoded MessagePack.
 	mp := &pb.MessagePack{}
 	if err := proto.Unmarshal(body, mp); err != nil {
-		w.log.WithFields(fields).WithError(err).Warn("Unable to decode protobuf message")
+		w.log.
+			WithFields(fields).
+			WithError(err).
+			Warn("Unable to decode protobuf message")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Verify the message signature and verify that the author of the message
-	// is same as the author of the request. There is no scenario in which the
-	// author of the message and the request author can be different.
-	messagePackAuthor, err := verifyMessage(mp, w.recover)
+	// Verify the message signature and verify that the message signer
+	// is same as the request author. There is no scenario in which
+	// message signer and request author signer can be different.
+	messagePackSigner, err := verifyMessage(mp, w.recover)
 	if err != nil {
-		w.log.WithFields(fields).WithError(err).Warn("Invalid message pack signature")
+		w.log.
+			WithFields(fields).
+			WithError(err).
+			Warn("Invalid message pack signature")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if *messagePackAuthor != *requestAuthor {
-		w.log.WithFields(fields).Warn("Message pack author does not match request author")
+	if *messagePackSigner != *requestAuthor {
+		w.log.
+			WithFields(fields).
+			WithField("signer", messagePackSigner).
+			Warn("Message signer does not match request author")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Send messages from the MessagePack to the msgCh channel.
 	for topic, msgs := range mp.Messages {
+		typ, ok := w.topics[topic]
+		if !ok {
+			continue // Ignore messages for unknown topics.
+		}
 		for _, bin := range msgs.Data {
-			typ, ok := w.topics[topic]
-			if !ok {
-				continue // Ignore messages for unknown topics.
-			}
 			ref := reflect.TypeOf(typ).Elem()
 			msg := reflect.New(ref).Interface().(transport.Message)
 			if err := msg.UnmarshallBinary(bin); err != nil {
-				w.log.WithFields(fields).WithError(err).Warn("Unable to unmarshal message")
+				w.log.
+					WithFields(fields).
+					WithError(err).
+					Warn("Unable to unmarshal message")
 				continue
 			}
+
 			if _, ok := w.msgCh[topic]; !ok {
 				// PANIC!
 				// This should never happen because the keys of w.msgCh are
 				// the same as the keys of w.topics.
-				w.log.WithField("topic", topic).Panic("Topic channel is not initialized")
+				w.log.
+					WithField("topic", topic).
+					Panic("Channel not initialized")
 			}
+
 			w.msgCh[topic] <- transport.ReceivedMessage{
 				Message: msg,
 				Author:  requestAuthor.Bytes(),
+				Meta:    transport.Meta{Transport: TransportName, Topic: topic},
 			}
 		}
 	}
@@ -579,7 +640,7 @@ func (w *WebAPI) flushRoutine(ctx context.Context) {
 // contextCancelHandler handles context cancellation.
 func (w *WebAPI) contextCancelHandler() {
 	defer func() { close(w.waitCh) }()
-	defer w.log.Info("Stopped")
+	defer w.log.Debug("Stopped")
 	<-w.ctx.Done()
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -589,7 +650,7 @@ func (w *WebAPI) contextCancelHandler() {
 }
 
 // signURL signs URLs using the given signer. It is used to quickly verify that a
-// request comes from a specific feeder.
+// request comes from a specific feed.
 //
 // The URL is signed by appending the following query parameters:
 //

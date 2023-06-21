@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -71,8 +71,8 @@ func (p *MemoryStorage) GetByAssetPair(_ context.Context, pair string) ([]*messa
 	return ps, nil
 }
 
-// GetByFeeder implements the store.Storage interface.
-func (p *MemoryStorage) GetByFeeder(_ context.Context, pair string, feeder types.Address) (*messages.Price, error) {
+// GetByFeed implements the store.Storage interface.
+func (p *MemoryStorage) GetByFeed(_ context.Context, pair string, feeder types.Address) (*messages.Price, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	fp := FeederPrice{

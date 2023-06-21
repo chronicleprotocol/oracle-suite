@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -52,7 +52,7 @@ func PeerScoring(
 						n.tsLog.get().
 							WithError(err).
 							WithField("topic", e.Topic).
-							Warn("Unable to set topic score parameters")
+							Warn("Unable to set topic score params")
 					}
 				}()
 				sub, err := n.Subscription(e.Topic)
@@ -63,7 +63,7 @@ func PeerScoring(
 					n.tsLog.get().
 						WithField("topic", e.Topic).
 						WithField("params", sp).
-						Info("Topic score params")
+						Debug("Topic score params")
 					err = sub.topic.SetScoreParams(sp)
 					if err != nil {
 						return

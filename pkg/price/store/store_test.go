@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -40,9 +40,12 @@ func TestStore(t *testing.T) {
 	defer ctxCancel()
 
 	rec := &mocks.Recoverer{}
-	tra := local.New([]byte("test"), 0, map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)})
-	_ = tra.Start(ctx)
-
+	tra := local.New(
+		[]byte("test"),
+		0,
+		map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)},
+	)
+	require.NoError(t, tra.Start(ctx))
 	time.Sleep(100 * time.Millisecond)
 
 	ps, err := New(Config{
@@ -52,7 +55,10 @@ func TestStore(t *testing.T) {
 		Logger:    null.New(),
 	})
 	require.NoError(t, err)
+
 	require.NoError(t, ps.Start(ctx))
+	time.Sleep(100 * time.Millisecond)
+
 	ps.recover = rec
 
 	rec.On("RecoverMessage", mock.Anything, testutil.PriceAAABBB1.Price.Sig).Return(&testutil.Address1, nil)

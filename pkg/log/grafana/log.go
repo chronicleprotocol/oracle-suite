@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -379,7 +379,7 @@ func (c *logger) addMetricPoint(m Metric, mk metricKey, mv metricValue) {
 
 // pushRoutine pushes metrics in interval defined in c.interval.
 func (c *logger) pushRoutine() {
-	defer c.logger.Info("Stopped")
+	defer c.logger.Debug("Stopped")
 	defer close(c.waitCh)
 	defer c.pushMetrics()
 	ticker := time.NewTicker(time.Duration(c.interval) * time.Second)
@@ -454,7 +454,7 @@ func (c *logger) pushMetrics() {
 
 // Start implements the supervisor.Service interface.
 func (c *logger) Start(ctx context.Context) error {
-	c.logger.Info("Starting")
+	c.logger.Debug("Starting")
 	if c.ctx != nil {
 		return fmt.Errorf("service can be started only once")
 	}

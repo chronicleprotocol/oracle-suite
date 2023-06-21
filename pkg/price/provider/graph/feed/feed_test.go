@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package feeder
+package feed
 
 import (
 	"testing"
@@ -71,7 +71,7 @@ func originsSetMock(prices map[string][]origins.Price) *origins.Set {
 	return origins.NewSet(handlers)
 }
 
-func TestFeeder_Feed_EmptyGraph(t *testing.T) {
+func TestFeed_Feed_EmptyGraph(t *testing.T) {
 	f := NewFeeder(originsSetMock(nil), null.New())
 
 	// Feed method shouldn't panic
@@ -80,7 +80,7 @@ func TestFeeder_Feed_EmptyGraph(t *testing.T) {
 	assert.Len(t, warns.List, 0)
 }
 
-func TestFeeder_Feed_NoFeedableNodes(t *testing.T) {
+func TestFeed_Feed_NoFeedableNodes(t *testing.T) {
 	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
 	f := NewFeeder(originsSetMock(nil), null.New())
 
@@ -90,7 +90,7 @@ func TestFeeder_Feed_NoFeedableNodes(t *testing.T) {
 	assert.Len(t, warns.List, 0)
 }
 
-func TestFeeder_Feed_OneOriginNode(t *testing.T) {
+func TestFeed_Feed_OneOriginNode(t *testing.T) {
 	s := originsSetMock(map[string][]origins.Price{
 		"test": {
 			origins.Price{
@@ -123,7 +123,7 @@ func TestFeeder_Feed_OneOriginNode(t *testing.T) {
 	assert.Equal(t, time.Unix(10000, 0), o.Price().Time)
 }
 
-func TestFeeder_Feed_ManyOriginNodes(t *testing.T) {
+func TestFeed_Feed_ManyOriginNodes(t *testing.T) {
 	s := originsSetMock(map[string][]origins.Price{
 		"test": {
 			origins.Price{
@@ -224,7 +224,7 @@ func TestFeeder_Feed_ManyOriginNodes(t *testing.T) {
 	assert.ElementsMatch(t, []origins.Pair{{Base: "E", Quote: "F"}}, test2Pairs)
 }
 
-func TestFeeder_Feed_NestedOriginNode(t *testing.T) {
+func TestFeed_Feed_NestedOriginNode(t *testing.T) {
 	s := originsSetMock(map[string][]origins.Price{
 		"test": {
 			origins.Price{
@@ -260,7 +260,7 @@ func TestFeeder_Feed_NestedOriginNode(t *testing.T) {
 	assert.Equal(t, time.Unix(10000, 0), o.Price().Time)
 }
 
-func TestFeeder_Feed_BelowMinTTL(t *testing.T) {
+func TestFeed_Feed_BelowMinTTL(t *testing.T) {
 	s := originsSetMock(map[string][]origins.Price{
 		"test": {
 			origins.Price{
@@ -307,7 +307,7 @@ func TestFeeder_Feed_BelowMinTTL(t *testing.T) {
 	assert.Equal(t, 10.0, o.Price().Volume24h)
 }
 
-func TestFeeder_Feed_BetweenTTLs(t *testing.T) {
+func TestFeed_Feed_BetweenTTLs(t *testing.T) {
 	s := originsSetMock(map[string][]origins.Price{
 		"test": {
 			origins.Price{

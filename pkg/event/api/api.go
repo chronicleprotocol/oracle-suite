@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -125,7 +125,7 @@ func (e *EventAPI) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	e.log.Infof("Starting")
+	e.log.Debug("Starting")
 	e.ctx = ctx
 	err := e.srv.Start(ctx)
 	if err != nil {
@@ -202,7 +202,7 @@ func mapEvents(es []*messages.Event) []*jsonEvent {
 }
 
 func (e *EventAPI) contextCancelHandler() {
-	defer e.log.Info("Stopped")
+	defer e.log.Debug("Stopped")
 	<-e.ctx.Done()
 }
 

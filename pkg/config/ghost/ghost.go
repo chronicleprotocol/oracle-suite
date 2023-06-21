@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package ghost
 
 import (
@@ -13,7 +28,7 @@ import (
 	priceproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/priceprovider"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/feed"
 
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
@@ -36,7 +51,7 @@ type Config struct {
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	Feed      *feeder.Feeder
+	Feed      *feed.Feed
 	Transport pkgTransport.Transport
 	Logger    log.Logger
 

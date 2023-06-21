@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -79,9 +79,9 @@ type Storage interface {
 	// thread-safe.
 	GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error)
 
-	// GetByFeeder returns the latest price for given asset pair sent by given
+	// GetByFeed returns the latest price for given asset pair sent by given
 	// feeder. The method is thread-safe.
-	GetByFeeder(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error)
+	GetByFeed(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error)
 }
 
 type FeederPrice struct {
@@ -121,7 +121,7 @@ func (p *PriceStore) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	p.log.Info("Starting")
+	p.log.Debug("Starting")
 	p.ctx = ctx
 	go p.priceCollectorRoutine()
 	go p.contextCancelHandler()
@@ -149,9 +149,9 @@ func (p *PriceStore) GetByAssetPair(ctx context.Context, pair string) ([]*messag
 	return p.storage.GetByAssetPair(ctx, pair)
 }
 
-// GetByFeeder returns the latest price for given asset pair sent by given feeder.
-func (p *PriceStore) GetByFeeder(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error) {
-	return p.storage.GetByFeeder(ctx, pair, feeder)
+// GetByFeed returns the latest price for given asset pair sent by given feeder.
+func (p *PriceStore) GetByFeed(ctx context.Context, pair string, feed types.Address) (*messages.Price, error) {
+	return p.storage.GetByFeed(ctx, pair, feed)
 }
 
 func (p *PriceStore) collectPrice(price *messages.Price) error {
@@ -194,12 +194,16 @@ func (p *PriceStore) priceCollectorRoutine() {
 
 func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
-		p.log.WithError(msg.Error).Error("Unable to read prices from the transport layer")
+		p.log.
+			WithError(msg.Error).
+			Error("Unable to read prices from the transport layer")
 		return
 	}
 	price, ok := msg.Message.(*messages.Price)
 	if !ok {
-		p.log.Error("Unexpected value returned from the transport layer")
+		p.log.
+			WithFields(msg.Fields()).
+			Error("Unexpected value returned from the transport layer")
 		return
 	}
 	err := p.collectPrice(price)
@@ -207,18 +211,21 @@ func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
 		p.log.
 			WithError(err).
 			WithFields(price.Price.Fields(p.recover)).
-			Warn("Received invalid price")
+			WithField("version", price.Version).
+			WithFields(msg.Fields()).
+			Warn("Price rejected")
 	} else {
 		p.log.
 			WithFields(price.Price.Fields(p.recover)).
 			WithField("version", price.Version).
-			Info("Price received")
+			WithFields(msg.Fields()).
+			Info("Price collected")
 	}
 }
 
 // contextCancelHandler handles context cancellation.
 func (p *PriceStore) contextCancelHandler() {
 	defer func() { close(p.waitCh) }()
-	defer p.log.Info("Stopped")
+	defer p.log.Debug("Stopped")
 	<-p.ctx.Done()
 }

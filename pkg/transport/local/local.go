@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -24,6 +24,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
+
+const TransportName = "local"
 
 var ErrNotSubscribed = errors.New("topic is not subscribed")
 
@@ -131,6 +133,7 @@ func (l *Local) unmarshallRoutine(sub *subscription) {
 			Message: msg,
 			Author:  l.id,
 			Error:   err,
+			Meta:    transport.Meta{Transport: TransportName},
 		}
 		l.mu.RUnlock()
 	}

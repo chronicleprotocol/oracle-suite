@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
 )
 
@@ -40,13 +40,13 @@ func (e ErrPairNotFound) Error() string {
 // structure to calculate pairs prices.
 type Provider struct {
 	graphs Graphs
-	feeder *feeder.Feeder
+	feeder *feed.Feeder
 }
 
 // NewProvider returns a new Provider instance. If the GetByFeeder is not nil,
 // then prices are automatically updated when the Price or Prices methods are
 // called. Otherwise, prices have to be updated externally.
-func NewProvider(graph Graphs, feeder *feeder.Feeder) *Provider {
+func NewProvider(graph Graphs, feeder *feed.Feeder) *Provider {
 	return &Provider{graphs: graph, feeder: feeder}
 }
 

@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/nodes"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/origins"
 
@@ -32,7 +32,7 @@ import (
 
 var (
 	testGraph  map[provider.Pair]nodes.Node
-	testFeeder *feeder.Feeder
+	testFeeder *feed.Feeder
 	testPairs  = map[string]provider.Pair{
 		"A/B": {Base: "A", Quote: "B"},
 		"X/Y": {Base: "X", Quote: "Y"},
@@ -245,7 +245,7 @@ func init() {
 		xy: xyGraph,
 	}
 
-	testFeeder = feeder.NewFeeder(origins.NewSet(map[string]origins.Handler{
+	testFeeder = feed.NewFeeder(origins.NewSet(map[string]origins.Handler{
 		"a": &testExchange{},
 		"b": &testExchange{},
 		"x": &testExchange{},

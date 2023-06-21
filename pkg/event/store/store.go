@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -95,7 +95,7 @@ func (e *EventStore) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	e.log.Info("Starting")
+	e.log.Debug("Starting")
 	e.ctx = ctx
 	go e.eventCollectorRoutine()
 	go e.contextCancelHandler()
@@ -165,6 +165,6 @@ func (e *EventStore) isEventSupported(evt *messages.Event) bool {
 // contextCancelHandler handles context cancellation.
 func (e *EventStore) contextCancelHandler() {
 	defer func() { close(e.waitCh) }()
-	defer e.log.Info("Stopped")
+	defer e.log.Debug("Stopped")
 	<-e.ctx.Done()
 }
