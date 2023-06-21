@@ -106,3 +106,24 @@ jobs:
       - name: Run E2E Tests
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Teleport
+  analyze:
+    needs: [ test-e2e-gofer,test-e2e-ghost,test-e2e-teleport ]
+    name: Analyze with CodeQL
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
