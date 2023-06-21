@@ -53,6 +53,7 @@ func TestStore(t *testing.T) {
 		Storage:   NewMemoryStorage(),
 		Transport: tra,
 		Pairs:     []string{"AAABBB", "XXXYYY"},
+		Feeds:     []types.Address{testutil.Address1, testutil.Address2},
 		Logger:    null.New(),
 	})
 	require.NoError(t, err)

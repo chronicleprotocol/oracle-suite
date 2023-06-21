@@ -75,6 +75,7 @@ func newTestInstances() (*Agent, *Client) {
 		Storage:   store.NewMemoryStorage(),
 		Transport: tra,
 		Pairs:     []string{"AAABBB", "XXXYYY"},
+		Feeds:     []types.Address{testAddress},
 		Logger:    null.New(),
 		Recoverer: rec,
 	})

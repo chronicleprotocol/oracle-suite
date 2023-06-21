@@ -34,6 +34,7 @@ const LoggerTag = "PRICE_STORE"
 var ErrInvalidSignature = errors.New("received price has an invalid signature")
 var ErrInvalidPrice = errors.New("received price is invalid")
 var ErrUnknownPair = errors.New("received pair is not configured")
+var ErrUnknownFeed = errors.New("messages from feed are not allowed")
 
 // PriceStore contains a list of prices.
 type PriceStore struct {
@@ -41,6 +42,7 @@ type PriceStore struct {
 	storage   Storage
 	transport transport.Transport
 	pairs     []string
+	feeds     []string
 	log       log.Logger
 	recover   crypto.Recoverer
 	waitCh    chan error
@@ -57,6 +59,9 @@ type Config struct {
 
 	// Pairs is the list of asset pairs which are supported by the store.
 	Pairs []string
+
+	// Feeds is the list of feeds which are supported by the store.
+	Feeds []types.Address
 
 	// Logger is a current logger interface used by the PriceStore.
 	// The Logger is required to monitor asynchronous processes.
@@ -103,10 +108,15 @@ func New(cfg Config) (*PriceStore, error) {
 	if cfg.Recoverer == nil {
 		cfg.Recoverer = crypto.ECRecoverer
 	}
+	feeds := make([]string, len(cfg.Feeds))
+	for i, feed := range cfg.Feeds {
+		feeds[i] = feed.String()
+	}
 	return &PriceStore{
 		storage:   cfg.Storage,
 		transport: cfg.Transport,
 		pairs:     cfg.Pairs,
+		feeds:     feeds,
 		log:       cfg.Logger.WithField("tag", LoggerTag),
 		recover:   cfg.Recoverer,
 		waitCh:    make(chan error),
@@ -159,6 +169,9 @@ func (p *PriceStore) collectPrice(price *messages.Price) error {
 	if err != nil {
 		return ErrInvalidSignature
 	}
+	if !p.isFeedSupported(from.String()) {
+		return ErrUnknownFeed
+	}
 	if !p.isPairSupported(price.Price.Wat) {
 		return ErrUnknownPair
 	}
@@ -171,6 +184,14 @@ func (p *PriceStore) collectPrice(price *messages.Price) error {
 func (p *PriceStore) isPairSupported(pair string) bool {
 	for _, a := range p.pairs {
 		if a == pair {
+			return true
+		}
+	}
+	return false
+}
+func (p *PriceStore) isFeedSupported(feed string) bool {
+	for _, a := range p.feeds {
+		if a == feed {
 			return true
 		}
 	}

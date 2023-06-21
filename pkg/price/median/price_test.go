@@ -17,6 +17,7 @@ package median
 
 import (
 	"crypto/rand"
+	_ "embed"
 	"math"
 	"math/big"
 	"testing"

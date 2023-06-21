@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
@@ -55,6 +56,9 @@ type ConfigSpire struct {
 
 	// Pairs is a list of pairs to store in the price store.
 	Pairs []string `hcl:"pairs"`
+
+	// Pairs is a list of pairs to store in the price store.
+	Feeds []types.Address `hcl:"feeds"`
 
 	// EthereumKey is a name of an Ethereum key to use for signing
 	// prices.
@@ -311,6 +315,7 @@ func (c *ConfigSpire) PriceStore(l log.Logger, t pkgTransport.Transport) (*store
 		Storage:   store.NewMemoryStorage(),
 		Transport: t,
 		Pairs:     c.Pairs,
+		Feeds:     c.Feeds,
 		Logger:    l,
 	})
 	if err != nil {
