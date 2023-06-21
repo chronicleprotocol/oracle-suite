@@ -41,7 +41,7 @@ jobs:
           TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
   test-e2e-gofer:
-    needs: test
+    needs: analyze
     name: E2E Tests (Gofer)
     strategy:
       matrix:
@@ -63,7 +63,7 @@ jobs:
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Gofer
   test-e2e-ghost:
-    needs: test
+    needs: analyze
     name: E2E Tests (Ghost)
     strategy:
       matrix:
@@ -85,7 +85,7 @@ jobs:
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Ghost
   test-e2e-teleport:
-    needs: test
+    needs: analyze
     name: E2E Tests (Teleport)
     strategy:
       matrix:
@@ -107,7 +107,7 @@ jobs:
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Teleport
   analyze:
-    needs: [ test-e2e-gofer,test-e2e-ghost,test-e2e-teleport ]
+    needs: test
     name: Analyze with CodeQL
     runs-on: ubuntu-latest
     strategy:
