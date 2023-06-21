@@ -131,6 +131,7 @@ func priceValidator(logger log.Logger, recoverer crypto.Recoverer) internal.Opti
 				"age":      p.Price.Age.UTC().Format(time.RFC3339),
 				"val":      p.Price.Val.String(),
 				"version":  p.Version,
+				"hash":     hex.EncodeToString(p.Price.Hash().Bytes()),
 				"V":        hex.EncodeToString(p.Price.Sig.V.Bytes()),
 				"R":        hex.EncodeToString(p.Price.Sig.R.Bytes()),
 				"S":        hex.EncodeToString(p.Price.Sig.S.Bytes()),
