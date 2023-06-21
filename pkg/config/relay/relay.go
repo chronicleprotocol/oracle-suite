@@ -122,11 +122,11 @@ func (c *Config) Relay(d Dependencies) (*relayer.Relayer, error) {
 		}
 		ethClient := geth.NewClient(rpcClient) //nolint:staticcheck // deprecated ethereum.Client
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
-			AssetPair:                   pair.Pair,
-			Spread:                      pair.Spread,
-			Expiration:                  time.Second * time.Duration(pair.Expiration),
-			Median:                      medianGeth.NewMedian(ethClient, pair.ContractAddr),
-			FeederAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
+			AssetPair:                 pair.Pair,
+			Spread:                    pair.Spread,
+			Expiration:                time.Second * time.Duration(pair.Expiration),
+			Median:                    medianGeth.NewMedian(ethClient, pair.ContractAddr),
+			FeedAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
 		})
 	}
 	rel, err := relayer.New(cfg)

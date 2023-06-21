@@ -90,7 +90,7 @@ var (
 	PriceXXXYYYHash = types.MustHashFromHex("8dd1c8d47ec9eafda294cfc8c0c8d4041a13d7a89536a89eb6685a79d9fa6bc4", types.PadNone)
 )
 
-func TestFeeder_Broadcast(t *testing.T) {
+func TestFeed_Broadcast(t *testing.T) {
 	tests := []struct {
 		name    string
 		prices  int
@@ -151,7 +151,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 			ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer ctxCancel()
 
-			// Prepare feeder services.
+			// Prepare feed services.
 			priceProvider := &priceMocks.Provider{}
 			signer := &ethereumMocks.Key{}
 
@@ -164,8 +164,8 @@ func TestFeeder_Broadcast(t *testing.T) {
 			// Prepare mocks.
 			tt.mocks(priceProvider, signer)
 
-			// Start feeder.
-			feeder, err := New(Config{
+			// Start feed.
+			feed, err := New(Config{
 				Pairs:         []string{"AAA/BBB", "XXX/YYY"},
 				PriceProvider: priceProvider,
 				Signer:        signer,
@@ -174,10 +174,10 @@ func TestFeeder_Broadcast(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.NoError(t, localTransport.Start(ctx))
-			require.NoError(t, feeder.Start(ctx))
+			require.NoError(t, feed.Start(ctx))
 			defer func() {
 				ctxCancel()
-				<-feeder.Wait()
+				<-feed.Wait()
 				<-localTransport.Wait()
 			}()
 
@@ -225,7 +225,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 	}
 }
 
-func TestFeeder_InvalidConfig(t *testing.T) {
+func TestFeed_InvalidConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     Config
@@ -290,7 +290,7 @@ func TestFeeder_InvalidConfig(t *testing.T) {
 	}
 }
 
-func TestFeeder_Start(t *testing.T) {
+func TestFeed_Start(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer ctxCancel()
 

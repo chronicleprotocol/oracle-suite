@@ -46,7 +46,7 @@ type PublishPriceArg struct {
 
 type PullPricesArg struct {
 	FilterAssetPair string
-	FilterFeeder    string
+	FilterFeed      string
 }
 
 type PullPricesResp struct {
@@ -55,7 +55,7 @@ type PullPricesResp struct {
 
 type PullPriceArg struct {
 	AssetPair string
-	Feeder    string
+	Feed      string
 }
 
 type PullPriceResp struct {
@@ -82,15 +82,15 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 
 	n.log.
 		WithField("assetPair", arg.FilterAssetPair).
-		WithField("feed", arg.FilterFeeder).
+		WithField("feed", arg.FilterFeed).
 		Info("Pull prices")
 
 	var err error
 	var prices []*messages.Price
 
 	switch {
-	case arg.FilterAssetPair != "" && arg.FilterFeeder != "":
-		price, err := n.priceStore.GetByFeed(ctx, arg.FilterAssetPair, types.MustAddressFromHex(arg.FilterFeeder))
+	case arg.FilterAssetPair != "" && arg.FilterFeed != "":
+		price, err := n.priceStore.GetByFeed(ctx, arg.FilterAssetPair, types.MustAddressFromHex(arg.FilterFeed))
 		if err != nil {
 			return err
 		}
@@ -100,13 +100,13 @@ func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
 		if err != nil {
 			return err
 		}
-	case arg.FilterFeeder != "":
-		feederPrices, err := n.priceStore.GetAll(ctx)
+	case arg.FilterFeed != "":
+		feedPrices, err := n.priceStore.GetAll(ctx)
 		if err != nil {
 			return err
 		}
-		for fp, price := range feederPrices {
-			if strings.EqualFold(arg.FilterFeeder, fp.Feeder.String()) {
+		for fp, price := range feedPrices {
+			if strings.EqualFold(arg.FilterFeed, fp.Feed.String()) {
 				prices = append(prices, price)
 			}
 		}
@@ -131,10 +131,10 @@ func (n *API) PullPrice(arg *PullPriceArg, resp *PullPriceResp) error {
 
 	n.log.
 		WithField("assetPair", arg.AssetPair).
-		WithField("feed", arg.Feeder).
+		WithField("feed", arg.Feed).
 		Info("Pull price")
 
-	price, err := n.priceStore.GetByFeed(ctx, arg.AssetPair, types.MustAddressFromHex(arg.Feeder))
+	price, err := n.priceStore.GetByFeed(ctx, arg.AssetPair, types.MustAddressFromHex(arg.Feed))
 	if err != nil {
 		return err
 	}

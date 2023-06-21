@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -128,7 +128,7 @@ func TestRelayer_relay(t *testing.T) {
 			},
 		},
 		{
-			name: "unknown-feeder",
+			name: "unknown-feed",
 			mocks: func(ctx context.Context, priceStorage *storeMocks.Storage, median *medianMocks.Median, recoverer *ethereumMocks.Recoverer, log *logMocks.Logger) {
 				priceStorage.On("GetByAssetPair", ctx, "AAABBB").Return([]*messages.Price{priceAAABBB1}, nil)
 				recoverer.On("RecoverMessage", mock.Anything, mock.Anything).Return(&feedAddress, nil)
@@ -198,11 +198,11 @@ func TestRelayer_relay(t *testing.T) {
 				PriceStore: priceStore,
 				PokeTicker: pokeTicker,
 				Pairs: []*Pair{{
-					AssetPair:                   "AAABBB",
-					Spread:                      1.0,
-					Expiration:                  10 * time.Second,
-					Median:                      medianMock,
-					FeederAddressesUpdateTicker: addressesTicker,
+					AssetPair:                 "AAABBB",
+					Spread:                    1.0,
+					Expiration:                10 * time.Second,
+					Median:                    medianMock,
+					FeedAddressesUpdateTicker: addressesTicker,
 				}},
 				Logger:    mockLogger,
 				Recoverer: recovererMock,

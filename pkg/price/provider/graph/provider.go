@@ -40,14 +40,14 @@ func (e ErrPairNotFound) Error() string {
 // structure to calculate pairs prices.
 type Provider struct {
 	graphs Graphs
-	feeder *feed.Feed
+	feed   *feed.Feed
 }
 
-// NewProvider returns a new Provider instance. If the GetByFeeder is not nil,
+// NewProvider returns a new Provider instance. If the GetByFeed is not nil,
 // then prices are automatically updated when the Price or Prices methods are
 // called. Otherwise, prices have to be updated externally.
-func NewProvider(graph Graphs, feeder *feed.Feed) *Provider {
-	return &Provider{graphs: graph, feeder: feeder}
+func NewProvider(graph Graphs, feed *feed.Feed) *Provider {
+	return &Provider{graphs: graph, feed: feed}
 }
 
 // Models implements the provider.Provider interface.
@@ -71,8 +71,8 @@ func (g *Provider) Price(pair provider.Pair) (*provider.Price, error) {
 	if !ok {
 		return nil, ErrPairNotFound{Pair: pair}
 	}
-	if g.feeder != nil {
-		g.feeder.Feed([]nodes.Node{n}, time.Now())
+	if g.feed != nil {
+		g.feed.Feed([]nodes.Node{n}, time.Now())
 	}
 	switch n := n.(type) {
 	case nodes.Aggregator:
@@ -89,8 +89,8 @@ func (g *Provider) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.P
 	if err != nil {
 		return nil, err
 	}
-	if g.feeder != nil {
-		g.feeder.Feed(ns, time.Now())
+	if g.feed != nil {
+		g.feed.Feed(ns, time.Now())
 	}
 	res := make(map[provider.Pair]*provider.Price)
 	for _, n := range ns {

@@ -155,8 +155,8 @@ func TestFeed_Broadcast(t *testing.T) {
 			// Prepare mocks.
 			tt.mocks(dataProvider)
 
-			// Start feeder.
-			feeder, err := New(Config{
+			// Start feed.
+			feed, err := New(Config{
 				DataModels:   tt.dataModels,
 				DataProvider: dataProvider,
 				Signers:      []datapoint.Signer{mockSigner{}},
@@ -165,10 +165,10 @@ func TestFeed_Broadcast(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.NoError(t, localTransport.Start(ctx))
-			require.NoError(t, feeder.Start(ctx))
+			require.NoError(t, feed.Start(ctx))
 			defer func() {
 				ctxCancel()
-				<-feeder.Wait()
+				<-feed.Wait()
 				<-localTransport.Wait()
 			}()
 
@@ -203,7 +203,7 @@ func TestFeed_Start(t *testing.T) {
 		<-localTransport.Wait()
 	}()
 
-	// Create a new feeder.
+	// Create a new feed.
 	feed, err := New(Config{
 		DataModels:   []string{},
 		DataProvider: dataProvider,
@@ -212,13 +212,13 @@ func TestFeed_Start(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Try to start the feeder without a context, which should fail.
+	// Try to start the feed without a context, which should fail.
 	require.Error(t, feed.Start(nil))
 
-	// Try to start the feeder with a context, which should be successful.
+	// Try to start the feed with a context, which should be successful.
 	require.NoError(t, feed.Start(ctx))
 
-	// Try to start the feeder a second time, which should fail.
+	// Try to start the feed a second time, which should fail.
 	require.Error(t, feed.Start(ctx))
 
 	ctxCancel()

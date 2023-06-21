@@ -1,6 +1,6 @@
 # Ghost CLI Readme
 
-Ghost is an application run by feeders. It sends a signed price message to the Spire network.
+Ghost is an application run by feeds. It sends a signed price message to the Spire network.
 
 ## Table of contents
 

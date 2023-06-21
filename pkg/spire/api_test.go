@@ -166,7 +166,7 @@ func TestClient_PullPrices_ByAssetPrice(t *testing.T) {
 	assertEqualPrices(t, testPriceAAABBB, prices[0])
 }
 
-func TestClient_PullPrices_ByFeeder(t *testing.T) {
+func TestClient_PullPrices_ByFeed(t *testing.T) {
 	var err error
 	var prices []*messages.Price
 

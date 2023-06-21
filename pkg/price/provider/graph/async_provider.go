@@ -35,7 +35,7 @@ type AsyncProvider struct {
 	*Provider
 	ctx    context.Context
 	waitCh chan error
-	feeder *feed.Feed
+	feed   *feed.Feed
 	nodes  []nodes.Node
 	log    log.Logger
 }
@@ -43,14 +43,14 @@ type AsyncProvider struct {
 // NewAsyncProvider returns a new AsyncGofer instance.
 func NewAsyncProvider(
 	graph map[provider.Pair]nodes.Node,
-	feeder *feed.Feed,
+	feed *feed.Feed,
 	logger log.Logger,
 ) (*AsyncProvider, error) {
 
 	return &AsyncProvider{
 		Provider: NewProvider(graph, nil),
 		waitCh:   make(chan error),
-		feeder:   feeder,
+		feed:     feed,
 		log:      logger.WithField("tag", LoggerTag),
 	}, nil
 }
@@ -89,7 +89,7 @@ func (a *AsyncProvider) Start(ctx context.Context) error {
 			// We have to add ttl to the current time because we want
 			// to find all nodes that will expire before the next tick.
 			t := time.Now().Add(ttl)
-			warns := a.feeder.Feed(ns, t)
+			warns := a.feed.Feed(ns, t)
 			if len(warns.List) > 0 {
 				a.log.WithError(warns.ToError()).Warn("Unable to feed some nodes")
 			}

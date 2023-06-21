@@ -92,16 +92,16 @@ type Pair struct {
 	// the Medianizer contract.
 	Median median.Median
 
-	// FeederAddresses is the list of addresses which are allowed to send
+	// FeedAddresses is the list of addresses which are allowed to send
 	// updates to the Medianizer contract.
-	FeederAddresses []types.Address
+	FeedAddresses []types.Address
 
-	// FeederAddressesUpdateTicker invokes the FeederAddresses update routine
+	// FeedAddressesUpdateTicker invokes the FeedAddresses update routine
 	// when ticked.
 	//
 	// TODO(mdobak): Instead of updating the list periodically, we should
 	//               listen for events from the Medianizer contract.
-	FeederAddressesUpdateTicker *timeutil.Ticker
+	FeedAddressesUpdateTicker *timeutil.Ticker
 }
 
 func New(cfg Config) (*Relayer, error) {
@@ -139,11 +139,11 @@ func (s *Relayer) Start(ctx context.Context) error {
 	s.log.Debug("Starting")
 	s.ctx = ctx
 	for _, p := range s.pairs {
-		if err := s.syncFeederAddresses(p); err != nil {
+		if err := s.syncFeedAddresses(p); err != nil {
 			return err
 		}
-		p.FeederAddressesUpdateTicker.Start(ctx)
-		go s.syncFeederAddressesRoutine(p)
+		p.FeedAddressesUpdateTicker.Start(ctx)
+		go s.syncFeedAddressesRoutine(p)
 	}
 	s.ticker.Start(s.ctx)
 	go s.relayerRoutine()
@@ -187,8 +187,8 @@ func (s *Relayer) relay(assetPair string) (*types.Hash, error) {
 	// Clear expired prices.
 	clearOlderThan(&prices, oracleTime)
 
-	// Remove prices from addresses outside the FeederAddresses list.
-	filterAddresses(&prices, pair.FeederAddresses, s.recover)
+	// Remove prices from addresses outside the FeedAddresses list.
+	filterAddresses(&prices, pair.FeedAddresses, s.recover)
 
 	// Use only a minimum prices required to achieve a quorum.
 	// Using a different number of prices that specified in the bar field cause
@@ -241,7 +241,7 @@ func (s *Relayer) relay(assetPair string) (*types.Hash, error) {
 	return nil, nil
 }
 
-func (s *Relayer) syncFeederAddresses(p *Pair) error {
+func (s *Relayer) syncFeedAddresses(p *Pair) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -252,7 +252,7 @@ func (s *Relayer) syncFeederAddresses(p *Pair) error {
 	}
 
 	// Update the list.
-	p.FeederAddresses = addresses
+	p.FeedAddresses = addresses
 	return nil
 }
 
@@ -294,17 +294,17 @@ func (s *Relayer) relayerRoutine() {
 	}
 }
 
-func (s *Relayer) syncFeederAddressesRoutine(p *Pair) {
+func (s *Relayer) syncFeedAddressesRoutine(p *Pair) {
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-p.FeederAddressesUpdateTicker.TickCh():
-			if err := s.syncFeederAddresses(p); err != nil {
+		case <-p.FeedAddressesUpdateTicker.TickCh():
+			if err := s.syncFeedAddresses(p); err != nil {
 				s.log.
 					WithField("assetPair", p.AssetPair).
 					WithError(err).
-					Warn("Unable to sync feeder addresses")
+					Warn("Unable to sync feed addresses")
 			}
 		}
 	}

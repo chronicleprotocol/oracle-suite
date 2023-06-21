@@ -174,7 +174,7 @@ func TestFeed_Feed_ManyOriginNodes(t *testing.T) {
 	}, 0, 0)
 
 	// The last o4 origin is intentionally same as an o3 origin. Also an o3
-	// origin was added two times as a child for the g node. The feeder should
+	// origin was added two times as a child for the g node. The feed should
 	// ask for E/F pair only once.
 
 	g.AddChild(o1)

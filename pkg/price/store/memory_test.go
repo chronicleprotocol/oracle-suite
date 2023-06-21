@@ -63,7 +63,7 @@ func TestPriceStore_Add_UseNewerPrice(t *testing.T) {
 	assert.Equal(t, testutil.PriceXXXYYY2, xxxyyy[0])
 }
 
-func TestPriceStore_Feeder(t *testing.T) {
+func TestPriceStore_Feed(t *testing.T) {
 	ctx := context.Background()
 	ms := NewMemoryStorage()
 

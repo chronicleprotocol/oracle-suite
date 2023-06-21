@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package store
 
 import (
@@ -24,7 +39,7 @@ func TestMemoryStorage_Add(t *testing.T) {
 		err := storage.Add(ctx, addr, model, point)
 		require.NoError(t, err)
 
-		_, exists := storage.ds[dataPointKey{feeder: addr, model: model}]
+		_, exists := storage.ds[dataPointKey{feed: addr, model: model}]
 		require.True(t, exists)
 	})
 	t.Run("adding older point", func(t *testing.T) {
@@ -35,7 +50,7 @@ func TestMemoryStorage_Add(t *testing.T) {
 		err = storage.Add(ctx, addr, model, oldPoint) // should be ignored
 		require.NoError(t, err)
 
-		storedPoint, _ := storage.ds[dataPointKey{feeder: addr, model: model}]
+		storedPoint, _ := storage.ds[dataPointKey{feed: addr, model: model}]
 		require.Equal(t, point, storedPoint)
 	})
 }

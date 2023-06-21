@@ -34,9 +34,9 @@ func (s *Storage) Add(ctx context.Context, from types.Address, msg *messages.Pri
 	return args.Error(0)
 }
 
-func (s *Storage) GetAll(ctx context.Context) (map[store.FeederPrice]*messages.Price, error) {
+func (s *Storage) GetAll(ctx context.Context) (map[store.FeedPrice]*messages.Price, error) {
 	args := s.Called(ctx)
-	return args.Get(0).(map[store.FeederPrice]*messages.Price), args.Error(1)
+	return args.Get(0).(map[store.FeedPrice]*messages.Price), args.Error(1)
 }
 
 func (s *Storage) GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error) {
@@ -44,7 +44,7 @@ func (s *Storage) GetByAssetPair(ctx context.Context, pair string) ([]*messages.
 	return args.Get(0).([]*messages.Price), args.Error(1)
 }
 
-func (s *Storage) GetByFeed(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error) {
-	args := s.Called(ctx, pair, feeder)
+func (s *Storage) GetByFeed(ctx context.Context, pair string, feed types.Address) (*messages.Price, error) {
+	args := s.Called(ctx, pair, feed)
 	return args.Get(0).(*messages.Price), args.Error(1)
 }

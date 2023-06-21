@@ -121,7 +121,7 @@ func Test_WebAPI(t *testing.T) {
 			},
 		},
 		{
-			// Feeder not allowed to broadcast.
+			// Feed not allowed to broadcast.
 			test: func(t *testing.T, l *logMocks.Logger, s *mocks.Key, r *mocks.Recoverer, p, c *WebAPI) {
 				tm := time.Now()
 

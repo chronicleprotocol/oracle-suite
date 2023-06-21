@@ -52,7 +52,7 @@ type Config struct {
 	Storage Storage
 
 	// Transport is an implementation of transport used to fetch prices from
-	// feeders.
+	// feeds.
 	Transport transport.Transport
 
 	// Pairs is the list of asset pairs which are supported by the store.
@@ -73,20 +73,20 @@ type Storage interface {
 	Add(ctx context.Context, from types.Address, msg *messages.Price) error
 
 	// GetAll returns all prices. The method is thread-safe.
-	GetAll(ctx context.Context) (map[FeederPrice]*messages.Price, error)
+	GetAll(ctx context.Context) (map[FeedPrice]*messages.Price, error)
 
 	// GetByAssetPair returns all prices for given asset pair. The method is
 	// thread-safe.
 	GetByAssetPair(ctx context.Context, pair string) ([]*messages.Price, error)
 
 	// GetByFeed returns the latest price for given asset pair sent by given
-	// feeder. The method is thread-safe.
-	GetByFeed(ctx context.Context, pair string, feeder types.Address) (*messages.Price, error)
+	// feed. The method is thread-safe.
+	GetByFeed(ctx context.Context, pair string, feed types.Address) (*messages.Price, error)
 }
 
-type FeederPrice struct {
+type FeedPrice struct {
 	AssetPair string
-	Feeder    types.Address
+	Feed      types.Address
 }
 
 // New creates a new store instance.
@@ -133,14 +133,14 @@ func (p *PriceStore) Wait() <-chan error {
 	return p.waitCh
 }
 
-// Add adds a new price to the list. If a price from same feeder already
+// Add adds a new price to the list. If a price from same feed already
 // exists, the newer one will be used.
 func (p *PriceStore) Add(ctx context.Context, from types.Address, msg *messages.Price) error {
 	return p.storage.Add(ctx, from, msg)
 }
 
 // GetAll returns all prices.
-func (p *PriceStore) GetAll(ctx context.Context) (map[FeederPrice]*messages.Price, error) {
+func (p *PriceStore) GetAll(ctx context.Context) (map[FeedPrice]*messages.Price, error) {
 	return p.storage.GetAll(ctx)
 }
 
@@ -149,7 +149,7 @@ func (p *PriceStore) GetByAssetPair(ctx context.Context, pair string) ([]*messag
 	return p.storage.GetByAssetPair(ctx, pair)
 }
 
-// GetByFeed returns the latest price for given asset pair sent by given feeder.
+// GetByFeed returns the latest price for given asset pair sent by given feed.
 func (p *PriceStore) GetByFeed(ctx context.Context, pair string, feed types.Address) (*messages.Price, error) {
 	return p.storage.GetByFeed(ctx, pair, feed)
 }
