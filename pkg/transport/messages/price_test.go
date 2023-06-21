@@ -63,8 +63,6 @@ func readEachLineFromFile(data []byte) [][]byte {
 }
 
 func TestPrice_Sign(t *testing.T) {
-	t.Skip("TODO: fix the issue with the signing")
-
 	k := wallet.NewKeyFromBytes([]byte("0x0f2e4a9f5b4a9c3a"))
 	expectedFrom := k.Address().String()
 
@@ -76,30 +74,6 @@ func TestPrice_Sign(t *testing.T) {
 			require.NoError(t, err, "could not recover signer")
 
 			assert.Equal(t, expectedFrom, f.String(), "signer not as expected")
-		})
-	}
-}
-
-func TestPrice_Unmarshall(t *testing.T) {
-	t.Skip("This test might be obsolete if the issue lies on the signer side. It also compares parsed hex values to json values, which is not ideal.")
-
-	for _, tt := range prepTestCases(t) {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.peerAddr != "" {
-				from, err := tt.price.From(crypto.ECRecoverer)
-				if err != nil && assert.EqualError(t, err, "invalid square root") {
-					t.Skip("test data not valid for this case:", err)
-				}
-				assert.Equal(t, tt.peerAddr, from.String(), "message not from expected peer")
-			}
-
-			if tt.priceHex == "" {
-				t.Skip("no hex price to test")
-			}
-			v, err := hexutil.HexToBigInt(tt.priceHex)
-			assert.NoError(t, err, "could not parse hex price")
-
-			assert.Equal(t, v.String(), tt.price.Val.String(), "hex price not equal to json price")
 		})
 	}
 }
