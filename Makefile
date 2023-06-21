@@ -34,6 +34,10 @@ test:
 	$(GO) test -v $$(go list ./... | grep -v /e2e/) -tags $(TEST_FLAGS)
 .PHONY: test
 
+test-json:
+	$(GO) test -json $$(go list ./... | grep -v /e2e/) -tags $(TEST_FLAGS) > tests.json
+.PHONY: test-json
+
 test-api: export GOFER_TEST_API_CALLS = 1
 test-api:
 	$(GO) test ./pkg/origins/... -tags $(TEST_FLAGS) -testify.m TestRealAPICall
