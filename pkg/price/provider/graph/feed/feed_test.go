@@ -72,7 +72,7 @@ func originsSetMock(prices map[string][]origins.Price) *origins.Set {
 }
 
 func TestFeed_Feed_EmptyGraph(t *testing.T) {
-	f := NewFeeder(originsSetMock(nil), null.New())
+	f := NewFeed(originsSetMock(nil), null.New())
 
 	// Feed method shouldn't panic
 	warns := f.Feed(nil, time.Now())
@@ -82,7 +82,7 @@ func TestFeed_Feed_EmptyGraph(t *testing.T) {
 
 func TestFeed_Feed_NoFeedableNodes(t *testing.T) {
 	g := nodes.NewMedianAggregatorNode(provider.Pair{Base: "A", Quote: "B"}, 1)
-	f := NewFeeder(originsSetMock(nil), null.New())
+	f := NewFeed(originsSetMock(nil), null.New())
 
 	// Feed method shouldn't panic
 	warns := f.Feed([]nodes.Node{nodes.Node(g)}, time.Now())
@@ -111,7 +111,7 @@ func TestFeed_Feed_OneOriginNode(t *testing.T) {
 	}, 0, 0)
 
 	g.AddChild(o)
-	f := NewFeeder(s, null.New())
+	f := NewFeed(s, null.New())
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
@@ -183,7 +183,7 @@ func TestFeed_Feed_ManyOriginNodes(t *testing.T) {
 	g.AddChild(o3) // intentionally
 	g.AddChild(o4)
 
-	f := NewFeeder(s, null.New())
+	f := NewFeed(s, null.New())
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
@@ -248,7 +248,7 @@ func TestFeed_Feed_NestedOriginNode(t *testing.T) {
 	g.AddChild(i)
 	i.AddChild(o)
 
-	f := NewFeeder(s, null.New())
+	f := NewFeed(s, null.New())
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	assert.Len(t, warns.List, 0)
@@ -295,7 +295,7 @@ func TestFeed_Feed_BelowMinTTL(t *testing.T) {
 
 	g.AddChild(o)
 
-	f := NewFeeder(s, null.New())
+	f := NewFeed(s, null.New())
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	// OriginNode shouldn't be updated because time diff is below MinTTL setting:
@@ -342,7 +342,7 @@ func TestFeed_Feed_BetweenTTLs(t *testing.T) {
 
 	g.AddChild(o)
 
-	f := NewFeeder(s, null.New())
+	f := NewFeed(s, null.New())
 	warns := f.Feed([]nodes.Node{g}, time.Now())
 
 	// OriginNode should be updated because time diff is above MinTTL setting:

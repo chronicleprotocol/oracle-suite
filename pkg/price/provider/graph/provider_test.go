@@ -32,7 +32,7 @@ import (
 
 var (
 	testGraph  map[provider.Pair]nodes.Node
-	testFeeder *feed.Feeder
+	testFeeder *feed.Feed
 	testPairs  = map[string]provider.Pair{
 		"A/B": {Base: "A", Quote: "B"},
 		"X/Y": {Base: "X", Quote: "Y"},
@@ -245,7 +245,7 @@ func init() {
 		xy: xyGraph,
 	}
 
-	testFeeder = feed.NewFeeder(origins.NewSet(map[string]origins.Handler{
+	testFeeder = feed.NewFeed(origins.NewSet(map[string]origins.Handler{
 		"a": &testExchange{},
 		"b": &testExchange{},
 		"x": &testExchange{},

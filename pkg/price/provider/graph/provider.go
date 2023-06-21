@@ -40,13 +40,13 @@ func (e ErrPairNotFound) Error() string {
 // structure to calculate pairs prices.
 type Provider struct {
 	graphs Graphs
-	feeder *feed.Feeder
+	feeder *feed.Feed
 }
 
 // NewProvider returns a new Provider instance. If the GetByFeeder is not nil,
 // then prices are automatically updated when the Price or Prices methods are
 // called. Otherwise, prices have to be updated externally.
-func NewProvider(graph Graphs, feeder *feed.Feeder) *Provider {
+func NewProvider(graph Graphs, feeder *feed.Feed) *Provider {
 	return &Provider{graphs: graph, feeder: feeder}
 }
 

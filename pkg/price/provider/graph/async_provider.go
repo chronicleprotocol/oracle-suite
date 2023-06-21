@@ -35,7 +35,7 @@ type AsyncProvider struct {
 	*Provider
 	ctx    context.Context
 	waitCh chan error
-	feeder *feed.Feeder
+	feeder *feed.Feed
 	nodes  []nodes.Node
 	log    log.Logger
 }
@@ -43,7 +43,7 @@ type AsyncProvider struct {
 // NewAsyncProvider returns a new AsyncGofer instance.
 func NewAsyncProvider(
 	graph map[provider.Pair]nodes.Node,
-	feeder *feed.Feeder,
+	feeder *feed.Feed,
 	logger log.Logger,
 ) (*AsyncProvider, error) {
 

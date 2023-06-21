@@ -174,7 +174,7 @@ func (c *Config) AsyncPriceProvider(d AsyncDependencies) (provider.Provider, err
 	if err != nil {
 		return nil, err
 	}
-	feed := feed.NewFeeder(originSet, d.Logger)
+	feed := feed.NewFeed(originSet, d.Logger)
 	asyncProvider, err := graph.NewAsyncProvider(graphs, feed, d.Logger)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
@@ -203,7 +203,7 @@ func (c *Config) PriceProvider(d Dependencies, noRPC bool) (provider.Provider, e
 		if err != nil {
 			return nil, err
 		}
-		feed := feed.NewFeeder(originSet, d.Logger)
+		feed := feed.NewFeed(originSet, d.Logger)
 		c.priceProvider = graph.NewProvider(pricesGraph, feed)
 	} else {
 		c.priceProvider, err = rpc.NewProvider("tcp", c.RPCAgentAddr)
