@@ -82,6 +82,8 @@ github.com/defiweb/go-eth v0.0.0-20230409213704-98fd425a4650 h1:2pIsRlUafP1+q15i
 github.com/defiweb/go-eth v0.0.0-20230409213704-98fd425a4650/go.mod h1:8M45cWPaWnD3GjWihk+6HAzT17G38cik9Zc+VBV/Hnc=
 github.com/defiweb/go-eth v0.0.0-20230411235848-d618c301cbbc h1:7Y/UKBZVsJxC2kVvZ4ePuN97Z58W/L0UNjjlOIEiJwg=
 github.com/defiweb/go-eth v0.0.0-20230411235848-d618c301cbbc/go.mod h1:uzs2rCBti5w7w7HZq9A9XZ4p3BK81Pz1PC9ZSV8nKkg=
+github.com/defiweb/go-eth v0.0.0-20230621140716-df32a18c245a h1:i+y2p5c9Lqg3/AhCG1lwyMJdlUSCD6tYpkJzd3IF/VU=
+github.com/defiweb/go-eth v0.0.0-20230621140716-df32a18c245a/go.mod h1:uzs2rCBti5w7w7HZq9A9XZ4p3BK81Pz1PC9ZSV8nKkg=
 github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937 h1:R/f+QShq/LjTQE34x5PNJ4M1PgoyTFx0xAIVNKW27N8=
 github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937/go.mod h1:nLGzk10jAgynPvN2hL+tLnnyZ5Fcshv0wmpWDRtV0PA=
 github.com/defiweb/go-sigparser v0.0.0-20221125211146-2e4b90d8e269 h1:CxNESKI7WRY9w1pHrwL7/QS6RqflYXE09KU4+S5ZDLk=
