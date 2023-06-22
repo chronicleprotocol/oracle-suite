@@ -23,9 +23,8 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median/eth"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
-	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -120,12 +119,11 @@ func (c *Config) Relay(d Dependencies) (*relayer.Relayer, error) {
 				Subject:  pair.Content.Attributes["ethereum_client"].Range.Ptr(),
 			}
 		}
-		ethClient := geth.NewClient(rpcClient) //nolint:staticcheck // deprecated ethereum.Client
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
 			AssetPair:                 pair.Pair,
 			Spread:                    pair.Spread,
 			Expiration:                time.Second * time.Duration(pair.Expiration),
-			Median:                    medianGeth.NewMedian(ethClient, pair.ContractAddr),
+			Median:                    eth.NewMedian(rpcClient, pair.ContractAddr),
 			FeedAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
 		})
 	}
