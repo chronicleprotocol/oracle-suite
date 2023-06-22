@@ -93,7 +93,7 @@ gofernext {
     jq   = "{price: .data[0].last|tonumber, time: (.data[0].ts|tonumber/1000), volume: .data[0].vol24h|tonumber}"
   }
 
-#  origin "openexchangerates" {} # todo, Need api key
+#  origin "openexchangerates" {} # Not used
 
 #  origin "poloniex" {} # Not used
 
@@ -188,27 +188,6 @@ gofernext {
 #      indirect {
 #        origin "uniswapV3" { query = "LINK/ETH" }
 #        reference { data_model = "ETH/USD" }
-#      }
-    }
-  }
-
-  data_model "MANA/USD" {
-    median {
-      min_values = 2
-      indirect {
-        origin "binance" { query = "MANA/BTC" }
-        reference { data_model = "BTC/USD" }
-      }
-#      origin "binance" { query = "MANA/USD" } # Not work
-      origin "coinbase" { query = "MANA/USD" }
-      origin "kraken" { query = "MANA/USD" }
-      indirect {
-        origin "okx" { query = "MANA/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-#      indirect {
-#        origin "upbit" { query = "MANA/KRW" }
-#        origin "openexchangerates" { query = "KRW/USD" }
 #      }
     }
   }
