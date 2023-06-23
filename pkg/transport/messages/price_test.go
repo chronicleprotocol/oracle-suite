@@ -64,7 +64,7 @@ func readEachLineFromFile(data []byte) [][]byte {
 
 func TestPrice_Sign(t *testing.T) {
 	k := wallet.NewKeyFromBytes([]byte("0x0f2e4a9f5b4a9c3a"))
-	expectedFrom := k.Address().String() + "x"
+	expectedFrom := k.Address().String()
 
 	for _, tt := range prepTestCases(t) {
 		t.Run(tt.name, func(t *testing.T) {
