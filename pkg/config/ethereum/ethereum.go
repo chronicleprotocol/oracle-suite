@@ -285,6 +285,8 @@ func (c *ConfigKey) Key() (wallet.Key, error) {
 	return key, nil
 }
 
+const LoggerTag = "CONFIG_ETHEREUM"
+
 // Client returns the configured RPC client.
 func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, error) {
 	if c == nil {
@@ -293,6 +295,9 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 	if c.client != nil {
 		return c.client, nil
 	}
+
+	logger = logger.
+		WithField("tag", LoggerTag)
 
 	// Validate the client configuration.
 	if len(c.Name) == 0 {
@@ -367,6 +372,14 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 	if c.ChainID != 0 {
 		opts = append(opts, rpc.WithChainID(c.ChainID))
 	}
+
+	for _, u := range c.RPCURLs {
+		logger.
+			WithField("client", c.Name).
+			WithField("url", u.String()).
+			Info("Ethereum RPC URL")
+	}
+
 	client, err := rpc.NewClient(opts...)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
