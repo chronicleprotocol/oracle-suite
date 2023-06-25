@@ -1,7 +1,62 @@
 # Test config for the gofernext and ghostnext apps. Not ready for production use.
 
+ethereum {
+  # Labels for generating random ethereum keys anew on every app boot.
+  # The labels are used to reference ethereum keys in other sections.
+  # (optional)
+  #
+  # If you want to use a specific key, you can set the CFG_ETH_FROM
+  # environment variable along with CFG_ETH_KEYS and CFG_ETH_PASS.
+  rand_keys = try(env.CFG_ETH_FROM, "") == "" ? ["default"] : []
+
+  dynamic "key" {
+    for_each = try(env.CFG_ETH_FROM, "") == "" ? [] : [1]
+    labels   = ["default"]
+    content {
+      address         = try(env.CFG_ETH_FROM, "")
+      keystore_path   = try(env.CFG_ETH_KEYS, "")
+      passphrase_file = try(env.CFG_ETH_PASS, "")
+    }
+  }
+
+  client "default" {
+    rpc_urls = try(env.CFG_ETH_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_RPC_URLS), [
+      "https://eth.public-rpc.com"
+    ])
+    chain_id     = tonumber(try(env.CFG_ETH_CHAIN_ID, "1"))
+    ethereum_key = "default"
+  }
+
+  client "arbitrum" {
+    rpc_urls = try(env.CFG_ETH_ARB_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_ARB_RPC_URLS), [
+      "https://arbitrum.public-rpc.com"
+    ])
+    chain_id     = tonumber(try(env.CFG_ETH_ARB_CHAIN_ID, "42161"))
+    ethereum_key = "default"
+  }
+
+  client "optimism" {
+    rpc_urls = try(env.CFG_ETH_OPT_RPC_URLS == "" ? [] : split(",", env.CFG_ETH_OPT_RPC_URLS), [
+      "https://mainnet.optimism.io"
+    ])
+    chain_id     = tonumber(try(env.CFG_ETH_OPT_CHAIN_ID, "10"))
+    ethereum_key = "default"
+  }
+}
+
 gofernext {
-#  origin "balancer" {} # todo, Need web3
+  origin "balancerV2" {
+    type = "tick_generic_web3"
+    protocol = "balancerV2"
+    contracts "default" {
+      addresses = {
+        "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b"
+        "RETH/WETH" = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"
+        "STETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230"
+        "WETH/YFI" = "0x186084ff790c65088ba694df11758fae4943ee9e"
+      }
+    }
+  }
 
   origin "binance" {
     type = "tick_generic_jq"
@@ -111,265 +166,293 @@ gofernext {
 
 #  origin "wsteth" {} # todo, Need web3
 
-  data_model "BTC/USD" {
-    median {
-      min_values = 3
-#      origin "binance" { query = "BTC/USD" } # Not work
-      origin "bitstamp" { query = "BTC/USD" }
-      origin "coinbase" { query = "BTC/USD" }
-      origin "gemini" { query = "BTC/USD" }
-      origin "kraken" { query = "BTC/USD" }
+  data_model "ETH/BTC" { # debug
+    origin "binance" { query = "ETH/BTC" }
+  }
+
+  data_model "ETH/GNO" { # debug
+    alias "ETH/GNO" {
+      origin "balancerV2" { query = "WETH/GNO" }
     }
   }
 
-  data_model "ETH/BTC" {
-    median {
-      min_values = 3
-      origin "binance" { query = "ETH/BTC" }
-      origin "bitstamp" { query = "ETH/BTC" }
-      origin "coinbase" { query = "ETH/BTC" }
-      origin "gemini" { query = "ETH/BTC" }
-      origin "kraken" { query = "ETH/BTC" }
+  data_model "RETH/ETH" { # debug
+    alias "RETH/ETH" {
+      origin "balancerV2" { query = "RETH/WETH" }
     }
   }
 
-  data_model "ETH/USD" {
-    median {
-      min_values = 3
-      indirect {
-        origin "binance" { query = "ETH/BTC" }
-        reference { data_model = "BTC/USD" }
-      }
-      origin "bitstamp" { query = "ETH/USD" }
-      origin "coinbase" { query = "ETH/USD" }
-      origin "gemini" { query = "ETH/USD" }
-      origin "kraken" { query = "ETH/USD" }
-#      origin "uniswapV3" { query = "ETH/USD" }
+  data_model "STETH/ETH" { # debug
+    alias "STETH/ETH" {
+      origin "balancerV2" { query = "STETH/WETH" }
     }
   }
 
-#  data_model "GNO/USD" {
+  data_model "ETH/YFI" { # debug
+    alias "ETH/YFI" {
+      origin "balancerV2" { query = "WETH/YFI" }
+    }
+  }
+
+#  data_model "BTC/USD" {
+#    median {
+#      min_values = 3
+##      origin "binance" { query = "BTC/USD" } # Not work
+#      origin "bitstamp" { query = "BTC/USD" }
+#      origin "coinbase" { query = "BTC/USD" }
+#      origin "gemini" { query = "BTC/USD" }
+#      origin "kraken" { query = "BTC/USD" }
+#    }
+#  }
+#
+#  data_model "ETH/BTC" {
+#    median {
+#      min_values = 3
+#      origin "binance" { query = "ETH/BTC" }
+#      origin "bitstamp" { query = "ETH/BTC" }
+#      origin "coinbase" { query = "ETH/BTC" }
+#      origin "gemini" { query = "ETH/BTC" }
+#      origin "kraken" { query = "ETH/BTC" }
+#    }
+#  }
+#
+#  data_model "ETH/USD" {
 #    median {
 #      min_values = 3
 #      indirect {
-#        origin "balancerV2" { query = "ETH/GNO" }
-#        reference { data_model = "ETH/USD" }
-#      }
-#      indirect {
-#        origin "uniswapV3" { query = "GNO/ETH" }
-#        reference { data_model = "ETH/USD" }
-#      }
-#      indirect {
-#        origin "kraken" { query = "GNO/BTC" }
+#        origin "binance" { query = "ETH/BTC" }
 #        reference { data_model = "BTC/USD" }
 #      }
-#      indirect {
-#        origin "binance" { query = "GNO/USDT" }
-#        reference { data_model = "USDT/USD" }
-#      }
+#      origin "bitstamp" { query = "ETH/USD" }
+#      origin "coinbase" { query = "ETH/USD" }
+#      origin "gemini" { query = "ETH/USD" }
+#      origin "kraken" { query = "ETH/USD" }
+##      origin "uniswapV3" { query = "ETH/USD" }
 #    }
 #  }
-
-#  data_model "IBTA/USD" {
-#    origin "ishares" { query = "IBTA/USD" }
-#  }
-
-  data_model "LINK/USD" {
-    median {
-      min_values = 3
-      indirect {
-        origin "binance" { query = "LINK/BTC" }
-        reference { data_model = "BTC/USD" }
-      }
-      origin "bitstamp" { query = "LINK/USD" }
-      origin "coinbase" { query = "LINK/USD" }
-      origin "gemini" { query = "LINK/USD" }
-      origin "kraken" { query = "LINK/USD" }
-#      indirect {
-#        origin "uniswapV3" { query = "LINK/ETH" }
-#        reference { data_model = "ETH/USD" }
-#      }
-    }
-  }
-
-  data_model "MANA/USD" {
-    median {
-      min_values = 2
-      indirect {
-        origin "binance" { query = "MANA/BTC" }
-        reference { data_model = "BTC/USD" }
-      }
-#      origin "binance" { query = "MANA/USD" } # Not work
-      origin "coinbase" { query = "MANA/USD" }
-      origin "kraken" { query = "MANA/USD" }
-      indirect {
-        origin "okx" { query = "MANA/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-#      indirect {
-#        origin "upbit" { query = "MANA/KRW" }
-#        origin "openexchangerates" { query = "KRW/USD" }
-#      }
-    }
-  }
-
-  data_model "MATIC/USD" {
-    median {
-      min_values = 3
-      indirect {
-        origin "binance" { query = "MATIC/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      origin "coinbase" { query = "MATIC/USD" }
-      origin "gemini" { query = "MATIC/USD" }
-      indirect {
-        origin "huobi" { query = "MATIC/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      origin "kraken" { query = "MATIC/USD" }
-    }
-  }
-
-  data_model "MKR/USD" {
-    median {
-      min_values = 3
-      indirect {
-        origin "binance" { query = "MKR/BTC" }
-        reference { data_model = "BTC/USD" }
-      }
-      origin "bitstamp" { query = "MKR/USD" }
-      origin "coinbase" { query = "MKR/USD" }
-      origin "gemini" { query = "MKR/USD" }
-      origin "kraken" { query = "MKR/USD" }
-#      indirect {
-#        origin "uniswapV3" { query = "MKR/ETH" }
-#        reference { data_model = "ETH/USD" }
-#      }
-#      indirect {
-#        origin "uniswapV3" { query = "MKR/USDC" }
-#        reference { data_model = "USDC/USD" }
-#      }
-    }
-  }
-
-  data_model "MKR/ETH" {
-    median {
-      min_values = 3
-      indirect {
-        origin "binance" { query = "MKR/BTC" }
-        reference { data_model = "ETH/BTC" }
-      }
-      indirect {
-        origin "bitstamp" { query = "MKR/USD" }
-        reference { data_model = "ETH/USD" }
-      }
-      indirect {
-        origin "coinbase" { query = "MKR/USD" }
-        reference { data_model = "ETH/USD" }
-      }
-      indirect {
-        origin "gemini" { query = "MKR/USD" }
-        reference { data_model = "ETH/USD" }
-      }
-      indirect {
-        origin "kraken" { query = "MKR/USD" }
-        reference { data_model = "ETH/USD" }
-      }
-    }
-  }
-
-#  data_model "RETH/ETH" {
+#
+##  data_model "GNO/USD" {
+##    median {
+##      min_values = 3
+##      indirect {
+##        origin "balancerV2" { query = "ETH/GNO" }
+##        reference { data_model = "ETH/USD" }
+##      }
+##      indirect {
+##        origin "uniswapV3" { query = "GNO/ETH" }
+##        reference { data_model = "ETH/USD" }
+##      }
+##      indirect {
+##        origin "kraken" { query = "GNO/BTC" }
+##        reference { data_model = "BTC/USD" }
+##      }
+##      indirect {
+##        origin "binance" { query = "GNO/USDT" }
+##        reference { data_model = "USDT/USD" }
+##      }
+##    }
+##  }
+#
+##  data_model "IBTA/USD" {
+##    origin "ishares" { query = "IBTA/USD" }
+##  }
+#
+#  data_model "LINK/USD" {
 #    median {
 #      min_values = 3
-#      origin "balancerV2" { query = "RETH/ETH" }
 #      indirect {
-#        origin "curve" { query = "RETH/WSTETH" }
-#        reference { data_model = "WSTETH/ETH" }
+#        origin "binance" { query = "LINK/BTC" }
+#        reference { data_model = "BTC/USD" }
 #      }
-#      origin "rocketpool" { query = "RETH/ETH" }
+#      origin "bitstamp" { query = "LINK/USD" }
+#      origin "coinbase" { query = "LINK/USD" }
+#      origin "gemini" { query = "LINK/USD" }
+#      origin "kraken" { query = "LINK/USD" }
+##      indirect {
+##        origin "uniswapV3" { query = "LINK/ETH" }
+##        reference { data_model = "ETH/USD" }
+##      }
 #    }
 #  }
-
-#  data_model "RETH/USD" {
-#    indirect {
-#      reference { data_model = "RETH/ETH" }
-#      reference { data_model = "ETH/USD" }
-#    }
-#  }
-
-#  data_model "STETH/ETH" {
+#
+#  data_model "MANA/USD" {
 #    median {
 #      min_values = 2
-#      origin "balancerV2" { query = "STETH/ETH" }
-#      origin "curve" { query = "STETH/ETH" }
-#    }
-#  }
-
-  data_model "USDC/USD" {
-    median {
-      min_values = 2
-      origin "coinbase" { query ="USDC/USD" } # Not work
-      origin "gemini" { query ="USDC/USD" }
-      origin "kraken" { query ="USDC/USD" }
-    }
-  }
-
-  data_model "USDT/USD" {
-    median {
-      min_values = 3
-      indirect {
-        origin "binance" { query = "BTC/USDT" }
-        reference { data_model = "BTC/USD" }
-      }
-      alias "USDT/USD" {
-        origin "bitfinex" { query = "UST/USD" }
-      }
-      origin "coinbase" { query = "USDT/USD" }
-      origin "kraken" { query = "USDT/USD" }
-      indirect {
-        origin "okx" { query = "BTC/USDT" }
-        reference { data_model = "BTC/USD" }
-      }
-    }
-  }
-
-#  data_model "WSTETH/ETH" {
-#    indirect {
-#      origin "wsteth" { query = "WSTETH/STETH" }
-#      reference { data_model = "STETH/ETH" }
-#    }
-#  }
-
-#  data_model "WSTETH/USD" {
-#    indirect {
-#      reference { data_model = "WSTETH/ETH" }
-#      reference { data_model = "ETH/USD" }
-#    }
-#  }
-
-  data_model "YFI/USD" {
-    median {
-      min_values = 2
 #      indirect {
-#        origin "balancerV2" { query = "ETH/YFI" }
+#        origin "binance" { query = "MANA/BTC" }
+#        reference { data_model = "BTC/USD" }
+#      }
+##      origin "binance" { query = "MANA/USD" } # Not work
+#      origin "coinbase" { query = "MANA/USD" }
+#      origin "kraken" { query = "MANA/USD" }
+#      indirect {
+#        origin "okx" { query = "MANA/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+##      indirect {
+##        origin "upbit" { query = "MANA/KRW" }
+##        origin "openexchangerates" { query = "KRW/USD" }
+##      }
+#    }
+#  }
+#
+#  data_model "MATIC/USD" {
+#    median {
+#      min_values = 3
+#      indirect {
+#        origin "binance" { query = "MATIC/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+#      origin "coinbase" { query = "MATIC/USD" }
+#      origin "gemini" { query = "MATIC/USD" }
+#      indirect {
+#        origin "huobi" { query = "MATIC/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+#      origin "kraken" { query = "MATIC/USD" }
+#    }
+#  }
+#
+#  data_model "MKR/USD" {
+#    median {
+#      min_values = 3
+#      indirect {
+#        origin "binance" { query = "MKR/BTC" }
+#        reference { data_model = "BTC/USD" }
+#      }
+#      origin "bitstamp" { query = "MKR/USD" }
+#      origin "coinbase" { query = "MKR/USD" }
+#      origin "gemini" { query = "MKR/USD" }
+#      origin "kraken" { query = "MKR/USD" }
+##      indirect {
+##        origin "uniswapV3" { query = "MKR/ETH" }
+##        reference { data_model = "ETH/USD" }
+##      }
+##      indirect {
+##        origin "uniswapV3" { query = "MKR/USDC" }
+##        reference { data_model = "USDC/USD" }
+##      }
+#    }
+#  }
+#
+#  data_model "MKR/ETH" {
+#    median {
+#      min_values = 3
+#      indirect {
+#        origin "binance" { query = "MKR/BTC" }
+#        reference { data_model = "ETH/BTC" }
+#      }
+#      indirect {
+#        origin "bitstamp" { query = "MKR/USD" }
 #        reference { data_model = "ETH/USD" }
 #      }
-      indirect {
-        origin "binance" { query = "YFI/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      origin "coinbase" { query = "YFI/USD" }
-      origin "kraken" { query = "YFI/USD" }
-      indirect {
-        origin "okx" { query = "YFI/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
 #      indirect {
-#        origin "sushiswap" { query = "YFI/ETH" }
+#        origin "coinbase" { query = "MKR/USD" }
 #        reference { data_model = "ETH/USD" }
 #      }
-    }
-  }
+#      indirect {
+#        origin "gemini" { query = "MKR/USD" }
+#        reference { data_model = "ETH/USD" }
+#      }
+#      indirect {
+#        origin "kraken" { query = "MKR/USD" }
+#        reference { data_model = "ETH/USD" }
+#      }
+#    }
+#  }
+#
+##  data_model "RETH/ETH" {
+##    median {
+##      min_values = 3
+##      origin "balancerV2" { query = "RETH/ETH" }
+##      indirect {
+##        origin "curve" { query = "RETH/WSTETH" }
+##        reference { data_model = "WSTETH/ETH" }
+##      }
+##      origin "rocketpool" { query = "RETH/ETH" }
+##    }
+##  }
+#
+##  data_model "RETH/USD" {
+##    indirect {
+##      reference { data_model = "RETH/ETH" }
+##      reference { data_model = "ETH/USD" }
+##    }
+##  }
+#
+##  data_model "STETH/ETH" {
+##    median {
+##      min_values = 2
+##      origin "balancerV2" { query = "STETH/ETH" }
+##      origin "curve" { query = "STETH/ETH" }
+##    }
+##  }
+#
+#  data_model "USDC/USD" {
+#    median {
+#      min_values = 2
+#      origin "coinbase" { query ="USDC/USD" } # Not work
+#      origin "gemini" { query ="USDC/USD" }
+#      origin "kraken" { query ="USDC/USD" }
+#    }
+#  }
+#
+#  data_model "USDT/USD" {
+#    median {
+#      min_values = 3
+#      indirect {
+#        origin "binance" { query = "BTC/USDT" }
+#        reference { data_model = "BTC/USD" }
+#      }
+#      alias "USDT/USD" {
+#        origin "bitfinex" { query = "UST/USD" }
+#      }
+#      origin "coinbase" { query = "USDT/USD" }
+#      origin "kraken" { query = "USDT/USD" }
+#      indirect {
+#        origin "okx" { query = "BTC/USDT" }
+#        reference { data_model = "BTC/USD" }
+#      }
+#    }
+#  }
+#
+##  data_model "WSTETH/ETH" {
+##    indirect {
+##      origin "wsteth" { query = "WSTETH/STETH" }
+##      reference { data_model = "STETH/ETH" }
+##    }
+##  }
+#
+##  data_model "WSTETH/USD" {
+##    indirect {
+##      reference { data_model = "WSTETH/ETH" }
+##      reference { data_model = "ETH/USD" }
+##    }
+##  }
+#
+#  data_model "YFI/USD" {
+#    median {
+#      min_values = 2
+##      indirect {
+##        origin "balancerV2" { query = "ETH/YFI" }
+##        reference { data_model = "ETH/USD" }
+##      }
+#      indirect {
+#        origin "binance" { query = "YFI/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+#      origin "coinbase" { query = "YFI/USD" }
+#      origin "kraken" { query = "YFI/USD" }
+#      indirect {
+#        origin "okx" { query = "YFI/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+##      indirect {
+##        origin "sushiswap" { query = "YFI/ETH" }
+##        reference { data_model = "ETH/USD" }
+##      }
+#    }
+#  }
 }
 
 ghostnext {

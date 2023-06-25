@@ -3,10 +3,10 @@ package dataprovider
 import (
 	"fmt"
 
-	"github.com/hashicorp/hcl/v2"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
+	"github.com/defiweb/go-eth/rpc"
+	"github.com/hashicorp/hcl/v2"
 )
 
 type configOrigin struct {
@@ -33,6 +33,16 @@ type configOriginTickGenericJQ struct {
 	JQ  string `hcl:"jq"`
 }
 
+type configOriginTickGenericWeb3 struct {
+	Protocol  string            `hcl:"protocol"`
+	Contracts []configContracts `hcl:"contracts,block"`
+}
+
+type configContracts struct {
+	EthereumClient    string            `hcl:"client,label"`
+	ContractAddresses map[string]string `hcl:"addresses"`
+}
+
 func (c *configOrigin) PostDecodeBlock(
 	ctx *hcl.EvalContext,
 	_ *hcl.BodySchema,
@@ -45,6 +55,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginStatic{}
 	case "tick_generic_jq":
 		config = &configOriginTickGenericJQ{}
+	case "tick_generic_web3":
+		config = &configOriginTickGenericWeb3{}
 	default:
 		return hcl.Diagnostics{{
 			Severity: hcl.DiagError,
@@ -76,7 +88,41 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 			return nil, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
-				Detail:   fmt.Sprintf("Failed to create origin: %s", err),
+				Detail:   fmt.Sprintf("Failed to create jq origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginTickGenericWeb3:
+		clients := make([]rpc.RPC, len(o.Contracts))
+		contractAddresses := make([]origin.ContractAddresses, len(o.Contracts))
+
+		for k, v := range o.Contracts {
+			client, ok := d.Clients[v.EthereumClient]
+			if !ok {
+				return nil, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Runtime error",
+					Detail:   fmt.Sprintf("Failed to get ethereum client: %s", v.EthereumClient),
+					Subject:  c.Range.Ptr(),
+				}
+			}
+			addresses := v.ContractAddresses
+
+			clients[k] = client
+			contractAddresses[k] = addresses
+		}
+		origin, err := origin.NewTickGenericWeb3(origin.TickGenericWeb3Options{
+			Protocol:          o.Protocol,
+			Clients:           clients,
+			ContractAddresses: contractAddresses,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create web3 origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
