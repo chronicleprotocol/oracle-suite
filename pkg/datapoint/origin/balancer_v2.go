@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"math/big"
 	"sort"
 	"time"
@@ -23,13 +24,11 @@ var balancerV2PoolABI []byte
 
 const BalancerV2LoggerTag = "BALANCERV2_ORIGIN"
 
-const ether = 1e18
-
 type BalancerV2Options struct {
 	Client            rpc.RPC
 	ContractAddresses ContractAddresses
-	Blocks            []int64
 	Logger            log.Logger
+	Blocks            []int64
 }
 
 type BalancerV2 struct {
@@ -44,6 +43,9 @@ type BalancerV2 struct {
 func NewBalancerV2(opts BalancerV2Options) (*BalancerV2, error) {
 	if opts.Client == nil {
 		return nil, fmt.Errorf("cannot nil ethereum client")
+	}
+	if opts.Logger == nil {
+		opts.Logger = null.New()
 	}
 
 	a, err := abi.ParseJSON(balancerV2PoolABI)
@@ -65,13 +67,15 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	if !ok {
 		return nil, fmt.Errorf("invalid query type: %T, expected []Pair", query)
 	}
+
 	sort.Slice(pairs, func(i, j int) bool {
 		return pairs[i].String() < pairs[j].String()
 	})
 
 	points := make(map[any]datapoint.Point)
 
-	block, err := b.client.BlockNumber(context.Background())
+	block, err := b.client.BlockNumber(ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
@@ -89,6 +93,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
 		}
+
 		calls = append(calls, types.Call{
 			To:    &contract,
 			Input: callData,
