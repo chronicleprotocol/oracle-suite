@@ -3,9 +3,10 @@ package dataprovider
 import (
 	"fmt"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
-	"github.com/hashicorp/hcl/v2"
 )
 
 type configOrigin struct {

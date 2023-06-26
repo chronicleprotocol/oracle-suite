@@ -3,10 +3,11 @@ package origin
 import (
 	"context"
 	"fmt"
+	
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-	"github.com/defiweb/go-eth/types"
 )
 
 // Origin provides dataPoint prices for a given set of pairs from an external
