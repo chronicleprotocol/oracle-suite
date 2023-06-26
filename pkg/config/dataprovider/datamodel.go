@@ -273,7 +273,7 @@ func buildOriginNode(node *configNodeOrigin, origins map[string]origin.Origin) (
 			}
 		}
 		query = pair
-	case *origin.TickGenericWeb3:
+	case *origin.BalancerV2:
 		pair, err := value.PairFromString(node.Query.AsString())
 		if err != nil {
 			return nil, &hcl.Diagnostic{

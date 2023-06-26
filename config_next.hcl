@@ -46,8 +46,7 @@ ethereum {
 
 gofernext {
   origin "balancerV2" {
-    type = "tick_generic_web3"
-    protocol = "balancerV2"
+    type = "balancerV2"
     contracts "default" {
       addresses = {
         "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b"

@@ -18,14 +18,18 @@ import (
 	"github.com/defiweb/go-eth/types"
 )
 
-const prefixRef = "Ref:"
-
 //go:embed balancerv2_abi.json
 var balancerV2PoolABI []byte
 
+const BalancerV2LoggerTag = "BALANCERV2_ORIGIN"
+
+const ether = 1e18
+
 type BalancerV2Options struct {
-	Client            rpc.Client
+	Client            rpc.RPC
 	ContractAddresses ContractAddresses
+	Blocks            []int64
+	Logger            log.Logger
 }
 
 type BalancerV2 struct {
@@ -37,22 +41,30 @@ type BalancerV2 struct {
 	logger            log.Logger
 }
 
-func NewBalancerV2(client rpc.RPC, contractAddresses ContractAddresses, blocks []int64, logger log.Logger) (*BalancerV2, error) {
+func NewBalancerV2(opts BalancerV2Options) (*BalancerV2, error) {
+	if opts.Client == nil {
+		return nil, fmt.Errorf("cannot nil ethereum client")
+	}
+
 	a, err := abi.ParseJSON(balancerV2PoolABI)
 	if err != nil {
 		return nil, err
 	}
 	return &BalancerV2{
-		client:            client,
-		contractAddresses: contractAddresses,
+		client:            opts.Client,
+		contractAddresses: opts.ContractAddresses,
 		abi:               a,
 		variable:          0, // PAIR_PRICE
-		blocks:            blocks,
-		logger:            logger,
+		blocks:            opts.Blocks,
+		logger:            opts.Logger.WithField("balancerV2", BalancerV2LoggerTag),
 	}, nil
 }
 
-func (b BalancerV2) FetchDataPoints(ctx context.Context, pairs []value.Pair) (map[any]datapoint.Point, error) {
+func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
+	pairs, ok := queryToPairs(query)
+	if !ok {
+		return nil, fmt.Errorf("invalid query type: %T, expected []Pair", query)
+	}
 	sort.Slice(pairs, func(i, j int) bool {
 		return pairs[i].String() < pairs[j].String()
 	})
