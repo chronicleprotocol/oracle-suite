@@ -21,49 +21,19 @@ gofernext {
     jq   = "{price: .last, time: .timestamp, volume: .volume}"
   }
 
-#  origin "bithumb" {} # Not used, ETH/USDT price is not correct
-
-#  origin "bittrex" {} # Not used, API does not work, bankruptcy
-
   origin "coinbase" {
     type = "tick_generic_jq"
     url  = "https://api.pro.coinbase.com/products/$${ucbase}-$${ucquote}/ticker"
     jq   = "{price: .price, time: .time, volume: .volume}"
   }
 
-#  origin "coinmarketcap" {} # Not used, need API key
-
-#  origin "cryptocompare" {
-#    type = "tick_generic_jq"
-#    url  = "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=$${ucbase}&tsyms=$${ucquote}&tryConversion=false&extraParams=gofer&relaxedValidation=true"
-#    jq   = "{price: .RAW.$${ucbase}.$${ucquote}.PRICE, time: .RAW.$${ucbase}.$${ucquote}.LASTUPDATE, volume: .RAW.$${ucbase}.$${ucquote}.VOLUME24HOUR}"
-#  } # Not used, need to replace variables in jq
-
 #  origin "curve" {} # todo, Need web3
-
-#  origin "ddex" {
-#    type = "tick_generic_jq"
-#    url  = "https://api.ddex.io/v4/markets/tickers"
-#    jq   = ".data.tickers[] | select(.marketId == ($ucbase)-($ucquote)) | {price: .price, volume: .volume, time: (.updateAt / 1000)}"
-#  } # Not used, ETH/DAI price is not correct, how to insert `-`
-
-#  origin "folgory" {} # Not used
-
-#  origin "fx" {} # Not used
-
-#  origin "gateio" {} # Not used
 
   origin "gemini" {
     type = "tick_generic_jq"
     url  = "https://api.gemini.com/v1/pubticker/$${lcbase}$${lcquote}"
     jq   = "{price: .last, time: (.volume.timestamp/1000), volume: null}"
   }
-
-#  origin "hitbtc" {
-#    type = "tick_generic_jq"
-#    url  = "https://api.hitbtc.com/api/2/public/ticker?symbols=$${ucbase}$${ucquote}"
-#    jq   = "{price: .[0].last|tonumber, time: .[0].timestamp|strptime("%Y-%m-%dT%H:%M:%S.%jZ")|mktime, volume: .[0].volume|tonumber}"
-#  } # Not used
 
   origin "huobi" {
     type = "tick_generic_jq"
@@ -79,23 +49,11 @@ gofernext {
     jq   = "($ucbase + \"/\" + $ucquote) as $pair | {price: .result[$pair].c[0]|tonumber, time: now|round, volume: .result[$pair].v[0]|tonumber}"
   }
 
-#  origin "kucoin" {} # Not used
-
-#  origin "kyber" {} # Not used
-
-#  origin "loopring" {} # Not used
-
-#  origin "okex" {} # Not used
-
   origin "okx" {
     type = "tick_generic_jq"
     url  = "https://www.okx.com/api/v5/market/ticker?instId=$${ucbase}-$${ucquote}-SWAP"
     jq   = "{price: .data[0].last|tonumber, time: (.data[0].ts|tonumber/1000), volume: .data[0].vol24h|tonumber}"
   }
-
-#  origin "openexchangerates" {} # Not used
-
-#  origin "poloniex" {} # Not used
 
 #  origin "rocketpool" {} # todo, Need web3
 
