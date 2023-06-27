@@ -34,8 +34,9 @@ type configOriginTickGenericJQ struct {
 }
 
 type configContracts struct {
-	EthereumClient    string            `hcl:"client,label"`
-	ContractAddresses map[string]string `hcl:"addresses"`
+	EthereumClient     string            `hcl:"client,label"`
+	ContractAddresses  map[string]string `hcl:"addresses"`
+	ReferenceAddresses map[string]string `hcl:"references"`
 }
 
 type configOriginBalancer struct {
@@ -98,10 +99,11 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		return origin, nil
 	case *configOriginBalancer:
 		origin, err := origin.NewBalancerV2(origin.BalancerV2Options{
-			Client:            d.Clients[o.Contracts.EthereumClient],
-			ContractAddresses: o.Contracts.ContractAddresses,
-			Blocks:            averageFromBlocks,
-			Logger:            d.Logger,
+			Client:             d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses:  o.Contracts.ContractAddresses,
+			ReferenceAddresses: o.Contracts.ReferenceAddresses,
+			Blocks:             averageFromBlocks,
+			Logger:             d.Logger,
 		})
 		if err != nil {
 			return nil, &hcl.Diagnostic{

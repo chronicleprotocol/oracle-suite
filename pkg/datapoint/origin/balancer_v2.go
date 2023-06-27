@@ -25,19 +25,21 @@ var balancerV2PoolABI []byte
 const BalancerV2LoggerTag = "BALANCERV2_ORIGIN"
 
 type BalancerV2Options struct {
-	Client            rpc.RPC
-	ContractAddresses ContractAddresses
-	Logger            log.Logger
-	Blocks            []int64
+	Client             rpc.RPC
+	ContractAddresses  ContractAddresses
+	ReferenceAddresses ContractAddresses
+	Logger             log.Logger
+	Blocks             []int64
 }
 
 type BalancerV2 struct {
-	client            rpc.RPC
-	contractAddresses ContractAddresses
-	abi               *abi.Contract
-	variable          byte
-	blocks            []int64
-	logger            log.Logger
+	client             rpc.RPC
+	contractAddresses  ContractAddresses
+	referenceAddresses ContractAddresses
+	abi                *abi.Contract
+	variable           byte
+	blocks             []int64
+	logger             log.Logger
 }
 
 func NewBalancerV2(opts BalancerV2Options) (*BalancerV2, error) {
@@ -53,12 +55,13 @@ func NewBalancerV2(opts BalancerV2Options) (*BalancerV2, error) {
 		return nil, err
 	}
 	return &BalancerV2{
-		client:            opts.Client,
-		contractAddresses: opts.ContractAddresses,
-		abi:               a,
-		variable:          0, // PAIR_PRICE
-		blocks:            opts.Blocks,
-		logger:            opts.Logger.WithField("balancerV2", BalancerV2LoggerTag),
+		client:             opts.Client,
+		contractAddresses:  opts.ContractAddresses,
+		referenceAddresses: opts.ReferenceAddresses,
+		abi:                a,
+		variable:           0, // PAIR_PRICE
+		blocks:             opts.Blocks,
+		logger:             opts.Logger.WithField("balancerV2", BalancerV2LoggerTag),
 	}, nil
 }
 
@@ -80,8 +83,10 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
 
+	decimalsAbi := abi.MustParseMethod("function decimals() public view virtual returns (uint8)")
+
 	totals := make([]*big.Int, len(pairs))
-	var calls []types.Call
+	var calls, decimalCalls []types.Call
 	for i, pair := range pairs {
 		contract, inverted, err := b.contractAddresses.AddressByPair(pair)
 		if err != nil {
@@ -90,35 +95,87 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		if inverted {
 			return nil, fmt.Errorf("cannnot use inverted pair to retrieve price: %s", pair.String())
 		}
+
+		// Calls for `getLatest`
 		callData, err := b.abi.Methods["getLatest"].EncodeArgs(b.variable)
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
 		}
-
 		calls = append(calls, types.Call{
 			To:    &contract,
 			Input: callData,
 		})
+
+		// Calls for `decimals`
+		callData, _ = decimalsAbi.EncodeArgs()
+		decimalCalls = append(decimalCalls, types.Call{
+			To:    &contract,
+			Input: callData,
+		})
+
+		ref, inverted, err := b.referenceAddresses.AddressByPair(pair)
+		if err == nil {
+			if inverted {
+				return nil, fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String())
+			}
+			callData, err := b.abi.Methods["getPriceRateCache"].EncodeArgs(types.MustAddressFromHex(ref.String()))
+			if err != nil {
+				return nil, fmt.Errorf(
+					"failed to pack contract args for getPriceRateCache (pair %s): %w",
+					pair.String(),
+					err,
+				)
+			}
+			calls = append(calls, types.Call{
+				To:    &contract,
+				Input: callData,
+			})
+
+			callData, _ = decimalsAbi.EncodeArgs()
+			decimalCalls = append(decimalCalls, types.Call{
+				To:    &ref,
+				Input: callData,
+			})
+		}
+
 		totals[i] = new(big.Int).SetInt64(0)
+	}
+
+	// Get all the decimals including reference tokens
+	respDecimals, err := ethereum.MultiCall(ctx, b.client, decimalCalls, types.BlockNumberFromBigInt(block))
+	if err != nil {
+		return nil, fmt.Errorf("failed multicall for decimals: %w", err)
+	}
+	decimals := make([]*big.Int, len(decimalCalls))
+	for i, resp := range respDecimals {
+		// Calculate 10**decimals and set it to `decimals[i]`
+		decimals[i] = new(big.Int).Exp(big.NewInt(10), new(big.Int).SetBytes(resp), big.NewInt(0))
 	}
 
 	for _, blockDelta := range b.blocks {
 		resp, err := ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 		if err != nil {
-			return nil, fmt.Errorf("failed multicall: %w", err)
-		}
-		if len(calls) != len(resp) {
-			return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(resp))
+			return nil, fmt.Errorf("failed multicall for getLatest: %w", err)
 		}
 
-		for i, _ := range pairs {
-			price := new(big.Int).SetBytes(resp[0][0:32])
+		n := 0
+		for i := 0; i < len(pairs); i++ {
+			price := new(big.Int).SetBytes(resp[n][0:32])
+
+			_, _, err := b.referenceAddresses.AddressByPair(pairs[i])
+			if err == nil {
+				refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
+				price = price.Quo(price.Mul(price, refPrice), decimals[n])
+				n++ // next response was already used, ignore
+			}
+
 			totals[i] = totals[i].Add(totals[i], price)
+			n++
 		}
 	}
 
 	for i, pair := range pairs {
-		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
+		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetInt(decimals[i]))
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
 
 		tick := value.Tick{
