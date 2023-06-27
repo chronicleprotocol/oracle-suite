@@ -86,6 +86,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	}
 
 	totals := make([]*big.Int, len(pairs))
+	refs := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
 		contract, inverted, err := b.contractAddresses.AddressByPair(pair)
@@ -126,6 +127,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 
 		totals[i] = new(big.Int).SetInt64(0)
+		refs[i] = new(big.Int).SetInt64(0)
 	}
 
 	for _, blockDelta := range b.blocks {
@@ -141,18 +143,25 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			_, _, err := b.referenceAddresses.AddressByPair(pairs[i])
 			if err == nil {
 				refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
-				price = price.Quo(price.Mul(price, refPrice), new(big.Int).SetUint64(ether))
+				refs[i] = new(big.Int).Add(refs[i], refPrice)
 				n++ // next response was already used, ignore
 			}
 
-			totals[i] = totals[i].Add(totals[i], price)
+			totals[i] = new(big.Int).Add(totals[i], price)
 			n++
 		}
 	}
 
 	for i, pair := range pairs {
 		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
-		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
+		avgPrice = new(big.Float).Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
+		if refs[i].Cmp(big.NewInt(0)) > 0 { // Non Zero, then multiply with ref price
+			refPrice := new(big.Float).Quo(new(big.Float).SetInt(refs[i]), new(big.Float).SetUint64(ether))
+			avgPrice = new(big.Float).Quo(
+				new(big.Float).Mul(avgPrice, refPrice),
+				new(big.Float).SetUint64(uint64(len(b.blocks))),
+			)
+		}
 
 		tick := value.Tick{
 			Pair:      pair,
