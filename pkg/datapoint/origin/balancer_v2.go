@@ -80,8 +80,9 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
 
-	for _, pair := range pairs {
-		var calls []types.Call
+	totals := make([]*big.Int, len(pairs))
+	var calls []types.Call
+	for i, pair := range pairs {
 		contract, inverted, err := b.contractAddresses.AddressByPair(pair)
 		if err != nil {
 			return nil, err
@@ -98,21 +99,26 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			To:    &contract,
 			Input: callData,
 		})
+		totals[i] = new(big.Int).SetInt64(0)
+	}
 
-		total := new(big.Int).SetInt64(0)
-		for _, blockDelta := range b.blocks {
-			resp, err := ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
-			if err != nil {
-				return nil, fmt.Errorf("failed multicall (pair %s): %w", pair.String(), err)
-			}
-			if len(calls) != len(resp) {
-				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(resp))
-			}
-			price := new(big.Int).SetBytes(resp[0][0:32])
-			total = total.Add(total, price)
+	for _, blockDelta := range b.blocks {
+		resp, err := ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
+		if err != nil {
+			return nil, fmt.Errorf("failed multicall: %w", err)
+		}
+		if len(calls) != len(resp) {
+			return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(resp))
 		}
 
-		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(total), new(big.Float).SetUint64(ether))
+		for i, _ := range pairs {
+			price := new(big.Int).SetBytes(resp[0][0:32])
+			totals[i] = totals[i].Add(totals[i], price)
+		}
+	}
+
+	for i, pair := range pairs {
+		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
 
 		tick := value.Tick{
