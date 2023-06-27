@@ -188,8 +188,8 @@ func (suite *CurveSuite) TestSuccessResponse_Inverse() {
 	pair := value.Pair{Base: "STETH", Quote: "ETH"}
 	point, err := suite.origin.FetchDataPoints(context.Background(), []any{pair.Invert()})
 	suite.Require().NoError(err)
-	suite.Equal(0.97, point[pair].Value.(value.Tick).Price.Float64())
-	suite.Greater(point[pair].Time.Unix(), int64(0))
+	suite.Equal(0.97, point[pair.Invert()].Value.(value.Tick).Price.Float64())
+	suite.Greater(point[pair.Invert()].Time.Unix(), int64(0))
 }
 
 func (suite *CurveSuite) TestFailOnWrongPair() {
