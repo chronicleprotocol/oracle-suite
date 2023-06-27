@@ -3,7 +3,7 @@ package origin
 import (
 	"context"
 	"fmt"
-	
+
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"

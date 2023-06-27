@@ -119,10 +119,11 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 			return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(resp))
 		}
 		if len(resp) != len(pairs) {
-			return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d", len(resp), len(pairs))
+			return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
+				len(resp), len(pairs))
 		}
 
-		for i, _ := range pairs {
+		for i := range pairs {
 			price := new(big.Int).SetBytes(resp[0][0:32])
 			totals[i] = totals[i].Add(totals[i], price)
 		}
