@@ -54,6 +54,9 @@ gofernext {
         "STETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230"
         "WETH/YFI" = "0x186084ff790c65088ba694df11758fae4943ee9e"
       }
+      references = {
+        "RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393"
+      }
     }
   }
 

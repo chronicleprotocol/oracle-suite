@@ -83,10 +83,8 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
 
-	decimalsAbi := abi.MustParseMethod("function decimals() public view virtual returns (uint8)")
-
 	totals := make([]*big.Int, len(pairs))
-	var calls, decimalCalls []types.Call
+	var calls []types.Call
 	for i, pair := range pairs {
 		contract, inverted, err := b.contractAddresses.AddressByPair(pair)
 		if err != nil {
@@ -102,13 +100,6 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
 		}
 		calls = append(calls, types.Call{
-			To:    &contract,
-			Input: callData,
-		})
-
-		// Calls for `decimals`
-		callData, _ = decimalsAbi.EncodeArgs()
-		decimalCalls = append(decimalCalls, types.Call{
 			To:    &contract,
 			Input: callData,
 		})
@@ -130,26 +121,9 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 				To:    &contract,
 				Input: callData,
 			})
-
-			callData, _ = decimalsAbi.EncodeArgs()
-			decimalCalls = append(decimalCalls, types.Call{
-				To:    &ref,
-				Input: callData,
-			})
 		}
 
 		totals[i] = new(big.Int).SetInt64(0)
-	}
-
-	// Get all the decimals including reference tokens
-	respDecimals, err := ethereum.MultiCall(ctx, b.client, decimalCalls, types.BlockNumberFromBigInt(block))
-	if err != nil {
-		return nil, fmt.Errorf("failed multicall for decimals: %w", err)
-	}
-	decimals := make([]*big.Int, len(decimalCalls))
-	for i, resp := range respDecimals {
-		// Calculate 10**decimals and set it to `decimals[i]`
-		decimals[i] = new(big.Int).Exp(big.NewInt(10), new(big.Int).SetBytes(resp), big.NewInt(0))
 	}
 
 	for _, blockDelta := range b.blocks {
@@ -165,7 +139,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			_, _, err := b.referenceAddresses.AddressByPair(pairs[i])
 			if err == nil {
 				refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
-				price = price.Quo(price.Mul(price, refPrice), decimals[n])
+				price = price.Quo(price.Mul(price, refPrice), new(big.Int).SetUint64(ether))
 				n++ // next response was already used, ignore
 			}
 
@@ -175,7 +149,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	}
 
 	for i, pair := range pairs {
-		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetInt(decimals[i]))
+		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
 
 		tick := value.Tick{
