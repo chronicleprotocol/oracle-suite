@@ -65,7 +65,10 @@ func NewBalancerV2(opts BalancerV2Options) (*BalancerV2, error) {
 	}, nil
 }
 
-func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
+func (b *BalancerV2) FetchDataPoints(
+	ctx context.Context,
+	query []any,
+) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
 		return nil, fmt.Errorf("invalid query type: %T, expected []Pair", query)

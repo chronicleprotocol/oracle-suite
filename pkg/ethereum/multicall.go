@@ -78,7 +78,8 @@ func MultiCall(
 		return nil, fmt.Errorf("multicall: decoding results failed: %w", err)
 	}
 	if len(calls) != len(multicallResults) {
-		return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(multicallResults))
+		return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
+			len(calls), len(multicallResults))
 	}
 
 	return multicallResults, nil
