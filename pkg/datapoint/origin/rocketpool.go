@@ -66,7 +66,6 @@ func NewRocketPool(opts RocketPoolOptions) (*RocketPool, error) {
 	}, nil
 }
 
-//nolint:funlen,gocyclo
 func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
@@ -123,7 +122,7 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 				len(resp), len(pairs))
 		}
 
-		for i, _ := range pairs {
+		for i := range pairs {
 			price := new(big.Int).SetBytes(resp[0][0:32])
 			totals[i] = totals[i].Add(totals[i], price)
 		}
