@@ -91,9 +91,6 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		if err != nil {
 			return nil, err
 		}
-		if inverted {
-			return nil, fmt.Errorf("cannnot use inverted pair to retrieve price: %s", pair.String())
-		}
 		var callData []byte
 		if !inverted {
 			callData, err = c.abi.Methods["get_dy"].EncodeArgs(c.baseIndex, c.quoteIndex, c.dx)
