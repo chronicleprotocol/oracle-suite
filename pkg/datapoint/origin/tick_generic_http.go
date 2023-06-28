@@ -162,16 +162,3 @@ func (g *TickGenericHTTP) group(pairs []value.Pair) map[string][]value.Pair {
 	}
 	return pairMap
 }
-
-func queryToPairs(query []any) ([]value.Pair, bool) {
-	pairs := make([]value.Pair, len(query))
-	for i, q := range query {
-		switch q := q.(type) {
-		case value.Pair:
-			pairs[i] = q
-		default:
-			return nil, false
-		}
-	}
-	return pairs, true
-}
