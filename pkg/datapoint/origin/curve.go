@@ -121,7 +121,7 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		}
 
 		for i := range pairs {
-			price := new(big.Int).SetBytes(resp[0][0:32])
+			price := new(big.Int).SetBytes(resp[i][0:32])
 			totals[i] = totals[i].Add(totals[i], price)
 		}
 	}
