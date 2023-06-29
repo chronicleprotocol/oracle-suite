@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	cryptoETH "github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/defiweb/go-eth/wallet"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -239,8 +240,8 @@ func New(cfg Config) (*P2P, error) {
 			}),
 			messageValidator(cfg.Topics, logger), // must be registered before any other validator
 			feedValidator(cfg.AuthorAllowlist, logger),
-			// eventValidator(logger),
-			// priceValidator(logger, cryptoETH.ECRecoverer),
+			eventValidator(logger),
+			priceValidator(logger, cryptoETH.ECRecoverer),
 		)
 		if cfg.MessagePrivKey != nil {
 			opts = append(opts, internal.MessagePrivKey(cfg.MessagePrivKey))

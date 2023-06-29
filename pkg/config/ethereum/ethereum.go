@@ -34,6 +34,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/rpcsplitter"
 )
 
+const LoggerTag = "CONFIG_ETHEREUM"
+
 const (
 	splitterVirtualHost    = "rpc-splitter"
 	defaultTotalTimeout    = 10
@@ -162,21 +164,22 @@ func (c *Config) prepare(d Dependencies) error {
 	if c.prepared {
 		return nil
 	}
-	if err := c.prepareKeys(); err != nil {
+	logger := d.Logger.WithField("tag", LoggerTag)
+	if err := c.prepareKeys(logger); err != nil {
 		return err
 	}
-	if err := c.prepareClients(d.Logger); err != nil {
+	if err := c.prepareClients(logger); err != nil {
 		return err
 	}
 	c.prepared = true
 	return nil
 }
 
-func (c *Config) prepareKeys() error {
+func (c *Config) prepareKeys(logger log.Logger) error {
 	// Keys from the keystore.
 	c.keys = make(map[string]wallet.Key)
 	for _, keyCfg := range c.Keys {
-		key, err := keyCfg.Key()
+		key, err := keyCfg.Key(logger)
 		if err != nil {
 			return err
 		}
@@ -235,7 +238,7 @@ func (c *Config) prepareClients(logger log.Logger) error {
 }
 
 // Key returns the configured Ethereum key.
-func (c *ConfigKey) Key() (wallet.Key, error) {
+func (c *ConfigKey) Key(logger log.Logger) (wallet.Key, error) {
 	if c == nil {
 		return nil, fmt.Errorf("ethereum config: key is not configured")
 	}
@@ -281,11 +284,14 @@ func (c *ConfigKey) Key() (wallet.Key, error) {
 		}
 	}
 
+	logger.
+		WithField("name", c.Name).
+		WithField("address", key.Address().String()).
+		Info("Ethereum Key")
+
 	c.key = key
 	return key, nil
 }
-
-const LoggerTag = "CONFIG_ETHEREUM"
 
 // Client returns the configured RPC client.
 func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, error) {
@@ -295,9 +301,6 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 	if c.client != nil {
 		return c.client, nil
 	}
-
-	logger = logger.
-		WithField("tag", LoggerTag)
 
 	// Validate the client configuration.
 	if len(c.Name) == 0 {
@@ -375,9 +378,9 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 
 	for _, u := range c.RPCURLs {
 		logger.
-			WithField("client", c.Name).
+			WithField("name", c.Name).
 			WithField("url", u.String()).
-			Info("Ethereum RPC URL")
+			Info("Ethereum Client")
 	}
 
 	client, err := rpc.NewClient(opts...)
