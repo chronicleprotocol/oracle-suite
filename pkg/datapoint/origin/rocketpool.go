@@ -62,7 +62,7 @@ func NewRocketPool(opts RocketPoolOptions) (*RocketPool, error) {
 		quoteIndex:        big.NewInt(1),
 		dx:                new(big.Int).Mul(big.NewInt(1), new(big.Int).SetUint64(ether)),
 		blocks:            opts.Blocks,
-		logger:            opts.Logger.WithField("curve", RocketPoolLoggerTag),
+		logger:            opts.Logger.WithField("rocketpool", RocketPoolLoggerTag),
 	}, nil
 }
 
