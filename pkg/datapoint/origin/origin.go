@@ -37,8 +37,6 @@ func queryToPairs(query []any) ([]value.Pair, bool) {
 	return pairs, true
 }
 
-const ether = 1e18
-
 type ContractAddresses map[string]string
 
 func (c ContractAddresses) ByPair(p value.Pair) (string, bool, bool) {
