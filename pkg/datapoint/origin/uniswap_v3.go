@@ -147,7 +147,8 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	}
 
 	// 2 ^ 192
-	q192 := new(big.Int).Exp(big.NewInt(2), big.NewInt(192), nil)
+	const x192 = 192
+	q192 := new(big.Int).Exp(big.NewInt(2), big.NewInt(x192), nil)
 	for _, blockDelta := range u.blocks {
 		resp, err := ethereum.MultiCall(ctx, u.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 		if err != nil {
@@ -180,6 +181,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 			baseAmount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)
 
 			// Reference: https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/OracleLibrary.sol#L60
+			// Reference: https://github.com/Uniswap/v3-subgraph/blob/main/src/utils/pricing.ts#L48
 			var quoteAmount *big.Int
 			if baseToken.address.String() < quoteToken.address.String() {
 				// quoteAmount = ratioX192 * baseAmount / (2 ^ 192)
