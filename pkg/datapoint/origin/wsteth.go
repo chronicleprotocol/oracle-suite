@@ -58,7 +58,7 @@ func NewWrappedStakedETH(opts WrappedStakedETHOptions) (*WrappedStakedETH, error
 		contractAddresses: opts.ContractAddresses,
 		abi:               a,
 		blocks:            opts.Blocks,
-		logger:            opts.Logger.WithField("curve", WrappedStakedETHLoggerTag),
+		logger:            opts.Logger.WithField("wsteth", WrappedStakedETHLoggerTag),
 	}, nil
 }
 
