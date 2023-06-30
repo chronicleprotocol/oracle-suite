@@ -146,7 +146,8 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
 	}
 
-	q192 := new(big.Int).Exp(big.NewInt(2), big.NewInt(192), nil) // 2 ^ 192
+	// 2 ^ 192
+	q192 := new(big.Int).Exp(big.NewInt(2), big.NewInt(192), nil)
 	for _, blockDelta := range u.blocks {
 		resp, err := ethereum.MultiCall(ctx, u.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 		if err != nil {
