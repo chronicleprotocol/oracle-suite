@@ -71,6 +71,15 @@ gofernext {
     }
   }
 
+  origin "sushiswap" {
+    type = "sushiswap"
+    contracts "ethereum" {
+      addresses = {
+        "YFI/WETH" = "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c"
+      }
+    }
+  }
+
   data_model "ETH/USD" { # debug
     alias "ETH/USD" {
       origin "uniswapV3" { query = "WETH/USDC" }
@@ -102,8 +111,14 @@ gofernext {
   }
 
   data_model "YFI/ETH" { # debug
-    alias "YFI/ETH" {
-      origin "uniswapV3" { query = "YFI/WETH" }
+    median {
+      min_values = 2
+      alias "YFI/ETH" {
+        origin "uniswapV3" { query = "YFI/WETH" }
+      }
+      alias "YFI/ETH" {
+        origin "sushiswap" { query = "YFI/WETH" }
+      }
     }
   }
 }

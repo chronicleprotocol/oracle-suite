@@ -42,6 +42,10 @@ type configOriginUniswapV3 struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
 
+type configOriginSushiswap struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
 // averageFromBlocks is a list of blocks distances from the latest blocks from
 // which prices will be averaged.
 var averageFromBlocks = []int64{0, 10, 20}
@@ -60,6 +64,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginTickGenericJQ{}
 	case "uniswapV3":
 		config = &configOriginUniswapV3{}
+	case "sushiswap":
+		config = &configOriginSushiswap{}
 	default:
 		return hcl.Diagnostics{{
 			Severity: hcl.DiagError,
@@ -108,6 +114,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create uniswap v3 origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginSushiswap:
+		origin, err := origin.NewSushiswap(origin.SushiswapOptions{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create sushiswap origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
