@@ -52,6 +52,9 @@ type Config struct {
 	// Median is a list of Median contracts to watch.
 	Median []configMedian `hcl:"median,block"`
 
+	// Pairs is a list of pairs to store in the price store.
+	Feeds []types.Address `hcl:"feeds"`
+
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
 	Content hcl.BodyContent `hcl:",content"`
@@ -152,6 +155,7 @@ func (c *Config) PriceStore(d PriceStoreDependencies) (*store.PriceStore, error)
 		Storage:   store.NewMemoryStorage(),
 		Transport: d.Transport,
 		Pairs:     pairs,
+		Feeds:     c.Feeds,
 		Logger:    d.Logger,
 	}
 	priceStore, err := store.New(cfg)
