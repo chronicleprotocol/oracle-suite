@@ -1,15 +1,36 @@
+# TODO: Unify this dockerfile into a single file that is parameterized by the app name.
 FROM golang:1.20-alpine as builder
 RUN apk --no-cache add git gcc libc-dev linux-headers
-WORKDIR /go/src/spectre
+
+ARG APP_NAME=spectre
+ARG APP_VERSION
+WORKDIR /go/src/$APP_NAME
+
 COPY . .
-RUN    export CGO_ENABLED=1 \
-    && mkdir -p dist \
-    && go mod vendor \
-    && go build -o dist/spectre ./cmd/spectre
+RUN go mod vendor && mkdir -p dist
+
+ARG CGO_ENABLED=0
+RUN go build -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=$APP_VERSION" \
+    -o dist/$APP_NAME ./cmd/$APP_NAME
+RUN ./dist/$APP_NAME --version
 
 FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
+
+# TODO: why root?
 WORKDIR /root
-COPY --from=builder /go/src/spectre/dist/ /usr/local/bin/
+ARG APP_NAME=spectre
+COPY --from=builder /go/src/$APP_NAME/dist/ /usr/local/bin/
 COPY ./config.hcl ./config.hcl
+
+# Build a shell script because the ENTRYPOINT command doesn't like using ENV
+#RUN echo -e "#!/bin/bash \n${APP_NAME} \"\${@}\"" > ./entrypoint.sh && chmod +x ./entrypoint.sh
+#RUN cat ./entrypoint.sh
+#RUN . ./entrypoint.sh --version
+#ENTRYPOINT ["./entrypoint.sh"]
+
 ENTRYPOINT ["/usr/local/bin/spectre"]
+CMD ["-c", "config.hcl", "run"]
+
+EXPOSE 9100
+EXPOSE 8000

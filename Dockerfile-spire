@@ -1,13 +1,12 @@
+# TODO: Unify this dockerfile into a single one that is parameterized by the app name.
 FROM golang:1.20-alpine as builder
 RUN apk --no-cache add git gcc libc-dev linux-headers
 WORKDIR /go/src/spire
 COPY . .
 ARG APP_VERSION
-RUN    export CGO_ENABLED=0 \
-    && mkdir -p dist \
-    && go mod vendor \
-    && go build -ldflags "-X main.Version=$APP_VERSION" -o dist/spire ./cmd/spire
-RUN ./dist/spire --version
+ARG CGO_ENABLED=0
+RUN go mod vendor && mkdir -p dist
+RUN go build -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=$APP_VERSION" -o dist/spire ./cmd/spire
 
 FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
