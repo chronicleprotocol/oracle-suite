@@ -2,10 +2,12 @@ FROM golang:1.20-alpine as builder
 RUN apk --no-cache add git gcc libc-dev linux-headers
 WORKDIR /go/src/spire
 COPY . .
-RUN    export CGO_ENABLED=1 \
+ARG APP_VERSION
+RUN    export CGO_ENABLED=0 \
     && mkdir -p dist \
     && go mod vendor \
-    && go build -o dist/spire ./cmd/spire
+    && go build -ldflags "-X main.Version=$APP_VERSION" -o dist/spire ./cmd/spire
+RUN ./dist/spire --version
 
 FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
@@ -15,4 +17,4 @@ COPY ./config.hcl ./config.hcl
 EXPOSE 9100
 EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/spire"]
-CMD ["-c", "config.hcl", "agent"]
+CMD ["-c", "config.hcl", "run"]
