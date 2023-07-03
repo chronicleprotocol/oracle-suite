@@ -98,9 +98,7 @@ func (g *TickGenericHTTP) FetchDataPoints(ctx context.Context, query []any) (map
 		// Perform TickGenericHTTP request.
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
-			for _, pair := range pairs {
-				points[pair] = datapoint.Point{Error: err}
-			}
+			points = fillDataPointsWithError(pairs, err)
 			continue
 		}
 		req.Header = g.headers
@@ -109,9 +107,7 @@ func (g *TickGenericHTTP) FetchDataPoints(ctx context.Context, query []any) (map
 		// Execute TickGenericHTTP request.
 		res, err := g.client.Do(req)
 		if err != nil {
-			for _, pair := range pairs {
-				points[pair] = datapoint.Point{Error: err}
-			}
+			fillDataPointsWithError(pairs, err)
 			continue
 		}
 		defer res.Body.Close()

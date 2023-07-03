@@ -13,9 +13,18 @@ gofernext {
     jq   = ".[] | select(.symbol == ($ucbase + $ucquote)) | {price: .lastPrice, volume: .volume, time: (.closeTime / 1000)}"
   }
 
+  origin "ishares" {
+    type = "ishares"
+    url = "https://ishares.com/uk/individual/en/products/287340/ishares-treasury-bond-1-3yr-ucits-etf?switchLocale=y&siteEntryPassthrough=true"
+  }
+
   data_model "BTC/USD" {
     origin "coinbase" { query = "BTC/USD" }
   }
+
+#  data_model "IBTA/USD" { # debug
+#    origin "ishares" { query = "IBTA/USD" }
+#  }
 }
 
 ghostnext {

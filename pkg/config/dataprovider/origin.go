@@ -33,6 +33,10 @@ type configOriginTickGenericJQ struct {
 	JQ  string `hcl:"jq"`
 }
 
+type configOriginIShares struct {
+	URL string `hcl:"url"`
+}
+
 func (c *configOrigin) PostDecodeBlock(
 	ctx *hcl.EvalContext,
 	_ *hcl.BodySchema,
@@ -45,6 +49,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginStatic{}
 	case "tick_generic_jq":
 		config = &configOriginTickGenericJQ{}
+	case "ishares":
+		config = &configOriginIShares{}
 	default:
 		return hcl.Diagnostics{{
 			Severity: hcl.DiagError,
@@ -68,6 +74,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		origin, err := origin.NewTickGenericJQ(origin.TickGenericJQOptions{
 			URL:     o.URL,
 			Query:   o.JQ,
+			Headers: nil,
+			Client:  d.HTTPClient,
+			Logger:  d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginIShares:
+		origin, err := origin.NewIShares(origin.ISharesOptions{
+			URL:     o.URL,
 			Headers: nil,
 			Client:  d.HTTPClient,
 			Logger:  d.Logger,

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
 
 // Origin provides dataPoint prices for a given set of pairs from an external
@@ -18,4 +19,12 @@ type Origin interface {
 	// returned for all pairs nor in the same order as the pairs. The caller
 	// must verify returned data.
 	FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error)
+}
+
+func fillDataPointsWithError(pairs []value.Pair, err error) map[any]datapoint.Point {
+	points := make(map[any]datapoint.Point)
+	for _, pair := range pairs {
+		points[pair] = datapoint.Point{Error: err}
+	}
+	return points
 }
