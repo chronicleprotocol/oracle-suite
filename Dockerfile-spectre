@@ -2,12 +2,12 @@
 FROM golang:1.20-alpine as builder
 RUN apk --no-cache add git gcc libc-dev linux-headers
 
-ARG APP_NAME=spectre
-ARG APP_VERSION
-WORKDIR /go/src/$APP_NAME
-
+WORKDIR /go/src/app
 COPY . .
 RUN go mod vendor && mkdir -p dist
+
+ARG APP_NAME=spectre
+ARG APP_VERSION
 
 ARG CGO_ENABLED=0
 RUN go build -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=$APP_VERSION" \
@@ -19,18 +19,13 @@ RUN apk --no-cache add ca-certificates
 
 # TODO: why root?
 WORKDIR /root
-ARG APP_NAME=spectre
-COPY --from=builder /go/src/$APP_NAME/dist/ /usr/local/bin/
-COPY ./config.hcl ./config.hcl
-
-# Build a shell script because the ENTRYPOINT command doesn't like using ENV
-#RUN echo -e "#!/bin/bash \n${APP_NAME} \"\${@}\"" > ./entrypoint.sh && chmod +x ./entrypoint.sh
-#RUN cat ./entrypoint.sh
-#RUN . ./entrypoint.sh --version
-#ENTRYPOINT ["./entrypoint.sh"]
+COPY --from=builder /go/src/app/dist/* /usr/local/bin/
+COPY ./config.hcl /usr/share/oracle-suite/config.hcl
 
 ENTRYPOINT ["/usr/local/bin/spectre"]
-CMD ["-c", "config.hcl", "run"]
+CMD ["-c", "/usr/share/oracle-suite/config.hcl", "run"]
 
-EXPOSE 9100
+# libp2p
 EXPOSE 8000
+# webapi
+EXPOSE 8080
