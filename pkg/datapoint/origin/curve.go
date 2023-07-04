@@ -66,7 +66,7 @@ func NewCurve(opts CurveOptions) (*Curve, error) {
 	}, nil
 }
 
-//nolint:funlen
+//nolint:funlen,gocyclo
 func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
