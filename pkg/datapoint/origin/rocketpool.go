@@ -66,6 +66,7 @@ func NewRocketPool(opts RocketPoolOptions) (*RocketPool, error) {
 	}, nil
 }
 
+//nolint:funlen,gocyclo
 func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
