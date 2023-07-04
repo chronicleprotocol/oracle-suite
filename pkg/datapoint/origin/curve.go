@@ -89,7 +89,8 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 	for i, pair := range pairs {
 		contract, inverted, err := c.contractAddresses.AddressByPair(pair)
 		if err != nil {
-			return nil, err
+			points[pair] = datapoint.Point{Error: err}
+			continue
 		}
 		var callData []byte
 		if !inverted {
@@ -98,7 +99,12 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 			callData, err = c.abi.Methods["get_dy"].EncodeArgs(c.quoteIndex, c.baseIndex, c.dx)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf(
+				"failed to pack contract args for getLatest (pair %s): %w",
+				pair.String(),
+				err,
+			)}
+			continue
 		}
 		calls = append(calls, types.Call{
 			To:    &contract,
@@ -107,26 +113,35 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		totals[i] = new(big.Int).SetInt64(0)
 	}
 
-	for _, blockDelta := range c.blocks {
-		resp, err := ethereum.MultiCall(ctx, c.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
-		if err != nil {
-			return nil, fmt.Errorf("failed multicall: %w", err)
-		}
-		if len(calls) != len(resp) {
-			return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(resp))
-		}
-		if len(resp) != len(pairs) {
-			return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
-				len(resp), len(pairs))
-		}
+	if len(calls) > 0 {
+		for _, blockDelta := range c.blocks {
+			resp, err := ethereum.MultiCall(ctx, c.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
+			if err != nil {
+				return nil, fmt.Errorf("failed multicall: %w", err)
+			}
+			if len(calls) != len(resp) {
+				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d", len(calls), len(resp))
+			}
+			if len(resp) != len(pairs) {
+				return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
+					len(resp), len(pairs))
+			}
 
-		for i := range pairs {
-			price := new(big.Int).SetBytes(resp[i][0:32])
-			totals[i] = totals[i].Add(totals[i], price)
+			for i := range pairs {
+				if points[pairs[i]].Error != nil {
+					continue
+				}
+				price := new(big.Int).SetBytes(resp[i][0:32])
+				totals[i] = totals[i].Add(totals[i], price)
+			}
 		}
 	}
 
 	for i, pair := range pairs {
+		if points[pair].Error != nil {
+			continue
+		}
+
 		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(c.blocks))))
 
@@ -141,5 +156,8 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		}
 	}
 
+	if len(pairs) == 1 && points[pairs[0]].Error != nil {
+		return points, points[pairs[0]].Error
+	}
 	return points, nil
 }
