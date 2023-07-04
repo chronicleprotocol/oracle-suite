@@ -227,11 +227,18 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 func (suite *BalancerV2Suite) TestFailOnWrongPair() {
 	pair := value.Pair{Base: "x", Quote: "y"}
 
+	ctx := context.Background()
+
+	suite.client.On(
+		"ChainID",
+		mock.Anything,
+	).Return(uint64(1), nil)
+
 	suite.client.On(
 		"BlockNumber",
 		mock.Anything,
 	).Return(big.NewInt(100), nil).Once()
 
-	_, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	_, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().EqualError(err, "failed to get contract address for pair: x/y")
 }

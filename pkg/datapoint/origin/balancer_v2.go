@@ -91,16 +91,24 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	for i, pair := range pairs {
 		contract, inverted, err := b.contractAddresses.AddressByPair(pair)
 		if err != nil {
-			return nil, err
+			points[pair] = datapoint.Point{Error: err}
+			continue
 		}
 		if inverted {
-			return nil, fmt.Errorf("cannnot use inverted pair to retrieve price: %s", pair.String())
+			points[pair] = datapoint.Point{Error: fmt.Errorf("cannnot use inverted pair to retrieve price: %s",
+				pair.String())}
+			continue
 		}
 
 		// Calls for `getLatest`
 		callData, err := b.abi.Methods["getLatest"].EncodeArgs(b.variable)
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack contract args for getLatest (pair %s): %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf(
+				"failed to pack contract args for getLatest (pair %s): %w",
+				pair.String(),
+				err,
+			)}
+			continue
 		}
 		calls = append(calls, types.Call{
 			To:    &contract,
@@ -110,15 +118,20 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		ref, inverted, err := b.referenceAddresses.AddressByPair(pair)
 		if err == nil {
 			if inverted {
-				return nil, fmt.Errorf("cannot use inverted pair to retrieve price: %s", pair.String())
+				points[pair] = datapoint.Point{Error: fmt.Errorf(
+					"cannot use inverted pair to retrieve price: %s",
+					pair.String(),
+				)}
+				continue
 			}
 			callData, err := b.abi.Methods["getPriceRateCache"].EncodeArgs(types.MustAddressFromHex(ref.String()))
 			if err != nil {
-				return nil, fmt.Errorf(
+				points[pair] = datapoint.Point{Error: fmt.Errorf(
 					"failed to pack contract args for getPriceRateCache (pair %s): %w",
 					pair.String(),
 					err,
-				)
+				)}
+				continue
 			}
 			calls = append(calls, types.Call{
 				To:    &contract,
@@ -130,29 +143,39 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		refs[i] = new(big.Int).SetInt64(0)
 	}
 
-	for _, blockDelta := range b.blocks {
-		resp, err := ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
-		if err != nil {
-			return nil, fmt.Errorf("failed multicall for getLatest: %w", err)
-		}
-
-		n := 0
-		for i := 0; i < len(pairs); i++ {
-			price := new(big.Int).SetBytes(resp[n][0:32])
-
-			_, _, err := b.referenceAddresses.AddressByPair(pairs[i])
-			if err == nil {
-				refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
-				refs[i] = new(big.Int).Add(refs[i], refPrice)
-				n++ // next response was already used, ignore
+	if len(calls) > 0 {
+		for _, blockDelta := range b.blocks {
+			resp, err := ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
+			if err != nil {
+				return nil, fmt.Errorf("failed multicall for getLatest: %w", err)
 			}
 
-			totals[i] = new(big.Int).Add(totals[i], price)
-			n++
+			n := 0
+			for i := 0; i < len(pairs); i++ {
+				if points[pairs[i]].Error != nil {
+					continue
+				}
+
+				price := new(big.Int).SetBytes(resp[n][0:32])
+
+				_, _, err := b.referenceAddresses.AddressByPair(pairs[i])
+				if err == nil {
+					refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
+					refs[i] = new(big.Int).Add(refs[i], refPrice)
+					n++ // next response was already used, ignore
+				}
+
+				totals[i] = new(big.Int).Add(totals[i], price)
+				n++
+			}
 		}
 	}
 
 	for i, pair := range pairs {
+		if points[pair].Error != nil {
+			continue
+		}
+
 		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = new(big.Float).Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
 		if refs[i].Cmp(big.NewInt(0)) > 0 { // Non Zero, then multiply with ref price
@@ -174,5 +197,8 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 	}
 
+	if len(pairs) == 1 && points[pairs[0]].Error != nil {
+		return points, points[pairs[0]].Error
+	}
 	return points, nil
 }
