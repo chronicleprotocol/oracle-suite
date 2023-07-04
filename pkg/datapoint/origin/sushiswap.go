@@ -95,12 +95,18 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	for i, pair := range pairs {
 		contract, _, err := s.contractAddresses.AddressByPair(pair)
 		if err != nil {
-			return nil, err
+			points[pair] = datapoint.Point{Error: err}
+			continue
 		}
 		// Calls for `getReserves`
 		callData, err := s.abi.Methods["getReserves"].EncodeArgs()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get reserves for pair: %s: %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf(
+				"failed to get reserves for pair: %s: %w",
+				pair.String(),
+				err,
+			)}
+			continue
 		}
 		calls = append(calls, types.Call{
 			To:    &contract,
@@ -109,7 +115,12 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		// Calls for `token0`
 		callData, err = s.abi.Methods["token0"].EncodeArgs()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get token0 for pair: %s: %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf(
+				"failed to get token0 for pair: %s: %w",
+				pair.String(),
+				err,
+			)}
+			continue
 		}
 		callsToken = append(callsToken, types.Call{
 			To:    &contract,
@@ -118,7 +129,12 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		// Calls for `token1`
 		callData, err = s.abi.Methods["token1"].EncodeArgs()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get token1 for pair: %s: %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf(
+				"failed to get token1 for pair: %s: %w",
+				pair.String(),
+				err,
+			)}
+			continue
 		}
 		callsToken = append(callsToken, types.Call{
 			To:    &contract,
@@ -130,91 +146,108 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 
 	// Get decimals for all the tokens
 	tokensMap := make(map[types.Address]struct{})
-	resp, err := ethereum.MultiCall(ctx, s.client, callsToken, types.LatestBlockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("failed multicall for tokens of pool: %w", err)
-	}
-	for i := range resp {
-		var address types.Address
-		if err := s.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
-			return nil, fmt.Errorf("failed decoding token address of pool: %w", err)
-		}
-		tokensMap[address] = struct{}{}
-	}
-	tokenDetails, err := s.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
-	if err != nil {
-		return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
-	}
-
-	for _, blockDelta := range s.blocks {
-		resp, err := ethereum.MultiCall(ctx, s.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
+	var tokenDetails map[string]ERC20Details
+	if len(callsToken) > 0 {
+		resp, err := ethereum.MultiCall(ctx, s.client, callsToken, types.LatestBlockNumber)
 		if err != nil {
-			return nil, fmt.Errorf("failed multicall: %w", err)
+			return nil, fmt.Errorf("failed multicall for tokens of pool: %w", err)
 		}
-		if len(calls) != len(resp) {
-			return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
-				len(calls), len(resp))
+		for i := range resp {
+			var address types.Address
+			if err := s.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
+				return nil, fmt.Errorf("failed decoding token address of pool: %w", err)
+			}
+			tokensMap[address] = struct{}{}
 		}
-		if len(resp) != len(pairs) {
-			return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
-				len(resp), len(pairs))
+		tokenDetails, err = s.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
+		if err != nil {
+			return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
 		}
+	}
 
-		for i, pair := range pairs {
-			if _, ok := tokenDetails[pair.Base]; !ok {
-				return nil, fmt.Errorf("not found base token: %s", pair.Base)
+	if len(calls) > 0 {
+		for _, blockDelta := range s.blocks {
+			resp, err := ethereum.MultiCall(ctx, s.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
+			if err != nil {
+				return nil, fmt.Errorf("failed multicall: %w", err)
 			}
-			if _, ok := tokenDetails[pair.Quote]; !ok {
-				return nil, fmt.Errorf("not found quote token: %s", pair.Quote)
+			if len(calls) != len(resp) {
+				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
+					len(calls), len(resp))
 			}
-
-			baseToken := tokenDetails[pair.Base]
-			quoteToken := tokenDetails[pair.Quote]
-
-			var token0, token1 ERC20Details
-			if baseToken.address.String() < quoteToken.address.String() {
-				token0 = baseToken
-				token1 = quoteToken
-			} else {
-				token0 = quoteToken
-				token1 = baseToken
+			if len(resp) != len(pairs) {
+				return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
+					len(resp), len(pairs))
 			}
 
-			// token0Amount = 10 ^ token0Decimals
-			token0Amount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.decimals)), nil)
-			token1Amount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.decimals)), nil)
+			for i, pair := range pairs {
+				if points[pair].Error != nil {
+					continue
+				}
 
-			// Reference: https://github.com/sushiswap/sushiswap-subgraph/blob/uniswap-fork/src/mappings/core.ts#L220
-			var reserve0, reserve1 *big.Int
-			if err := s.abi.Methods["getReserves"].DecodeValues(resp[i], &reserve0, &reserve1, nil); err != nil {
-				return nil, fmt.Errorf("failed decoding reserves of pool: %w", err)
-			}
-			token0Price := big.NewFloat(0)
-			if reserve1 != big.NewInt(0) {
-				// token0Price = reserve0 / (10 ^ token0Decimals) / reserve1 * (10 ^ token1Decimals)
-				token0Price = new(big.Float).Quo(
-					new(big.Float).SetInt(new(big.Int).Mul(reserve0, token1Amount)),
-					new(big.Float).SetInt(new(big.Int).Mul(token0Amount, reserve1)),
-				)
-			}
-			token1Price := big.NewFloat(0)
-			if reserve0 != big.NewInt(0) {
-				// token1Price = reserve1 / (10 ^ token1Decimals) / reserve0 * (10 ^ token0Decimals)
-				token1Price = new(big.Float).Quo(
-					new(big.Float).SetInt(new(big.Int).Mul(reserve1, token0Amount)),
-					new(big.Float).SetInt(new(big.Int).Mul(token1Amount, reserve0)),
-				)
-			}
+				if _, ok := tokenDetails[pair.Base]; !ok {
+					points[pair] = datapoint.Point{Error: fmt.Errorf("not found base token: %s", pair.Base)}
+					continue
+				}
+				if _, ok := tokenDetails[pair.Quote]; !ok {
+					points[pair] = datapoint.Point{Error: fmt.Errorf("not found quote token: %s", pair.Quote)}
+					continue
+				}
 
-			if baseToken == token0 {
-				totals[i] = totals[i].Add(totals[i], token1Price)
-			} else { // base token == token1
-				totals[i] = totals[i].Add(totals[i], token0Price)
+				baseToken := tokenDetails[pair.Base]
+				quoteToken := tokenDetails[pair.Quote]
+
+				var token0, token1 ERC20Details
+				if baseToken.address.String() < quoteToken.address.String() {
+					token0 = baseToken
+					token1 = quoteToken
+				} else {
+					token0 = quoteToken
+					token1 = baseToken
+				}
+
+				// token0Amount = 10 ^ token0Decimals
+				token0Amount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token0.decimals)), nil)
+				token1Amount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(token1.decimals)), nil)
+
+				// Reference: https://github.com/sushiswap/sushiswap-subgraph/blob/uniswap-fork/src/mappings/core.ts#L220
+				var reserve0, reserve1 *big.Int
+				if err := s.abi.Methods["getReserves"].DecodeValues(resp[i], &reserve0, &reserve1, nil); err != nil {
+					points[pair] = datapoint.Point{Error: fmt.Errorf("failed decoding reserves of pool: %w",
+						err)}
+					continue
+				}
+				token0Price := big.NewFloat(0)
+				if reserve1 != big.NewInt(0) {
+					// token0Price = reserve0 / (10 ^ token0Decimals) / reserve1 * (10 ^ token1Decimals)
+					token0Price = new(big.Float).Quo(
+						new(big.Float).SetInt(new(big.Int).Mul(reserve0, token1Amount)),
+						new(big.Float).SetInt(new(big.Int).Mul(token0Amount, reserve1)),
+					)
+				}
+				token1Price := big.NewFloat(0)
+				if reserve0 != big.NewInt(0) {
+					// token1Price = reserve1 / (10 ^ token1Decimals) / reserve0 * (10 ^ token0Decimals)
+					token1Price = new(big.Float).Quo(
+						new(big.Float).SetInt(new(big.Int).Mul(reserve1, token0Amount)),
+						new(big.Float).SetInt(new(big.Int).Mul(token1Amount, reserve0)),
+					)
+				}
+
+				if baseToken == token0 {
+					totals[i] = totals[i].Add(totals[i], token1Price)
+				} else { // base token == token1
+					totals[i] = totals[i].Add(totals[i], token0Price)
+				}
 			}
 		}
 	}
 
 	for i, pair := range pairs {
+		if points[pair].Error != nil {
+			continue
+		}
+
 		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(s.blocks))))
 
 		tick := value.Tick{
@@ -228,5 +261,8 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		}
 	}
 
+	if len(pairs) == 1 && points[pairs[0]].Error != nil {
+		return points, points[pairs[0]].Error
+	}
 	return points, nil
 }

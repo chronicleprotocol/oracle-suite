@@ -95,12 +95,14 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	for i, pair := range pairs {
 		contract, _, err := u.contractAddresses.AddressByPair(pair)
 		if err != nil {
-			return nil, err
+			points[pair] = datapoint.Point{Error: err}
 		}
 		// Calls for `slot0`
 		callData, err := u.abi.Methods["slot0"].EncodeArgs()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get slot0 for pair: %s: %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf("failed to get slot0 for pair: %s: %w",
+				pair.String(), err)}
+			continue
 		}
 		calls = append(calls, types.Call{
 			To:    &contract,
@@ -109,7 +111,9 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		// Calls for `token0`
 		callData, err = u.abi.Methods["token0"].EncodeArgs()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get token0 for pair: %s: %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf("failed to get token0 for pair: %s: %w",
+				pair.String(), err)}
+			continue
 		}
 		callsToken = append(callsToken, types.Call{
 			To:    &contract,
@@ -118,7 +122,9 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		// Calls for `token1`
 		callData, err = u.abi.Methods["token1"].EncodeArgs()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get token1 for pair: %s: %w", pair.String(), err)
+			points[pair] = datapoint.Point{Error: fmt.Errorf("failed to get token1 for pair: %s: %w",
+				pair.String(), err)}
+			continue
 		}
 		callsToken = append(callsToken, types.Call{
 			To:    &contract,
@@ -130,77 +136,92 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 
 	// Get decimals for all the tokens
 	tokensMap := make(map[types.Address]struct{})
-	resp, err := ethereum.MultiCall(ctx, u.client, callsToken, types.LatestBlockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("failed multicall for tokens of pool: %w", err)
-	}
-	for i := range resp {
-		var address types.Address
-		if err := u.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
-			return nil, fmt.Errorf("failed decoding token address of pool: %w", err)
+	var tokenDetails map[string]ERC20Details
+	if len(callsToken) > 0 {
+		resp, err := ethereum.MultiCall(ctx, u.client, callsToken, types.LatestBlockNumber)
+		if err != nil {
+			return nil, fmt.Errorf("failed multicall for tokens of pool: %w", err)
 		}
-		tokensMap[address] = struct{}{}
-	}
-	tokenDetails, err := u.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
-	if err != nil {
-		return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
+		for i := range resp {
+			var address types.Address
+			if err := u.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
+				return nil, fmt.Errorf("failed decoding token address of pool: %w", err)
+			}
+			tokensMap[address] = struct{}{}
+		}
+		tokenDetails, err = u.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
+		if err != nil {
+			return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
+		}
 	}
 
 	// 2 ^ 192
-	const x192 = 192
-	q192 := new(big.Int).Exp(big.NewInt(2), big.NewInt(x192), nil)
-	for _, blockDelta := range u.blocks {
-		resp, err := ethereum.MultiCall(ctx, u.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
-		if err != nil {
-			return nil, fmt.Errorf("failed multicall: %w", err)
-		}
-		if len(calls) != len(resp) {
-			return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
-				len(calls), len(resp))
-		}
-		if len(resp) != len(pairs) {
-			return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
-				len(resp), len(pairs))
-		}
-
-		for i, pair := range pairs {
-			sqrtRatioX96 := new(big.Int).SetBytes(resp[i][0:32])
-			// ratioX192 = sqrtRatioX96 ^ 2
-			ratioX192 := new(big.Int).Mul(sqrtRatioX96, sqrtRatioX96)
-
-			if _, ok := tokenDetails[pair.Base]; !ok {
-				return nil, fmt.Errorf("not found base token: %s", pair.Base)
+	if len(calls) > 0 {
+		const x192 = 192
+		q192 := new(big.Int).Exp(big.NewInt(2), big.NewInt(x192), nil)
+		for _, blockDelta := range u.blocks {
+			resp, err := ethereum.MultiCall(ctx, u.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
+			if err != nil {
+				return nil, fmt.Errorf("failed multicall: %w", err)
 			}
-			if _, ok := tokenDetails[pair.Quote]; !ok {
-				return nil, fmt.Errorf("not found quote token: %s", pair.Quote)
+			if len(calls) != len(resp) {
+				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
+					len(calls), len(resp))
+			}
+			if len(resp) != len(pairs) {
+				return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
+					len(resp), len(pairs))
 			}
 
-			baseToken := tokenDetails[pair.Base]
-			quoteToken := tokenDetails[pair.Quote]
-			// baseAmount = 10 ^ baseDecimals
-			baseAmount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)
+			for i, pair := range pairs {
+				if points[pair].Error != nil {
+					continue
+				}
 
-			// Reference: https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/OracleLibrary.sol#L60
-			// Reference: https://github.com/Uniswap/v3-subgraph/blob/main/src/utils/pricing.ts#L48
-			var quoteAmount *big.Int
-			if baseToken.address.String() < quoteToken.address.String() {
-				// quoteAmount = ratioX192 * baseAmount / (2 ^ 192)
-				quoteAmount = new(big.Int).Div(new(big.Int).Mul(ratioX192, baseAmount), q192)
-			} else {
-				// quoteAmount = (2 ^ 192) * baseAmount / ratioX192
-				quoteAmount = new(big.Int).Div(new(big.Int).Mul(q192, baseAmount), ratioX192)
+				sqrtRatioX96 := new(big.Int).SetBytes(resp[i][0:32])
+				// ratioX192 = sqrtRatioX96 ^ 2
+				ratioX192 := new(big.Int).Mul(sqrtRatioX96, sqrtRatioX96)
+
+				if _, ok := tokenDetails[pair.Base]; !ok {
+					points[pair] = datapoint.Point{Error: fmt.Errorf("not found base token: %s", pair.Base)}
+					continue
+				}
+				if _, ok := tokenDetails[pair.Quote]; !ok {
+					points[pair] = datapoint.Point{Error: fmt.Errorf("not found quote token: %s", pair.Quote)}
+					continue
+				}
+
+				baseToken := tokenDetails[pair.Base]
+				quoteToken := tokenDetails[pair.Quote]
+				// baseAmount = 10 ^ baseDecimals
+				baseAmount := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)
+
+				// Reference: https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/OracleLibrary.sol#L60
+				// Reference: https://github.com/Uniswap/v3-subgraph/blob/main/src/utils/pricing.ts#L48
+				var quoteAmount *big.Int
+				if baseToken.address.String() < quoteToken.address.String() {
+					// quoteAmount = ratioX192 * baseAmount / (2 ^ 192)
+					quoteAmount = new(big.Int).Div(new(big.Int).Mul(ratioX192, baseAmount), q192)
+				} else {
+					// quoteAmount = (2 ^ 192) * baseAmount / ratioX192
+					quoteAmount = new(big.Int).Div(new(big.Int).Mul(q192, baseAmount), ratioX192)
+				}
+
+				// price = quoteAmount / 10 ^ quoteDecimals
+				price := new(big.Float).Quo(
+					new(big.Float).SetInt(quoteAmount),
+					new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil)),
+				)
+				totals[i] = totals[i].Add(totals[i], price)
 			}
-
-			// price = quoteAmount / 10 ^ quoteDecimals
-			price := new(big.Float).Quo(
-				new(big.Float).SetInt(quoteAmount),
-				new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil)),
-			)
-			totals[i] = totals[i].Add(totals[i], price)
 		}
 	}
 
 	for i, pair := range pairs {
+		if points[pair].Error != nil {
+			continue
+		}
+
 		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(u.blocks))))
 
 		tick := value.Tick{
@@ -214,5 +235,8 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		}
 	}
 
+	if len(pairs) == 1 && points[pairs[0]].Error != nil {
+		return points, points[pairs[0]].Error
+	}
 	return points, nil
 }
