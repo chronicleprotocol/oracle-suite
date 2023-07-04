@@ -21,10 +21,13 @@ type Origin interface {
 	FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error)
 }
 
-func fillDataPointsWithError(pairs []value.Pair, err error) map[any]datapoint.Point {
-	points := make(map[any]datapoint.Point)
-	for _, pair := range pairs {
-		points[pair] = datapoint.Point{Error: err}
+func fillDataPointsWithError(points map[any]datapoint.Point, pairs []value.Pair, err error) map[any]datapoint.Point {
+	var target = points
+	if target == nil {
+		target = make(map[any]datapoint.Point)
 	}
-	return points
+	for _, pair := range pairs {
+		target[pair] = datapoint.Point{Error: err}
+	}
+	return target
 }

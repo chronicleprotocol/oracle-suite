@@ -64,10 +64,10 @@ func (g *IShares) FetchDataPoints(ctx context.Context, query []any) (map[any]dat
 	return g.http.FetchDataPoints(ctx, query)
 }
 
-func (g *IShares) handle(_ context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
+func (g *IShares) handle(_ context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 	b, err := io.ReadAll(body)
 	if err != nil {
-		return fillDataPointsWithError(pairs, err)
+		return fillDataPointsWithError(nil, pairs, err), err
 	}
 
 	points := make(map[any]datapoint.Point)
@@ -76,11 +76,18 @@ func (g *IShares) handle(_ context.Context, pairs []value.Pair, body io.Reader) 
 			points[pair] = datapoint.Point{Error: fmt.Errorf("unknown pair: %s", pair.String())}
 			continue
 		}
+	}
+
+	for _, pair := range pairs {
+		if pair.String() != "IBTA/USD" {
+			continue
+		} // IBTA/USD
 
 		// Scrape results
 		w, err := webscraper.NewScraper().WithPreloadedDocFromBytes(b)
 		if err != nil {
-			return fillDataPointsWithError(pairs, err)
+			points[pair] = datapoint.Point{Error: err}
+			return points, err
 		}
 		var convErrs []string
 		err = w.Scrape("span.header-nav-data",
@@ -101,13 +108,15 @@ func (g *IShares) handle(_ context.Context, pairs []value.Pair, body io.Reader) 
 				}
 			})
 		if err != nil {
-			return fillDataPointsWithError(pairs, err)
+			points[pair] = datapoint.Point{Error: err}
+			return points, err
 		}
 		if len(convErrs) > 0 {
 			err := errors.New(strings.Join(convErrs, ","))
-			return fillDataPointsWithError(pairs, err)
+			points[pair] = datapoint.Point{Error: err}
+			return points, err
 		}
 	}
 
-	return points
+	return points, nil
 }

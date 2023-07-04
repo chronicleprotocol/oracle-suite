@@ -30,7 +30,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 			pairs: []any{value.Pair{Base: "BTC", Quote: "USD"}},
 			options: TickGenericHTTPOptions{
 				URL: "/?base=${ucbase}&quote=${ucquote}",
-				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
+				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 					return map[any]datapoint.Point{
 						value.Pair{Base: "BTC", Quote: "USD"}: {
 							Value: value.Tick{
@@ -40,7 +40,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 							},
 							Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 						},
-					}
+					}, nil
 				},
 			},
 			expectedResult: map[any]datapoint.Point{
@@ -60,7 +60,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 			pairs: []any{value.Pair{Base: "BTC", Quote: "USD"}, value.Pair{Base: "ETH", Quote: "USD"}},
 			options: TickGenericHTTPOptions{
 				URL: "/dataPoints",
-				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
+				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 					return map[any]datapoint.Point{
 						value.Pair{Base: "BTC", Quote: "USD"}: {
 							Value: value.Tick{
@@ -78,7 +78,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 							},
 							Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 						},
-					}
+					}, nil
 				},
 			},
 			expectedResult: map[any]datapoint.Point{
@@ -106,7 +106,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 			pairs: []any{value.Pair{Base: "BTC", Quote: "USD"}, value.Pair{Base: "ETH", Quote: "USD"}},
 			options: TickGenericHTTPOptions{
 				URL: "/?base=${ucbase}&quote=${ucquote}",
-				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
+				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 					if len(pairs) != 1 {
 						t.Fatal("expected one pair")
 					}
@@ -121,7 +121,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 								},
 								Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 							},
-						}
+						}, nil
 					case "ETH/USD":
 						return map[any]datapoint.Point{
 							value.Pair{Base: "ETH", Quote: "USD"}: {
@@ -132,9 +132,9 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 								},
 								Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 							},
-						}
+						}, nil
 					}
-					return nil
+					return nil, nil
 				},
 			},
 			expectedResult: map[any]datapoint.Point{
