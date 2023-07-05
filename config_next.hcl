@@ -265,7 +265,7 @@ gofernext {
 
   data_model "YFI/USD" {
     median {
-      min_values = 3
+      min_values = 2
       indirect {
         alias "ETH/YFI" {
           origin "balancerV2" { query = "WETH/YFI" }
