@@ -18,6 +18,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -71,6 +72,9 @@ func LoadFiles(config any, paths []string) error {
 	}
 	if body, diags = utilHCL.ParseFiles(paths, nil); diags.HasErrors() {
 		return diags
+	}
+	if len(paths) > 0 {
+		wd = filepath.Dir(paths[0])
 	}
 	if body, diags = include.Include(hclContext, body, wd, 10); diags.HasErrors() {
 		return diags

@@ -91,7 +91,8 @@ var mMethod = abi.MustParseMethod(`
 	)`,
 )
 
-func (c *client) Send(_ context.Context, _ types.Call) (*types.Hash, error) {
-	// TODO implement me
-	panic("implement me")
+func (c *client) Send(ctx context.Context, call types.Call) (*types.Hash, error) {
+	return c.rpc.SendTransaction(ctx, types.Transaction{
+		Call: call,
+	})
 }
