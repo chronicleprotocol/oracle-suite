@@ -154,6 +154,9 @@ gofernext {
       origin "coinbase" { query = "ETH/USD" }
       origin "gemini" { query = "ETH/USD" }
       origin "kraken" { query = "ETH/USD" }
+      alias "ETH/USD" {
+        origin "uniswapV3" { query = "WETH/USDC" }
+      }
     }
   }
 
@@ -168,6 +171,12 @@ gofernext {
       origin "coinbase" { query = "LINK/USD" }
       origin "gemini" { query = "LINK/USD" }
       origin "kraken" { query = "LINK/USD" }
+      indirect {
+        alias "LINK/ETH" {
+          origin "uniswapV3" { query = "LINK/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
     }
   }
 
@@ -199,6 +208,16 @@ gofernext {
       origin "coinbase" { query = "MKR/USD" }
       origin "gemini" { query = "MKR/USD" }
       origin "kraken" { query = "MKR/USD" }
+      indirect {
+        alias "MKR/ETH" {
+          origin "uniswapV3" { query = "MKR/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "uniswapV3" { query = "MKR/USDC" }
+        reference { data_model = "USDC/USD" }
+      }
     }
   }
 
@@ -267,6 +286,12 @@ gofernext {
       indirect {
         origin "okx" { query = "YFI/USDT" }
         reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        alias "YFI/ETH" {
+          origin "sushiswap" { query = "YFI/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
       }
     }
   }
