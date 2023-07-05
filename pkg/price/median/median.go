@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -57,13 +57,13 @@ type Median interface {
 	Poke(ctx context.Context, prices []*Price, simulateBeforeRun bool) (*types.Hash, error)
 
 	// Lift sends transaction to the smart contract which invokes contract's
-	// lift method, which sends  adds given addresses to the feeders list (orcls).
+	// lift method, which sends  adds given addresses to the feeds list (orcls).
 	// If simulateBeforeRun is set to true, then transaction will be simulated
 	// on the EVM before actual transaction will be sent.
 	Lift(ctx context.Context, addresses []types.Address, simulateBeforeRun bool) (*types.Hash, error)
 
 	// Drop sends transaction to the smart contract which invokes contract's
-	// drop method, which removes given addresses from the feeders list (orcls).
+	// drop method, which removes given addresses from the feeds list (orcls).
 	// If simulateBeforeRun is set to true, then transaction will be simulated
 	// on the EVM before actual transaction will be sent.
 	Drop(ctx context.Context, addresses []types.Address, simulateBeforeRun bool) (*types.Hash, error)

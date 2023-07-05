@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package feeder
+package feed
 
 import (
 	"time"
@@ -27,7 +27,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
-const LoggerTag = "FEEDER"
+const LoggerTag = "FEED"
 
 // Warnings contains a list of minor errors which occurred during fetching
 // prices.
@@ -66,16 +66,16 @@ type Feedable interface {
 	Price() nodes.OriginPrice
 }
 
-// Feeder sets prices from origins to the Feedable nodes.
-type Feeder struct {
+// Feed sets prices from origins to the Feedable nodes.
+type Feed struct {
 	waitCh chan error
 	set    *origins.Set
 	log    log.Logger
 }
 
-// NewFeeder creates new Feeder instance.
-func NewFeeder(set *origins.Set, log log.Logger) *Feeder {
-	return &Feeder{
+// NewFeed creates new Feed instance.
+func NewFeed(set *origins.Set, log log.Logger) *Feed {
+	return &Feed{
 		set:    set,
 		log:    log.WithField("tag", LoggerTag),
 		waitCh: make(chan error),
@@ -85,14 +85,14 @@ func NewFeeder(set *origins.Set, log log.Logger) *Feeder {
 // Feed sets Prices to Feedable nodes. This method takes list of root nodes
 // and sets prices to all of their children that implement the Feedable interface.
 // The t parameter represents the time against which the price expiration is compared.
-func (f *Feeder) Feed(ns []nodes.Node, t time.Time) Warnings {
+func (f *Feed) Feed(ns []nodes.Node, t time.Time) Warnings {
 	return f.feedNodes(f.findFeedableNodes(ns, t))
 }
 
 // findFeedableNodes returns a list of children nodes from given root nodes
 // which implement Feedable interface, and their price is expired according
 // to the time from the t arg.
-func (f *Feeder) findFeedableNodes(ns []nodes.Node, t time.Time) []Feedable {
+func (f *Feed) findFeedableNodes(ns []nodes.Node, t time.Time) []Feedable {
 	var feedables []Feedable
 	nodes.Walk(func(n nodes.Node) {
 		if feedable, ok := n.(Feedable); ok {
@@ -105,7 +105,7 @@ func (f *Feeder) findFeedableNodes(ns []nodes.Node, t time.Time) []Feedable {
 	return feedables
 }
 
-func (f *Feeder) feedNodes(ns []Feedable) Warnings {
+func (f *Feed) feedNodes(ns []Feedable) Warnings {
 	var warns Warnings
 
 	// originPair is used as a key in a map to easily find

@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -16,6 +16,7 @@
 package messages
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -23,12 +24,59 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
+	"github.com/defiweb/go-eth/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
+
+type priceLog struct {
+	Format               string    `json:"format"`
+	Level                string    `json:"level"`
+	Message              string    `json:"message"`
+	MessageID            string    `json:"messageID"`
+	Msg                  string    `json:"msg"`
+	PeerAddr             string    `json:"peerAddr"`
+	PeerID               string    `json:"peerID"`
+	ReceivedFromPeerAddr string    `json:"receivedFromPeerAddr"`
+	ReceivedFromPeerID   string    `json:"receivedFromPeerID"`
+	Tag                  string    `json:"tag"`
+	Time                 time.Time `json:"time"`
+	Topic                string    `json:"topic"`
+	XHostID              string    `json:"x-hostID"`
+}
+
+func readEachLineFromFile(data []byte) [][]byte {
+	lines := strings.Split(string(data), "\n")
+	var res [][]byte
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		res = append(res, []byte(line))
+	}
+	return res
+}
+
+func TestPrice_Sign(t *testing.T) {
+	k := wallet.NewKeyFromBytes([]byte("0x0f2e4a9f5b4a9c3a"))
+	expectedFrom := k.Address().String()
+
+	for _, tt := range prepTestCases(t) {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.NoError(t, tt.price.Sign(k), "could not sign message")
+
+			f, err := tt.price.From(crypto.ECRecoverer)
+			require.NoError(t, err, "could not recover signer")
+
+			assert.Equal(t, expectedFrom, f.String(), "signer not as expected")
+		})
+	}
+}
 
 func TestPrice_Marshalling(t *testing.T) {
 	tests := []struct {
@@ -187,4 +235,96 @@ func FuzzPrice_UnmarshallBinary(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
 		_ = (&Price{}).UnmarshallBinary(data)
 	})
+}
+
+type tc struct {
+	name     string
+	peerAddr string
+	price    median.Price
+	format   string
+	timeHex  string
+	priceHex string
+}
+
+//go:embed testdata/messages.jsonl
+var messages []byte
+
+//go:embed testdata/messages-libp2p.jsonl
+var messages_libp2p []byte
+
+//go:embed testdata/messages-ssb.jsonl
+var messages_ssb []byte
+
+func prepTestCases(t *testing.T) []tc {
+	var tests []tc
+	for i, l := range readEachLineFromFile(messages) {
+		var pl priceLog
+		require.NoError(t, json.Unmarshal(l, &pl))
+
+		var b []byte
+		switch pl.Format {
+		case "BINARY":
+			b = hexutil.MustHexToBytes(pl.Message)
+		case "TEXT":
+			b = []byte(pl.Message)
+		}
+
+		var p Price
+		require.NoError(t, p.UnmarshallBinary(b))
+
+		tests = append(tests, tc{
+			name:     fmt.Sprintf("msg-%03d-%s", i+1, pl.MessageID),
+			peerAddr: pl.PeerAddr,
+			price:    *p.Price,
+			format:   pl.Format,
+		})
+	}
+
+	for i, l := range readEachLineFromFile(messages_libp2p) {
+		var p Price
+		require.NoError(t, json.Unmarshal(l, &p))
+
+		tests = append(tests, tc{
+			name:   fmt.Sprintf("libp2p-%03d", i+1),
+			price:  *p.Price,
+			format: "JSON",
+		})
+	}
+
+	for i, l := range readEachLineFromFile(messages_ssb) {
+		var ps priceSSB
+		require.NoError(t, json.Unmarshal(l, &ps))
+
+		tests = append(tests, tc{
+			name:     fmt.Sprintf("ssb-%03d", i+1),
+			price:    ps.toPrice(),
+			format:   "SSB",
+			timeHex:  "0x" + ps.TimeHex,
+			priceHex: "0x" + ps.PriceHex,
+		})
+	}
+
+	return tests
+}
+
+// allR+=( "${_sig:0:64}" )
+// allS+=( "${_sig:64:64}" )
+// allV+=( "$(ethereum --to-dec "${_sig:128:2}")" )
+type priceSSB struct {
+	Type      string  `json:"type"`
+	Price     float64 `json:"price"`
+	PriceHex  string  `json:"priceHex"`
+	Time      int64   `json:"time"`
+	TimeHex   string  `json:"timeHex"`
+	Signature string  `json:"signature"`
+}
+
+func (ps priceSSB) toPrice() median.Price {
+	p := median.Price{
+		Wat: ps.Type,
+		Age: time.Unix(ps.Time, 0),
+		Sig: types.MustSignatureFromHex(ps.Signature),
+	}
+	p.SetFloat64Price(ps.Price)
+	return p
 }

@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package feed
 
 import (
@@ -61,7 +76,7 @@ func (p *pointValue) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-func TestFeeder_Broadcast(t *testing.T) {
+func TestFeed_Broadcast(t *testing.T) {
 	// Test type must be registered to be able to marshal/unmarshal it.
 	value.RegisterType(&pointValue{}, 0x80000000)
 
@@ -140,8 +155,8 @@ func TestFeeder_Broadcast(t *testing.T) {
 			// Prepare mocks.
 			tt.mocks(dataProvider)
 
-			// Start feeder.
-			feeder, err := New(Config{
+			// Start feed.
+			feed, err := New(Config{
 				DataModels:   tt.dataModels,
 				DataProvider: dataProvider,
 				Signers:      []datapoint.Signer{mockSigner{}},
@@ -150,10 +165,10 @@ func TestFeeder_Broadcast(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.NoError(t, localTransport.Start(ctx))
-			require.NoError(t, feeder.Start(ctx))
+			require.NoError(t, feed.Start(ctx))
 			defer func() {
 				ctxCancel()
-				<-feeder.Wait()
+				<-feed.Wait()
 				<-localTransport.Wait()
 			}()
 
@@ -176,7 +191,7 @@ func TestFeeder_Broadcast(t *testing.T) {
 	}
 }
 
-func TestFeeder_Start(t *testing.T) {
+func TestFeed_Start(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer ctxCancel()
 
@@ -188,7 +203,7 @@ func TestFeeder_Start(t *testing.T) {
 		<-localTransport.Wait()
 	}()
 
-	// Create a new feeder.
+	// Create a new feed.
 	feed, err := New(Config{
 		DataModels:   []string{},
 		DataProvider: dataProvider,
@@ -197,13 +212,13 @@ func TestFeeder_Start(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Try to start the feeder without a context, which should fail.
+	// Try to start the feed without a context, which should fail.
 	require.Error(t, feed.Start(nil))
 
-	// Try to start the feeder with a context, which should be successful.
+	// Try to start the feed with a context, which should be successful.
 	require.NoError(t, feed.Start(ctx))
 
-	// Try to start the feeder a second time, which should fail.
+	// Try to start the feed a second time, which should fail.
 	require.Error(t, feed.Start(ctx))
 
 	ctxCancel()

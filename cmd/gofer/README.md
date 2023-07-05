@@ -1,4 +1,4 @@
-[# Gofer CLI Readme
+# Gofer CLI Readme
 
 > As in a [tool](https://en.wikipedia.org/wiki/Gofer) that specializes in the delivery of special items.
 

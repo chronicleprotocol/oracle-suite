@@ -109,15 +109,6 @@ linters-settings:
     disable:
       - shadow
     disable-all: false
-  depguard:
-    list-type: blacklist
-    include-go-root: false
-    packages:
-      - log
-      - github.com/sirupsen/logrus
-    packages-with-error-message:
-      - log: "logging is allowed only by pkg/log"
-      - github.com/sirupsen/logrus: "logging is allowed only by pkg/log"
   lll:
     # max line length, lines longer will be reported. Default is 120.
     # '\t' is counted as 1 character by default, and can be changed with the tab-width option
@@ -149,7 +140,7 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - depguard
+    #- depguard
     - dogsled
     #- dupl
     - errcheck

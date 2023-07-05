@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -26,19 +26,19 @@ import (
 
 type MemoryStorage struct {
 	mu sync.RWMutex
-	ps map[FeederPrice]*messages.Price
+	ps map[FeedPrice]*messages.Price
 }
 
 // NewMemoryStorage creates a new store instance.
 func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{ps: make(map[FeederPrice]*messages.Price)}
+	return &MemoryStorage{ps: make(map[FeedPrice]*messages.Price)}
 }
 
 // Add implements the store.Storage interface.
 func (p *MemoryStorage) Add(_ context.Context, from types.Address, price *messages.Price) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	fp := FeederPrice{AssetPair: price.Price.Wat, Feeder: from}
+	fp := FeedPrice{AssetPair: price.Price.Wat, Feed: from}
 	if prev, ok := p.ps[fp]; ok && prev.Price.Age.After(price.Price.Age) {
 		return nil
 	}
@@ -47,10 +47,10 @@ func (p *MemoryStorage) Add(_ context.Context, from types.Address, price *messag
 }
 
 // GetAll implements the store.Storage interface.
-func (p *MemoryStorage) GetAll(_ context.Context) (map[FeederPrice]*messages.Price, error) {
+func (p *MemoryStorage) GetAll(_ context.Context) (map[FeedPrice]*messages.Price, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	r := map[FeederPrice]*messages.Price{}
+	r := map[FeedPrice]*messages.Price{}
 	for k, v := range p.ps {
 		r[k] = v
 	}
@@ -71,13 +71,13 @@ func (p *MemoryStorage) GetByAssetPair(_ context.Context, pair string) ([]*messa
 	return ps, nil
 }
 
-// GetByFeeder implements the store.Storage interface.
-func (p *MemoryStorage) GetByFeeder(_ context.Context, pair string, feeder types.Address) (*messages.Price, error) {
+// GetByFeed implements the store.Storage interface.
+func (p *MemoryStorage) GetByFeed(_ context.Context, pair string, feed types.Address) (*messages.Price, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	fp := FeederPrice{
+	fp := FeedPrice{
 		AssetPair: pair,
-		Feeder:    feeder,
+		Feed:      feed,
 	}
 	if m, ok := p.ps[fp]; ok {
 		return m, nil

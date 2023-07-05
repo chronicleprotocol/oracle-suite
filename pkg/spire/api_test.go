@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -75,6 +75,7 @@ func newTestInstances() (*Agent, *Client) {
 		Storage:   store.NewMemoryStorage(),
 		Transport: tra,
 		Pairs:     []string{"AAABBB", "XXXYYY"},
+		Feeds:     []types.Address{testAddress},
 		Logger:    null.New(),
 		Recoverer: rec,
 	})
@@ -166,7 +167,7 @@ func TestClient_PullPrices_ByAssetPrice(t *testing.T) {
 	assertEqualPrices(t, testPriceAAABBB, prices[0])
 }
 
-func TestClient_PullPrices_ByFeeder(t *testing.T) {
+func TestClient_PullPrices_ByFeed(t *testing.T) {
 	var err error
 	var prices []*messages.Price
 

@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,7 @@ package rpc
 
 import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feeder"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/graph/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -35,7 +35,7 @@ type FeedArg struct {
 }
 
 type FeedResp struct {
-	Warnings feeder.Warnings
+	Warnings feed.Warnings
 }
 
 type NodesArg struct {

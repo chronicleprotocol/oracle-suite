@@ -45,6 +45,8 @@ var hclContext = &hcl.EvalContext{
 		"range":   stdlib.RangeFunc,
 		"replace": stdlib.ReplaceFunc,
 		"split":   stdlib.SplitFunc,
+		"merge":   stdlib.MergeFunc,
+		"concat":  stdlib.ConcatFunc,
 		"try":     tryfunc.TryFunc,
 
 		// Custom functions:

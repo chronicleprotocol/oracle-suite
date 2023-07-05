@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -16,45 +16,81 @@
 package internal
 
 import (
+	"github.com/defiweb/go-eth/types"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/multiformats/go-multiaddr"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
+type PeerInfo struct {
+	peerID          peer.ID
+	peerAddr        types.Address
+	topic           string
+	listens         []multiaddr.Multiaddr
+	userAgent       string
+	protocolVersion string
+	protocols       []protocol.ID
+}
+
+func PeerInfos(c chan<- PeerInfo) Options {
+	return func(n *Node) error {
+		n.AddPubSubEventHandler(sets.PubSubEventHandlerFunc(func(topic string, event pubsub.PeerEvent) {
+			p := n.Peerstore()
+			pp, _ := p.GetProtocols(event.Peer)
+			c <- PeerInfo{
+				peerID:          event.Peer,
+				peerAddr:        ethkey.PeerIDToAddress(event.Peer),
+				topic:           topic,
+				listens:         p.PeerInfo(event.Peer).Addrs,
+				userAgent:       getPeerUserAgent(p, event.Peer),
+				protocolVersion: getPeerProtocolVersion(p, event.Peer),
+				protocols:       pp,
+			}
+		}))
+		return nil
+	}
+}
+
 // PeerLogger logs all peers handled by libp2p's pubsub system.
 func PeerLogger() Options {
 	return func(n *Node) error {
 		n.AddPubSubEventHandler(sets.PubSubEventHandlerFunc(func(topic string, event pubsub.PeerEvent) {
-			addrs := n.Peerstore().PeerInfo(event.Peer).Addrs
-			ua := getPeerUserAgent(n.Peerstore(), event.Peer)
-			pp := getPeerProtocols(n.Peerstore(), event.Peer)
-			pv := getPeerProtocolVersion(n.Peerstore(), event.Peer)
+			p := n.Peerstore()
+
+			ad := p.PeerInfo(event.Peer).Addrs
+			ua := getPeerUserAgent(p, event.Peer)
+			pp := getPeerProtocols(p, event.Peer)
+			pv := getPeerProtocolVersion(p, event.Peer)
+			pa := ethkey.PeerIDToAddress(event.Peer)
 
 			switch event.Type {
 			case pubsub.PeerJoin:
 				n.tsLog.get().
 					WithFields(log.Fields{
-						"peerID":          event.Peer.String(),
+						"peerID":          event.Peer,
+						"peerAddr":        pa,
 						"topic":           topic,
-						"listenAddrs":     addrs,
+						"listenAddrs":     ad,
 						"userAgent":       ua,
 						"protocolVersion": pv,
 						"protocols":       pp,
 					}).
-					Info("Connected to a peer")
+					Debug("Connected to a peer")
 			case pubsub.PeerLeave:
 				n.tsLog.get().
 					WithFields(log.Fields{
-						"peerID":      event.Peer.String(),
-						"topic":       topic,
-						"listenAddrs": addrs,
+						"peerID":   event.Peer,
+						"peerAddr": pa,
+						"topic":    topic,
 					}).
-					Info("Disconnected from a peer")
+					Debug("Disconnected from a peer")
 			}
 		}))
 		return nil

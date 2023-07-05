@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -24,6 +24,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"golang.org/x/time/rate"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -128,9 +129,11 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 			if !relayRL.allow(id, len(msg.Data)) {
 				n.tsLog.get().
 					WithFields(log.Fields{
-						"topic":              topic,
-						"peerID":             msg.GetFrom().String(),
-						"receivedFromPeerID": msg.ReceivedFrom.String(),
+						"topic":                topic,
+						"peerID":               msg.GetFrom().String(),
+						"peerAddr":             ethkey.PeerIDToAddress(msg.GetFrom()).String(),
+						"receivedFromPeerID":   msg.ReceivedFrom.String(),
+						"receivedFromPeerAddr": ethkey.PeerIDToAddress(msg.ReceivedFrom).String(),
 					}).
 					Debug("The message has been rejected, rate limit for relay exceeded")
 				return pubsub.ValidationReject
@@ -138,9 +141,11 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 			if !msgRL.allow(msg.GetFrom(), len(msg.Data)) {
 				n.tsLog.get().
 					WithFields(log.Fields{
-						"topic":              topic,
-						"peerID":             msg.GetFrom().String(),
-						"receivedFromPeerID": msg.ReceivedFrom.String(),
+						"topic":                topic,
+						"peerID":               msg.GetFrom().String(),
+						"peerAddr":             ethkey.PeerIDToAddress(msg.GetFrom()).String(),
+						"receivedFromPeerID":   msg.ReceivedFrom.String(),
+						"receivedFromPeerAddr": ethkey.PeerIDToAddress(msg.ReceivedFrom).String(),
 					}).
 					Debug("The message has been rejected, rate limit for message author exceeded")
 				return pubsub.ValidationReject

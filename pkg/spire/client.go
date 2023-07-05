@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -74,18 +74,18 @@ func (c *Client) PublishPrice(price *messages.Price) error {
 	return nil
 }
 
-func (c *Client) PullPrices(assetPair string, feeder string) ([]*messages.Price, error) {
+func (c *Client) PullPrices(assetPair string, feed string) ([]*messages.Price, error) {
 	resp := &PullPricesResp{}
-	err := c.rpc.Call("API.PullPrices", PullPricesArg{FilterAssetPair: assetPair, FilterFeeder: feeder}, resp)
+	err := c.rpc.Call("API.PullPrices", PullPricesArg{FilterAssetPair: assetPair, FilterFeed: feed}, resp)
 	if err != nil {
 		return nil, err
 	}
 	return resp.Prices, nil
 }
 
-func (c *Client) PullPrice(assetPair string, feeder string) (*messages.Price, error) {
+func (c *Client) PullPrice(assetPair string, feed string) (*messages.Price, error) {
 	resp := &PullPriceResp{}
-	err := c.rpc.Call("API.PullPrice", PullPriceArg{AssetPair: assetPair, Feeder: feeder}, resp)
+	err := c.rpc.Call("API.PullPrice", PullPriceArg{AssetPair: assetPair, Feed: feed}, resp)
 	if err != nil {
 		return nil, err
 	}

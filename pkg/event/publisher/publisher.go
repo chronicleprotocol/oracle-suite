@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -90,7 +90,7 @@ func (l *EventPublisher) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	l.log.Infof("Starting")
+	l.log.Debug("Starting")
 	l.ctx = ctx
 	l.listenerLoop()
 	for _, lis := range l.listeners {
@@ -183,6 +183,6 @@ func (l *EventPublisher) sign(evt *messages.Event) bool {
 
 func (l *EventPublisher) contextCancelHandler() {
 	defer func() { close(l.waitCh) }()
-	defer l.log.Info("Stopped")
+	defer l.log.Debug("Stopped")
 	<-l.ctx.Done()
 }

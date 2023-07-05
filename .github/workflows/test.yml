@@ -3,44 +3,56 @@ on:
   push:
     branches:
       - master
-      - develop
+      - main
   pull_request:
     branches:
       - master
-      - develop
+      - main
 
 jobs:
   test:
-    name: Code linting & Unit tests
+    name: Code Linting & Unit Tests
     strategy:
       matrix:
-        go-version: [1.20.x]
-        os: [ubuntu-latest]
+        go-version: [ 1.20.x ]
+        os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: '0'
-      - name: Linting code
+      - name: Linting Code
         uses: golangci/golangci-lint-action@v3
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.52
+          version: v1.53
           args: --timeout=10m0s
-      - name: Start Redis instance
+      - name: Start Redis Instance
         run: docker run -d -p 6379:6379 --name redis -e REDIS_PASSWORD=password123 bitnami/redis:6.2
-      - name: Test
-        run: make test
+      - name: Run Go Tests (TEXT)
+        run: go test -v $(go list ./... | grep -v /e2e/)
         env:
           TEST_REDIS_ADDR: "127.0.0.1:6379"
           TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
+      - name: Run Go Tests (JSON)
+        id: run_go_tests
+        run: go test -json $(go list ./... | grep -v /e2e/) > tests.json
+        env:
+          TEST_REDIS_ADDR: "127.0.0.1:6379"
+          TEST_REDIS_PASS: "password123"
+          TEST_REDIS_DB: 0
+      - name: Annotate Test Results
+        if: ${{ failure() && steps.run_go_tests.outcome == 'failure' }}
+        uses: guyarb/golang-test-annotations@v0.5.1
+        with:
+          test-results: tests.json
   test-e2e-gofer:
+    needs: analyze
     name: E2E Tests (Gofer)
     strategy:
       matrix:
@@ -62,6 +74,7 @@ jobs:
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Gofer
   test-e2e-ghost:
+    needs: analyze
     name: E2E Tests (Ghost)
     strategy:
       matrix:
@@ -83,6 +96,7 @@ jobs:
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Ghost
   test-e2e-teleport:
+    needs: analyze
     name: E2E Tests (Teleport)
     strategy:
       matrix:
@@ -103,3 +117,24 @@ jobs:
       - name: Run E2E Tests
         working-directory: ./e2e
         run: go test -v -p 1 -run ^Test_Teleport
+  analyze:
+    needs: test
+    name: Analyze with CodeQL
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2

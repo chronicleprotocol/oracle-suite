@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package spire
 
 import (
@@ -5,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
@@ -40,6 +56,9 @@ type ConfigSpire struct {
 
 	// Pairs is a list of pairs to store in the price store.
 	Pairs []string `hcl:"pairs"`
+
+	// Pairs is a list of pairs to store in the price store.
+	Feeds []types.Address `hcl:"feeds"`
 
 	// EthereumKey is a name of an Ethereum key to use for signing
 	// prices.
@@ -296,6 +315,7 @@ func (c *ConfigSpire) PriceStore(l log.Logger, t pkgTransport.Transport) (*store
 		Storage:   store.NewMemoryStorage(),
 		Transport: t,
 		Pairs:     c.Pairs,
+		Feeds:     c.Feeds,
 		Logger:    l,
 	})
 	if err != nil {

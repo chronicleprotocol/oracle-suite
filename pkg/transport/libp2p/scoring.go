@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -58,12 +58,12 @@ var peerScoreParams = &pubsub.PeerScoreParams{
 
 func calculatePriceTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error) {
 	var maxPeers = float64(pubsub.GossipSubDhi)
-	// Minimum and maximum expected number of feeders connected to the network:
-	var minFeederCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeders are offline
-	var maxFeederCount = float64(len(cfg.AuthorAllowlist))
+	// Minimum and maximum expected number of feeds connected to the network:
+	var minFeedCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeds are offline
+	var maxFeedCount = float64(len(cfg.AuthorAllowlist))
 	// Minimum and maximum expected number of messages to be received from a single peer in a mesh:
-	var minMsgsPerSecond = (minFeederCount * minAssetPairs) / maxPeers / priceUpdateInterval.Seconds()
-	var maxMsgsPerSecond = (maxFeederCount * maxAssetPairs) / priceUpdateInterval.Seconds()
+	var minMsgsPerSecond = (minFeedCount * minAssetPairs) / maxPeers / priceUpdateInterval.Seconds()
+	var maxMsgsPerSecond = (maxFeedCount * maxAssetPairs) / priceUpdateInterval.Seconds()
 
 	//nolint:gomnd
 	return (&scoreParams{
@@ -88,12 +88,12 @@ func calculateEventTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error
 	// know how many events we can expect.
 
 	var maxPeers = float64(pubsub.GossipSubDhi)
-	// Minimum and maximum expected number of feeders connected to the network:
-	var minFeederCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeders are offline
-	var maxFeederCount = float64(len(cfg.AuthorAllowlist))
+	// Minimum and maximum expected number of feeds connected to the network:
+	var minFeedCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeds are offline
+	var maxFeedCount = float64(len(cfg.AuthorAllowlist))
 	// Minimum and maximum expected number of messages to be received from a single peer in a mesh:
-	var minMsgsPerSecond = minFeederCount * minEventsPerSecond / maxPeers
-	var maxMsgsPerSecond = maxFeederCount * maxEventsPerSecond
+	var minMsgsPerSecond = minFeedCount * minEventsPerSecond / maxPeers
+	var maxMsgsPerSecond = maxFeedCount * maxEventsPerSecond
 
 	//nolint:gomnd
 	return (&scoreParams{
