@@ -66,7 +66,7 @@ func NewWrappedStakedETH(config WrappedStakedETHConfig) (*WrappedStakedETH, erro
 	}, nil
 }
 
-//nolint:funlen,gocyclo
+//nolint:funlen
 func (w *WrappedStakedETH) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
