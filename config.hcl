@@ -12,6 +12,8 @@ include = [
   "config-leeloo.hcl",
   "config-spectre.hcl",
   "config-spire.hcl",
+  "config-gofernext.hcl",
+  "config-ghostnext.hcl",
 ]
 
 
