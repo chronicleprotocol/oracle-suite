@@ -97,7 +97,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginCurve:
-		origin, err := origin.NewCurve(origin.CurveOptions{
+		origin, err := origin.NewCurve(origin.CurveConfig{
 			Client:            d.Clients[o.Contracts.EthereumClient],
 			ContractAddresses: o.Contracts.ContractAddresses,
 			Blocks:            averageFromBlocks,
