@@ -25,10 +25,10 @@ var balancerV2PoolABI []byte
 
 const BalancerV2LoggerTag = "BALANCERV2_ORIGIN"
 
-type BalancerV2Options struct {
+type BalancerV2Config struct {
 	Client             rpc.RPC
-	ContractAddresses  ContractAddresses
-	ReferenceAddresses ContractAddresses
+	ContractAddresses  map[string]string
+	ReferenceAddresses map[string]string
 	Logger             log.Logger
 	Blocks             []int64
 }
@@ -43,26 +43,35 @@ type BalancerV2 struct {
 	logger             log.Logger
 }
 
-func NewBalancerV2(opts BalancerV2Options) (*BalancerV2, error) {
-	if opts.Client == nil {
+func NewBalancerV2(config BalancerV2Config) (*BalancerV2, error) {
+	if config.Client == nil {
 		return nil, fmt.Errorf("cannot nil ethereum client")
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
 
 	a, err := abi.ParseJSON(balancerV2PoolABI)
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
+	refAddresses, err := convertAddressMap(config.ReferenceAddresses)
+	if err != nil {
+		return nil, err
+	}
+
 	return &BalancerV2{
-		client:             opts.Client,
-		contractAddresses:  opts.ContractAddresses,
-		referenceAddresses: opts.ReferenceAddresses,
+		client:             config.Client,
+		contractAddresses:  addresses,
+		referenceAddresses: refAddresses,
 		abi:                a,
 		variable:           0, // PAIR_PRICE
-		blocks:             opts.Blocks,
-		logger:             opts.Logger.WithField("balancerV2", BalancerV2LoggerTag),
+		blocks:             config.Blocks,
+		logger:             config.Logger.WithField("balancerV2", BalancerV2LoggerTag),
 	}, nil
 }
 
@@ -89,13 +98,13 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	refs := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, inverted, err := b.contractAddresses.AddressByPair(pair)
+		contract, inverted, err := b.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
 		}
 		if inverted {
-			points[pair] = datapoint.Point{Error: fmt.Errorf("cannnot use inverted pair to retrieve price: %s",
+			points[pair] = datapoint.Point{Error: fmt.Errorf("cannot use inverted pair to retrieve price: %s",
 				pair.String())}
 			continue
 		}
@@ -104,7 +113,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		callData, err := b.abi.Methods["getLatest"].EncodeArgs(b.variable)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
-				"failed to pack contract args for getLatest (pair %s): %w",
+				"failed to get contract args for pair: %s: %w",
 				pair.String(),
 				err,
 			)}
@@ -115,7 +124,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			Input: callData,
 		})
 
-		ref, inverted, err := b.referenceAddresses.AddressByPair(pair)
+		ref, inverted, err := b.referenceAddresses.ByPair(pair)
 		if err == nil {
 			if inverted {
 				points[pair] = datapoint.Point{Error: fmt.Errorf(
@@ -147,7 +156,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		for _, blockDelta := range b.blocks {
 			resp, err := ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 			if err != nil {
-				return nil, fmt.Errorf("failed multicall for getLatest: %w", err)
+				return nil, err
 			}
 
 			n := 0
@@ -155,16 +164,13 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 				if points[pairs[i]].Error != nil {
 					continue
 				}
-
 				price := new(big.Int).SetBytes(resp[n][0:32])
-
-				_, _, err := b.referenceAddresses.AddressByPair(pairs[i])
+				_, _, err := b.referenceAddresses.ByPair(pairs[i])
 				if err == nil {
 					refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
 					refs[i] = new(big.Int).Add(refs[i], refPrice)
 					n++ // next response was already used, ignore
 				}
-
 				totals[i] = new(big.Int).Add(totals[i], price)
 				n++
 			}
@@ -175,7 +181,6 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		if points[pair].Error != nil {
 			continue
 		}
-
 		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = new(big.Float).Quo(avgPrice, new(big.Float).SetUint64(uint64(len(b.blocks))))
 		if refs[i].Cmp(big.NewInt(0)) > 0 { // Non Zero, then multiply with ref price
@@ -197,8 +202,5 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 	}
 
-	if len(pairs) == 1 && points[pairs[0]].Error != nil {
-		return points, points[pairs[0]].Error
-	}
 	return points, nil
 }

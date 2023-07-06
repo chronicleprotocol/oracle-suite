@@ -24,14 +24,14 @@ type BalancerV2Suite struct {
 
 func (suite *BalancerV2Suite) SetupTest() {
 	suite.client = &ethereumMocks.RPC{}
-	o, err := NewBalancerV2(BalancerV2Options{
+	o, err := NewBalancerV2(BalancerV2Config{
 		Client: suite.client,
-		ContractAddresses: ContractAddresses{
+		ContractAddresses: map[string]string{
 			"RETH/WETH":  "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
 			"STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230",
 			"WETH/YFI":   "0x186084ff790c65088ba694df11758fae4943ee9e",
 		},
-		ReferenceAddresses: ContractAddresses{
+		ReferenceAddresses: map[string]string{
 			"RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
 		},
 		Blocks: []int64{0, 10, 20},
@@ -136,10 +136,10 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 	).Return(respEncoded, nil).Once()
 
 	pair := value.Pair{Base: "STETH", Quote: "WETH"}
-	point, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(0.97, point[pair].Value.(value.Tick).Price.Float64())
-	suite.Greater(point[pair].Time.Unix(), int64(0))
+	suite.Equal(0.97, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 
 func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
@@ -218,16 +218,26 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 	).Return(respEncoded, nil).Once()
 
 	pair := value.Pair{Base: "RETH", Quote: "WETH"}
-	point, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(0.485, point[pair].Value.(value.Tick).Price.Float64())
-	suite.Greater(point[pair].Time.Unix(), int64(0))
+	suite.Equal(0.485, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Greater(points[pair].Time.Unix(), int64(0))
+}
+
+func (suite *BalancerV2Suite) TestSuccessResponse_Inverted() {
+	suite.client.On(
+		"BlockNumber",
+		mock.Anything,
+	).Return(big.NewInt(100), nil).Once()
+
+	pair := value.Pair{Base: "WETH", Quote: "STETH"}
+	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	suite.Require().NoError(err)
+	suite.Require().EqualError(points[pair].Error, "cannot use inverted pair to retrieve price: WETH/STETH")
 }
 
 func (suite *BalancerV2Suite) TestFailOnWrongPair() {
 	pair := value.Pair{Base: "x", Quote: "y"}
-
-	ctx := context.Background()
 
 	suite.client.On(
 		"ChainID",
@@ -239,6 +249,7 @@ func (suite *BalancerV2Suite) TestFailOnWrongPair() {
 		mock.Anything,
 	).Return(big.NewInt(100), nil).Once()
 
-	_, err := suite.origin.FetchDataPoints(ctx, []any{pair})
-	suite.Require().EqualError(err, "failed to get contract address for pair: x/y")
+	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	suite.Require().NoError(err)
+	suite.Require().EqualError(points[pair].Error, "failed to get contract address for pair: x/y")
 }

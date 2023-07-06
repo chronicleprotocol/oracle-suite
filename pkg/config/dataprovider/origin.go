@@ -98,7 +98,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginBalancer:
-		origin, err := origin.NewBalancerV2(origin.BalancerV2Options{
+		origin, err := origin.NewBalancerV2(origin.BalancerV2Config{
 			Client:             d.Clients[o.Contracts.EthereumClient],
 			ContractAddresses:  o.Contracts.ContractAddresses,
 			ReferenceAddresses: o.Contracts.ReferenceAddresses,
