@@ -25,9 +25,9 @@ var rocketPoolABI []byte
 
 const RocketPoolLoggerTag = "ROCKETPOOL_ORIGIN"
 
-type RocketPoolOptions struct {
+type RocketPoolConfig struct {
 	Client            rpc.RPC
-	ContractAddresses ContractAddresses
+	ContractAddresses map[string]string
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -41,28 +41,32 @@ type RocketPool struct {
 	logger                    log.Logger
 }
 
-func NewRocketPool(opts RocketPoolOptions) (*RocketPool, error) {
-	if opts.Client == nil {
+func NewRocketPool(config RocketPoolConfig) (*RocketPool, error) {
+	if config.Client == nil {
 		return nil, fmt.Errorf("cannot nil ethereum client")
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
 
 	a, err := abi.ParseJSON(rocketPoolABI)
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 
 	return &RocketPool{
-		client:            opts.Client,
-		contractAddresses: opts.ContractAddresses,
+		client:            config.Client,
+		contractAddresses: addresses,
 		abi:               a,
 		baseIndex:         big.NewInt(0),
 		quoteIndex:        big.NewInt(1),
 		dx:                new(big.Int).Mul(big.NewInt(1), new(big.Int).SetUint64(ether)),
-		blocks:            opts.Blocks,
-		logger:            opts.Logger.WithField("rocketpool", RocketPoolLoggerTag),
+		blocks:            config.Blocks,
+		logger:            config.Logger.WithField("rocketpool", RocketPoolLoggerTag),
 	}, nil
 }
 
@@ -88,18 +92,18 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	totals := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, inverted, err := r.contractAddresses.AddressByPair(pair)
+		contract, inverted, err := r.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
 		}
-
-		var callData []byte
-		if !inverted {
-			callData, err = r.abi.Methods["getExchangeRate"].EncodeArgs()
-		} else {
-			callData, err = r.abi.Methods["getRethValue"].EncodeArgs(big.NewInt(0).SetUint64(ether))
+		if inverted {
+			points[pair] = datapoint.Point{Error: fmt.Errorf(
+				"cannot use inverted pair to retrieve price: %s", pair.String())}
+			continue
 		}
+
+		callData, err := r.abi.Methods["getExchangeRate"].EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get contract args for pair: %s: %w",
@@ -119,20 +123,17 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		for _, blockDelta := range r.blocks {
 			resp, err := ethereum.MultiCall(ctx, r.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 			if err != nil {
-				return nil, fmt.Errorf("failed multicall: %w", err)
-			}
-			if len(calls) != len(resp) {
-				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
-					len(calls), len(resp))
-			}
-			if len(resp) != len(pairs) {
-				return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
-					len(resp), len(pairs))
+				return nil, err
 			}
 
-			for i := range pairs {
-				price := new(big.Int).SetBytes(resp[i][0:32])
+			n := 0
+			for i := 0; i < len(pairs); i++ {
+				if points[pairs[i]].Error != nil {
+					continue
+				}
+				price := new(big.Int).SetBytes(resp[n][0:32])
 				totals[i] = totals[i].Add(totals[i], price)
+				n++
 			}
 		}
 	}
@@ -141,7 +142,6 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		if points[pair].Error != nil {
 			continue
 		}
-
 		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(r.blocks))))
 
@@ -156,8 +156,5 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 	}
 
-	if len(pairs) == 1 && points[pairs[0]].Error != nil {
-		return points, points[pairs[0]].Error
-	}
 	return points, nil
 }

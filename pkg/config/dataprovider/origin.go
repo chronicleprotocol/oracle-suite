@@ -97,7 +97,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginRocketPool:
-		origin, err := origin.NewRocketPool(origin.RocketPoolOptions{
+		origin, err := origin.NewRocketPool(origin.RocketPoolConfig{
 			Client:            d.Clients[o.Contracts.EthereumClient],
 			ContractAddresses: o.Contracts.ContractAddresses,
 			Blocks:            averageFromBlocks,
