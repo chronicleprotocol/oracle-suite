@@ -88,7 +88,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginIShares:
-		origin, err := origin.NewIShares(origin.ISharesOptions{
+		origin, err := origin.NewIShares(origin.ISharesConfig{
 			URL:     o.URL,
 			Headers: nil,
 			Client:  d.HTTPClient,

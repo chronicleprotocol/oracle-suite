@@ -63,7 +63,7 @@ USD 5.43
 			defer server.Close()
 
 			// Create IShare Origin
-			ishares, err := NewIShares(ISharesOptions{
+			ishares, err := NewIShares(ISharesConfig{
 				URL:    server.URL,
 				Logger: null.New(),
 			})

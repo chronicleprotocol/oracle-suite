@@ -20,7 +20,7 @@ import (
 
 const ISharesLoggerTag = "ISHARES_ORIGIN"
 
-type ISharesOptions struct {
+type ISharesConfig struct {
 	URL     string
 	Headers http.Header
 	Client  *http.Client
@@ -32,30 +32,30 @@ type IShares struct {
 	logger log.Logger
 }
 
-func NewIShares(opts ISharesOptions) (*IShares, error) {
-	if opts.URL == "" {
+func NewIShares(config ISharesConfig) (*IShares, error) {
+	if config.URL == "" {
 		return nil, fmt.Errorf("url cannot be empty")
 	}
-	if opts.Client == nil {
-		opts.Client = http.DefaultClient
+	if config.Client == nil {
+		config.Client = http.DefaultClient
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
 
 	ishares := &IShares{}
 	gh, err := NewTickGenericHTTP(TickGenericHTTPOptions{
-		URL:      opts.URL,
-		Headers:  opts.Headers,
+		URL:      config.URL,
+		Headers:  config.Headers,
 		Callback: ishares.handle,
-		Client:   opts.Client,
-		Logger:   opts.Logger,
+		Client:   config.Client,
+		Logger:   config.Logger,
 	})
 	if err != nil {
 		return nil, err
 	}
 	ishares.http = gh
-	ishares.logger = opts.Logger.WithField("ishares", ISharesLoggerTag)
+	ishares.logger = config.Logger.WithField("ishares", ISharesLoggerTag)
 	return ishares, nil
 }
 
@@ -67,7 +67,7 @@ func (g *IShares) FetchDataPoints(ctx context.Context, query []any) (map[any]dat
 func (g *IShares) handle(_ context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 	b, err := io.ReadAll(body)
 	if err != nil {
-		return fillDataPointsWithError(nil, pairs, err), err
+		return nil, fmt.Errorf("failed to read http, %w", err)
 	}
 
 	points := make(map[any]datapoint.Point)
