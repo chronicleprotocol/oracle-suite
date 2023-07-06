@@ -97,7 +97,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginWrappedStakedETH:
-		origin, err := origin.NewWrappedStakedETH(origin.WrappedStakedETHOptions{
+		origin, err := origin.NewWrappedStakedETH(origin.WrappedStakedETHConfig{
 			Client:            d.Clients[o.Contracts.EthereumClient],
 			ContractAddresses: o.Contracts.ContractAddresses,
 			Blocks:            averageFromBlocks,
