@@ -26,9 +26,9 @@ var uniswapV3PoolABI []byte
 
 const UniswapV3LoggerTag = "UNISWAPV3_ORIGIN"
 
-type UniswapV3Options struct {
+type UniswapV3Config struct {
 	Client            rpc.RPC
-	ContractAddresses ContractAddresses
+	ContractAddresses map[string]string
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -42,31 +42,35 @@ type UniswapV3 struct {
 	logger            log.Logger
 }
 
-func NewUniswapV3(opts UniswapV3Options) (*UniswapV3, error) {
-	if opts.Client == nil {
+func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
+	if config.Client == nil {
 		return nil, fmt.Errorf("cannot nil ethereum client")
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
 
 	a, err := abi.ParseJSON(uniswapV3PoolABI)
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 
-	erc20, err := NewERC20(opts.Client)
+	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
 	}
 
 	return &UniswapV3{
-		client:            opts.Client,
-		contractAddresses: opts.ContractAddresses,
+		client:            config.Client,
+		contractAddresses: addresses,
 		erc20:             erc20,
 		abi:               a,
-		blocks:            opts.Blocks,
-		logger:            opts.Logger.WithField("uniswapV3", UniswapV3LoggerTag),
+		blocks:            config.Blocks,
+		logger:            config.Logger.WithField("uniswapV3", UniswapV3LoggerTag),
 	}, nil
 }
 
@@ -93,10 +97,12 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	var calls []types.Call
 	var callsToken []types.Call
 	for i, pair := range pairs {
-		contract, _, err := u.contractAddresses.AddressByPair(pair)
+		contract, _, err := u.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
+			continue
 		}
+
 		// Calls for `slot0`
 		callData, err := u.abi.Methods["slot0"].EncodeArgs()
 		if err != nil {
@@ -140,8 +146,9 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	if len(callsToken) > 0 {
 		resp, err := ethereum.MultiCall(ctx, u.client, callsToken, types.LatestBlockNumber)
 		if err != nil {
-			return nil, fmt.Errorf("failed multicall for tokens of pool: %w", err)
+			return nil, err
 		}
+
 		for i := range resp {
 			var address types.Address
 			if err := u.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
@@ -162,25 +169,14 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		for _, blockDelta := range u.blocks {
 			resp, err := ethereum.MultiCall(ctx, u.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 			if err != nil {
-				return nil, fmt.Errorf("failed multicall: %w", err)
-			}
-			if len(calls) != len(resp) {
-				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
-					len(calls), len(resp))
-			}
-			if len(resp) != len(pairs) {
-				return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
-					len(resp), len(pairs))
+				return nil, err
 			}
 
+			n := 0
 			for i, pair := range pairs {
 				if points[pair].Error != nil {
 					continue
 				}
-
-				sqrtRatioX96 := new(big.Int).SetBytes(resp[i][0:32])
-				// ratioX192 = sqrtRatioX96 ^ 2
-				ratioX192 := new(big.Int).Mul(sqrtRatioX96, sqrtRatioX96)
 
 				if _, ok := tokenDetails[pair.Base]; !ok {
 					points[pair] = datapoint.Point{Error: fmt.Errorf("not found base token: %s", pair.Base)}
@@ -190,6 +186,10 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 					points[pair] = datapoint.Point{Error: fmt.Errorf("not found quote token: %s", pair.Quote)}
 					continue
 				}
+
+				sqrtRatioX96 := new(big.Int).SetBytes(resp[n][0:32])
+				// ratioX192 = sqrtRatioX96 ^ 2
+				ratioX192 := new(big.Int).Mul(sqrtRatioX96, sqrtRatioX96)
 
 				baseToken := tokenDetails[pair.Base]
 				quoteToken := tokenDetails[pair.Quote]
@@ -213,6 +213,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 					new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil)),
 				)
 				totals[i] = totals[i].Add(totals[i], price)
+				n++
 			}
 		}
 	}

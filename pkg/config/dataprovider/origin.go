@@ -103,7 +103,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginUniswapV3:
-		origin, err := origin.NewUniswapV3(origin.UniswapV3Options{
+		origin, err := origin.NewUniswapV3(origin.UniswapV3Config{
 			Client:            d.Clients[o.Contracts.EthereumClient],
 			ContractAddresses: o.Contracts.ContractAddresses,
 			Blocks:            averageFromBlocks,
@@ -119,7 +119,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		}
 		return origin, nil
 	case *configOriginSushiswap:
-		origin, err := origin.NewSushiswap(origin.SushiswapOptions{
+		origin, err := origin.NewSushiswap(origin.SushiswapConfig{
 			Client:            d.Clients[o.Contracts.EthereumClient],
 			ContractAddresses: o.Contracts.ContractAddresses,
 			Blocks:            averageFromBlocks,

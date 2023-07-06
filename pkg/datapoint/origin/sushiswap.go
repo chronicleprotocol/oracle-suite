@@ -26,9 +26,9 @@ var sushiswapPoolABI []byte
 
 const SushiswapLoggerTag = "SUSHISWAP_ORIGIN"
 
-type SushiswapOptions struct {
+type SushiswapConfig struct {
 	Client            rpc.RPC
-	ContractAddresses ContractAddresses
+	ContractAddresses map[string]string
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -42,31 +42,35 @@ type Sushiswap struct {
 	logger            log.Logger
 }
 
-func NewSushiswap(opts SushiswapOptions) (*Sushiswap, error) {
-	if opts.Client == nil {
+func NewSushiswap(config SushiswapConfig) (*Sushiswap, error) {
+	if config.Client == nil {
 		return nil, fmt.Errorf("cannot nil ethereum client")
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
 
 	a, err := abi.ParseJSON(sushiswapPoolABI)
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 
-	erc20, err := NewERC20(opts.Client)
+	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Sushiswap{
-		client:            opts.Client,
-		contractAddresses: opts.ContractAddresses,
+		client:            config.Client,
+		contractAddresses: addresses,
 		erc20:             erc20,
 		abi:               a,
-		blocks:            opts.Blocks,
-		logger:            opts.Logger.WithField("sushiswap", SushiswapLoggerTag),
+		blocks:            config.Blocks,
+		logger:            config.Logger.WithField("sushiswap", SushiswapLoggerTag),
 	}, nil
 }
 
@@ -93,11 +97,12 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	var calls []types.Call
 	var callsToken []types.Call
 	for i, pair := range pairs {
-		contract, _, err := s.contractAddresses.AddressByPair(pair)
+		contract, _, err := s.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
 		}
+
 		// Calls for `getReserves`
 		callData, err := s.abi.Methods["getReserves"].EncodeArgs()
 		if err != nil {
@@ -150,8 +155,9 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	if len(callsToken) > 0 {
 		resp, err := ethereum.MultiCall(ctx, s.client, callsToken, types.LatestBlockNumber)
 		if err != nil {
-			return nil, fmt.Errorf("failed multicall for tokens of pool: %w", err)
+			return nil, err
 		}
+
 		for i := range resp {
 			var address types.Address
 			if err := s.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
@@ -169,17 +175,10 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		for _, blockDelta := range s.blocks {
 			resp, err := ethereum.MultiCall(ctx, s.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 			if err != nil {
-				return nil, fmt.Errorf("failed multicall: %w", err)
-			}
-			if len(calls) != len(resp) {
-				return nil, fmt.Errorf("unexpected number of multicall results, expected %d, got %d",
-					len(calls), len(resp))
-			}
-			if len(resp) != len(pairs) {
-				return nil, fmt.Errorf("unexpected number of multicall results with pairs, expected %d, got %d",
-					len(resp), len(pairs))
+				return nil, err
 			}
 
+			n := 0
 			for i, pair := range pairs {
 				if points[pair].Error != nil {
 					continue
@@ -212,7 +211,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 
 				// Reference: https://github.com/sushiswap/sushiswap-subgraph/blob/uniswap-fork/src/mappings/core.ts#L220
 				var reserve0, reserve1 *big.Int
-				if err := s.abi.Methods["getReserves"].DecodeValues(resp[i], &reserve0, &reserve1, nil); err != nil {
+				if err := s.abi.Methods["getReserves"].DecodeValues(resp[n], &reserve0, &reserve1, nil); err != nil {
 					points[pair] = datapoint.Point{Error: fmt.Errorf("failed decoding reserves of pool: %w",
 						err)}
 					continue
@@ -239,6 +238,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 				} else { // base token == token1
 					totals[i] = totals[i].Add(totals[i], token0Price)
 				}
+				n++
 			}
 		}
 	}
@@ -247,7 +247,6 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		if points[pair].Error != nil {
 			continue
 		}
-
 		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(s.blocks))))
 
 		tick := value.Tick{

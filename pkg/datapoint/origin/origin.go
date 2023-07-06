@@ -37,21 +37,28 @@ func queryToPairs(query []any) ([]value.Pair, bool) {
 	return pairs, true
 }
 
-type ContractAddresses map[string]string
+type ContractAddresses map[value.Pair]types.Address
 
-func (c ContractAddresses) ByPair(p value.Pair) (string, bool, bool) {
-	contract, ok := c[fmt.Sprintf("%s/%s", p.Base, p.Quote)]
-	if !ok {
-		contract, ok = c[fmt.Sprintf("%s/%s", p.Quote, p.Base)]
-		return contract, true, ok
+func convertAddressMap(addresses map[string]string) (ContractAddresses, error) {
+	typeAddresses := make(map[value.Pair]types.Address)
+	for key, address := range addresses {
+		pair, err := value.PairFromString(key)
+		if err != nil { // return error if invalid pair
+			return nil, err
+		}
+		typeAddresses[pair] = types.MustAddressFromHex(address)
 	}
-	return contract, false, ok
+	return typeAddresses, nil
 }
 
-func (c ContractAddresses) AddressByPair(pair value.Pair) (types.Address, bool, error) {
-	contract, inverted, ok := c.ByPair(pair)
-	if !ok {
-		return types.Address{}, inverted, fmt.Errorf("failed to get contract address for pair: %s", pair.String())
-	}
-	return types.MustAddressFromHex(contract), inverted, nil
+func (c ContractAddresses) ByPair(p value.Pair) (types.Address, bool, error) {
+	contract, ok := c[p]
+	invContract, okInv := c[p.Invert()]
+
+	if ok && !okInv {
+		return contract, false, nil
+	} else if !ok && okInv {
+		return invContract, true, nil
+	} // duplicated pairs or not found pair
+	return types.ZeroAddress, false, fmt.Errorf("failed to get contract address for pair: %s", p.String())
 }
