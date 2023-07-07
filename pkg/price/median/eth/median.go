@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package geth
+package eth
 
 import (
 	"context"
@@ -22,11 +22,33 @@ import (
 	"sort"
 	"time"
 
+	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
+
+const (
+	mainnetChainID = 1
+	kovanChainID   = 42
+	rinkebyChainID = 4
+	gorliChainID   = 5
+	ropstenChainID = 3
+	xdaiChainID    = 100
+)
+
+// Addresses of multicall contracts. They're used to implement
+// the Client.MultiCall function.
+//
+// https://github.com/makerdao/multicall
+var multiCallContracts = map[uint64]types.Address{
+	mainnetChainID: types.MustAddressFromHex("0xeefba1e63905ef1d7acba5a8513c70307c1ce441"),
+	kovanChainID:   types.MustAddressFromHex("0x2cc8688c5f75e365aaeeb4ea8d6a480405a48d2a"),
+	rinkebyChainID: types.MustAddressFromHex("0x42ad527de7d4e9d9d011ac45b31d8551f8fe9821"),
+	gorliChainID:   types.MustAddressFromHex("0x77dca2c955b15e9de4dbbcf1246b4b85b651e50e"),
+	ropstenChainID: types.MustAddressFromHex("0x53c43764255c17bd724f74c4ef150724ac50a3ed"),
+	xdaiChainID:    types.MustAddressFromHex("0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"),
+}
 
 var ErrStorageQueryFailed = errors.New("oracle contract storage query failed")
 
@@ -35,18 +57,23 @@ const gasLimit = 200000
 const maxReadRetries = 3
 const delayBetweenReadRetries = 5 * time.Second
 
-// Median implements the oracle.Median interface using go-ethereum packages.
+type ethereum interface {
+	Storage(ctx context.Context, addr types.Address, idx int64) ([]byte, error)
+	Call(ctx context.Context, call types.Call) ([]byte, error)
+	MultiCall(ctx context.Context, calls []types.Call) ([][]byte, error)
+	Send(ctx context.Context, call types.Call) (*types.Hash, error)
+}
+
+// Median implements the oracle.Median interface using github.com/defiweb/go-eth packages.
 type Median struct {
-	ethereum ethereum.Client //nolint:staticcheck // deprecated ethereum.Client
+	ethereum ethereum
 	address  types.Address
 }
 
 // NewMedian creates the new Median instance.
-//
-//nolint:staticcheck // deprecated ethereum.Client
-func NewMedian(ethereum ethereum.Client, address types.Address) *Median {
+func NewMedian(rpc rpc.RPC, address types.Address) *Median {
 	return &Median{
-		ethereum: ethereum,
+		ethereum: &client{rpc: rpc},
 		address:  address,
 	}
 }
@@ -89,7 +116,7 @@ func (m *Median) Val(ctx context.Context) (*big.Int, error) {
 		offset = 16
 		length = 16
 	)
-	b, err := m.ethereum.Storage(ctx, m.address, types.MustHashFromBigInt(big.NewInt(1)))
+	b, err := m.ethereum.Storage(ctx, m.address, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -234,12 +261,10 @@ func (m *Median) write(ctx context.Context, method string, args []any) (*types.H
 	}
 
 	gl := uint64(gasLimit)
-	return m.ethereum.SendTransaction(ctx, &types.Transaction{
-		Call: types.Call{
-			To:       &m.address,
-			Input:    cd,
-			GasLimit: &gl,
-		},
+	return m.ethereum.Send(ctx, types.Call{
+		To:       &m.address,
+		Input:    cd,
+		GasLimit: &gl,
 	})
 }
 

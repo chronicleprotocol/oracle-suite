@@ -223,7 +223,7 @@ func (s *Relayer) relay(assetPair string) (*types.Hash, error) {
 	for _, price := range prices {
 		s.log.
 			WithFields(price.Price.Fields(s.recover)).
-			Debug("Feed")
+			Debug("Feed Price for Oracle update")
 	}
 
 	// If price is stale or expired, send update.
@@ -252,7 +252,18 @@ func (s *Relayer) syncFeedAddresses(p *Pair) error {
 	}
 
 	// Update the list.
-	p.FeedAddresses = addresses
+	p.FeedAddresses = []types.Address{}
+	for _, addr := range addresses {
+		if addr.IsZero() {
+			continue
+		}
+		s.log.
+			WithField("symbol", p.AssetPair).
+			WithField("feed", addr.String()).
+			WithField("oracle", p.Median.Address().String()).
+			Info("Oracle Feed")
+		p.FeedAddresses = append(p.FeedAddresses, addr)
+	}
 	return nil
 }
 

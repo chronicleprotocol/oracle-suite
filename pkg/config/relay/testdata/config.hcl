@@ -15,3 +15,5 @@ median {
   spread          = 3
   expiration      = 400
 }
+
+feeds = []

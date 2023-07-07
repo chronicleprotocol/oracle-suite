@@ -78,6 +78,28 @@ func TestPrice_Sign(t *testing.T) {
 	}
 }
 
+func TestPrice_Unmarshall(t *testing.T) {
+	for _, tt := range prepTestCases(t) {
+		if tt.priceHex == "" {
+			continue
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.peerAddr != "" {
+				from, err := tt.price.From(crypto.ECRecoverer)
+				if err != nil && assert.EqualError(t, err, "invalid square root") {
+					t.Skip("test data not valid for this case:", err)
+				}
+				assert.Equal(t, tt.peerAddr, from.String(), "message not from expected peer")
+			}
+
+			v, err := hexutil.HexToBigInt(tt.priceHex)
+			assert.NoError(t, err, "could not parse hex price")
+
+			assert.Equal(t, v.String(), tt.price.Val.String(), "hex price not equal to json price")
+		})
+	}
+}
+
 func TestPrice_Marshalling(t *testing.T) {
 	tests := []struct {
 		price   *Price
@@ -295,9 +317,11 @@ func prepTestCases(t *testing.T) []tc {
 		var ps priceSSB
 		require.NoError(t, json.Unmarshal(l, &ps))
 
+		price, err := ps.toPrice()
+		require.NoError(t, err)
 		tests = append(tests, tc{
 			name:     fmt.Sprintf("ssb-%03d", i+1),
-			price:    ps.toPrice(),
+			price:    price,
 			format:   "SSB",
 			timeHex:  "0x" + ps.TimeHex,
 			priceHex: "0x" + ps.PriceHex,
@@ -319,12 +343,11 @@ type priceSSB struct {
 	Signature string  `json:"signature"`
 }
 
-func (ps priceSSB) toPrice() median.Price {
+func (ps priceSSB) toPrice() (median.Price, error) {
 	p := median.Price{
 		Wat: ps.Type,
 		Age: time.Unix(ps.Time, 0),
 		Sig: types.MustSignatureFromHex(ps.Signature),
 	}
-	p.SetFloat64Price(ps.Price)
-	return p
+	return p, p.SetHexPrice(ps.PriceHex)
 }
