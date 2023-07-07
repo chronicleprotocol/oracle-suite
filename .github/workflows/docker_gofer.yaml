@@ -1,3 +1,4 @@
+# TODO: Unify this workflow into a single one that is parameterized by the app name.
 name: "Release Gofer Docker Image"
 on:
   workflow_dispatch: # Allow manual trigger

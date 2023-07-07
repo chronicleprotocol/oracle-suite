@@ -21,7 +21,7 @@ import (
 
 func TestNewGenericJQ(t *testing.T) {
 	t.Run("empty URL", func(t *testing.T) {
-		_, err := NewTickGenericJQ(TickGenericJQOptions{
+		_, err := NewTickGenericJQ(TickGenericJQConfig{
 			URL:    "",
 			Query:  ".price",
 			Logger: null.New(),
@@ -29,7 +29,7 @@ func TestNewGenericJQ(t *testing.T) {
 		assert.EqualError(t, err, "url cannot be empty")
 	})
 	t.Run("empty query", func(t *testing.T) {
-		_, err := NewTickGenericJQ(TickGenericJQOptions{
+		_, err := NewTickGenericJQ(TickGenericJQConfig{
 			URL:    "https://example.com",
 			Query:  "",
 			Logger: null.New(),
@@ -37,7 +37,7 @@ func TestNewGenericJQ(t *testing.T) {
 		assert.EqualError(t, err, "query must be specified")
 	})
 	t.Run("invalid query", func(t *testing.T) {
-		_, err := NewTickGenericJQ(TickGenericJQOptions{
+		_, err := NewTickGenericJQ(TickGenericJQConfig{
 			URL:    "https://example.com",
 			Query:  "invalid jq",
 			Logger: null.New(),
@@ -45,7 +45,7 @@ func TestNewGenericJQ(t *testing.T) {
 		assert.Error(t, err)
 	})
 	t.Run("valid options", func(t *testing.T) {
-		_, err := NewTickGenericJQ(TickGenericJQOptions{
+		_, err := NewTickGenericJQ(TickGenericJQConfig{
 			URL:    "https://example.com",
 			Query:  ".price",
 			Logger: null.New(),
@@ -337,7 +337,7 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			defer server.Close()
 
 			// Create a new TickGenericJQ data.
-			gjq, err := NewTickGenericJQ(TickGenericJQOptions{
+			gjq, err := NewTickGenericJQ(TickGenericJQConfig{
 				URL:    server.URL,
 				Query:  tt.query,
 				Logger: null.New(),

@@ -21,14 +21,14 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 	testCases := []struct {
 		name           string
 		pairs          []any
-		options        TickGenericHTTPOptions
+		options        TickGenericHTTPConfig
 		expectedResult map[any]datapoint.Point
 		expectedURLs   []string
 	}{
 		{
 			name:  "simple test",
 			pairs: []any{value.Pair{Base: "BTC", Quote: "USD"}},
-			options: TickGenericHTTPOptions{
+			options: TickGenericHTTPConfig{
 				URL: "/?base=${ucbase}&quote=${ucquote}",
 				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
 					return map[any]datapoint.Point{
@@ -58,7 +58,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 		{
 			name:  "one url for all pairs",
 			pairs: []any{value.Pair{Base: "BTC", Quote: "USD"}, value.Pair{Base: "ETH", Quote: "USD"}},
-			options: TickGenericHTTPOptions{
+			options: TickGenericHTTPConfig{
 				URL: "/dataPoints",
 				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
 					return map[any]datapoint.Point{
@@ -104,7 +104,7 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 		{
 			name:  "one url per pair",
 			pairs: []any{value.Pair{Base: "BTC", Quote: "USD"}, value.Pair{Base: "ETH", Quote: "USD"}},
-			options: TickGenericHTTPOptions{
+			options: TickGenericHTTPConfig{
 				URL: "/?base=${ucbase}&quote=${ucquote}",
 				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
 					if len(pairs) != 1 {

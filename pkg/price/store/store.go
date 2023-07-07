@@ -240,7 +240,7 @@ func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
 			WithFields(price.Price.Fields(p.recover)).
 			WithField("version", price.Version).
 			WithFields(msg.Fields()).
-			Info("Price collected")
+			Debug("Price collected")
 	}
 }
 
