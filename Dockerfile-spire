@@ -1,18 +1,33 @@
+# TODO: Unify this dockerfile into a single file that is parameterized by the app name.
 FROM golang:1.20-alpine as builder
 RUN apk --no-cache add git gcc libc-dev linux-headers
-WORKDIR /go/src/spire
+
+WORKDIR /go/src/app
 COPY . .
-RUN    export CGO_ENABLED=1 \
-    && mkdir -p dist \
-    && go mod vendor \
-    && go build -o dist/spire ./cmd/spire
+RUN go mod vendor && mkdir -p dist
+
+ARG APP_NAME=spire
+ARG APP_VERSION
+
+ARG CGO_ENABLED=0
+RUN go build -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=$APP_VERSION" \
+    -o dist/$APP_NAME ./cmd/$APP_NAME
+RUN ./dist/$APP_NAME --version
 
 FROM alpine:3.16
 RUN apk --no-cache add ca-certificates
+
+# TODO: why root?
 WORKDIR /root
-COPY --from=builder /go/src/spire/dist/ /usr/local/bin/
-COPY ./config.hcl ./config.hcl
-EXPOSE 9100
-EXPOSE 8000
+COPY --from=builder /go/src/app/dist/* /usr/local/bin/
+COPY ./config-*.hcl ./cmd/spire/config.hcl /usr/share/oracle-suite/
+
 ENTRYPOINT ["/usr/local/bin/spire"]
-CMD ["-c", "config.hcl", "agent"]
+CMD ["-c", "/usr/share/oracle-suite/config.hcl", "run"]
+
+# spire rpc
+EXPOSE 9100
+# libp2p
+EXPOSE 8000
+# webapi
+EXPOSE 8080
