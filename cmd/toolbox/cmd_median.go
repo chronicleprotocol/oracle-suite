@@ -25,10 +25,9 @@ import (
 	"github.com/defiweb/go-eth/types"
 	"github.com/spf13/cobra"
 
+	medianGeth "github.com/chronicleprotocol/oracle-suite/cmd/toolbox/internal/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
-	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 

@@ -170,6 +170,9 @@ func TestRelayer_relay(t *testing.T) {
 			addressesTicker := timeutil.NewTicker(0)
 			recovererMock := &ethereumMocks.Recoverer{}
 			medianMock := &medianMocks.Median{}
+			if tt.name != "unknown-feed" {
+				medianMock.On("Address").Return(feedAddress)
+			}
 			storageMock := &storeMocks.Storage{}
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
 				messages.PriceV1MessageName: &messages.Price{},
