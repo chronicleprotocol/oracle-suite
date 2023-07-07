@@ -1,3 +1,4 @@
+# TODO: Unify this workflow into a single one that is parameterized by the app name.
 name: "Release Spire Docker Image"
 on:
   workflow_dispatch: # Allow manual trigger
@@ -48,6 +49,10 @@ jobs:
         with:
           context: .
           file: ./Dockerfile-spire
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            GIT_BRANCH=${{ github.ref }}
+            APP_VERSION=${{ steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

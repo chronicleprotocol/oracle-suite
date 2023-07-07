@@ -49,7 +49,11 @@ variables {
     "0xe3ced0f62f7eb2856d37bed128d2b195712d2644"
   ]
 }
+
 spectre {
+  # List of feed addresses. Only messages signed by these addresses are accepted.
+  feeds = var.feeds
+
   # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
   interval = 60
 
