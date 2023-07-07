@@ -23,9 +23,8 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/median/eth"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/geth"
-	medianGeth "github.com/chronicleprotocol/oracle-suite/pkg/price/median/geth"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -52,6 +51,9 @@ type Config struct {
 
 	// Median is a list of Median contracts to watch.
 	Median []configMedian `hcl:"median,block"`
+
+	// Pairs is a list of pairs to store in the price store.
+	Feeds []types.Address `hcl:"feeds"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
@@ -120,12 +122,11 @@ func (c *Config) Relay(d Dependencies) (*relayer.Relayer, error) {
 				Subject:  pair.Content.Attributes["ethereum_client"].Range.Ptr(),
 			}
 		}
-		ethClient := geth.NewClient(rpcClient) //nolint:staticcheck // deprecated ethereum.Client
 		cfg.Pairs = append(cfg.Pairs, &relayer.Pair{
 			AssetPair:                 pair.Pair,
 			Spread:                    pair.Spread,
 			Expiration:                time.Second * time.Duration(pair.Expiration),
-			Median:                    medianGeth.NewMedian(ethClient, pair.ContractAddr),
+			Median:                    eth.NewMedian(rpcClient, pair.ContractAddr),
 			FeedAddressesUpdateTicker: timeutil.NewTicker(time.Minute * 60),
 		})
 	}
@@ -154,6 +155,7 @@ func (c *Config) PriceStore(d PriceStoreDependencies) (*store.PriceStore, error)
 		Storage:   store.NewMemoryStorage(),
 		Transport: d.Transport,
 		Pairs:     pairs,
+		Feeds:     c.Feeds,
 		Logger:    d.Logger,
 	}
 	priceStore, err := store.New(cfg)

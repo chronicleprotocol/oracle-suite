@@ -19,7 +19,7 @@ const TickGenericHTTPLoggerTag = "TICK_GENERIC_HTTP_ORIGIN"
 
 type HTTPCallback func(ctx context.Context, pairs []value.Pair, data io.Reader) (map[any]datapoint.Point, error)
 
-type TickGenericHTTPOptions struct {
+type TickGenericHTTPConfig struct {
 	// URL is an TickGenericHTTP endpoint that returns JSON data. It may contain
 	// the following variables:
 	//   - ${lcbase} - lower case base asset
@@ -58,25 +58,25 @@ type TickGenericHTTP struct {
 }
 
 // NewTickGenericHTTP creates a new TickGenericHTTP instance.
-func NewTickGenericHTTP(opts TickGenericHTTPOptions) (*TickGenericHTTP, error) {
-	if opts.URL == "" {
+func NewTickGenericHTTP(config TickGenericHTTPConfig) (*TickGenericHTTP, error) {
+	if config.URL == "" {
 		return nil, fmt.Errorf("url cannot be empty")
 	}
-	if opts.Callback == nil {
+	if config.Callback == nil {
 		return nil, fmt.Errorf("callback cannot be nil")
 	}
-	if opts.Client == nil {
-		opts.Client = http.DefaultClient
+	if config.Client == nil {
+		config.Client = http.DefaultClient
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
 	return &TickGenericHTTP{
-		url:      opts.URL,
-		client:   opts.Client,
-		headers:  opts.Headers,
-		callback: opts.Callback,
-		logger:   opts.Logger.WithField("tag", TickGenericHTTPLoggerTag),
+		url:      config.URL,
+		client:   config.Client,
+		headers:  config.Headers,
+		callback: config.Callback,
+		logger:   config.Logger.WithField("tag", TickGenericHTTPLoggerTag),
 	}, nil
 }
 

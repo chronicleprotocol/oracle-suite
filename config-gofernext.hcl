@@ -1,4 +1,4 @@
-# Test config for the gofernext and ghostnext apps. Not ready for production use.
+# Test config for the gofernext apps. Not ready for production use.
 
 gofernext {
   origin "binance" {
@@ -212,13 +212,4 @@ gofernext {
       }
     }
   }
-}
-
-ghostnext {
-  ethereum_key = "default"
-  interval     = 60
-
-  data_models = [
-    "BTC/USD"
-  ]
 }

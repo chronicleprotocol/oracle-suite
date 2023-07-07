@@ -71,7 +71,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 	case *configOriginStatic:
 		return origin.NewStatic(), nil
 	case *configOriginTickGenericJQ:
-		origin, err := origin.NewTickGenericJQ(origin.TickGenericJQOptions{
+		origin, err := origin.NewTickGenericJQ(origin.TickGenericJQConfig{
 			URL:     o.URL,
 			Query:   o.JQ,
 			Headers: nil,

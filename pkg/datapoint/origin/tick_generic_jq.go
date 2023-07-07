@@ -21,7 +21,7 @@ import (
 
 const TickGenericJQLoggerTag = "TICK_GENERIC_JQ_ORIGIN"
 
-type TickGenericJQOptions struct {
+type TickGenericJQConfig struct {
 	// URL is an TickGenericHTTP endpoint that returns JSON data. It may contain
 	// the following variables:
 	//   - ${lcbase} - lower case base asset
@@ -109,20 +109,20 @@ type TickGenericJQ struct {
 // a UNIX timestamp.
 //
 // If JQ query returns multiple values, the dataPoint will be invalid.
-func NewTickGenericJQ(opts TickGenericJQOptions) (*TickGenericJQ, error) {
-	if opts.URL == "" {
+func NewTickGenericJQ(config TickGenericJQConfig) (*TickGenericJQ, error) {
+	if config.URL == "" {
 		return nil, fmt.Errorf("url cannot be empty")
 	}
-	if opts.Query == "" {
+	if config.Query == "" {
 		return nil, fmt.Errorf("query must be specified")
 	}
-	if opts.Client == nil {
-		opts.Client = http.DefaultClient
+	if config.Client == nil {
+		config.Client = http.DefaultClient
 	}
-	if opts.Logger == nil {
-		opts.Logger = null.New()
+	if config.Logger == nil {
+		config.Logger = null.New()
 	}
-	parsed, err := gojq.Parse(opts.Query)
+	parsed, err := gojq.Parse(config.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -136,20 +136,20 @@ func NewTickGenericJQ(opts TickGenericJQOptions) (*TickGenericJQ, error) {
 		return nil, err
 	}
 	jq := &TickGenericJQ{}
-	gh, err := NewTickGenericHTTP(TickGenericHTTPOptions{
-		URL:      opts.URL,
-		Headers:  opts.Headers,
+	gh, err := NewTickGenericHTTP(TickGenericHTTPConfig{
+		URL:      config.URL,
+		Headers:  config.Headers,
 		Callback: jq.handle,
-		Client:   opts.Client,
-		Logger:   opts.Logger,
+		Client:   config.Client,
+		Logger:   config.Logger,
 	})
 	if err != nil {
 		return nil, err
 	}
 	jq.http = gh
-	jq.rawQuery = opts.Query
+	jq.rawQuery = config.Query
 	jq.query = compiled
-	jq.logger = opts.Logger.WithField("tag", TickGenericJQLoggerTag)
+	jq.logger = config.Logger.WithField("tag", TickGenericJQLoggerTag)
 	return jq, nil
 }
 

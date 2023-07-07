@@ -48,7 +48,7 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 		Use:   "price ASSET_PAIR FEED",
 		Args:  cobra.ExactArgs(2),
 		Short: "Pulls latest price for a given pair and feed",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
 				return err
 			}
@@ -77,8 +77,8 @@ func NewPullPriceCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%s\n", string(bts))
-			return
+			_, err = fmt.Printf("%s\n", string(bts))
+			return err
 		},
 	}
 }

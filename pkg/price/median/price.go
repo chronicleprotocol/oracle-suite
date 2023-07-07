@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 	"github.com/defiweb/go-eth/wallet"
 
@@ -56,6 +57,15 @@ type jsonPrice struct {
 	V   string `json:"v"`
 	R   string `json:"r"`
 	S   string `json:"s"`
+}
+
+func (p *Price) SetHexPrice(price string) error {
+	v, err := hexutil.HexToBigInt(price)
+	if err != nil {
+		return err
+	}
+	p.Val = v
+	return nil
 }
 
 func (p *Price) SetFloat64Price(price float64) {

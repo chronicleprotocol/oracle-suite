@@ -44,7 +44,7 @@ func NewIShares(config ISharesConfig) (*IShares, error) {
 	}
 
 	ishares := &IShares{}
-	gh, err := NewTickGenericHTTP(TickGenericHTTPOptions{
+	gh, err := NewTickGenericHTTP(TickGenericHTTPConfig{
 		URL:      config.URL,
 		Headers:  config.Headers,
 		Callback: ishares.handle,
