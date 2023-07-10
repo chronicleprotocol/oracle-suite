@@ -37,6 +37,11 @@ gofernext {
     jq   = ".data[] | select(.symbol == ($lcbase+$lcquote)) | {price: .close, volume: .vol, time: now|round}"
   }
 
+  origin "ishares" {
+    type = "ishares"
+    url = "https://ishares.com/uk/individual/en/products/287340/ishares-treasury-bond-1-3yr-ucits-etf?switchLocale=y&siteEntryPassthrough=true"
+  }
+
   origin "kraken" {
     type = "tick_generic_jq"
     url  = "https://api.kraken.com/0/public/Ticker?pair=$${ucbase}/$${ucquote}"
@@ -97,6 +102,10 @@ gofernext {
       origin "gemini" { query = "ETH/USD" }
       origin "kraken" { query = "ETH/USD" }
     }
+  }
+
+  data_model "IBTA/USD" {
+    origin "ishares" { query = "IBTA/USD" }
   }
 
   data_model "LINK/USD" {

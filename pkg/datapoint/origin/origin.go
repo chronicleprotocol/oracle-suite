@@ -24,6 +24,17 @@ type Origin interface {
 	FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error)
 }
 
+func fillDataPointsWithError(points map[any]datapoint.Point, pairs []value.Pair, err error) map[any]datapoint.Point {
+	var target = points
+	if target == nil {
+		target = make(map[any]datapoint.Point)
+	}
+	for _, pair := range pairs {
+		target[pair] = datapoint.Point{Error: err}
+	}
+	return target
+}
+
 func queryToPairs(query []any) ([]value.Pair, bool) {
 	pairs := make([]value.Pair, len(query))
 	for i, q := range query {

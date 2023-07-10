@@ -33,6 +33,10 @@ type configOriginTickGenericJQ struct {
 	JQ  string `hcl:"jq"`
 }
 
+type configOriginIShares struct {
+	URL string `hcl:"url"`
+}
+
 type configContracts struct {
 	EthereumClient    string            `hcl:"client,label"`
 	ContractAddresses map[string]string `hcl:"addresses"`
@@ -58,6 +62,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginStatic{}
 	case "tick_generic_jq":
 		config = &configOriginTickGenericJQ{}
+	case "ishares":
+		config = &configOriginIShares{}
 	case "wsteth":
 		config = &configOriginWrappedStakedETH{}
 	default:
@@ -96,6 +102,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 			}
 		}
 		return origin, nil
+	case *configOriginIShares:
+		origin, err := origin.NewIShares(origin.ISharesConfig{
+			URL:     o.URL,
+			Headers: nil,
+			Client:  d.HTTPClient,
+			Logger:  d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create ishares origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
 	case *configOriginWrappedStakedETH:
 		origin, err := origin.NewWrappedStakedETH(origin.WrappedStakedETHConfig{
 			Client:            d.Clients[o.Contracts.EthereumClient],
@@ -107,7 +129,7 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 			return nil, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
-				Detail:   fmt.Sprintf("Failed to create uniswap v3 origin: %s", err),
+				Detail:   fmt.Sprintf("Failed to create wsteth v3 origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
