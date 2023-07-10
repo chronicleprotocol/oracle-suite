@@ -17,7 +17,7 @@ import (
 
 const TickGenericHTTPLoggerTag = "TICK_GENERIC_HTTP_ORIGIN"
 
-type HTTPCallback func(ctx context.Context, pairs []value.Pair, data io.Reader) map[any]datapoint.Point
+type HTTPCallback func(ctx context.Context, pairs []value.Pair, data io.Reader) (map[any]datapoint.Point, error)
 
 type TickGenericHTTPConfig struct {
 	// URL is an TickGenericHTTP endpoint that returns JSON data. It may contain
@@ -98,9 +98,7 @@ func (g *TickGenericHTTP) FetchDataPoints(ctx context.Context, query []any) (map
 		// Perform TickGenericHTTP request.
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
-			for _, pair := range pairs {
-				points[pair] = datapoint.Point{Error: err}
-			}
+			fillDataPointsWithError(points, pairs, err)
 			continue
 		}
 		req.Header = g.headers
@@ -109,15 +107,19 @@ func (g *TickGenericHTTP) FetchDataPoints(ctx context.Context, query []any) (map
 		// Execute TickGenericHTTP request.
 		res, err := g.client.Do(req)
 		if err != nil {
-			for _, pair := range pairs {
-				points[pair] = datapoint.Point{Error: err}
-			}
+			fillDataPointsWithError(points, pairs, err)
 			continue
 		}
 		defer res.Body.Close()
 
+		resPoints, err := g.callback(ctx, pairs, res.Body)
+		if err != nil {
+			fillDataPointsWithError(points, pairs, err)
+			continue
+		}
+
 		// Run callback function.
-		for pair, point := range g.callback(ctx, pairs, res.Body) {
+		for pair, point := range resPoints {
 			points[pair] = point
 		}
 	}

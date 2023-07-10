@@ -33,6 +33,10 @@ type configOriginTickGenericJQ struct {
 	JQ  string `hcl:"jq"`
 }
 
+type configOriginIShares struct {
+	URL string `hcl:"url"`
+}
+
 type configContracts struct {
 	EthereumClient    string            `hcl:"client,label"`
 	ContractAddresses map[string]string `hcl:"addresses"`
@@ -60,6 +64,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginTickGenericJQ{}
 	case "curve":
 		config = &configOriginCurve{}
+	case "ishares":
+		config = &configOriginIShares{}
 	default:
 		return hcl.Diagnostics{{
 			Severity: hcl.DiagError,
@@ -108,6 +114,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create curve origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginIShares:
+		origin, err := origin.NewIShares(origin.ISharesConfig{
+			URL:     o.URL,
+			Headers: nil,
+			Client:  d.HTTPClient,
+			Logger:  d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create ishares origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
