@@ -33,6 +33,10 @@ type configOriginTickGenericJQ struct {
 	JQ  string `hcl:"jq"`
 }
 
+type configOriginIShares struct {
+	URL string `hcl:"url"`
+}
+
 type configContracts struct {
 	EthereumClient    string            `hcl:"client,label"`
 	ContractAddresses map[string]string `hcl:"addresses"`
@@ -58,6 +62,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginStatic{}
 	case "tick_generic_jq":
 		config = &configOriginTickGenericJQ{}
+	case "ishares":
+		config = &configOriginIShares{}
 	case "rocketpool":
 		config = &configOriginRocketPool{}
 	default:
@@ -92,6 +98,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create jq origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginIShares:
+		origin, err := origin.NewIShares(origin.ISharesConfig{
+			URL:     o.URL,
+			Headers: nil,
+			Client:  d.HTTPClient,
+			Logger:  d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
