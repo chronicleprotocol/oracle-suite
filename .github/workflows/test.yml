@@ -39,18 +39,18 @@ jobs:
           TEST_REDIS_ADDR: "127.0.0.1:6379"
           TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
-      - name: Run Go Tests (JSON)
-        id: run_go_tests
-        run: go test -json $(go list ./... | grep -v /e2e/) > tests.json
-        env:
-          TEST_REDIS_ADDR: "127.0.0.1:6379"
-          TEST_REDIS_PASS: "password123"
-          TEST_REDIS_DB: 0
-      - name: Annotate Test Results
-        if: ${{ failure() && steps.run_go_tests.outcome == 'failure' }}
-        uses: guyarb/golang-test-annotations@v0.5.1
-        with:
-          test-results: tests.json
+#      - name: Run Go Tests (JSON)
+#        id: run_go_tests
+#        run: go test -json $(go list ./... | grep -v /e2e/) > tests.json
+#        env:
+#          TEST_REDIS_ADDR: "127.0.0.1:6379"
+#          TEST_REDIS_PASS: "password123"
+#          TEST_REDIS_DB: 0
+#      - name: Annotate Test Results
+#        if: ${{ failure() && steps.run_go_tests.outcome == 'failure' }}
+#        uses: guyarb/golang-test-annotations@v0.5.1
+#        with:
+#          test-results: tests.json
   test-e2e-gofer:
     needs: analyze
     name: E2E Tests (Gofer)
