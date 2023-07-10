@@ -159,16 +159,18 @@ func (g *TickGenericJQ) FetchDataPoints(ctx context.Context, query []any) (map[a
 }
 
 //nolint:funlen
-func (g *TickGenericJQ) handle(ctx context.Context, pairs []value.Pair, body io.Reader) map[any]datapoint.Point {
+func (g *TickGenericJQ) handle(
+	ctx context.Context,
+	pairs []value.Pair,
+	body io.Reader,
+) (map[any]datapoint.Point, error) {
+
 	points := make(map[any]datapoint.Point)
 
 	// Parse JSON data.
 	var decoded any
 	if err := json.NewDecoder(body).Decode(&decoded); err != nil {
-		for _, pair := range pairs {
-			points[pair] = datapoint.Point{Error: err}
-		}
-		return points
+		return fillDataPointsWithError(points, pairs, err), err
 	}
 
 	// Run JQ query for each pair and parse the result.
@@ -232,7 +234,7 @@ func (g *TickGenericJQ) handle(ctx context.Context, pairs []value.Pair, body io.
 		point.Value = tick
 		points[pair] = point
 	}
-	return points
+	return points, nil
 }
 
 // anyToTime converts an arbitrary value to a time.Time.
