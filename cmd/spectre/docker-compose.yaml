@@ -4,7 +4,7 @@ services:
     build:
       context: "../.."
       dockerfile: "./cmd/spectre/Dockerfile"
-    environment: # values are set in .env file - it is not included in the repo on purpose
+    environment: # values are set in .env file - not committed on purpose
       CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
       CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
       CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls
