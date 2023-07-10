@@ -21,10 +21,10 @@ jobs:
         with:
           images: ghcr.io/chronicleprotocol/spectre
           tags: |
-            type=semver,pattern={{version}},priority=100
-            type=semver,pattern={{major}}.{{minor}},priority=100
-            type=semver,pattern={{major}},priority=100
-            type=sha,priority=200
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
