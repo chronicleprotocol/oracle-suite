@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
@@ -29,7 +29,7 @@ var exitCode = 0
 func main() {
 	opts := options{
 		Format:  formatTypeValue{format: marshal.NDJSON},
-		Version: suite.Version,
+		Version: cmd.Version,
 	}
 
 	rootCmd := NewRootCommand(&opts)

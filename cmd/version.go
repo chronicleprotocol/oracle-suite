@@ -13,27 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package suite
-
-import (
-	// We need to import embed package to be able to embed files
-	_ "embed"
-	"strings"
-)
-
-const noVersion = "unknown"
+package cmd
 
 // Version is being used in executables
-var Version = noVersion
-
-//go:embed version
-var version string
-
-func init() {
-	if Version == noVersion {
-		if v := strings.Split(version, "\n")[0]; len(v) != 0 {
-			Version = v
-			return
-		}
-	}
-}
+var Version = "unknown"

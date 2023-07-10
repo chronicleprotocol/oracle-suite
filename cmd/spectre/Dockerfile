@@ -6,14 +6,13 @@ WORKDIR /app
 COPY . .
 RUN go mod vendor && mkdir -p dist
 
-ARG APP_VERSION
+ARG APP_VERSION="0.0.0-dev.0"
 RUN CGO_ENABLED=0 go build -v \
-    -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=$APP_VERSION" \
+    -ldflags "-X github.com/chronicleprotocol/oracle-suite/cmd.Version=$APP_VERSION" \
     -o ./dist/spectre \
     ./cmd/spectre
 
 # ----------------------------------------------------------------------------------------
-#FROM alpine:3.16
 FROM gcr.io/distroless/static-debian11
 
 WORKDIR /root
