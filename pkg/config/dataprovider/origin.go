@@ -37,14 +37,19 @@ type configOriginIShares struct {
 	URL string `hcl:"url"`
 }
 
-type configContracts struct {
-	EthereumClient     string            `hcl:"client,label"`
-	ContractAddresses  map[string]string `hcl:"addresses"`
-	ReferenceAddresses map[string]string `hcl:"references"`
+type configBalancerContracts struct {
+	EthereumClient    string            `hcl:"client,label"`
+	ContractAddresses map[string]string `hcl:"addresses"`
+	// `references` are optional, the key should be matched with `addresses` as the additional address.
+	ReferenceAddresses map[string]string `hcl:"references,optional"`
 }
 
 type configOriginBalancer struct {
-	Contracts configContracts `hcl:"contracts,block"`
+	// `addresses` are the pool addresses of WeightedPool2Tokens or MetaStablePool
+	// `references` are used if the pool is MetaStablePool, key of mapping is the same key to `addresses` and
+	// value should be the token0 address of pool.
+	// If the pool is WeightedPool2Tokens, `references` should not contain the reference key of that pool.
+	Contracts configBalancerContracts `hcl:"contracts,block"`
 }
 
 // averageFromBlocks is a list of blocks distances from the latest blocks from

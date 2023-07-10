@@ -5,13 +5,14 @@ gofernext {
     type = "balancerV2"
     contracts "ethereum" {
       addresses = {
-        "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b"
-        "RETH/WETH" = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"
-        "STETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230"
-        "WETH/YFI" = "0x186084ff790c65088ba694df11758fae4943ee9e"
+        "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
+        "RETH/WETH" = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
+        "STETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
+        "WETH/YFI" = "0x186084ff790c65088ba694df11758fae4943ee9e" # WeightedPool2Tokens
       }
       references = {
-        "RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393"
+        "RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
+        "STETH/WETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" # token0 of STETH/WETH
       }
     }
   }
