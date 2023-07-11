@@ -23,7 +23,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
-	"github.com/spf13/pflag"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
@@ -71,26 +70,6 @@ func getEnvVars() cty.Value {
 		envVars[parts[0]] = cty.StringVal(parts[1])
 	}
 	return cty.ObjectVal(envVars)
-}
-
-type Files struct {
-	//TODO: think of ways to make it a Value interface
-	Paths []string
-}
-
-func NewFilesFlagSet(cfp *Files) *pflag.FlagSet {
-	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
-	fs.StringSliceVarP(
-		&cfp.Paths,
-		"config", "c",
-		[]string{"./config.hcl"},
-		"config file",
-	)
-	return fs
-}
-
-func (cf Files) LoadConfigFiles(config any) error {
-	return LoadFiles(config, cf.Paths)
 }
 
 // LoadFiles loads the given paths into the given config, merging contents of

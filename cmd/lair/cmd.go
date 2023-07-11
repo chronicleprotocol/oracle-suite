@@ -21,12 +21,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/lair"
-	logrusFlag "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	logrusFlag "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 )
 
 type options struct {
-	logrusFlag.LoggerFlag
-	ConfigFiles config.Files
+	logrusFlag.LoggerFlags
+	ConfigFiles config.FilesFlags
 	Config      lair.Config
 }
 
@@ -40,7 +40,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(logrusFlag.NewLoggerFlagSet(&opts.LoggerFlag))
+	rootCmd.PersistentFlags().AddFlagSet(logrusFlag.NewLoggerFlagSet(&opts.LoggerFlags))
 	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
 
 	return rootCmd

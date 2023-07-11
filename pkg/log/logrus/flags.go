@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package flag
+package logrus
 
 import (
 	"fmt"
@@ -23,16 +23,15 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	logrus2 "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/formatter"
 )
 
-type LoggerFlag struct {
+type LoggerFlags struct {
 	verbosityFlag
 	formatterFlag
 }
 
-func NewLoggerFlagSet(logger *LoggerFlag) *pflag.FlagSet {
+func NewLoggerFlagSet(logger *LoggerFlags) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("log", pflag.PanicOnError)
 	fs.VarP(
 		&logger.verbosityFlag,
@@ -49,11 +48,11 @@ func NewLoggerFlagSet(logger *LoggerFlag) *pflag.FlagSet {
 	return fs
 }
 
-func (logger *LoggerFlag) Logger() log.Logger {
+func (logger *LoggerFlags) Logger() log.Logger {
 	l := logrus.New()
 	l.SetLevel(logger.Verbosity())
 	l.SetFormatter(logger.Formatter())
-	return logrus2.New(l)
+	return New(l)
 }
 
 const defaultVerbosity = logrus.InfoLevel

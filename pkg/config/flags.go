@@ -13,41 +13,28 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package config
 
 import (
-	"github.com/spf13/cobra"
-
-	"github.com/chronicleprotocol/oracle-suite/cmd"
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
+	"github.com/spf13/pflag"
 )
 
-type options struct {
-	logrus.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Config      Config
+type FilesFlags struct {
+	//TODO: think of ways to make it a Value interface
+	Paths []string
 }
 
-func NewRootCommand() *cobra.Command {
-	var opts options
-
-	rootCmd := &cobra.Command{
-		Use:           "toolbox",
-		Version:       cmd.Version,
-		Short:         "",
-		Long:          ``,
-		SilenceErrors: false,
-		SilenceUsage:  true,
-	}
-
-	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
-
-	rootCmd.AddCommand(
-		NewMedianCmd(&opts),
-		NewPriceCmd(&opts),
-		NewSignerCmd(&opts),
+func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
+	fs.StringSliceVarP(
+		&cfp.Paths,
+		"config", "c",
+		[]string{"./config.hcl"},
+		"config file",
 	)
+	return fs
+}
 
-	return rootCmd
+func (cf FilesFlags) LoadConfigFiles(config any) error {
+	return LoadFiles(config, cf.Paths)
 }

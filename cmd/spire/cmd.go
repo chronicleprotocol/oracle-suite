@@ -20,12 +20,12 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 )
 
 type options struct {
-	flag.LoggerFlag
-	ConfigFiles       config.Files
+	logrus.LoggerFlags
+	ConfigFiles       config.FilesFlags
 	Config            spire.Config
 	Version           string
 	TransportOverride string
@@ -40,7 +40,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
+	rootCmd.PersistentFlags().AddFlagSet(logrus.NewLoggerFlagSet(&opts.LoggerFlags))
 	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
 
 	rootCmd.AddCommand(

@@ -21,14 +21,14 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
 // These are the command options that can be set by CLI flags.
 type options struct {
-	flag.LoggerFlag
-	ConfigFiles config.Files
+	logrus.LoggerFlags
+	ConfigFiles config.FilesFlags
 	Format      formatTypeValue
 	Config      gofer.Config
 	NoRPC       bool
