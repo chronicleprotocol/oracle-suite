@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
@@ -27,11 +28,11 @@ import (
 // These are the command options that can be set by CLI flags.
 type options struct {
 	flag.LoggerFlag
-	ConfigFilePath []string
-	Format         formatTypeValue
-	Config         gofer.Config
-	NoRPC          bool
-	Version        string
+	config.ConfigFiles
+	Format  formatTypeValue
+	Config  gofer.Config
+	NoRPC   bool
+	Version string
 }
 
 var formatMap = map[marshal.FormatType]string{

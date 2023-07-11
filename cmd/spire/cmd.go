@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,14 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
 type options struct {
 	flag.LoggerFlag
-	ConfigFilePath    []string
+	config.ConfigFiles
 	Config            spire.Config
 	Version           string
 	TransportOverride string
@@ -40,13 +41,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringSliceVarP(
-		&opts.ConfigFilePath,
-		"config",
-		"c",
-		[]string{"./config.hcl"},
-		"spire config file",
-	)
+	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFilesFlagSet(&opts.ConfigFiles))
 
 	rootCmd.AddCommand(
 		NewAgentCmd(opts),

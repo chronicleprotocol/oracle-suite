@@ -14,23 +14,3 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package config
-
-import (
-	"github.com/spf13/pflag"
-)
-
-type ConfigFiles struct {
-	// TODO: think of ways to make it a Value interface and maybe add a function to parse the config files from here
-	Paths []string
-}
-
-func NewConfigFileFlagSet(cfp *ConfigFiles) *pflag.FlagSet {
-	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
-	fs.StringSliceVarP(
-		&cfp.Paths,
-		"config", "c",
-		[]string{"./config.hcl"},
-		"config file",
-	)
-	return fs
-}

@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -23,7 +23,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
@@ -39,8 +38,7 @@ type Config struct {
 }
 
 func PrepareSupervisor(_ context.Context, opts *options) (*pkgSupervisor.Supervisor, error) {
-	err := config.LoadFiles(&opts.Config, opts.ConfigFilePath)
-	if err != nil {
+	if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{

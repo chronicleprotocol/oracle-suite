@@ -18,6 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
@@ -36,13 +37,7 @@ with aggregates that increase reliability in the DeFi environment.`,
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringSliceVarP(
-		&opts.ConfigFilePath,
-		"config",
-		"c",
-		[]string{"./config.hcl"},
-		"config file",
-	)
+	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFilesFlagSet(&opts.ConfigFiles))
 	rootCmd.PersistentFlags().VarP(
 		&opts.Format,
 		"format",

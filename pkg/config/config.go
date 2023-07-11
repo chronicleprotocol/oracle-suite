@@ -23,6 +23,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
+	"github.com/spf13/pflag"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
@@ -60,6 +61,38 @@ var hclContext = &hcl.EvalContext{
 	},
 }
 
+// getEnvVars retrieves environment variables from the system and returns
+// them as a cty object type, where keys are variable names and values are
+// their corresponding values.
+func getEnvVars() cty.Value {
+	envVars := make(map[string]cty.Value)
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		envVars[parts[0]] = cty.StringVal(parts[1])
+	}
+	return cty.ObjectVal(envVars)
+}
+
+type ConfigFiles struct {
+	// TODO: think of ways to make it a Value interface
+	Paths []string
+}
+
+func NewConfigFilesFlagSet(cfp *ConfigFiles) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
+	fs.StringSliceVarP(
+		&cfp.Paths,
+		"config", "c",
+		[]string{"./config.hcl"},
+		"config file",
+	)
+	return fs
+}
+
+func (cf ConfigFiles) LoadConfigFiles(config any) error {
+	return LoadFiles(config, cf.Paths)
+}
+
 // LoadFiles loads the given paths into the given config, merging contents of
 // multiple HCL files specified by the "include" attribute using glob patterns,
 // and expanding dynamic blocks before decoding the HCL content.
@@ -86,16 +119,4 @@ func LoadFiles(config any, paths []string) error {
 		return diags
 	}
 	return nil
-}
-
-// getEnvVars retrieves environment variables from the system and returns
-// them as a cty object type, where keys are variable names and values are
-// their corresponding values.
-func getEnvVars() cty.Value {
-	envVars := make(map[string]cty.Value)
-	for _, env := range os.Environ() {
-		parts := strings.SplitN(env, "=", 2)
-		envVars[parts[0]] = cty.StringVal(parts[1])
-	}
-	return cty.ObjectVal(envVars)
 }
