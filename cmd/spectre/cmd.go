@@ -26,8 +26,8 @@ import (
 
 type options struct {
 	flag.LoggerFlag
-	config.ConfigFiles
-	Config spectre.Config
+	ConfigFiles config.Files
+	Config      spectre.Config
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -39,7 +39,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
 
 	return rootCmd
 }

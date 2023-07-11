@@ -33,10 +33,10 @@ const (
 // These are the command options that can be set by CLI flags.
 type options struct {
 	flag.LoggerFlag
-	config.ConfigFiles
-	Format  formatTypeValue
-	Config  gofer.Config
-	Version string
+	ConfigFiles config.Files
+	Format      formatTypeValue
+	Config      gofer.Config
+	Version     string
 }
 
 type formatTypeValue struct {

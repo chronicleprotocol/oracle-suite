@@ -37,7 +37,7 @@ with aggregates that increase reliability in the DeFi environment.`,
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
 	rootCmd.PersistentFlags().VarP(
 		&opts.Format,
 		"format",

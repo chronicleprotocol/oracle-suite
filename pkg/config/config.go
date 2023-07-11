@@ -73,12 +73,12 @@ func getEnvVars() cty.Value {
 	return cty.ObjectVal(envVars)
 }
 
-type ConfigFiles struct {
-	// TODO: think of ways to make it a Value interface
+type Files struct {
+	//TODO: think of ways to make it a Value interface
 	Paths []string
 }
 
-func NewConfigFilesFlagSet(cfp *ConfigFiles) *pflag.FlagSet {
+func NewFilesFlagSet(cfp *Files) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
 		&cfp.Paths,
@@ -89,7 +89,7 @@ func NewConfigFilesFlagSet(cfp *ConfigFiles) *pflag.FlagSet {
 	return fs
 }
 
-func (cf ConfigFiles) LoadConfigFiles(config any) error {
+func (cf Files) LoadConfigFiles(config any) error {
 	return LoadFiles(config, cf.Paths)
 }
 

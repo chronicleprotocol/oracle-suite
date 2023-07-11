@@ -25,8 +25,8 @@ import (
 
 type options struct {
 	flag.LoggerFlag
-	config.ConfigFiles
-	Config Config
+	ConfigFiles config.Files
+	Config      Config
 }
 
 func NewRootCommand() *cobra.Command {
@@ -41,7 +41,7 @@ func NewRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
 
 	rootCmd.AddCommand(
 		NewMedianCmd(&opts),

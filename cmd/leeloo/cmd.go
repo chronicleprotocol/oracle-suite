@@ -26,8 +26,8 @@ import (
 
 type options struct {
 	logrusFlag.LoggerFlag
-	config.ConfigFiles
-	Config leeloo.Config
+	ConfigFiles config.Files
+	Config      leeloo.Config
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -41,7 +41,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(logrusFlag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
 
 	return rootCmd
 }
