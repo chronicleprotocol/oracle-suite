@@ -19,8 +19,6 @@ jobs:
         include:
           - dockerfile: ./Dockerfile
             image: ghcr.io/chronicleprotocol/oracle-suite
-          #          - dockerfile: ./Dockerfile-gofer
-          #            image: ghcr.io/chronicleprotocol/gofer
           - dockerfile: ./Dockerfile-ghost
             image: ghcr.io/chronicleprotocol/ghost
           - dockerfile: ./Dockerfile-lair
@@ -29,10 +27,6 @@ jobs:
             image: ghcr.io/chronicleprotocol/leeloo
           - dockerfile: ./Dockerfile-rpc-splitter
             image: ghcr.io/chronicleprotocol/rpc-splitter
-    #          - dockerfile: ./Dockerfile-spectre
-    #            image: ghcr.io/chronicleprotocol/spectre
-    #          - dockerfile: ./Dockerfile-spire
-    #            image: ghcr.io/chronicleprotocol/spire
     permissions:
       contents: read
       packages: write
@@ -53,11 +47,11 @@ jobs:
         with:
           images: ${{ matrix.image }}
           tags: |
-            type=raw,value=latest
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+            type=raw,value=latest
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
