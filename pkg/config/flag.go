@@ -13,33 +13,24 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package config
 
 import (
-	"github.com/spf13/cobra"
-
-	"github.com/chronicleprotocol/oracle-suite/cmd"
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	"github.com/spf13/pflag"
 )
 
-type options struct {
-	flag.LoggerFlag
-	config.ConfigFiles
-	Config spectre.Config
+type ConfigFiles struct {
+	// TODO: think of ways to make it a Value interface and maybe add a function to parse the config files from here
+	Paths []string
 }
 
-func NewRootCommand(opts *options) *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use:           "spectre",
-		Version:       cmd.Version,
-		SilenceErrors: false,
-		SilenceUsage:  true,
-	}
-
-	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewConfigFileFlagSet(&opts.ConfigFiles))
-
-	return rootCmd
+func NewConfigFileFlagSet(cfp *ConfigFiles) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
+	fs.StringSliceVarP(
+		&cfp.Paths,
+		"config", "c",
+		[]string{"./config.hcl"},
+		"config file",
+	)
+	return fs
 }
