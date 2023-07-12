@@ -26,10 +26,9 @@ import (
 func NewRunCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
-		Args:    cobra.ExactArgs(0),
 		Aliases: []string{"agent"},
-		Short:   "",
-		Long:    ``,
+		Short:   "Run Feed agent",
+		Args:    cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
 			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 				return err

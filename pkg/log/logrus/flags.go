@@ -96,7 +96,7 @@ func (f *verbosityFlag) Type() string {
 }
 
 func (f *verbosityFlag) Verbosity() logrus.Level {
-	if f.verbosity == 0 {
+	if !f.wasSet {
 		return defaultVerbosity
 	}
 	return f.verbosity

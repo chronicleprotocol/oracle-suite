@@ -71,8 +71,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./cmd/${{ inputs.application }}/Dockerfile
+          file: ./cmd/Dockerfile
           build-args: |
+            APP_NAME=${{ inputs.application }}
             APP_VERSION=${{ inputs.version != '' && inputs.version || steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
