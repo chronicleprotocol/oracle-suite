@@ -26,16 +26,14 @@ import (
 func NewRunCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
-		Args:    cobra.ExactArgs(0),
+		Args:    cobra.NoArgs,
 		Aliases: []string{"agent"},
-		Short:   "",
-		Long:    ``,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.Services(opts.Logger())
+			services, err := opts.Config.AgentServices(opts.Logger())
 			if err != nil {
 				return err
 			}

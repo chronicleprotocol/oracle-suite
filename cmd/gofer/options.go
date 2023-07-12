@@ -28,11 +28,11 @@ import (
 // These are the command options that can be set by CLI flags.
 type options struct {
 	logrus.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Format      formatTypeValue
-	Config      gofer.Config
-	NoRPC       bool
-	Version     string
+	config.FilesFlags
+	Format  formatTypeValue
+	Config  gofer.Config
+	NoRPC   bool
+	Version string
 }
 
 var formatMap = map[marshal.FormatType]string{
@@ -67,7 +67,7 @@ func (v *formatTypeValue) Set(s string) error {
 		}
 	}
 
-	return fmt.Errorf("unsupported format")
+	return fmt.Errorf("unsupported format: %s", s)
 }
 
 func (v *formatTypeValue) Type() string {

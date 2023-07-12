@@ -73,7 +73,7 @@ func marshalModels(models map[string]datapoint.Model, format string) ([]byte, er
 	case formatJSON:
 		return marshalModelsJSON(models)
 	default:
-		return nil, fmt.Errorf("unsupported format")
+		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
 }
 

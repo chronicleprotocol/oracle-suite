@@ -18,10 +18,10 @@ WORKDIR /root
 COPY --from=builder /app/dist/* /usr/local/bin/
 
 ARG APP_NAME
-COPY ./config-*.hcl ./cmd/${APP_NAME}/config.hcl /usr/share/oracle-suite/
+COPY ./config-*.hcl ./cmd/${APP_NAME}/config.hcl /usr/share/chronicle-suite/
 
 ENTRYPOINT ["/usr/local/bin/chronicle-oracle-toolkit"]
-CMD ["-c", "/usr/share/oracle-suite/config.hcl", "run"]
+CMD ["-c", "/usr/share/chronicle-suite/config.hcl", "run"]
 
 # libp2p
 EXPOSE 8000

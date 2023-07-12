@@ -26,22 +26,20 @@ import (
 
 type options struct {
 	logrusFlag.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Config      lair.Config
+	config.FilesFlags
+	Config lair.Config
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "lair",
 		Version:       cmd.Version,
-		Short:         "",
-		Long:          ``,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(logrusFlag.NewLoggerFlagSet(&opts.LoggerFlags))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.FilesFlags))
 
 	return rootCmd
 }

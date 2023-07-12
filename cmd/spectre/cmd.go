@@ -26,8 +26,8 @@ import (
 
 type options struct {
 	logrus.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Config      spectre.Config
+	config.FilesFlags
+	Config spectre.Config
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -39,7 +39,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(logrus.NewLoggerFlagSet(&opts.LoggerFlags))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.FilesFlags))
 
 	return rootCmd
 }

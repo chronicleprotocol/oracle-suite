@@ -33,10 +33,10 @@ const (
 // These are the command options that can be set by CLI flags.
 type options struct {
 	logrus.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Format      formatTypeValue
-	Config      gofer.Config
-	Version     string
+	config.FilesFlags
+	Format  formatTypeValue
+	Config  gofer.Config
+	Version string
 }
 
 type formatTypeValue struct {
@@ -56,7 +56,7 @@ func (v *formatTypeValue) Set(s string) error {
 	case formatJSON, "":
 		v.format = formatJSON
 	default:
-		return fmt.Errorf("unsupported format")
+		return fmt.Errorf("unsupported format: %s", s)
 	}
 	return nil
 }

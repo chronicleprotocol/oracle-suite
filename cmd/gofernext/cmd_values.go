@@ -73,7 +73,7 @@ func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte
 	case formatJSON:
 		return marshalDataPointsJSON(points)
 	default:
-		return nil, fmt.Errorf("unsupported format")
+		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
 }
 

@@ -141,7 +141,7 @@ func (f *formatterFlag) String() string {
 func (f *formatterFlag) Set(v string) error {
 	v = strings.ToLower(v)
 	if _, ok := formattersMap[v]; !ok {
-		return fmt.Errorf("unsupported format")
+		return fmt.Errorf("unsupported format: %s", v)
 	}
 	f.format = v
 	return nil

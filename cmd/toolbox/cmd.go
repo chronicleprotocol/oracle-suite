@@ -25,8 +25,8 @@ import (
 
 type options struct {
 	logrus.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Config      Config
+	config.FilesFlags
+	Config Config
 }
 
 func NewRootCommand() *cobra.Command {
@@ -35,13 +35,11 @@ func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "toolbox",
 		Version:       cmd.Version,
-		Short:         "",
-		Long:          ``,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.FilesFlags))
 
 	rootCmd.AddCommand(
 		NewMedianCmd(&opts),

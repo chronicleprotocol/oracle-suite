@@ -25,22 +25,20 @@ import (
 
 type options struct {
 	logrus.LoggerFlags
-	ConfigFiles config.FilesFlags
-	Config      Config
+	config.FilesFlags
+	Config Config
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "spire-bootstrap",
 		Version:       cmd.Version,
-		Short:         "",
-		Long:          ``,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(logrus.NewLoggerFlagSet(&opts.LoggerFlags))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.FilesFlags))
 
 	return rootCmd
 }

@@ -35,7 +35,6 @@ func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "spire",
 		Version:       opts.Version,
-		Short:         "",
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}

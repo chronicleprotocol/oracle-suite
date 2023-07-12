@@ -8,7 +8,7 @@ services:
         APP_NAME: "ghost"
         APP_VERSION: "0.0.0-dev.0"
     # Default command is set in Dockerfile - you can override it here to use a different config file or command
-    #command: ["-c", "/usr/share/oracle-suite/config.hcl", "run"]
+    #command: ["-c", "/usr/share/chronicle-suite/config.hcl", "run"]
     environment: # values are set in .env file - not committed on purpose
       CFG_FEEDS: "stage"
 

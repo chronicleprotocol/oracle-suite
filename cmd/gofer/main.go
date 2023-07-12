@@ -36,7 +36,7 @@ func main() {
 	rootCmd.AddCommand(
 		NewPairsCmd(&opts),
 		NewPricesCmd(&opts),
-		NewAgentCmd(&opts),
+		NewRunCmd(&opts),
 	)
 
 	if err := rootCmd.Execute(); err != nil {
