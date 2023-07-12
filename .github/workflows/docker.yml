@@ -1,6 +1,13 @@
-name: Build & Publish Docker Image
+name: Publish Docker Image
 on:
-  workflow_dispatch: # Manual trigger
+  workflow_call:
+    inputs:
+      application:
+        description: 'Application Name'
+        type: string
+        required: true
+
+  workflow_dispatch:
     inputs:
       version:
         description: 'New Version (no `v` prefix)'
@@ -29,9 +36,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    #    strategy:
-    #      matrix:
-    #        application:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
