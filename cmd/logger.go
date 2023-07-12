@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package logrus
+package cmd
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	logrus2 "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/formatter"
 )
 
@@ -52,7 +53,7 @@ func (logger *LoggerFlags) Logger() log.Logger {
 	l := logrus.New()
 	l.SetLevel(logger.Verbosity())
 	l.SetFormatter(logger.Formatter())
-	return New(l)
+	return logrus2.New(l)
 }
 
 const defaultVerbosity = logrus.InfoLevel

@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 )
 
 const (
@@ -32,8 +31,8 @@ const (
 
 // These are the command options that can be set by CLI flags.
 type options struct {
-	logrus.LoggerFlags
-	config.FilesFlags
+	cmd.LoggerFlags
+	cmd.FilesFlags
 	Format  formatTypeValue
 	Config  gofer.Config
 	Version string
@@ -44,6 +43,9 @@ type formatTypeValue struct {
 }
 
 func (v *formatTypeValue) String() string {
+	if v.format == "" {
+		return formatPlain
+	}
 	return v.format
 }
 
@@ -53,7 +55,7 @@ func (v *formatTypeValue) Set(s string) error {
 		v.format = formatPlain
 	case formatTrace:
 		v.format = formatTrace
-	case formatJSON, "":
+	case formatJSON:
 		v.format = formatJSON
 	default:
 		return fmt.Errorf("unsupported format: %s", s)

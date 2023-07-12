@@ -13,10 +13,12 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package config
+package cmd
 
 import (
 	"github.com/spf13/pflag"
+
+	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
 type FilesFlags struct {
@@ -36,5 +38,5 @@ func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
 }
 
 func (cf FilesFlags) LoadConfigFiles(config any) error {
-	return LoadFiles(config, cf.Paths)
+	return config2.LoadFiles(config, cf.Paths)
 }

@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/cmd"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 )
 
 type options struct {
@@ -29,7 +28,7 @@ type options struct {
 	TotalTimeoutSec    int
 	MaxBlocksBehind    int
 	EthRPCURLs         []string
-	logrus.LoggerFlags
+	cmd.LoggerFlags
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -42,7 +41,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(logrus.NewLoggerFlagSet(&opts.LoggerFlags))
+	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.Listen,
 		"listen",

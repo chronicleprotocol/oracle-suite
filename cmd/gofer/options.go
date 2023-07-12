@@ -19,16 +19,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
 // These are the command options that can be set by CLI flags.
 type options struct {
-	logrus.LoggerFlags
-	config.FilesFlags
+	cmd.LoggerFlags
+	cmd.FilesFlags
 	Format  formatTypeValue
 	Config  gofer.Config
 	NoRPC   bool

@@ -36,7 +36,6 @@ func NewModelsCmd(opts *options) *cobra.Command {
 		Aliases: []string{"model"},
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "List all supported models.",
-		Long:    `List all supported models.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
 			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 				return err
@@ -54,7 +53,7 @@ func NewModelsCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalModels(models, opts.Format.format)
+			marshaled, err := marshalModels(models, opts.Format.String())
 			if err != nil {
 				return err
 			}
