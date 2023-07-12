@@ -24,8 +24,6 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
 func NewPullCmd(opts *options) *cobra.Command {
@@ -96,7 +94,7 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "Pulls all prices",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

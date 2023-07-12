@@ -25,7 +25,7 @@ import (
 
 type options struct {
 	logrus.LoggerFlags
-	ConfigFiles       config.FilesFlags
+	config.FilesFlags
 	Config            spire.Config
 	Version           string
 	TransportOverride string
@@ -40,7 +40,7 @@ func NewRootCommand(opts *options) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(logrus.NewLoggerFlagSet(&opts.LoggerFlags))
-	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.ConfigFiles))
+	rootCmd.PersistentFlags().AddFlagSet(config.NewFilesFlagSet(&opts.FilesFlags))
 
 	rootCmd.AddCommand(
 		NewAgentCmd(opts),
