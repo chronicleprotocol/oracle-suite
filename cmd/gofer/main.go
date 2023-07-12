@@ -16,10 +16,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
@@ -31,12 +33,17 @@ func main() {
 		Format:  formatTypeValue{format: marshal.NDJSON},
 		Version: cmd.Version,
 	}
+	opts2 := options2{
+		Version: cmd.Version,
+	}
 
 	rootCmd := NewRootCommand(&opts)
 	rootCmd.AddCommand(
 		NewPairsCmd(&opts),
 		NewPricesCmd(&opts),
 		NewRunCmd(&opts),
+		NewModelsCmd(&opts2),
+		NewDataCmd(&opts2),
 	)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -46,4 +53,11 @@ func main() {
 		}
 	}
 	os.Exit(exitCode)
+}
+
+func getModelsNames(ctx context.Context, provider datapoint.Provider, args []string) []string {
+	if len(args) == 0 {
+		return provider.ModelNames(ctx)
+	}
+	return args
 }

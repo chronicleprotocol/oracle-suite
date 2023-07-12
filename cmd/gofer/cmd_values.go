@@ -30,7 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
-func NewDataCmd(opts *options) *cobra.Command {
+func NewDataCmd(opts *options2) *cobra.Command {
 	return &cobra.Command{
 		Use:     "data [models...]",
 		Aliases: []string{"data"},
@@ -54,7 +54,7 @@ func NewDataCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalDataPoints(ticks, opts.Format.format)
+			marshaled, err := marshalDataPoints(ticks, opts.Format.String())
 			if err != nil {
 				return err
 			}

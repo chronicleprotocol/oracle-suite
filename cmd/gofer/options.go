@@ -21,6 +21,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
+	gofer2 "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
@@ -71,4 +72,48 @@ func (v *formatTypeValue) Set(s string) error {
 
 func (v *formatTypeValue) Type() string {
 	return "plain|trace|json|ndjson"
+}
+
+const (
+	formatPlain = "plain"
+	formatTrace = "trace"
+	formatJSON  = "json"
+)
+
+// These are the command options that can be set by CLI flags.
+type options2 struct {
+	cmd.LoggerFlags
+	cmd.FilesFlags
+	Format  formatTypeValue2
+	Config  gofer2.Config
+	Version string
+}
+
+type formatTypeValue2 struct {
+	format string
+}
+
+func (v *formatTypeValue2) String() string {
+	if v.format == "" {
+		return formatPlain
+	}
+	return v.format
+}
+
+func (v *formatTypeValue2) Set(s string) error {
+	switch strings.ToLower(s) {
+	case formatPlain:
+		v.format = formatPlain
+	case formatTrace:
+		v.format = formatTrace
+	case formatJSON:
+		v.format = formatJSON
+	default:
+		return fmt.Errorf("unsupported format: %s", s)
+	}
+	return nil
+}
+
+func (v *formatTypeValue2) Type() string {
+	return "plain|trace|json"
 }

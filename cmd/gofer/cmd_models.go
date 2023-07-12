@@ -30,7 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
-func NewModelsCmd(opts *options) *cobra.Command {
+func NewModelsCmd(opts *options2) *cobra.Command {
 	return &cobra.Command{
 		Use:     "models [MODEL...]",
 		Aliases: []string{"model"},
