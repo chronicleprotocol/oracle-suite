@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/defiweb/go-anymapper v0.0.0-20230411235658-fe3bd78a1f8e
-	github.com/defiweb/go-eth v0.0.0-20230621185324-b01633f6f189
+	github.com/defiweb/go-eth v0.1.0
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/hashicorp/go-multierror v1.1.1

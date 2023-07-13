@@ -18,13 +18,13 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 )
 
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "gofer",
-		Version: opts.Version,
+		Version: cmd.Version,
 		Short:   "Tool for providing reliable data in the blockchain ecosystem",
 		Long: `
 Gofer is a tool that provides reliable asset prices taken from various sources.
@@ -35,14 +35,8 @@ with aggregates that increase reliability in the DeFi environment.`,
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringSliceVarP(
-		&opts.ConfigFilePath,
-		"config",
-		"c",
-		[]string{"./config.hcl"},
-		"config file",
-	)
+	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
+	rootCmd.PersistentFlags().AddFlagSet(cmd.NewFilesFlagSet(&opts.FilesFlags))
 	rootCmd.PersistentFlags().VarP(
 		&opts.Format,
 		"format",

@@ -37,16 +37,43 @@ type configOriginIShares struct {
 	URL string `hcl:"url"`
 }
 
+type configBalancerContracts struct {
+	EthereumClient    string            `hcl:"client,label"`
+	ContractAddresses map[string]string `hcl:"addresses"`
+	// `references` are optional, the key should be matched with `addresses` as the additional address.
+	ReferenceAddresses map[string]string `hcl:"references,optional"`
+}
+
+type configOriginBalancer struct {
+	// `addresses` are the pool addresses of WeightedPool2Tokens or MetaStablePool
+	// `references` are used if the pool is MetaStablePool, key of mapping is the same key to `addresses` and
+	// value should be the token0 address of pool.
+	// If the pool is WeightedPool2Tokens, `references` should not contain the reference key of that pool.
+	Contracts configBalancerContracts `hcl:"contracts,block"`
+}
+
 type configContracts struct {
 	EthereumClient    string            `hcl:"client,label"`
 	ContractAddresses map[string]string `hcl:"addresses"`
+}
+
+type configOriginCurve struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
+type configOriginRocketPool struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
+type configOriginSushiswap struct {
+	Contracts configContracts `hcl:"contracts,block"`
 }
 
 type configOriginUniswapV3 struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
 
-type configOriginSushiswap struct {
+type configOriginWrappedStakedETH struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
 
@@ -66,12 +93,20 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginStatic{}
 	case "tick_generic_jq":
 		config = &configOriginTickGenericJQ{}
+	case "balancerV2":
+		config = &configOriginBalancer{}
+	case "curve":
+		config = &configOriginCurve{}
 	case "ishares":
 		config = &configOriginIShares{}
+	case "rocketpool":
+		config = &configOriginRocketPool{}
 	case "sushiswap":
 		config = &configOriginSushiswap{}
 	case "uniswapV3":
 		config = &configOriginUniswapV3{}
+	case "wsteth":
+		config = &configOriginWrappedStakedETH{}
 	default:
 		return hcl.Diagnostics{{
 			Severity: hcl.DiagError,
@@ -108,6 +143,39 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 			}
 		}
 		return origin, nil
+	case *configOriginBalancer:
+		origin, err := origin.NewBalancerV2(origin.BalancerV2Config{
+			Client:             d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses:  o.Contracts.ContractAddresses,
+			ReferenceAddresses: o.Contracts.ReferenceAddresses,
+			Blocks:             averageFromBlocks,
+			Logger:             d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create balancer origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginCurve:
+		origin, err := origin.NewCurve(origin.CurveConfig{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create curve origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
 	case *configOriginIShares:
 		origin, err := origin.NewIShares(origin.ISharesConfig{
 			URL:     o.URL,
@@ -120,6 +188,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create ishares origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginRocketPool:
+		origin, err := origin.NewRocketPool(origin.RocketPoolConfig{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create rocketpool origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
@@ -152,6 +236,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create uniswap v3 origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginWrappedStakedETH:
+		origin, err := origin.NewWrappedStakedETH(origin.WrappedStakedETHConfig{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create wsteth v3 origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}

@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package ghostnext
 
 import (
@@ -21,7 +36,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-// Config is the configuration for Lair.
+// Config is the configuration for Ghost.
 type Config struct {
 	Ghost     feedConfig.Config         `hcl:"ghostnext,block"`
 	Gofer     dataproviderConfig.Config `hcl:"gofernext,block"`
@@ -32,33 +47,6 @@ type Config struct {
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
 	Content hcl.BodyContent `hcl:",content"`
-}
-
-// Services returns the services that are configured from the Config struct.
-type Services struct {
-	Feed      *feed.Feed
-	Transport pkgTransport.Transport
-	Logger    log.Logger
-
-	supervisor *pkgSupervisor.Supervisor
-}
-
-// Start implements the supervisor.Service interface.
-func (s *Services) Start(ctx context.Context) error {
-	if s.supervisor != nil {
-		return fmt.Errorf("services already started")
-	}
-	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Transport, s.Feed, sysmon.New(time.Minute, s.Logger))
-	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
-		s.supervisor.Watch(l)
-	}
-	return s.supervisor.Start(ctx)
-}
-
-// Wait implements the supervisor.Service interface.
-func (s *Services) Wait() <-chan error {
-	return s.supervisor.Wait()
 }
 
 // Services returns the services configured for Lair.
@@ -110,4 +98,31 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 		Transport: transport,
 		Logger:    logger,
 	}, nil
+}
+
+// Services returns the services that are configured from the Config struct.
+type Services struct {
+	Feed      *feed.Feed
+	Transport pkgTransport.Transport
+	Logger    log.Logger
+
+	supervisor *pkgSupervisor.Supervisor
+}
+
+// Start implements the supervisor.Service interface.
+func (s *Services) Start(ctx context.Context) error {
+	if s.supervisor != nil {
+		return fmt.Errorf("services already started")
+	}
+	s.supervisor = pkgSupervisor.New(s.Logger)
+	s.supervisor.Watch(s.Transport, s.Feed, sysmon.New(time.Minute, s.Logger))
+	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
+		s.supervisor.Watch(l)
+	}
+	return s.supervisor.Start(ctx)
+}
+
+// Wait implements the supervisor.Service interface.
+func (s *Services) Wait() <-chan error {
+	return s.supervisor.Wait()
 }

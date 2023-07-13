@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -17,13 +17,19 @@ package main
 
 import (
 	"os"
-
-	suite "github.com/chronicleprotocol/oracle-suite"
 )
 
 func main() {
-	opts := options{Version: suite.Version}
+	var opts options
 	rootCmd := NewRootCommand(&opts)
+
+	rootCmd.AddCommand(
+		NewAgentCmd(&opts),
+		NewStreamCmd(&opts),
+		NewPullCmd(&opts),
+		NewPushCmd(&opts),
+		NewBootstrapCmd(&opts),
+	)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

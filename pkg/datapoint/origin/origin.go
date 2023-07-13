@@ -48,6 +48,8 @@ func queryToPairs(query []any) ([]value.Pair, bool) {
 	return pairs, true
 }
 
+const ether = 1e18
+
 type ContractAddresses map[value.Pair]types.Address
 
 func convertAddressMap(addresses map[string]string) (ContractAddresses, error) {

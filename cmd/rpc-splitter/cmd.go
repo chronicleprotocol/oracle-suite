@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -18,8 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 )
 
 type options struct {
@@ -29,20 +28,20 @@ type options struct {
 	TotalTimeoutSec    int
 	MaxBlocksBehind    int
 	EthRPCURLs         []string
-	flag.LoggerFlag
+	cmd.LoggerFlags
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "rpc-splitter",
-		Version:       suite.Version,
+		Version:       cmd.Version,
 		Short:         "",
 		Long:          ``,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
+	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
 	rootCmd.PersistentFlags().StringVarP(
 		&opts.Listen,
 		"listen",

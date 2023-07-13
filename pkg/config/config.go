@@ -60,6 +60,18 @@ var hclContext = &hcl.EvalContext{
 	},
 }
 
+// getEnvVars retrieves environment variables from the system and returns
+// them as a cty object type, where keys are variable names and values are
+// their corresponding values.
+func getEnvVars() cty.Value {
+	envVars := make(map[string]cty.Value)
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		envVars[parts[0]] = cty.StringVal(parts[1])
+	}
+	return cty.ObjectVal(envVars)
+}
+
 // LoadFiles loads the given paths into the given config, merging contents of
 // multiple HCL files specified by the "include" attribute using glob patterns,
 // and expanding dynamic blocks before decoding the HCL content.
@@ -86,16 +98,4 @@ func LoadFiles(config any, paths []string) error {
 		return diags
 	}
 	return nil
-}
-
-// getEnvVars retrieves environment variables from the system and returns
-// them as a cty object type, where keys are variable names and values are
-// their corresponding values.
-func getEnvVars() cty.Value {
-	envVars := make(map[string]cty.Value)
-	for _, env := range os.Environ() {
-		parts := strings.SplitN(env, "=", 2)
-		envVars[parts[0]] = cty.StringVal(parts[1])
-	}
-	return cty.ObjectVal(envVars)
 }
