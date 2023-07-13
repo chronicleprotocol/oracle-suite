@@ -32,7 +32,8 @@ type options struct {
 	Format  formatTypeValue
 	Config  gofer.Config
 	NoRPC   bool
-	Version string
+	Format2 formatTypeValue2
+	Config2 gofer2.Config
 }
 
 var formatMap = map[marshal.FormatType]string{
@@ -79,15 +80,6 @@ const (
 	formatTrace = "trace"
 	formatJSON  = "json"
 )
-
-// These are the command options that can be set by CLI flags.
-type options2 struct {
-	cmd.LoggerFlags
-	cmd.FilesFlags
-	Format  formatTypeValue2
-	Config  gofer2.Config
-	Version string
-}
 
 type formatTypeValue2 struct {
 	format string

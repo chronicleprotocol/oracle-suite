@@ -30,19 +30,19 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
-func NewModelsCmd(opts *options2) *cobra.Command {
+func NewModelsCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "models [MODEL...]",
 		Aliases: []string{"model"},
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "List all supported models.",
 		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer ctxCancel()
-			services, err := opts.Config.Services(opts.Logger())
+			services, err := opts.Config2.Services(opts.Logger())
 			if err != nil {
 				return err
 			}
@@ -53,7 +53,7 @@ func NewModelsCmd(opts *options2) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalModels(models, opts.Format.String())
+			marshaled, err := marshalModels(models, opts.Format2.String())
 			if err != nil {
 				return err
 			}

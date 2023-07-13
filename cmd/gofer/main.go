@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
@@ -30,11 +29,7 @@ var exitCode = 0
 
 func main() {
 	opts := options{
-		Format:  formatTypeValue{format: marshal.NDJSON},
-		Version: cmd.Version,
-	}
-	opts2 := options2{
-		Version: cmd.Version,
+		Format: formatTypeValue{format: marshal.NDJSON},
 	}
 
 	rootCmd := NewRootCommand(&opts)
@@ -42,8 +37,8 @@ func main() {
 		NewPairsCmd(&opts),
 		NewPricesCmd(&opts),
 		NewRunCmd(&opts),
-		NewModelsCmd(&opts2),
-		NewDataCmd(&opts2),
+		NewModelsCmd(&opts),
+		NewDataCmd(&opts),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

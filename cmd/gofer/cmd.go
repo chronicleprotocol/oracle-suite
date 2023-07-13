@@ -24,7 +24,7 @@ import (
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "gofer",
-		Version: opts.Version,
+		Version: cmd.Version,
 		Short:   "Tool for providing reliable data in the blockchain ecosystem",
 		Long: `
 Gofer is a tool that provides reliable asset prices taken from various sources.

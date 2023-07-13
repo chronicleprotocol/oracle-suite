@@ -30,7 +30,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
-func NewDataCmd(opts *options2) *cobra.Command {
+func NewDataCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "data [models...]",
 		Aliases: []string{"data"},
@@ -38,12 +38,12 @@ func NewDataCmd(opts *options2) *cobra.Command {
 		Short:   "Return data points for given models.",
 		Long:    `Return data points for given models.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer ctxCancel()
-			services, err := opts.Config.Services(opts.Logger())
+			services, err := opts.Config2.Services(opts.Logger())
 			if err != nil {
 				return err
 			}
@@ -54,7 +54,7 @@ func NewDataCmd(opts *options2) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalDataPoints(ticks, opts.Format.String())
+			marshaled, err := marshalDataPoints(ticks, opts.Format2.String())
 			if err != nil {
 				return err
 			}
