@@ -119,15 +119,8 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			Input: callData,
 		})
 
-		ref, inverted, err := b.referenceAddresses.ByPair(pair)
+		ref, _, err := b.referenceAddresses.ByPair(pair)
 		if err == nil {
-			if inverted {
-				points[pair] = datapoint.Point{Error: fmt.Errorf(
-					"cannot use inverted pair to retrieve price: %s",
-					pair.String(),
-				)}
-				continue
-			}
 			callData, err := b.abi.Methods["getPriceRateCache"].EncodeArgs(types.MustAddressFromHex(ref.String()))
 			if err != nil {
 				points[pair] = datapoint.Point{Error: fmt.Errorf(

@@ -89,7 +89,7 @@ func (suite *WrappedStakedETHSuite) TestSuccessResponse() {
 			Input: hexutil.MustHexToBytes("252dba420000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000004035faf8200000000000000000000000000000000000000000000000000000000"),
 		},
 		types.BlockNumberFromUint64(uint64(100)),
-	).Return(respEncoded, nil).Once()
+	).Return(respEncoded, nil).Twice()
 
 	respEncoded, _ = abi.EncodeValues(tuple, blockNumber.Uint64(), []any{resp[1]})
 	suite.client.On(
@@ -100,7 +100,7 @@ func (suite *WrappedStakedETHSuite) TestSuccessResponse() {
 			Input: hexutil.MustHexToBytes("252dba420000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000004035faf8200000000000000000000000000000000000000000000000000000000"),
 		},
 		types.BlockNumberFromUint64(uint64(90)),
-	).Return(respEncoded, nil).Once()
+	).Return(respEncoded, nil).Twice()
 
 	respEncoded, _ = abi.EncodeValues(tuple, blockNumber.Uint64(), []any{resp[2]})
 	suite.client.On(
@@ -111,25 +111,19 @@ func (suite *WrappedStakedETHSuite) TestSuccessResponse() {
 			Input: hexutil.MustHexToBytes("252dba420000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000004035faf8200000000000000000000000000000000000000000000000000000000"),
 		},
 		types.BlockNumberFromUint64(uint64(80)),
-	).Return(respEncoded, nil).Once()
+	).Return(respEncoded, nil).Twice()
 
 	pair := value.Pair{Base: "WSTETH", Quote: "STETH"}
 	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
 	suite.Equal(0.97, points[pair].Value.(value.Tick).Price.Float64())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
-}
 
-func (suite *WrappedStakedETHSuite) TestSuccessResponse_Inverted() {
-	suite.client.On(
-		"BlockNumber",
-		mock.Anything,
-	).Return(big.NewInt(100), nil).Once()
-
-	pair := value.Pair{Base: "STETH", Quote: "WSTETH"}
-	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	pair = value.Pair{Base: "STETH", Quote: "WSTETH"}
+	points, err = suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Require().EqualError(points[pair].Error, "cannot use inverted pair to retrieve price: STETH/WSTETH")
+	suite.Equal(1/0.97, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 
 func (suite *WrappedStakedETHSuite) TestFailOnWrongPair() {

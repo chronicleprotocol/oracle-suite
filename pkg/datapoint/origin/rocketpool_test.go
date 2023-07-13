@@ -89,7 +89,7 @@ func (suite *RocketPoolSuite) TestSuccessResponse() {
 			Input: hexutil.MustHexToBytes("252dba42000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000ae78736cd615f374d3085123a210448e74fc639300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000004e6aa216c00000000000000000000000000000000000000000000000000000000"),
 		},
 		types.BlockNumberFromUint64(uint64(100)),
-	).Return(respEncoded, nil).Once()
+	).Return(respEncoded, nil).Twice()
 
 	respEncoded, _ = abi.EncodeValues(tuple, blockNumber.Uint64(), []any{resp[1]})
 	suite.client.On(
@@ -100,7 +100,7 @@ func (suite *RocketPoolSuite) TestSuccessResponse() {
 			Input: hexutil.MustHexToBytes("252dba42000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000ae78736cd615f374d3085123a210448e74fc639300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000004e6aa216c00000000000000000000000000000000000000000000000000000000"),
 		},
 		types.BlockNumberFromUint64(uint64(90)),
-	).Return(respEncoded, nil).Once()
+	).Return(respEncoded, nil).Twice()
 
 	respEncoded, _ = abi.EncodeValues(tuple, blockNumber.Uint64(), []any{resp[2]})
 	suite.client.On(
@@ -111,25 +111,19 @@ func (suite *RocketPoolSuite) TestSuccessResponse() {
 			Input: hexutil.MustHexToBytes("252dba42000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000ae78736cd615f374d3085123a210448e74fc639300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000004e6aa216c00000000000000000000000000000000000000000000000000000000"),
 		},
 		types.BlockNumberFromUint64(uint64(80)),
-	).Return(respEncoded, nil).Once()
+	).Return(respEncoded, nil).Twice()
 
 	pair := value.Pair{Base: "RETH", Quote: "ETH"}
 	point, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
 	suite.Equal(0.97, point[pair].Value.(value.Tick).Price.Float64())
 	suite.Greater(point[pair].Time.Unix(), int64(0))
-}
 
-func (suite *RocketPoolSuite) TestSuccessResponse_Inverted() {
-	suite.client.On(
-		"BlockNumber",
-		mock.Anything,
-	).Return(big.NewInt(100), nil).Once()
-
-	pair := value.Pair{Base: "ETH", Quote: "RETH"}
-	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	pair = value.Pair{Base: "ETH", Quote: "RETH"}
+	point, err = suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Require().EqualError(points[pair].Error, "cannot use inverted pair to retrieve price: ETH/RETH")
+	suite.Equal(1/0.97, point[pair].Value.(value.Tick).Price.Float64())
+	suite.Greater(point[pair].Time.Unix(), int64(0))
 }
 
 func (suite *RocketPoolSuite) TestFailOnWrongPair() {
