@@ -110,7 +110,7 @@ func (r *RPC) SendRawTransaction(ctx context.Context, data []byte) (*types.Hash,
 
 func (r *RPC) Call(ctx context.Context, call types.Call, block types.BlockNumber) ([]byte, error) {
 	args := r.Called(ctx, call, block)
-	return args.Get(0).([]uint8), args.Error(1)
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (r *RPC) EstimateGas(ctx context.Context, call types.Call, block types.BlockNumber) (uint64, error) {
