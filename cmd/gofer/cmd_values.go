@@ -31,7 +31,7 @@ import (
 )
 
 func NewDataCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Use:     "data [models...]",
 		Aliases: []string{"data"},
 		Args:    cobra.MinimumNArgs(0),
@@ -62,6 +62,13 @@ func NewDataCmd(opts *options) *cobra.Command {
 			return nil
 		},
 	}
+	c.Flags().VarP(
+		&opts.Format2,
+		"format",
+		"o",
+		"output format",
+	)
+	return c
 }
 
 func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte, error) {

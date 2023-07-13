@@ -31,7 +31,7 @@ import (
 )
 
 func NewModelsCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Use:     "models [MODEL...]",
 		Aliases: []string{"model"},
 		Args:    cobra.MinimumNArgs(0),
@@ -61,6 +61,13 @@ func NewModelsCmd(opts *options) *cobra.Command {
 			return nil
 		},
 	}
+	c.Flags().VarP(
+		&opts.Format2,
+		"format",
+		"o",
+		"output format",
+	)
+	return c
 }
 
 func marshalModels(models map[string]datapoint.Model, format string) ([]byte, error) {
