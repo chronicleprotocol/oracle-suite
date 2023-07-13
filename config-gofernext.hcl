@@ -159,8 +159,37 @@ gofernext {
       origin "coinbase" { query = "ETH/USD" }
       origin "gemini" { query = "ETH/USD" }
       origin "kraken" { query = "ETH/USD" }
-      alias "ETH/USD" {
-        origin "uniswapV3" { query = "WETH/USDC" }
+      indirect {
+        alias "ETH/USDC" {
+          origin "uniswapV3" { query = "WETH/USDC" }
+        }
+        reference { data_model = "USDC/USD" }
+      }
+    }
+  }
+
+  data_model "GNO/USD" {
+    median {
+      min_values = 3
+      indirect {
+        alias "ETH/GNO" {
+          origin "balancerV2" { query = "WETH/GNO" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        alias "GNO/ETH" {
+          origin "uniswapV3" { query = "GNO/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "kraken" { query = "GNO/BTC" }
+        reference { data_model = "BTC/USD" }
+      }
+      indirect {
+        origin "binance" { query = "GNO/USDT" }
+        reference { data_model = "USDT/USD" }
       }
     }
   }
@@ -256,6 +285,37 @@ gofernext {
     }
   }
 
+  data_model "RETH/ETH" {
+    median {
+      min_values = 3
+      alias "RETH/ETH" {
+        origin "balancerV2" { query = "RETH/WETH" }
+      }
+      indirect {
+        origin "curve" { query = "RETH/WSTETH" }
+        reference { data_model = "WSTETH/ETH" }
+      }
+      origin "rocketpool" { query = "RETH/ETH" }
+    }
+  }
+
+  data_model "RETH/USD" {
+    indirect {
+      reference { data_model = "RETH/ETH" }
+      reference { data_model = "ETH/USD" }
+    }
+  }
+
+  data_model "STETH/ETH" {
+    median {
+      min_values = 2
+      alias "STETH/ETH" {
+        origin "balancerV2" { query = "STETH/WETH" }
+      }
+      origin "curve" { query = "STETH/ETH" }
+    }
+  }
+
   data_model "USDC/USD" {
     median {
       min_values = 2
@@ -280,6 +340,20 @@ gofernext {
         origin "okx" { query = "BTC/USDT" }
         reference { data_model = "BTC/USD" }
       }
+    }
+  }
+
+  data_model "WSTETH/ETH" {
+    indirect {
+      origin "wsteth" { query = "WSTETH/STETH" }
+      reference { data_model = "STETH/ETH" }
+    }
+  }
+
+  data_model "WSTETH/USD" {
+    indirect {
+      reference { data_model = "WSTETH/ETH" }
+      reference { data_model = "ETH/USD" }
     }
   }
 
