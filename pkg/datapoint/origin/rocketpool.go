@@ -92,14 +92,9 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	totals := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, inverted, err := r.contractAddresses.ByPair(pair)
+		contract, _, err := r.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
-			continue
-		}
-		if inverted {
-			points[pair] = datapoint.Point{Error: fmt.Errorf(
-				"cannot use inverted pair to retrieve price: %s", pair.String())}
 			continue
 		}
 
@@ -144,6 +139,12 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(r.blocks))))
+
+		// Invert the price if inverted price
+		_, inverted, _ := r.contractAddresses.ByPair(pair)
+		if inverted {
+			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
+		}
 
 		tick := value.Tick{
 			Pair:      pair,
