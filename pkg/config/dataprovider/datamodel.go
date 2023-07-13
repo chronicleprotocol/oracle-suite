@@ -273,6 +273,17 @@ func buildOriginNode(node *configNodeOrigin, origins map[string]origin.Origin) (
 			}
 		}
 		query = pair
+	case *origin.BalancerV2:
+		pair, err := value.PairFromString(node.Query.AsString())
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   fmt.Sprintf("Invalid query: %s", err),
+				Subject:  node.hclRange().Ptr(),
+			}
+		}
+		query = pair
 	case *origin.Curve:
 		pair, err := value.PairFromString(node.Query.AsString())
 		if err != nil {
