@@ -264,7 +264,7 @@ func (c *ConfigKey) Key(logger log.Logger) (wallet.Key, error) {
 		}
 	}
 
-	// Create key.
+	// Get passphrase.
 	passphrase, err := readAccountPassphrase(c.PassphraseFile)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
@@ -274,7 +274,9 @@ func (c *ConfigKey) Key(logger log.Logger) (wallet.Key, error) {
 			Subject:  c.Content.Attributes["passphrase_file"].Range.Ptr(),
 		}
 	}
-	key, err := wallet.NewKeyFromDirectory(c.KeystorePath, passphrase, c.Address)
+
+	// Create key.
+	key, err := readAccountKey(c.KeystorePath, passphrase, c.Address)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -440,11 +442,21 @@ func readAccountPassphrase(path string) (string, error) {
 	if path == "" {
 		return "", nil
 	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return path, nil
+	}
 	passphrase, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSuffix(string(passphrase), "\n"), nil
+}
+func readAccountKey(path string, passphrase string, address types.Address) (*wallet.PrivateKey, error) {
+	key, err := wallet.NewKeyFromDirectory(path, passphrase, address)
+	if err == nil {
+		return key, nil
+	}
+	return wallet.NewKeyFromJSONContent([]byte(path), passphrase)
 }
 
 func minimumRequiredResponses(endpoints int) int {

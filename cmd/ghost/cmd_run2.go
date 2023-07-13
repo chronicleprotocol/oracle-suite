@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,31 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	var opts options
-	rootCmd := NewRootCommand(&opts)
-
-	rootCmd.AddCommand(
-		NewRunCmd(&opts),
-	)
-
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+func NewNextCmd(opts *options) *cobra.Command {
+	return &cobra.Command{
+		Use:   "next",
+		Short: "Run Feed NEXT agent",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
+				return err
+			}
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+			services, err := opts.Config2.Services(opts.Logger())
+			if err != nil {
+				return err
+			}
+			if err = services.Start(ctx); err != nil {
+				return err
+			}
+			return <-services.Wait()
+		},
 	}
 }

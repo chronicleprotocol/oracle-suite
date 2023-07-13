@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -25,7 +25,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
@@ -126,7 +126,7 @@ func (c *Config) Logger(d Dependencies) (log.Logger, error) {
 	logger = logger.
 		WithFields(log.Fields{
 			"x-appName":    d.AppName,
-			"x-appVersion": suite.Version,
+			"x-appVersion": cmd.Version,
 			"x-goVersion":  runtime.Version(),
 			"x-goOS":       runtime.GOOS,
 			"x-goArch":     runtime.GOARCH,

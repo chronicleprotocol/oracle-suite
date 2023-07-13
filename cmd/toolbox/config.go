@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -20,14 +20,13 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 )
 
 type Config struct {
 	Ethereum ethereumConfig.Config `hcl:"ethereum,block"`
-	Logger   *loggerConfig.Config  `hcl:"logger,block"`
+	Logger   *loggerConfig.Config  `hcl:"logger,block,optional"`
 
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
@@ -38,8 +37,7 @@ type Services struct {
 }
 
 func PrepareServices(opts *options) (*Services, error) {
-	err := config.LoadFiles(&opts.Config, opts.ConfigFilePath)
-	if err != nil {
+	if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 		return nil, fmt.Errorf(`config error: %w`, err)
 	}
 	logger, err := opts.Config.Logger.Logger(loggerConfig.Dependencies{

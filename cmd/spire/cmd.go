@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -18,42 +18,30 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
 )
 
 type options struct {
-	flag.LoggerFlag
-	ConfigFilePath    []string
+	cmd.LoggerFlags
+	cmd.FilesFlags
 	Config            spire.Config
-	Version           string
+	BootstrapConfig   BootstrapConfig
 	TransportOverride string
 }
 
+// NewRootCommand creates a new root command for the spire binary.
+// It includes all global flags but no subcommands.
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "spire",
-		Version:       opts.Version,
-		Short:         "",
+		Version:       cmd.Version,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(flag.NewLoggerFlagSet(&opts.LoggerFlag))
-	rootCmd.PersistentFlags().StringSliceVarP(
-		&opts.ConfigFilePath,
-		"config",
-		"c",
-		[]string{"./config.hcl"},
-		"spire config file",
-	)
-
-	rootCmd.AddCommand(
-		NewAgentCmd(opts),
-		NewStreamCmd(opts),
-		NewPullCmd(opts),
-		NewPushCmd(opts),
-	)
+	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
+	rootCmd.PersistentFlags().AddFlagSet(cmd.NewFilesFlagSet(&opts.FilesFlags))
 
 	return rootCmd
 }

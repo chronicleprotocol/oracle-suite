@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
@@ -11,25 +26,24 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
 func NewDataCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Use:     "data [models...]",
 		Aliases: []string{"data"},
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "Return data points for given models.",
 		Long:    `Return data points for given models.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer ctxCancel()
-			services, err := opts.Config.Services(opts.Logger())
+			services, err := opts.Config2.Services(opts.Logger())
 			if err != nil {
 				return err
 			}
@@ -40,7 +54,7 @@ func NewDataCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalDataPoints(ticks, opts.Format.format)
+			marshaled, err := marshalDataPoints(ticks, opts.Format2.String())
 			if err != nil {
 				return err
 			}
@@ -48,6 +62,13 @@ func NewDataCmd(opts *options) *cobra.Command {
 			return nil
 		},
 	}
+	c.Flags().VarP(
+		&opts.Format2,
+		"format",
+		"o",
+		"output format",
+	)
+	return c
 }
 
 func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte, error) {
@@ -59,7 +80,7 @@ func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte
 	case formatJSON:
 		return marshalDataPointsJSON(points)
 	default:
-		return nil, fmt.Errorf("unsupported format")
+		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
 }
 

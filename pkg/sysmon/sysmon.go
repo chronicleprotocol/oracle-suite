@@ -25,7 +25,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -67,7 +67,7 @@ func (s *Sysmon) Start(ctx context.Context) error {
 	}
 	s.log.Debug("Starting")
 	fields := log.Fields{
-		"appVersion": suite.Version,
+		"appVersion": cmd.Version,
 		"goVersion":  runtime.Version(),
 		"goCompiler": runtime.Compiler,
 		"goOS":       runtime.GOOS,

@@ -57,7 +57,7 @@ func (s *Services) Wait() <-chan error {
 // Services returns the services configured for Gofer.
 func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "gofer",
+		AppName:    "gofernext",
 		BaseLogger: baseLogger,
 	})
 	if err != nil {

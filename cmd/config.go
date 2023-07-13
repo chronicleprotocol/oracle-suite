@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -13,37 +13,30 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cmd
 
 import (
-	"context"
-	"os"
-	"os/signal"
-
-	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
-func NewAgentCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:   "agent",
-		Args:  cobra.NoArgs,
-		Short: "Start an RPC server",
-		Long:  `Start an RPC server.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
-				return err
-			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.AgentServices(opts.Logger())
-			if err != nil {
-				return err
-			}
-			if err = services.Start(ctx); err != nil {
-				return err
-			}
-			return <-services.Wait()
-		},
-	}
+type FilesFlags struct {
+	//TODO: think of ways to make it a pflag.Value interface
+	paths []string
+}
+
+func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
+	fs.StringSliceVarP(
+		&cfp.paths,
+		"config", "c",
+		[]string{"./config.hcl"},
+		"config file",
+	)
+	return fs
+}
+
+func (cf FilesFlags) LoadConfigFiles(c any) error {
+	return config.LoadFiles(c, cf.paths)
 }

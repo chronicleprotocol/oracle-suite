@@ -1,0 +1,23 @@
+version: '3'
+services:
+  gofer:
+    image: ghcr.io/chronicleprotocol/gofer:0.0.0-dev.0
+    build:
+      context: "../.."
+      dockerfile: "./cmd/Dockerfile"
+      args:
+        APP_NAME: "gofer"
+        APP_VERSION: "0.0.0-dev.0"
+    environment: # values are set in .env file - not committed on purpose
+      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
+      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
+      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls
+      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
+      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls
+      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
+
+      # Gofer RPC listening address
+      #CFG_GOFER_RPC_ADDR: "0.0.0.0:9200"
+
+      # Gofer RPC OpenExchangeRates API key
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:

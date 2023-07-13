@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -26,20 +26,21 @@ import (
 func NewRunCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
-		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"agent"},
-		Short:   "Starts bootstrap node",
-		Long:    ``,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		Args:    cobra.NoArgs,
+		Aliases: []string{"agent", "server"},
+		RunE: func(_ *cobra.Command, args []string) error {
+			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+				return err
+			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			sup, err := PrepareSupervisor(ctx, opts)
+			services, err := opts.Config.AgentServices(opts.Logger())
 			if err != nil {
 				return err
 			}
-			if err = sup.Start(ctx); err != nil {
+			if err = services.Start(ctx); err != nil {
 				return err
 			}
-			return <-sup.Wait()
+			return <-services.Wait()
 		},
 	}
 }
