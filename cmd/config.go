@@ -13,34 +13,30 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cmd
 
 import (
-	"context"
-	"os"
-	"os/signal"
+	"github.com/spf13/pflag"
 
-	"github.com/spf13/cobra"
+	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
-func NewRunCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:     "run",
-		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"agent"},
-		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
-				return err
-			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.Services(opts.Logger())
-			if err != nil {
-				return err
-			}
-			if err = services.Start(ctx); err != nil {
-				return err
-			}
-			return <-services.Wait()
-		},
-	}
+type FilesFlags struct {
+	//TODO: think of ways to make it a Value interface
+	Paths []string
+}
+
+func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
+	fs.StringSliceVarP(
+		&cfp.Paths,
+		"config", "c",
+		[]string{"./config.hcl"},
+		"config file",
+	)
+	return fs
+}
+
+func (cf FilesFlags) LoadConfigFiles(config any) error {
+	return config2.LoadFiles(config, cf.Paths)
 }

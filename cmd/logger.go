@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package flag
+package cmd
 
 import (
 	"fmt"
@@ -27,12 +27,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/formatter"
 )
 
-type LoggerFlag struct {
+type LoggerFlags struct {
 	verbosityFlag
 	formatterFlag
 }
 
-func NewLoggerFlagSet(logger *LoggerFlag) *pflag.FlagSet {
+func NewLoggerFlagSet(logger *LoggerFlags) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("log", pflag.PanicOnError)
 	fs.VarP(
 		&logger.verbosityFlag,
@@ -49,7 +49,7 @@ func NewLoggerFlagSet(logger *LoggerFlag) *pflag.FlagSet {
 	return fs
 }
 
-func (logger *LoggerFlag) Logger() log.Logger {
+func (logger *LoggerFlags) Logger() log.Logger {
 	l := logrus.New()
 	l.SetLevel(logger.Verbosity())
 	l.SetFormatter(logger.Formatter())
@@ -97,7 +97,7 @@ func (f *verbosityFlag) Type() string {
 }
 
 func (f *verbosityFlag) Verbosity() logrus.Level {
-	if f.verbosity == 0 {
+	if !f.wasSet {
 		return defaultVerbosity
 	}
 	return f.verbosity
@@ -142,7 +142,7 @@ func (f *formatterFlag) String() string {
 func (f *formatterFlag) Set(v string) error {
 	v = strings.ToLower(v)
 	if _, ok := formattersMap[v]; !ok {
-		return fmt.Errorf("unsupported format")
+		return fmt.Errorf("unsupported format: %s", v)
 	}
 	f.format = v
 	return nil

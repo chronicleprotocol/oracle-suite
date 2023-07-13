@@ -13,34 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cmd
 
-import (
-	"context"
-	"os"
-	"os/signal"
-
-	"github.com/spf13/cobra"
-)
-
-func NewRunCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:     "run",
-		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"agent"},
-		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
-				return err
-			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.Services(opts.Logger())
-			if err != nil {
-				return err
-			}
-			if err = services.Start(ctx); err != nil {
-				return err
-			}
-			return <-services.Wait()
-		},
-	}
-}
+// Version is being used in executables
+var Version = "unknown"

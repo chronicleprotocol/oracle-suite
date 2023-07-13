@@ -197,20 +197,18 @@ in the `env` object. For example, to use the `HOME` environment variable in the 
 ## Commands
 
 ```
-Usage:
-  ghost [command]
-
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  run         
+  run         Run Feed agent
+  run2        Run Feed NEXT agent
 
 Flags:
-  -c, --config string                                  ghost config file (default "./config.hcl")
+  -c, --config strings                                 config file (default [./config.hcl])
       --gofer.norpc                                    disable the use of Graph RPC agent
   -h, --help                                           help for ghost
-      --log.format text|json                           log format (default text)
-  -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default warning)
+  -f, --log.format text|json                           log format (default text)
+  -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default info)
       --version                                        version for ghost
 
 Use "ghost [command] --help" for more information about a command.

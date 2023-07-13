@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -19,19 +19,21 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/flag"
+	gofer2 "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
 
 // These are the command options that can be set by CLI flags.
 type options struct {
-	flag.LoggerFlag
-	ConfigFilePath []string
-	Format         formatTypeValue
-	Config         gofer.Config
-	NoRPC          bool
-	Version        string
+	cmd.LoggerFlags
+	cmd.FilesFlags
+	Format  formatTypeValue
+	Config  gofer.Config
+	NoRPC   bool
+	Format2 formatTypeValue2
+	Config2 gofer2.Config
 }
 
 var formatMap = map[marshal.FormatType]string{
@@ -66,9 +68,44 @@ func (v *formatTypeValue) Set(s string) error {
 		}
 	}
 
-	return fmt.Errorf("unsupported format")
+	return fmt.Errorf("unsupported format: %s", s)
 }
 
 func (v *formatTypeValue) Type() string {
 	return "plain|trace|json|ndjson"
+}
+
+const (
+	formatPlain = "plain"
+	formatTrace = "trace"
+	formatJSON  = "json"
+)
+
+type formatTypeValue2 struct {
+	format string
+}
+
+func (v *formatTypeValue2) String() string {
+	if v.format == "" {
+		return formatPlain
+	}
+	return v.format
+}
+
+func (v *formatTypeValue2) Set(s string) error {
+	switch strings.ToLower(s) {
+	case formatPlain:
+		v.format = formatPlain
+	case formatTrace:
+		v.format = formatTrace
+	case formatJSON:
+		v.format = formatJSON
+	default:
+		return fmt.Errorf("unsupported format: %s", s)
+	}
+	return nil
+}
+
+func (v *formatTypeValue2) Type() string {
+	return "plain|trace|json"
 }

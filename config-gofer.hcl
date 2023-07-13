@@ -1,6 +1,6 @@
 gofer {
-  rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "0.0.0.0:9200")
-  rpc_agent_addr  = try(env.CFG_GOFER_RPC_ADDR, "127.0.0.1:9200")
+  rpc_listen_addr = try(env.CFG_GOFER_RPC_ADDR, "0.0.0.0:9200") # used by server
+  rpc_agent_addr  = try(env.CFG_GOFER_RPC_ADDR, "127.0.0.1:9200") # used by client
 
   origin "balancerV2" {
     type   = "balancerV2"
@@ -53,7 +53,7 @@ gofer {
   origin "openexchangerates" {
     type   = "openexchangerates"
     params = {
-      api_key = try(env.GOFER_OPENEXCHANGERATES_API_KEY, "")
+      api_key = try(env.CFG_GOFER_OPENEXCHANGERATES_API_KEY, "")
     }
   }
 
