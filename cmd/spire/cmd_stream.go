@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -48,7 +47,7 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
-			if err := config.LoadFiles(&opts.Config, opts.ConfigFilePath); err != nil {
+			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)

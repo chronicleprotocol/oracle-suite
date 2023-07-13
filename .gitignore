@@ -30,3 +30,6 @@ node_modules/
 
 # Go Workspaces
 go.work
+
+# Environment variables
+.env
