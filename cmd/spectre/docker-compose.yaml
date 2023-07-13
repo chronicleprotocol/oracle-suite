@@ -1,14 +1,13 @@
 version: '3'
 services:
   spectre:
+    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     build:
       context: "../.."
       dockerfile: "./cmd/Dockerfile"
       args:
         APP_NAME: "spectre"
         APP_VERSION: "0.0.0-dev.0"
-    # Default command is set in Dockerfile - you can override it here to use a different config file or command
-    #command: ["-c", "/usr/share/chronicle-suite/config.hcl", "run"]
     environment: # values are set in .env file - not committed on purpose
       CFG_ETH_FROM: ${ETH_FROM} # address to send txs from
       CFG_ETH_KEYS: ${ETH_KEYS} # JSON structure with ethereum key OR path to dir with key(s)
@@ -21,6 +20,8 @@ services:
       CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls
       CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
 
-
       CFG_FEEDS: "stage"
+
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: ${LIBP2P_BOOTSTRAPS}
+
       CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"

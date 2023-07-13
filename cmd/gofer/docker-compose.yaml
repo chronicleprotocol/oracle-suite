@@ -1,44 +1,20 @@
 version: '3'
 services:
   gofer:
+    image: ghcr.io/chronicleprotocol/gofer:0.0.0-dev.0
     build:
       context: "../.."
       dockerfile: "./cmd/Dockerfile"
       args:
         APP_NAME: "gofer"
         APP_VERSION: "0.0.0-dev.0"
-
-    # Default command is set in Dockerfile - you can override it here to use a different config file or command
-    #command: ["-c", "/usr/share/chronicle-suite/config.hcl", "run"]
-
     environment: # values are set in .env file - not committed on purpose
-      CFG_FEEDS: "stage"
-
-      CFG_ETH_FROM: ${ETH_FROM} # address to sign data with
-      CFG_ETH_KEYS: ${ETH_KEYS} # JSON structure with ethereum key OR path to dir with key(s)
-      CFG_ETH_PASS: ${ETH_PASS} # password for the key(s) OR path to a file with password
-
       CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
       CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
       CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls
       CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
       CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls
       CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
-
-      # Enable WebAPI
-      #CFG_WEBAPI_ENABLE: 1
-
-      # WebAPI listen address
-      #CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8080"
-
-      # WebAPI static address book - comma separated list of addresses
-      #CFG_WEBAPI_STATIC_ADDR_BOOK: "cqsdvjamh6vh5bmavgv6hdb5rrhjqgqtqzy6cfgbmzqhpxfrppblupqd.onion:8888"
-
-      # WebAPI Ethereum address book - address of the contract
-      #CFG_WEBAPI_ETH_ADDR_BOOK: "0xd51Fd30C873356b432F766eB55fc599586734a95"
-
-      # Enable LibP2P
-      #CFG_LIBP2P_ENABLE: 1
 
       # Gofer RPC listening address
       #CFG_GOFER_RPC_ADDR: "0.0.0.0:9200"

@@ -18,18 +18,18 @@ package cmd
 import (
 	"github.com/spf13/pflag"
 
-	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
 type FilesFlags struct {
-	//TODO: think of ways to make it a Value interface
-	Paths []string
+	//TODO: think of ways to make it a pflag.Value interface
+	paths []string
 }
 
 func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
-		&cfp.Paths,
+		&cfp.paths,
 		"config", "c",
 		[]string{"./config.hcl"},
 		"config file",
@@ -37,6 +37,6 @@ func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
 	return fs
 }
 
-func (cf FilesFlags) LoadConfigFiles(config any) error {
-	return config2.LoadFiles(config, cf.Paths)
+func (cf FilesFlags) LoadConfigFiles(c any) error {
+	return config.LoadFiles(c, cf.paths)
 }

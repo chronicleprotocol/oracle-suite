@@ -25,7 +25,7 @@ func main() {
 
 	rootCmd.AddCommand(
 		NewRunCmd(&opts),
-		NewRun2Cmd(&opts),
+		NewNextCmd(&opts),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

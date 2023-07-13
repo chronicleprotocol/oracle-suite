@@ -27,7 +27,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
 		Args:    cobra.NoArgs,
-		Aliases: []string{"agent"},
+		Aliases: []string{"agent", "server"},
 		RunE: func(_ *cobra.Command, args []string) error {
 			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
 				return err

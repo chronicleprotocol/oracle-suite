@@ -26,7 +26,7 @@ import (
 func NewRunCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
-		Aliases: []string{"agent"},
+		Aliases: []string{"agent", "server"},
 		Short:   "Run Feed agent",
 		Args:    cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {

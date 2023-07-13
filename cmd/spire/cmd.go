@@ -26,27 +26,22 @@ type options struct {
 	cmd.LoggerFlags
 	cmd.FilesFlags
 	Config            spire.Config
-	Version           string
+	BootstrapConfig   BootstrapConfig
 	TransportOverride string
 }
 
+// NewRootCommand creates a new root command for the spire binary.
+// It includes all global flags but no subcommands.
 func NewRootCommand(opts *options) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "spire",
-		Version:       opts.Version,
+		Version:       cmd.Version,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}
 
 	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
 	rootCmd.PersistentFlags().AddFlagSet(cmd.NewFilesFlagSet(&opts.FilesFlags))
-
-	rootCmd.AddCommand(
-		NewAgentCmd(opts),
-		NewStreamCmd(opts),
-		NewPullCmd(opts),
-		NewPushCmd(opts),
-	)
 
 	return rootCmd
 }

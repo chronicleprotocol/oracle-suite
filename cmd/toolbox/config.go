@@ -26,7 +26,7 @@ import (
 
 type Config struct {
 	Ethereum ethereumConfig.Config `hcl:"ethereum,block"`
-	Logger   *loggerConfig.Config  `hcl:"logger,block"`
+	Logger   *loggerConfig.Config  `hcl:"logger,block,optional"`
 
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }

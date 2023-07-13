@@ -221,7 +221,7 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Transport, 
 		DirectPeersAddrs: c.LibP2P.DirectPeersAddrs,
 		BlockedAddrs:     c.LibP2P.BlockedAddrs,
 		Logger:           d.Logger,
-		AppName:          "bootstrap",
+		AppName:          "spire-bootstrap",
 		AppVersion:       cmd.Version,
 	}
 	p, err := libp2p.New(cfg)

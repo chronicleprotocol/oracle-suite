@@ -1,14 +1,13 @@
 version: '3'
 services:
   spire:
+    image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
     build:
       context: "../.."
       dockerfile: "./cmd/Dockerfile"
       args:
         APP_NAME: "spire"
         APP_VERSION: "0.0.0-dev.0"
-    # Default command is set in Dockerfile - you can override it here to use a different config file or command
-    #command: ["-c", "/usr/share/chronicle-suite/config.hcl", "run"]
     environment: # values are set in .env file - not committed on purpose
       CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
       CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
@@ -22,4 +21,9 @@ services:
       CFG_ETH_PASS: ${ETH_PASS} # password for the key(s)
 
       CFG_FEEDS: "stage"
-      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
+
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: ${LIBP2P_BOOTSTRAPS}
+
+  bootstrap:
+    image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
+    command: [ "bootstrap" ]

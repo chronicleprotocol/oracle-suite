@@ -9,19 +9,19 @@ ARG APP_VERSION="0.0.0-dev.0"
 ARG APP_NAME
 RUN CGO_ENABLED=0 go build -v \
     -ldflags "-X github.com/chronicleprotocol/oracle-suite/cmd.Version=${APP_VERSION}" \
-    -o ./dist/chronicle-oracle-toolkit ./cmd/${APP_NAME}
+    -o ./dist/chronicle-app ./cmd/${APP_NAME}
 
 # ----------------------------------------------------------------------------------------
 FROM gcr.io/distroless/static-debian11
 
-WORKDIR /root
 COPY --from=builder /app/dist/* /usr/local/bin/
 
-ARG APP_NAME
-COPY ./config-*.hcl ./cmd/${APP_NAME}/config.hcl /usr/share/chronicle-suite/
+COPY ./config*.hcl /usr/share/chronicle-suite/
 
-ENTRYPOINT ["/usr/local/bin/chronicle-oracle-toolkit"]
-CMD ["-c", "/usr/share/chronicle-suite/config.hcl", "run"]
+WORKDIR /usr/share/chronicle-suite/
+
+ENTRYPOINT ["/usr/local/bin/chronicle-app"]
+CMD ["run"]
 
 # libp2p
 EXPOSE 8000

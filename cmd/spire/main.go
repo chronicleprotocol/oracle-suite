@@ -17,13 +17,19 @@ package main
 
 import (
 	"os"
-
-	"github.com/chronicleprotocol/oracle-suite/cmd"
 )
 
 func main() {
-	opts := options{Version: cmd.Version}
+	var opts options
 	rootCmd := NewRootCommand(&opts)
+
+	rootCmd.AddCommand(
+		NewAgentCmd(&opts),
+		NewStreamCmd(&opts),
+		NewPullCmd(&opts),
+		NewPushCmd(&opts),
+		NewBootstrapCmd(&opts),
+	)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
