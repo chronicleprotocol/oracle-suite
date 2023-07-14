@@ -108,7 +108,7 @@ func (p *Store) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	p.log.Info("Starting")
+	p.log.Debug("Starting")
 	p.ctx = ctx
 	go p.dataPointCollectorRoutine()
 	go p.contextCancelHandler()

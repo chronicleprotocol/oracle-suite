@@ -203,8 +203,8 @@ func (c *Config) PriceProvider(d Dependencies, noRPC bool) (provider.Provider, e
 		if err != nil {
 			return nil, err
 		}
-		feed := feed.NewFeed(originSet, d.Logger)
-		c.priceProvider = graph.NewProvider(pricesGraph, feed)
+		f := feed.NewFeed(originSet, d.Logger)
+		c.priceProvider = graph.NewProvider(pricesGraph, f)
 	} else {
 		c.priceProvider, err = rpc.NewProvider("tcp", c.RPCAgentAddr)
 		if err != nil {

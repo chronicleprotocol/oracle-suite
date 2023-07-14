@@ -43,12 +43,14 @@ services:
 
       # Gofer RPC listening address
       #CFG_GOFER_RPC_ADDR: "0.0.0.0:9200"
+      CFG_GOFER_RPC_ADDR: "" # disable gofer external rpc and use the internal one
 
       # Gofer RPC OpenExchangeRates API key
       CFG_GOFER_OPENEXCHANGERATES_API_KEY:
 
       # Ghost message broadcasting interval in seconds
       CFG_GHOST_INTERVAL: 60
+
       # Comma separated list of asset pairs to broadcast
       # Will use all pairs if empty.
       #CFG_GHOST_PAIRS:

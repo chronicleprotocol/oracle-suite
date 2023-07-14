@@ -83,7 +83,7 @@ func (g *Provider) Price(pair provider.Pair) (*provider.Price, error) {
 	return nil, fmt.Errorf("unable to get price for %s", pair)
 }
 
-// Prices implements the provider.Providerinterface.
+// Prices implements the provider.Provider interface.
 func (g *Provider) Prices(pairs ...provider.Pair) (map[provider.Pair]*provider.Price, error) {
 	ns, err := g.findNodes(pairs...)
 	if err != nil {
