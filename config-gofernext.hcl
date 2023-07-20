@@ -54,7 +54,7 @@ gofernext {
   origin "gemini" {
     type = "tick_generic_jq"
     url  = "https://api.gemini.com/v1/pubticker/$${lcbase}$${lcquote}"
-    jq   = "{price: .last, time: (.volume.timestamp/1000), volume: null}"
+    jq   = "{price: .last, time: (.volume.timestamp/1000), volume: .volume[$ucquote]|tonumber}"
   }
 
   origin "huobi" {

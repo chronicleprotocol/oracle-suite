@@ -1,6 +1,7 @@
 package value
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -50,10 +51,14 @@ func (t Tick) Print() string {
 
 // MarshalBinary implements the Value interface.
 func (t Tick) MarshalBinary() ([]byte, error) {
+	var volume24HBytes []byte
+	if t.Volume24h != nil {
+		volume24HBytes = t.Volume24h.Mul(TickPricePrecision).BigInt().Bytes()
+	}
 	return proto.Marshal(&pb.Tick{
 		Pair:      t.Pair.String(),
-		Price:     t.Price.Div(TickPricePrecision).BigInt().Bytes(),
-		Volume24H: t.Volume24h.Div(TickPricePrecision).BigInt().Bytes(),
+		Price:     t.Price.Mul(TickPricePrecision).BigInt().Bytes(),
+		Volume24H: volume24HBytes,
 	})
 }
 
@@ -69,7 +74,9 @@ func (t *Tick) UnmarshalBinary(bytes []byte) error {
 	}
 	t.Pair = pair
 	t.Price = bn.Float(new(big.Int).SetBytes(pbTick.Price)).Div(TickPricePrecision)
-	t.Volume24h = bn.Float(new(big.Int).SetBytes(pbTick.Volume24H)).Div(TickPricePrecision)
+	if pbTick.Volume24H != nil {
+		t.Volume24h = bn.Float(new(big.Int).SetBytes(pbTick.Volume24H)).Div(TickPricePrecision)
+	}
 	return nil
 }
 
@@ -94,7 +101,30 @@ func (t Tick) Validate() error {
 }
 
 func (t Tick) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`{"pair":%q,"price":%q,"volume24h":%q}`, t.Pair, t.Price, t.Volume24h)), nil
+	var volume24h string
+	if t.Volume24h != nil {
+		volume24h = t.Volume24h.String()
+	}
+	return json.Marshal(map[string]interface{}{
+		"pair":      t.Pair.String(),
+		"price":     t.Price.String(),
+		"volume24h": volume24h,
+	})
+}
+
+func (t *Tick) UnmarshalJSON(data []byte) error {
+	result := make(map[string]interface{})
+	if err := json.Unmarshal(data, &result); err != nil {
+		return err
+	}
+	pair, err := PairFromString(result["pair"].(string))
+	if err != nil {
+		return err
+	}
+	t.Pair = pair
+	t.Price = bn.Float(result["price"].(string))
+	t.Volume24h = bn.Float(result["volume24h"].(string))
+	return nil
 }
 
 // Pair represents an asset pair.
