@@ -64,7 +64,7 @@ type Config struct {
 	Content hcl.BodyContent `hcl:",content"`
 
 	// Configured transport:
-	transport transport.Transport
+	transport transport.TransportService
 }
 
 type libP2PConfig struct {
@@ -165,11 +165,11 @@ type webAPIStaticAddressBook struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
-func (c *Config) Transport(d Dependencies) (transport.Transport, error) {
+func (c *Config) Transport(d Dependencies) (transport.TransportService, error) {
 	if c.transport != nil {
 		return c.transport, nil
 	}
-	var transports []transport.Transport
+	var transports []transport.TransportService
 	if c.LibP2P != nil {
 		t, err := c.configureLibP2P(d)
 		if err != nil {
@@ -200,7 +200,7 @@ func (c *Config) Transport(d Dependencies) (transport.Transport, error) {
 	return c.transport, nil
 }
 
-func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Transport, error) {
+func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.TransportService, error) {
 	if c.LibP2P == nil {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -236,7 +236,7 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Transport, 
 	return p, nil
 }
 
-func (c *Config) configureWebAPI(d Dependencies) (transport.Transport, error) {
+func (c *Config) configureWebAPI(d Dependencies) (transport.TransportService, error) {
 	// Configure HTTP client:
 	httpClient := http.DefaultClient
 	if len(c.WebAPI.Socks5ProxyAddr) != 0 {
@@ -330,7 +330,7 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Transport, error) {
 	return recoverer.New(webapiTransport, d.Logger), nil
 }
 
-func (c *Config) configureLibP2P(d Dependencies) (transport.Transport, error) {
+func (c *Config) configureLibP2P(d Dependencies) (transport.TransportService, error) {
 	// Configure signer:
 	key := d.Keys[c.LibP2P.EthereumKey]
 	if c.LibP2P.EthereumKey != "" && key == nil {

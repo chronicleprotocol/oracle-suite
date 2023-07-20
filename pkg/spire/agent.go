@@ -45,7 +45,7 @@ type Agent struct {
 
 type AgentConfig struct {
 	PriceStore *store.PriceStore
-	Transport  transport.Transport
+	Transport  transport.TransportService
 	Address    string
 	Logger     log.Logger
 }

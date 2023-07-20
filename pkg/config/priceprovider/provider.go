@@ -25,6 +25,9 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider"
@@ -186,6 +189,141 @@ func (c *Config) AsyncPriceProvider(d AsyncDependencies) (provider.Provider, err
 	}
 	c.asyncPriceProvider = asyncProvider
 	return asyncProvider, nil
+}
+
+type Provider struct {
+	p provider.Provider
+}
+
+func (p *Provider) ModelNames(_ context.Context) []string {
+	models, err := p.p.Models()
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(models))
+	for name := range models {
+		names = append(names, name.String())
+	}
+	return names
+}
+
+func (p *Provider) DataPoint(_ context.Context, model string) (datapoint.Point, error) {
+	pair, err := provider.NewPair(model)
+	if err != nil {
+		return datapoint.Point{}, err
+	}
+
+	price, err := p.p.Price(pair)
+	if err != nil {
+		return datapoint.Point{}, err
+	}
+
+	return p2p(*price), nil
+}
+
+func p2p(price provider.Price) datapoint.Point {
+	meta := make(map[string]interface{}, 0)
+	for k, v := range price.Parameters {
+		meta[k] = v
+	}
+	points := make([]datapoint.Point, 0, len(price.Prices))
+	for _, p := range price.Prices {
+		points = append(points, p2p(*p))
+	}
+	return datapoint.Point{
+		Value: value.Tick{
+			Pair: value.Pair{
+				Base:  price.Pair.Base,
+				Quote: price.Pair.Quote,
+			},
+			Price: bn.Float(price.Price),
+		},
+		Time:      price.Time,
+		SubPoints: points,
+		Meta:      meta,
+		Error:     fmt.Errorf("cannot create datapoint: %s", price.Error),
+	}
+}
+
+func (p *Provider) DataPoints(_ context.Context, models ...string) (map[string]datapoint.Point, error) {
+	pairs := make([]provider.Pair, 0, len(models))
+	for _, model := range models {
+		pair, err := provider.NewPair(model)
+		if err != nil {
+			return nil, err
+		}
+		pairs = append(pairs, pair)
+	}
+
+	prices, err := p.p.Prices(pairs...)
+	if err != nil {
+		return nil, err
+	}
+
+	points := make(map[string]datapoint.Point, len(prices))
+	for _, price := range prices {
+		points[price.Pair.String()] = p2p(*price)
+	}
+	return points, nil
+}
+
+func (p *Provider) Model(_ context.Context, model string) (datapoint.Model, error) {
+	pair, err := provider.NewPair(model)
+	if err != nil {
+		return datapoint.Model{}, err
+	}
+	models, err := p.p.Models(pair)
+	if err != nil {
+		return datapoint.Model{}, err
+	}
+	return m2m(*models[pair]), nil
+}
+
+func m2m(m provider.Model) datapoint.Model {
+	meta := map[string]interface{}{
+		"type": m.Type,
+	}
+	for k, v := range m.Parameters {
+		meta[k] = v
+	}
+	mds := make([]datapoint.Model, 0, len(m.Models))
+	for _, mm := range m.Models {
+		mds = append(mds, m2m(*mm))
+	}
+	return datapoint.Model{
+		Meta:   meta,
+		Models: mds,
+	}
+}
+
+func (p *Provider) Models(_ context.Context, models ...string) (map[string]datapoint.Model, error) {
+	pairs := make([]provider.Pair, 0, len(models))
+	for _, model := range models {
+		pair, err := provider.NewPair(model)
+		if err != nil {
+			return nil, err
+		}
+		pairs = append(pairs, pair)
+	}
+
+	mds, err := p.p.Models(pairs...)
+	if err != nil {
+		return nil, err
+	}
+
+	r := make(map[string]datapoint.Model, len(mds))
+	for k, v := range mds {
+		r[k.String()] = m2m(*v)
+	}
+	return r, nil
+}
+
+func (c *Config) ConfigureDataProvider(d Dependencies) (datapoint.Provider, error) {
+	pp, err := c.PriceProvider(d, true)
+	if err != nil {
+		return nil, err
+	}
+	return &Provider{p: pp}, nil
 }
 
 // PriceProvider returns a new async gofer instance.

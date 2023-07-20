@@ -42,7 +42,7 @@ type Feed struct {
 
 	priceProvider provider.Provider
 	signer        wallet.Key
-	transport     transport.Transport
+	transport     transport.TransportService
 	interval      *timeutil.Ticker
 	pairs         []provider.Pair
 	log           log.Logger
@@ -61,7 +61,7 @@ type Config struct {
 
 	// Transport is an implementation of transport used to send prices to
 	// the network.
-	Transport transport.Transport
+	Transport transport.TransportService
 
 	// Interval describes how often we should send prices to the network.
 	Interval *timeutil.Ticker
@@ -152,6 +152,9 @@ func (g *Feed) broadcast(pair provider.Pair) error {
 		return err
 	}
 	if err = g.transport.Broadcast(messages.PriceV1MessageName, msg.AsV1()); err != nil {
+		return err
+	}
+	if err = g.transport.Broadcast(messages.DataPointV1MessageName, messages.Price2DataPoint(msg)); err != nil {
 		return err
 	}
 	return err

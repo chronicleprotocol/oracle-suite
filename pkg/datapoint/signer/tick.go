@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package signer
 
 import (
@@ -17,42 +32,54 @@ import (
 
 const valPrecision = 1e18
 
-// Tick signs tick data points and recovers the signer address from a
+// TickSigner signs tick data points and recovers the signer address from a
 // signature.
-type Tick struct {
-	signer    wallet.Key
-	recoverer crypto.Recoverer
+type TickSigner struct {
+	signer wallet.Key
 }
 
-// NewTick creates a new Tick instance.
-func NewTick(signer wallet.Key, recoverer crypto.Recoverer) *Tick {
-	return &Tick{
-		signer:    signer,
-		recoverer: recoverer,
-	}
+// NewTickSigner creates a new TickSigner instance.
+func NewTickSigner(signer wallet.Key) *TickSigner {
+	return &TickSigner{signer: signer}
 }
 
-// Supports implements the Signer and Recoverer interfaces.
-func (t *Tick) Supports(_ context.Context, data datapoint.Point) bool {
+// Supports implements the Signer interface.
+func (t *TickSigner) Supports(_ context.Context, data datapoint.Point) bool {
 	_, ok := data.Value.(value.Tick)
 	return ok
 }
 
 // Sign implements the Signer interface.
-func (t *Tick) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
+func (t *TickSigner) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
 	return t.signer.SignMessage(
 		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
 	)
 }
 
+// TickRecoverer recovers the signer address from a tick data point and a
+// signature.
+type TickRecoverer struct {
+	recoverer crypto.Recoverer
+}
+
+// NewTickRecoverer creates a new TickRecoverer instance.
+func NewTickRecoverer(recoverer crypto.Recoverer) *TickRecoverer {
+	return &TickRecoverer{recoverer: recoverer}
+}
+
+// Supports implements the Recoverer interface.
+func (t *TickRecoverer) Supports(_ context.Context, data datapoint.Point) bool {
+	_, ok := data.Value.(value.Tick)
+	return ok
+}
+
 // Recover implements the Recoverer interface.
-func (t *Tick) Recover(
+func (t *TickRecoverer) Recover(
 	_ context.Context,
 	model string,
 	data datapoint.Point,
 	signature types.Signature,
 ) (*types.Address, error) {
-
 	return t.recoverer.RecoverMessage(
 		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
 		signature,

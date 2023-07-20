@@ -24,7 +24,7 @@ import (
 )
 
 func NewRunCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Use:     "run",
 		Aliases: []string{"agent", "server"},
 		Short:   "Run Feed agent",
@@ -44,4 +44,6 @@ func NewRunCmd(opts *options) *cobra.Command {
 			return <-services.Wait()
 		},
 	}
+	c.PersistentFlags().BoolVar(&opts.GoferNoRPC, "gofer.norpc", false, "disable the use of Graph RPC agent")
+	return c
 }

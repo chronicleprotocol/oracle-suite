@@ -40,7 +40,7 @@ type Feed struct {
 	dataProvider datapoint.Provider
 	dataModels   []string
 	signers      []datapoint.Signer
-	transport    transport.Transport
+	transport    transport.TransportService
 	interval     *timeutil.Ticker
 }
 
@@ -57,7 +57,7 @@ type Config struct {
 
 	// Transport is an implementation of transport used to send prices to
 	// the network.
-	Transport transport.Transport
+	Transport transport.TransportService
 
 	// Interval describes how often data points should be sent to the network.
 	Interval *timeutil.Ticker

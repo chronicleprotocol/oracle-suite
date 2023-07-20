@@ -60,14 +60,10 @@ message MuSigTerminateMessage {
 
 message MuSigCommitmentMessage {
   bytes sessionID = 1;
-  bytes commitment = 2;
-  bytes pubKeyX = 3;
-  bytes pubKeyY = 4;
-}
-
-message MuSigNonceMessage {
-  bytes sessionID = 1;
-  bytes nonce = 2;
+  bytes pubKeyX = 2;
+  bytes pubKeyY = 3;
+  bytes commitmentKeyX = 4;
+  bytes commitmentKeyY = 5;
 }
 
 message MuSigPartialSignatureMessage {
@@ -77,7 +73,9 @@ message MuSigPartialSignatureMessage {
 
 message MuSigSignatureMessage {
   bytes sessionID = 1;
-  string type = 2;
-  bytes data = 3;
-  bytes signature = 4;
+  string msgType = 2;
+  bytes msgBody = 3;
+  bytes commitment = 4;
+  bytes schnorrSignature = 5;
+  bytes ecdsaSignature = 6;
 }

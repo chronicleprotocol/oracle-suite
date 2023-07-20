@@ -24,8 +24,11 @@ import (
 	"github.com/defiweb/go-eth/types"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 const PriceV0MessageName = "price/v0"
@@ -175,4 +178,21 @@ func (p *Price) copy() *Price {
 		copy(c.Trace, p.Trace)
 	}
 	return c
+}
+
+func Price2DataPoint(msg *Price) *DataPoint {
+	return &DataPoint{
+		Model: msg.Price.Wat,
+		Value: datapoint.Point{
+			Value: value.Tick{
+				Pair: value.Pair{
+					Base:  msg.Price.Wat[:len(msg.Price.Wat)-3],
+					Quote: msg.Price.Wat[len(msg.Price.Wat)-3:],
+				},
+				Price: bn.Float(msg.Price.Val),
+			},
+			Time: msg.Price.Age,
+		},
+		Signature: msg.Price.Sig,
+	}
 }

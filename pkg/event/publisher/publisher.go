@@ -35,7 +35,7 @@ type EventPublisher struct {
 
 	signers   []EventSigner
 	listeners []EventProvider
-	transport transport.Transport
+	transport transport.TransportService
 	log       log.Logger
 }
 
@@ -59,7 +59,7 @@ type Config struct {
 	Signers []EventSigner
 
 	// Transport is used to send events to the Oracle network.
-	Transport transport.Transport
+	Transport transport.TransportService
 
 	// Logger is a current logger interface used by the EventPublisher.
 	Logger log.Logger

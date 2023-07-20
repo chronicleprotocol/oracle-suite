@@ -55,7 +55,7 @@ type Config struct {
 
 	// Transport is an implementation of transport used to fetch prices from
 	// feeds.
-	Transport transport.Transport
+	Transport transport.TransportService
 
 	// Pairs is the list of asset pairs which are supported by the store.
 	Pairs []string
@@ -240,7 +240,7 @@ func (p *PriceStore) handlePriceMessage(msg transport.ReceivedMessage) {
 			WithFields(price.Price.Fields(p.recover)).
 			WithField("version", price.Version).
 			WithFields(msg.Fields()).
-			Debug("Price collected")
+			Info("Price collected")
 	}
 }
 

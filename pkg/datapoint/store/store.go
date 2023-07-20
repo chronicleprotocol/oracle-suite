@@ -18,7 +18,6 @@ package store
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/defiweb/go-eth/types"
 
@@ -53,7 +52,7 @@ type Store struct {
 	log    log.Logger
 
 	storage    Storage
-	transport  transport.Transport
+	transport  transport.TransportService
 	models     []string
 	recoverers []datapoint.Recoverer
 }
@@ -64,7 +63,7 @@ type Config struct {
 	Storage Storage
 
 	// Transport is an implementation of transport used to fetch prices from feeds.
-	Transport transport.Transport
+	Transport transport.TransportService
 
 	// Models is the list of models which are supported by the store.
 	Models []string
@@ -130,20 +129,39 @@ func (p *Store) Latest(ctx context.Context, model string) (map[types.Address]dat
 	return p.storage.Latest(ctx, model)
 }
 
-func (p *Store) collectDataPoint(point *messages.DataPoint) error {
+func (p *Store) collectDataPoint(point *messages.DataPoint) {
 	for _, recoverer := range p.recoverers {
 		if recoverer.Supports(p.ctx, point.Value) {
 			from, err := recoverer.Recover(p.ctx, point.Model, point.Value, point.Signature)
 			if err != nil {
-				return fmt.Errorf("unable to recover address: %w", err)
+				p.log.
+					WithError(err).
+					WithField("model", point.Model).
+					WithField("value", point.Value.Value.Print()).
+					Error("Unable to recover address")
 			}
 			if err := p.storage.Add(p.ctx, *from, point.Model, point.Value); err != nil {
-				return fmt.Errorf("unable to add data point: %w", err)
+				p.log.
+					WithError(err).
+					WithField("model", point.Model).
+					WithField("value", point.Value.Value.Print()).
+					WithField("from", from.String()).
+					Error("Unable to add data point")
+				return
 			}
-			return nil
+			p.log.
+				WithField("model", point.Model).
+				WithField("value", point.Value.Value.Print()).
+				WithField("from", from.String()).
+				Info("Data point received")
+			return
 		}
 	}
-	return nil
+	p.log.
+		WithField("model", point.Model).
+		WithField("value", point.Value.Value.Print()).
+		Error("Unable to find recoverer for the data point")
+	return
 }
 
 func (p *Store) shouldCollect(model string) bool {
@@ -162,27 +180,7 @@ func (p *Store) dataPointCollectorRoutine() {
 		case <-p.ctx.Done():
 			return
 		case msg := <-dataPointCh:
-			if msg.Error != nil {
-				p.log.WithError(msg.Error).Error("Unable to receive message")
-				return
-			}
-			point, ok := msg.Message.(*messages.DataPoint)
-			if !ok {
-				p.log.Error("Unexpected value returned from the transport layer")
-				return
-			}
-			if !p.shouldCollect(point.Model) {
-				continue
-			}
-			err := p.collectDataPoint(point)
-			if err != nil {
-				p.log.
-					WithError(err).
-					Warn("Received invalid data point")
-			} else {
-				p.log.
-					Info("Data point received")
-			}
+			p.handlePointMessage(msg)
 		}
 	}
 }
@@ -192,4 +190,20 @@ func (p *Store) contextCancelHandler() {
 	defer func() { close(p.waitCh) }()
 	defer p.log.Info("Stopped")
 	<-p.ctx.Done()
+}
+
+func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
+	if msg.Error != nil {
+		p.log.WithError(msg.Error).Error("Unable to receive message")
+		return
+	}
+	point, ok := msg.Message.(*messages.DataPoint)
+	if !ok {
+		p.log.Error("Unexpected value returned from the transport layer")
+		return
+	}
+	if !p.shouldCollect(point.Model) {
+		return
+	}
+	p.collectDataPoint(point)
 }

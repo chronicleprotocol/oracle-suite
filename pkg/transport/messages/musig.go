@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package messages
 
 import (
@@ -16,7 +31,6 @@ const (
 	MuSigStartV1MessageName            = "musig_initialize/v1"
 	MuSigTerminateV1MessageName        = "musig_terminate/v1"
 	MuSigCommitmentV1MessageName       = "musig_commitment/v1"
-	MuSigNonceV1MessageName            = "musig_nonce/v1"
 	MuSigPartialSignatureV1MessageName = "musig_partial_signature/v1"
 	MuSigSignatureV1MessageName        = "musig_signature/v1"
 )
@@ -32,7 +46,7 @@ type MuSigInitialize struct {
 	MsgType string
 
 	// Message body that will be signed.
-	MsgBody []byte
+	MsgBody types.Hash
 
 	// Meta is a map of metadata that may be necessary to verify the message.
 	MsgMeta map[string][]byte
@@ -46,7 +60,7 @@ func (m *MuSigInitialize) MarshallBinary() ([]byte, error) {
 		SessionID:          m.SessionID[:],
 		StartedAtTimestamp: m.StartedAt.Unix(),
 		MsgType:            m.MsgType,
-		MsgBody:            m.MsgBody,
+		MsgBody:            m.MsgBody.Bytes(),
 		MsgMeta:            m.MsgMeta,
 		Signers:            make([][]byte, len(m.Signers)),
 	}
@@ -61,10 +75,13 @@ func (m *MuSigInitialize) UnmarshallBinary(bytes []byte) (err error) {
 	if err := proto.Unmarshal(bytes, &msg); err != nil {
 		return err
 	}
+	if len(msg.MsgBody) > types.HashLength {
+		return fmt.Errorf("invalid message body length")
+	}
 	copy(m.SessionID[:], msg.SessionID)
 	m.StartedAt = time.Unix(msg.StartedAtTimestamp, 0)
 	m.MsgType = msg.MsgType
-	m.MsgBody = msg.MsgBody
+	m.MsgBody = types.MustHashFromBytes(msg.MsgBody, types.PadLeft)
 	m.MsgMeta = msg.MsgMeta
 	m.Signers = make([]types.Address, len(msg.Signers))
 	for i, signer := range msg.Signers {
@@ -105,8 +122,8 @@ type MuSigCommitment struct {
 	// Unique SessionID of the MuSig session.
 	SessionID [32]byte
 
-	// Commitment of the MuSig session.
-	Commitment types.Address
+	CommitmentKeyX *big.Int
+	CommitmentKeyY *big.Int
 
 	PublicKeyX *big.Int
 	PublicKeyY *big.Int
@@ -114,10 +131,11 @@ type MuSigCommitment struct {
 
 func (m *MuSigCommitment) MarshallBinary() ([]byte, error) {
 	return proto.Marshal(&pb.MuSigCommitmentMessage{
-		SessionID:  m.SessionID[:],
-		Commitment: m.Commitment.Bytes(),
-		PubKeyX:    m.PublicKeyX.Bytes(),
-		PubKeyY:    m.PublicKeyY.Bytes(),
+		SessionID:      m.SessionID[:],
+		PubKeyX:        m.PublicKeyX.Bytes(),
+		PubKeyY:        m.PublicKeyY.Bytes(),
+		CommitmentKeyX: m.CommitmentKeyX.Bytes(),
+		CommitmentKeyY: m.CommitmentKeyY.Bytes(),
 	})
 }
 
@@ -126,38 +144,11 @@ func (m *MuSigCommitment) UnmarshallBinary(bytes []byte) error {
 	if err := proto.Unmarshal(bytes, &msg); err != nil {
 		return err
 	}
-	if len(msg.Commitment) != types.AddressLength {
-		return fmt.Errorf("invalid commitment length: %d", len(msg.Commitment))
-	}
 	copy(m.SessionID[:], msg.SessionID)
-	m.Commitment = types.MustAddressFromBytes(msg.Commitment)
 	m.PublicKeyX = new(big.Int).SetBytes(msg.PubKeyX)
 	m.PublicKeyY = new(big.Int).SetBytes(msg.PubKeyY)
-	return nil
-}
-
-type MuSigNonce struct {
-	// Unique SessionID of the MuSig session.
-	SessionID [32]byte
-
-	// Nonce of the MuSig session.
-	Nonce *big.Int
-}
-
-func (m *MuSigNonce) MarshallBinary() ([]byte, error) {
-	return proto.Marshal(&pb.MuSigNonceMessage{
-		SessionID: m.SessionID[:],
-		Nonce:     m.Nonce.Bytes(),
-	})
-}
-
-func (m *MuSigNonce) UnmarshallBinary(bytes []byte) error {
-	msg := pb.MuSigNonceMessage{}
-	if err := proto.Unmarshal(bytes, &msg); err != nil {
-		return err
-	}
-	copy(m.SessionID[:], msg.SessionID)
-	m.Nonce = new(big.Int).SetBytes(msg.Nonce)
+	m.CommitmentKeyX = new(big.Int).SetBytes(msg.CommitmentKeyX)
+	m.CommitmentKeyY = new(big.Int).SetBytes(msg.CommitmentKeyY)
 	return nil
 }
 
@@ -191,21 +182,31 @@ type MuSigSignature struct {
 	SessionID [32]byte
 
 	// Type of the data that was signed.
-	Type string
+	MsgType string
 
 	// Data that was signed.
-	Data []byte
+	MsgBody types.Hash
 
-	// Signature of the MuSig session.
-	Signature *big.Int
+	// Commitment of the MuSig session.
+	Commitment types.Address
+
+	// SchnorrSignature is a MuSig Schnorr signature calculated from the partial
+	// signatures of all participants.
+	SchnorrSignature *big.Int
+
+	// ECDSASignature is a ECDSA signature calculated by the MuSig session
+	// coordinator.
+	ECDSASignature types.Signature
 }
 
 func (m *MuSigSignature) MarshallBinary() ([]byte, error) {
 	return proto.Marshal(&pb.MuSigSignatureMessage{
-		SessionID: m.SessionID[:],
-		Type:      m.Type,
-		Data:      m.Data,
-		Signature: m.Signature.Bytes(),
+		SessionID:        m.SessionID[:],
+		MsgType:          m.MsgType,
+		MsgBody:          m.MsgBody.Bytes(),
+		Commitment:       m.Commitment.Bytes(),
+		SchnorrSignature: m.SchnorrSignature.Bytes(),
+		EcdsaSignature:   m.ECDSASignature.Bytes(),
 	})
 }
 
@@ -214,9 +215,22 @@ func (m *MuSigSignature) UnmarshallBinary(bytes []byte) error {
 	if err := proto.Unmarshal(bytes, &msg); err != nil {
 		return err
 	}
+	if len(msg.MsgBody) > types.HashLength {
+		return fmt.Errorf("invalid message body length")
+	}
+	com, err := types.AddressFromBytes(msg.Commitment)
+	if err != nil {
+		return err
+	}
+	sig, err := types.SignatureFromBytes(msg.EcdsaSignature)
+	if err != nil {
+		return err
+	}
 	copy(m.SessionID[:], msg.SessionID)
-	m.Type = msg.Type
-	m.Data = msg.Data
-	m.Signature = new(big.Int).SetBytes(msg.Signature)
+	m.MsgType = msg.MsgType
+	m.MsgBody = types.MustHashFromBytes(msg.MsgBody, types.PadLeft)
+	m.Commitment = com
+	m.SchnorrSignature = new(big.Int).SetBytes(msg.SchnorrSignature)
+	m.ECDSASignature = sig
 	return nil
 }

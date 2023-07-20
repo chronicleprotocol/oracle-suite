@@ -52,7 +52,7 @@ type Config struct {
 // Services returns the services that are configured from the Config struct.
 type Services struct {
 	Feed      *feed.Feed
-	Transport pkgTransport.Transport
+	Transport pkgTransport.TransportService
 	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
@@ -101,8 +101,9 @@ func (c *Config) Services(baseLogger log.Logger, noRPC bool) (*Services, error) 
 		Keys:    keys,
 		Clients: clients,
 		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName: (*messages.Price)(nil),
-			messages.PriceV1MessageName: (*messages.Price)(nil),
+			messages.PriceV0MessageName:     (*messages.Price)(nil),
+			messages.PriceV1MessageName:     (*messages.Price)(nil),
+			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 		},
 		Logger: logger,
 	})

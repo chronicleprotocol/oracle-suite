@@ -27,8 +27,9 @@ type options struct {
 	cmd.LoggerFlags
 	cmd.FilesFlags
 	Config     ghost.Config
-	Config2    ghostnext.Config
+	ConfigNext ghostnext.Config
 	GoferNoRPC bool
+	Legacy     bool
 }
 
 func NewRootCommand(opts *options) *cobra.Command {
@@ -41,12 +42,6 @@ func NewRootCommand(opts *options) *cobra.Command {
 
 	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
 	rootCmd.PersistentFlags().AddFlagSet(cmd.NewFilesFlagSet(&opts.FilesFlags))
-	rootCmd.PersistentFlags().BoolVar(
-		&opts.GoferNoRPC,
-		"gofer.norpc",
-		false,
-		"disable the use of Graph RPC agent",
-	)
 
 	return rootCmd
 }

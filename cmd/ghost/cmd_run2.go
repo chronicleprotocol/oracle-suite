@@ -24,16 +24,16 @@ import (
 )
 
 func NewNextCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Use:   "next",
-		Short: "Run Feed NEXT agent",
+		Short: "Run Feed NEXT agent (experimental)",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
+			if err := opts.LoadConfigFiles(&opts.ConfigNext); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config2.Services(opts.Logger())
+			services, err := opts.ConfigNext.Services(opts.Logger(), opts.Legacy)
 			if err != nil {
 				return err
 			}
@@ -43,4 +43,6 @@ func NewNextCmd(opts *options) *cobra.Command {
 			return <-services.Wait()
 		},
 	}
+	c.PersistentFlags().BoolVar(&opts.Legacy, "gofer.legacy", false, "use the legacy gofer")
+	return c
 }

@@ -1,5 +1,3 @@
-# Test config for the gofernext apps. Not ready for production use.
-
 gofernext {
   origin "balancerV2" {
     type = "balancerV2"
