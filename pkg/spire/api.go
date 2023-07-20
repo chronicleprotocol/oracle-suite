@@ -34,7 +34,7 @@ const defaultRPCTimeout = time.Minute
 type Nothing = struct{}
 
 type API struct {
-	transport  transport.TransportService
+	transport  transport.Service
 	priceStore *store.PriceStore
 	recover    crypto.Recoverer
 	log        log.Logger

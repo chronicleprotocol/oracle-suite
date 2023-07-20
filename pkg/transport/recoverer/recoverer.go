@@ -27,12 +27,12 @@ import (
 // Recoverer is a transport wrapper that handles panics that occur in the
 // underlying transport.
 type Recoverer struct {
-	t transport.TransportService
+	t transport.Service
 	l log.Logger
 }
 
 // New creates a new Recoverer transport.
-func New(t transport.TransportService, l log.Logger) *Recoverer {
+func New(t transport.Service, l log.Logger) *Recoverer {
 	if t == nil {
 		panic("t cannot be nil")
 	}

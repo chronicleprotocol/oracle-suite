@@ -51,7 +51,7 @@ type Config struct {
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	Transport  pkgTransport.TransportService
+	Transport  pkgTransport.Service
 	EventStore *store.EventStore
 	EventAPI   *api.EventAPI
 	Logger     log.Logger

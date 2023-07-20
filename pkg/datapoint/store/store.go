@@ -52,7 +52,7 @@ type Store struct {
 	log    log.Logger
 
 	storage    Storage
-	transport  transport.TransportService
+	transport  transport.Service
 	models     []string
 	recoverers []datapoint.Recoverer
 }
@@ -63,7 +63,7 @@ type Config struct {
 	Storage Storage
 
 	// Transport is an implementation of transport used to fetch prices from feeds.
-	Transport transport.TransportService
+	Transport transport.Service
 
 	// Models is the list of models which are supported by the store.
 	Models []string
@@ -161,7 +161,6 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 		WithField("model", point.Model).
 		WithField("value", point.Value.Value.Print()).
 		Error("Unable to find recoverer for the data point")
-	return
 }
 
 func (p *Store) shouldCollect(model string) bool {

@@ -35,12 +35,12 @@ const week uint32 = 3600 * 24 * 7
 
 type Dependencies struct {
 	EventStore *store.EventStore
-	Transport  transport.TransportService
+	Transport  transport.Service
 	Logger     log.Logger
 }
 
 type DatastoreDependencies struct {
-	Transport transport.TransportService
+	Transport transport.Service
 	Feeds     []types.Address
 	Logger    log.Logger
 }

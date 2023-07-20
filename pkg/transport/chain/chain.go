@@ -28,11 +28,11 @@ import (
 type Chain struct {
 	ctx    context.Context
 	waitCh <-chan error
-	ts     []transport.TransportService
+	ts     []transport.Service
 }
 
 // New creates a new Chain instance.
-func New(ts ...transport.TransportService) *Chain {
+func New(ts ...transport.Service) *Chain {
 	fi := chanutil.NewFanIn[error]()
 	for _, t := range ts {
 		_ = fi.Add(t.Wait())

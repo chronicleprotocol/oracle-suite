@@ -38,7 +38,7 @@ import (
 type Dependencies struct {
 	Keys      ethereumConfig.KeyRegistry
 	Clients   ethereumConfig.ClientRegistry
-	Transport transport.TransportService
+	Transport transport.Service
 	Logger    log.Logger
 }
 

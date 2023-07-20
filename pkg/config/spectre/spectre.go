@@ -51,7 +51,7 @@ type Config struct {
 type Services struct {
 	Relay      *relayer.Relayer
 	PriceStore *store.PriceStore
-	Transport  pkgTransport.TransportService
+	Transport  pkgTransport.Service
 	Logger     log.Logger
 
 	supervisor *pkgSupervisor.Supervisor

@@ -34,7 +34,7 @@ type EventStore struct {
 	ctx        context.Context
 	eventTypes []string
 	storage    Storage
-	transport  transport.TransportService
+	transport  transport.Service
 	log        log.Logger
 	waitCh     chan error
 }
@@ -49,7 +49,7 @@ type Config struct {
 	Storage Storage
 
 	// Transport is a transport interface used to fetch events from Oracles.
-	Transport transport.TransportService
+	Transport transport.Service
 
 	// Logger is a current logger interface used by the EventStore.
 	// The Logger is required to monitor asynchronous processes.

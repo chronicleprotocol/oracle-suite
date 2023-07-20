@@ -40,7 +40,7 @@ type Dependencies struct {
 }
 
 type PriceStoreDependencies struct {
-	Transport transport.TransportService
+	Transport transport.Service
 	Logger    log.Logger
 }
 

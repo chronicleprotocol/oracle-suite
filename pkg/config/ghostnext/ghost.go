@@ -115,7 +115,7 @@ func (c *Config) Services(baseLogger log.Logger, legacy bool) (*Services, error)
 // Services returns the services that are configured from the Config struct.
 type Services struct {
 	Feed      *feed.Feed
-	Transport pkgTransport.TransportService
+	Transport pkgTransport.Service
 	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor

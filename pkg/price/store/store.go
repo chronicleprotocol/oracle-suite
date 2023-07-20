@@ -55,7 +55,7 @@ type Config struct {
 
 	// Transport is an implementation of transport used to fetch prices from
 	// feeds.
-	Transport transport.TransportService
+	Transport transport.Service
 
 	// Pairs is the list of asset pairs which are supported by the store.
 	Pairs []string

@@ -85,7 +85,7 @@ type ClientServices struct {
 // AgentServices returns the services that are configured from the Config struct.
 type AgentServices struct {
 	SpireAgent *spire.Agent
-	Transport  pkgTransport.TransportService
+	Transport  pkgTransport.Service
 	PriceStore *store.PriceStore
 	Logger     log.Logger
 
@@ -94,7 +94,7 @@ type AgentServices struct {
 
 // StreamServices returns the services that are configured from the Config struct.
 type StreamServices struct {
-	Transport pkgTransport.TransportService
+	Transport pkgTransport.Service
 	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
@@ -259,7 +259,7 @@ func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) 
 
 func (c *ConfigSpire) ConfigureAgent(
 	logger log.Logger,
-	transport pkgTransport.TransportService,
+	transport pkgTransport.Service,
 	priceStore *store.PriceStore,
 ) (
 	*spire.Agent, error,
@@ -307,7 +307,7 @@ func (c *ConfigSpire) ConfigureClient(kr ethereumConfig.KeyRegistry) (*spire.Cli
 	return client, nil
 }
 
-func (c *ConfigSpire) PriceStore(l log.Logger, t pkgTransport.TransportService) (*store.PriceStore, error) {
+func (c *ConfigSpire) PriceStore(l log.Logger, t pkgTransport.Service) (*store.PriceStore, error) {
 	if c.priceStore != nil {
 		return c.priceStore, nil
 	}

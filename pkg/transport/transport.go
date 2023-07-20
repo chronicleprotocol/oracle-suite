@@ -20,7 +20,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
-// ReceivedMessage contains a Message received from TransportService.
+// ReceivedMessage contains a Message received from Transport.
 type ReceivedMessage struct {
 	// Message contains the message content. It is nil when the Error field
 	// is not nil.
@@ -49,8 +49,8 @@ type Message interface {
 	UnmarshallBinary([]byte) error
 }
 
-// TransportService implements a mechanism for exchanging messages between Oracles.
-type TransportService interface {
+// Service implements a mechanism for exchanging messages between Oracles.
+type Service interface {
 	supervisor.Service
 	Transport
 }

@@ -52,7 +52,7 @@ type Config struct {
 type Dependencies struct {
 	KeysRegistry  ethereumConfig.KeyRegistry
 	PriceProvider provider.Provider
-	Transport     transport.TransportService
+	Transport     transport.Service
 	Logger        log.Logger
 }
 
