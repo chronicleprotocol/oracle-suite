@@ -19,13 +19,6 @@ gofer {
     }
   }
 
-  origin "binance_us" {
-    type   = "binance"
-    params = {
-      url = "https://www.binance.us"
-    }
-  }
-
   origin "bittrex" {
     type   = "bittrex"
     params = {
@@ -139,7 +132,6 @@ gofer {
   }
 
   price_model "BTC/USD" "median" {
-    source "BTC/USD" "origin" { origin = "binance_us" }
     source "BTC/USD" "origin" { origin = "bitstamp" }
     source "BTC/USD" "origin" { origin = "coinbasepro" }
     source "BTC/USD" "origin" { origin = "gemini" }
@@ -148,7 +140,6 @@ gofer {
   }
 
   price_model "ETH/BTC" "median" {
-    source "ETH/BTC" "origin" { origin = "binance_us" }
     source "ETH/BTC" "origin" { origin = "bitstamp" }
     source "ETH/BTC" "origin" { origin = "coinbasepro" }
     source "ETH/BTC" "origin" { origin = "gemini" }
@@ -214,7 +205,6 @@ gofer {
       source "MANA/BTC" "origin" { origin = "binance" }
       source "BTC/USD" "origin" { origin = "." }
     }
-    source "MANA/USD" "origin" { origin = "binance_us" }
     source "MANA/USD" "origin" { origin = "coinbasepro" }
     source "MANA/USD" "origin" { origin = "kraken" }
     source "MANA/USD" "indirect" {
@@ -315,7 +305,6 @@ gofer {
   }
 
   price_model "USDC/USD" "median" {
-    source "USDC/USD" "origin" { origin = "coinbasepro" }
     source "USDC/USD" "origin" { origin = "gemini" }
     source "USDC/USD" "origin" { origin = "kraken" }
     min_sources = 2

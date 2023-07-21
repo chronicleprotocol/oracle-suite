@@ -57,6 +57,12 @@ gofernext {
     jq   = "{price: .last, time: (.volume.timestamp/1000), volume: .volume[$ucquote]|tonumber}"
   }
 
+  origin "hitbtc" {
+    type = "tick_generic_jq"
+    url  = "https://api.hitbtc.com/api/2/public/ticker?symbols=$${ucbase}$${ucquote}"
+    jq   = "{price: .[0].last|tonumber, time: .[0].timestamp|strptime(\"%Y-%m-%dT%H:%M:%S.%jZ\")|mktime, volume: .[0].volumeQuote|tonumber}"
+  }
+
   origin "huobi" {
     type = "tick_generic_jq"
     url  = "https://api.huobi.pro/market/tickers"
@@ -72,6 +78,12 @@ gofernext {
     type = "tick_generic_jq"
     url  = "https://api.kraken.com/0/public/Ticker?pair=$${ucbase}/$${ucquote}"
     jq   = "($ucbase + \"/\" + $ucquote) as $pair | {price: .result[$pair].c[0]|tonumber, time: now|round, volume: .result[$pair].v[0]|tonumber}"
+  }
+
+  origin "kucoin" {
+    type = "tick_generic_jq"
+    url  = "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=$${ucbase}-$${ucquote}"
+    jq   = "{price: .data.price, time: (.data.time/1000)|round, volume: null}"
   }
 
   origin "okx" {
@@ -165,6 +177,7 @@ gofernext {
         }
         reference { data_model = "USDC/USD" }
       }
+      origin "hitbtc" { query = "ETH/USD" }
     }
   }
 
