@@ -154,9 +154,6 @@ func (g *Feed) broadcast(pair provider.Pair) error {
 	if err = g.transport.Broadcast(messages.PriceV1MessageName, msg.AsV1()); err != nil {
 		return err
 	}
-	if err = g.transport.Broadcast(messages.DataPointV1MessageName, messages.Price2DataPoint(msg)); err != nil {
-		return err
-	}
 	return err
 }
 

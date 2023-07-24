@@ -101,9 +101,8 @@ func (c *Config) Services(baseLogger log.Logger, noRPC bool) (*Services, error) 
 		Keys:    keys,
 		Clients: clients,
 		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName:     (*messages.Price)(nil),
-			messages.PriceV1MessageName:     (*messages.Price)(nil),
-			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
+			messages.PriceV0MessageName: (*messages.Price)(nil),
+			messages.PriceV1MessageName: (*messages.Price)(nil),
 		},
 		Logger: logger,
 	})

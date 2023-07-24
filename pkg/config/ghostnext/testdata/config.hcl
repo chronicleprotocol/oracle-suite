@@ -37,3 +37,24 @@ transport {
     ethereum_key      = "key1"
   }
 }
+
+gofer {
+  rpc_listen_addr = "localhost:8080"
+  rpc_agent_addr  = "localhost:8081"
+
+  origin "uniswapV3" {
+    type   = "uniswapV3"
+    params = {
+      contract_address = "0x1234567890123456789012345678901234567890"
+    }
+  }
+
+  price_model "AAA/BBB" "median" {
+    source "AAA/BBB" "origin" { origin = "uniswapV3" }
+    source "AAA/BBB" "indirect" {
+      source "AAA/XXX" "origin" { origin = "uniswapV3" }
+      source "XXX/BBB" "origin" { origin = "uniswapV3" }
+    }
+    min_sources = 3
+  }
+}

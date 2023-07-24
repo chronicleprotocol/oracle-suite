@@ -189,7 +189,7 @@ func Price2DataPoint(msg *Price) *DataPoint {
 					Base:  msg.Price.Wat[:len(msg.Price.Wat)-3],
 					Quote: msg.Price.Wat[len(msg.Price.Wat)-3:],
 				},
-				Price: bn.Float(msg.Price.Val),
+				Price: bn.Float(msg.Price.Val).Div(value.TickPricePrecision),
 			},
 			Time: msg.Price.Age,
 		},

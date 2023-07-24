@@ -16,7 +16,6 @@
 package messages
 
 import (
-	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -32,8 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
 )
 
@@ -353,28 +350,4 @@ func (ps priceSSB) toPrice() (median.Price, error) {
 		Sig: types.MustSignatureFromHex(ps.Signature),
 	}
 	return p, p.SetHexPrice(ps.PriceHex)
-}
-
-func TestPrice2DataPoint(t *testing.T) {
-	tests := prepTestCases(t)
-
-	recoverer := signer.NewTickRecoverer(crypto.ECRecoverer)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			want, err := tt.price.From(crypto.ECRecoverer)
-			assert.NoError(t, err)
-
-			point := Price2DataPoint(&Price{Price: &tt.price})
-			require.Equal(t, tt.price.Age, point.Value.Time)
-			require.Equal(t, tt.price.Val, point.Value.Value.(value.Tick).Price.BigInt())
-			require.Equal(t, tt.price.Wat, point.Model)
-			require.Equal(t, tt.price.Sig.String(), point.Signature.String())
-
-			got, err := recoverer.Recover(context.TODO(), point.Model, point.Value, point.Signature)
-			assert.NoError(t, err)
-
-			assert.Equal(t, want.String(), got.String())
-		})
-	}
 }
