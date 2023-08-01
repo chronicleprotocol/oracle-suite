@@ -23,8 +23,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	configGoferNext "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
-	priceproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/priceprovider"
-
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feednext"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
@@ -40,12 +38,11 @@ import (
 
 // Config is the configuration for Ghost.
 type Config struct {
-	GhostNext feedConfig.Config          `hcl:"ghostnext,block"`
-	Gofer     priceproviderConfig.Config `hcl:"gofer,block"`
-	GoferNext configGoferNext.Config     `hcl:"gofernext,block"`
-	Ethereum  ethereumConfig.Config      `hcl:"ethereum,block"`
-	Transport transportConfig.Config     `hcl:"transport,block"`
-	Logger    *loggerConfig.Config       `hcl:"logger,block,optional"`
+	GhostNext feedConfig.Config      `hcl:"ghostnext,block"`
+	GoferNext configGoferNext.Config `hcl:"gofernext,block"`
+	Ethereum  ethereumConfig.Config  `hcl:"ethereum,block"`
+	Transport transportConfig.Config `hcl:"transport,block"`
+	Logger    *loggerConfig.Config   `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
