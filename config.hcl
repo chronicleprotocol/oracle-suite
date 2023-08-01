@@ -8,8 +8,6 @@ include = [
   "config-transport.hcl",
   "config-ghost.hcl",
   "config-gofer.hcl",
-  "config-lair.hcl",
-  "config-leeloo.hcl",
   "config-spectre.hcl",
   "config-spire.hcl",
   "config-gofernext.hcl",

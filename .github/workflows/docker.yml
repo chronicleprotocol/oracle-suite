@@ -19,10 +19,10 @@ on:
         type: choice
         required: true
         options:
-          - ghost
-          - spectre
           - gofer
           - spire
+          - ghost
+          - spectre
 #  push:
 #    tags:
 #      - v[0-9]+.[0-9]+.[0-9]+
