@@ -45,7 +45,7 @@ type Config struct {
 	GoferNext configGoferNext.Config     `hcl:"gofernext,block"`
 	Ethereum  ethereumConfig.Config      `hcl:"ethereum,block"`
 	Transport transportConfig.Config     `hcl:"transport,block"`
-	Logger0   *loggerConfig.Config       `hcl:"logger,block,optional"`
+	Logger    *loggerConfig.Config       `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
@@ -54,7 +54,7 @@ type Config struct {
 
 // Services returns the services configured for Lair.
 func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
-	logger, err := c.Logger0.Logger(loggerConfig.Dependencies{
+	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "ghost",
 		BaseLogger: baseLogger,
 	})
@@ -99,7 +99,7 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 	return &Services{
 		Feed:      feedService,
 		Transport: transport,
-		Logger00:  logger,
+		Logger:    logger,
 	}, nil
 }
 
@@ -107,7 +107,7 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 type Services struct {
 	Feed      *feed.Feed
 	Transport pkgTransport.Service
-	Logger00  log.Logger
+	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
 }
@@ -117,9 +117,9 @@ func (s *Services) Start(ctx context.Context) error {
 	if s.supervisor != nil {
 		return fmt.Errorf("services already started")
 	}
-	s.supervisor = pkgSupervisor.New(s.Logger00)
-	s.supervisor.Watch(s.Transport, s.Feed, sysmon.New(time.Minute, s.Logger00))
-	if l, ok := s.Logger00.(pkgSupervisor.Service); ok {
+	s.supervisor = pkgSupervisor.New(s.Logger)
+	s.supervisor.Watch(s.Transport, s.Feed, sysmon.New(time.Minute, s.Logger))
+	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}
 	return s.supervisor.Start(ctx)
