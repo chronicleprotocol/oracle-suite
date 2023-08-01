@@ -26,6 +26,25 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
+func Command(name string, config supervisor.Config) *cobra.Command {
+	var ConfigFiles FilesFlags
+	var LoggerFlags LoggerFlags
+	cmd := NewRootCommand(
+		name,
+		Version,
+		NewFilesFlagSet(&ConfigFiles),
+		NewLoggerFlagSet(&LoggerFlags),
+	)
+	cmd.AddCommand(
+		NewRunCmd(
+			config,
+			&ConfigFiles,
+			&LoggerFlags,
+		),
+	)
+	return cmd
+}
+
 func NewRootCommand(name, version string, sets ...*pflag.FlagSet) *cobra.Command {
 	c := &cobra.Command{
 		Use:          name,

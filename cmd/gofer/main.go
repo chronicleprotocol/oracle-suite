@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 )
@@ -31,16 +32,35 @@ func main() {
 	opts := options{
 		Format: formatTypeValue{format: marshal.NDJSON},
 	}
-
-	rootCmd := NewRootCommand(&opts)
+	rootCmd := cmd.NewRootCommand(
+		"gofer",
+		cmd.Version,
+		cmd.NewLoggerFlagSet(&opts.LoggerFlags),
+		cmd.NewFilesFlagSet(&opts.FilesFlags),
+	)
+	rootCmd.PersistentFlags().VarP(
+		&opts.Format,
+		"format",
+		"o",
+		"output format",
+	)
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.NoRPC,
+		"norpc",
+		false,
+		"disable the use of RPC agent",
+	)
 	rootCmd.AddCommand(
+		cmd.NewRunCmd(
+			&opts.Config,
+			&opts.FilesFlags,
+			&opts.LoggerFlags,
+		),
 		NewPairsCmd(&opts),
 		NewPricesCmd(&opts),
-		NewRunCmd(&opts),
 		NewModelsCmd(&opts),
 		NewDataCmd(&opts),
 	)
-
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Printf("Error: %s\n", err)
 		if exitCode == 0 {

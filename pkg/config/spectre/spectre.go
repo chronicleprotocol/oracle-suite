@@ -76,7 +76,7 @@ func (s *Services) Wait() <-chan error {
 }
 
 // Services returns the services configured for Spectre.
-func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
+func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spectre",
 		BaseLogger: baseLogger,

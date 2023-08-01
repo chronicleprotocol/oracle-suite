@@ -177,8 +177,8 @@ func (c *Config) ClientServices(baseLogger log.Logger) (*ClientServices, error) 
 	}, nil
 }
 
-// AgentServices returns the services configured for Spire.
-func (c *Config) AgentServices(baseLogger log.Logger) (*AgentServices, error) {
+// Services returns the services configured for Spire.
+func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: baseLogger,

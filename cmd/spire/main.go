@@ -17,20 +17,38 @@ package main
 
 import (
 	"os"
+
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 )
+
+type options struct {
+	cmd.LoggerFlags
+	cmd.FilesFlags
+	Config            spire.Config
+	BootstrapConfig   BootstrapConfig
+	TransportOverride string
+}
 
 func main() {
 	var opts options
-	rootCmd := NewRootCommand(&opts)
-
+	rootCmd := cmd.NewRootCommand(
+		"spire",
+		cmd.Version,
+		cmd.NewLoggerFlagSet(&opts.LoggerFlags),
+		cmd.NewFilesFlagSet(&opts.FilesFlags),
+	)
 	rootCmd.AddCommand(
-		NewAgentCmd(&opts),
+		cmd.NewRunCmd(
+			&opts.Config,
+			&opts.FilesFlags,
+			&opts.LoggerFlags,
+		),
 		NewStreamCmd(&opts),
 		NewPullCmd(&opts),
 		NewPushCmd(&opts),
 		NewBootstrapCmd(&opts),
 	)
-
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

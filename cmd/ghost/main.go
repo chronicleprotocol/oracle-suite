@@ -23,23 +23,8 @@ import (
 )
 
 func main() {
-	var ConfigFiles cmd.FilesFlags
-	var LoggerFlags cmd.LoggerFlags
-	rootCmd := cmd.NewRootCommand(
-		"ghost",
-		cmd.Version,
-		cmd.NewFilesFlagSet(&ConfigFiles),
-		cmd.NewLoggerFlagSet(&LoggerFlags),
-	)
 	var Config ghost.Config
-	rootCmd.AddCommand(
-		cmd.NewRunCmd(
-			&Config,
-			&ConfigFiles,
-			&LoggerFlags,
-		),
-	)
-	if err := rootCmd.Execute(); err != nil {
+	if err := cmd.Command("ghost", &Config).Execute(); err != nil {
 		os.Exit(1)
 	}
 }
