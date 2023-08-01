@@ -30,7 +30,7 @@ func NewAgentCmd(opts *options) *cobra.Command {
 		Args:    cobra.ExactArgs(0),
 		Short:   "Starts the Spire agent",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+			if err := opts.Load(&opts.Config); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)

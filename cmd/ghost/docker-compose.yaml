@@ -8,8 +8,6 @@ services:
       args:
         APP_NAME: "ghost"
         APP_VERSION: "0.0.0-dev.0"
-    # Alternative command available
-    #    command: [ "next" ]
     environment: # values are set in .env file - not committed on purpose
       CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
       CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id

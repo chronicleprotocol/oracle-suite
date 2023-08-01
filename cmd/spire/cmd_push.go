@@ -44,7 +44,7 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Push a price message to the network",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+			if err := opts.Load(&opts.Config); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

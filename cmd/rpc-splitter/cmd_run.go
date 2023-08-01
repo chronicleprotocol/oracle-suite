@@ -33,7 +33,7 @@ import (
 func NewRunCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
-		Args:    cobra.ExactArgs(0),
+		Args:    cobra.NoArgs,
 		Aliases: []string{"agent", "server"},
 		Short:   "Start server",
 		Long:    `Start server`,
@@ -45,7 +45,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 				rpcsplitter.WithTotalTimeout(time.Duration(opts.TotalTimeoutSec)*time.Second),
 				rpcsplitter.WithGracefulTimeout(time.Duration(opts.GracefulTimeoutSec)*time.Second),
 				rpcsplitter.WithRequirements(minimumRequiredResponses(len(opts.EthRPCURLs)), opts.MaxBlocksBehind),
-				rpcsplitter.WithLogger(opts.Logger()),
+				rpcsplitter.WithLogger(log),
 			)
 			if err != nil {
 				return err

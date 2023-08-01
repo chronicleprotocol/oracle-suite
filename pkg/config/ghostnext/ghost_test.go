@@ -32,7 +32,7 @@ func TestConfig(t *testing.T) {
 		{
 			path: "config.hcl",
 			test: func(t *testing.T, cfg *Config) {
-				services, err := cfg.Services(null.New(), false)
+				services, err := cfg.Services(null.New())
 				require.NoError(t, err)
 				require.NotNil(t, services.Feed)
 				require.NotNil(t, services.Transport)

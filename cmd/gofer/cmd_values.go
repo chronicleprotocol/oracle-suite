@@ -38,7 +38,7 @@ func NewDataCmd(opts *options) *cobra.Command {
 		Short:   "Return data points for given models.",
 		Long:    `Return data points for given models.`,
 		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
+			if err := opts.Load(&opts.Config2); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

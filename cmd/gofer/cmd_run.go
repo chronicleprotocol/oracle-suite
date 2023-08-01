@@ -29,7 +29,7 @@ func NewRunCmd(opts *options) *cobra.Command {
 		Args:    cobra.NoArgs,
 		Aliases: []string{"agent", "server"},
 		RunE: func(_ *cobra.Command, args []string) error {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+			if err := opts.Load(&opts.Config); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)

@@ -37,7 +37,7 @@ func NewModelsCmd(opts *options) *cobra.Command {
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "List all supported models.",
 		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
+			if err := opts.Load(&opts.Config2); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

@@ -1,0 +1,87 @@
+version: '3'
+services:
+  bootstrap:
+    hostname: "bootstrap.local"
+    image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
+    command: [ "bootstrap" ]
+    environment:
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: ""
+      CFG_LIBP2P_PK_SEED: "FEDCBA9876543210FEDCBA98765432100123456789ABCDEF0123456789ABCDEF"
+  ghost1:
+    image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
+    environment:
+      CFG_ETH_FROM: ${ETH_FROM_A}
+      CFG_ETH_KEYS: ${ETH_KEYS_A}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
+      CFG_WEBAPI_ENABLE: 0
+  ghost2:
+    image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
+    environment:
+      CFG_ETH_FROM: ${ETH_FROM_B}
+      CFG_ETH_KEYS: ${ETH_KEYS_B}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
+      CFG_WEBAPI_ENABLE: 0
+  ghost3:
+    image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
+    environment:
+      CFG_ETH_FROM: ${ETH_FROM_C}
+      CFG_ETH_KEYS: ${ETH_KEYS_C}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
+      CFG_WEBAPI_ENABLE: 0
+  spectre1:
+    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
+    environment:
+      CFG_ETH_FROM: ${ETH_FROM_D}
+      CFG_ETH_KEYS: ${ETH_KEYS_D}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
+      CFG_WEBAPI_ENABLE: 0
+      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
+      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
+      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls
+      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
+      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls
+      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
+  spectre2:
+    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
+    environment:
+      CFG_ETH_FROM: ${ETH_FROM_E}
+      CFG_ETH_KEYS: ${ETH_KEYS_E}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
+      CFG_WEBAPI_ENABLE: 0
+      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
+      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
+      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls
+      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
+      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls
+      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
+  spectre3:
+    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
+    environment:
+      CFG_ETH_FROM: ${ETH_FROM_F}
+      CFG_ETH_KEYS: ${ETH_KEYS_F}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
+      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
+      CFG_WEBAPI_ENABLE: 0
+      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls
+      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
+      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls
+      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
+      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls
+      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id

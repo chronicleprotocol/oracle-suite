@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cmd
 
 import (
 	"context"
@@ -21,28 +21,42 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
-func NewNextCmd(opts *options) *cobra.Command {
+func NewRootCommand(name, version string, sets ...*pflag.FlagSet) *cobra.Command {
 	c := &cobra.Command{
-		Use:   "next",
-		Short: "Run Feed NEXT agent (experimental)",
-		Args:  cobra.ExactArgs(0),
+		Use:          name,
+		Version:      version,
+		SilenceUsage: true,
+	}
+	flags := c.PersistentFlags()
+	for _, set := range sets {
+		flags.AddFlagSet(set)
+	}
+	return c
+}
+
+func NewRunCmd(c supervisor.Config, f *FilesFlags, l *LoggerFlags) *cobra.Command {
+	return &cobra.Command{
+		Use:     "run",
+		Args:    cobra.NoArgs,
+		Aliases: []string{"agent", "server"},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.LoadConfigFiles(&opts.ConfigNext); err != nil {
+			if err := f.Load(c); err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.ConfigNext.Services(opts.Logger(), opts.Legacy)
+			services, err := c.Services(l.Logger())
 			if err != nil {
 				return err
 			}
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
 			return <-services.Wait()
 		},
 	}
-	c.PersistentFlags().BoolVar(&opts.Legacy, "gofer.legacy", false, "use the legacy gofer")
-	return c
 }

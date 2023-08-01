@@ -22,7 +22,6 @@ import (
 )
 
 type FilesFlags struct {
-	//TODO: think of ways to make it a pflag.Value interface
 	paths []string
 }
 
@@ -37,6 +36,6 @@ func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
 	return fs
 }
 
-func (cf FilesFlags) LoadConfigFiles(c any) error {
+func (cf FilesFlags) Load(c any) error {
 	return config.LoadFiles(c, cf.paths)
 }
