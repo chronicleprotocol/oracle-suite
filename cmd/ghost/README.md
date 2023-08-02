@@ -201,11 +201,9 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   run         Run Feed agent
-  run2        Run Feed NEXT agent
 
 Flags:
   -c, --config strings                                 config file (default [./config.hcl])
-      --gofer.norpc                                    disable the use of Graph RPC agent
   -h, --help                                           help for ghost
   -f, --log.format text|json                           log format (default text)
   -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default info)
