@@ -20,37 +20,35 @@ import (
 	"sync"
 
 	"github.com/defiweb/go-eth/types"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
 // MemoryStorage is an in-memory implementation of Storage.
 type MemoryStorage struct {
 	mu sync.RWMutex
-	ds map[dataPointKey]datapoint.Point
+	ds map[dataPointKey]StoredDataPoint
 }
 
 // NewMemoryStorage creates a new MemoryStorage.
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
-		ds: make(map[dataPointKey]datapoint.Point),
+		ds: make(map[dataPointKey]StoredDataPoint),
 	}
 }
 
 // Add implements the Storage interface.
-func (m *MemoryStorage) Add(_ context.Context, from types.Address, model string, point datapoint.Point) error {
+func (m *MemoryStorage) Add(_ context.Context, point StoredDataPoint) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	prev, ok := m.ds[dataPointKey{feed: from, model: model}]
-	if ok && prev.Time.After(point.Time) {
+	prev, ok := m.ds[dataPointKey{feed: point.From, model: point.Model}]
+	if ok && prev.DataPoint.Time.After(point.DataPoint.Time) {
 		return nil // ignore older points
 	}
-	m.ds[dataPointKey{feed: from, model: model}] = point
+	m.ds[dataPointKey{feed: point.From, model: point.Model}] = point
 	return nil
 }
 
 // LatestFrom implements the Storage interface.
-func (m *MemoryStorage) LatestFrom(_ context.Context, from types.Address, model string) (datapoint.Point, bool, error) {
+func (m *MemoryStorage) LatestFrom(_ context.Context, from types.Address, model string) (StoredDataPoint, bool, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	p, ok := m.ds[dataPointKey{feed: from, model: model}]
@@ -58,10 +56,10 @@ func (m *MemoryStorage) LatestFrom(_ context.Context, from types.Address, model 
 }
 
 // Latest implements the Storage interface.
-func (m *MemoryStorage) Latest(_ context.Context, model string) (map[types.Address]datapoint.Point, error) {
+func (m *MemoryStorage) Latest(_ context.Context, model string) (map[types.Address]StoredDataPoint, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	ps := make(map[types.Address]datapoint.Point)
+	ps := make(map[types.Address]StoredDataPoint)
 	for k, v := range m.ds {
 		if k.model == model {
 			ps[k.feed] = v

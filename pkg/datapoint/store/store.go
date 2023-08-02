@@ -36,13 +36,22 @@ type Storage interface {
 	//
 	// Adding a data point with a timestamp older than the latest data point
 	// for the same address and model will be ignored.
-	Add(ctx context.Context, from types.Address, model string, point datapoint.Point) error
+	Add(ctx context.Context, point StoredDataPoint) error
 
 	// LatestFrom returns the latest data point from a given address.
-	LatestFrom(ctx context.Context, from types.Address, model string) (point datapoint.Point, ok bool, err error)
+	LatestFrom(ctx context.Context, from types.Address, model string) (point StoredDataPoint, ok bool, err error)
 
 	// Latest returns the latest data points from all addresses.
-	Latest(ctx context.Context, model string) (points map[types.Address]datapoint.Point, err error)
+	Latest(ctx context.Context, model string) (points map[types.Address]StoredDataPoint, err error)
+}
+
+// StoredDataPoint is a struct which represents a data point stored in the
+// Store.
+type StoredDataPoint struct {
+	Model     string
+	DataPoint datapoint.Point
+	From      types.Address
+	Signature types.Signature
 }
 
 // Store stores latest data points from feeds.
@@ -107,7 +116,7 @@ func (p *Store) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	p.log.Debug("Starting")
+	p.log.Info("Starting")
 	p.ctx = ctx
 	go p.dataPointCollectorRoutine()
 	go p.contextCancelHandler()
@@ -120,12 +129,12 @@ func (p *Store) Wait() <-chan error {
 }
 
 // LatestFrom returns the latest data point from a given address.
-func (p *Store) LatestFrom(ctx context.Context, from types.Address, model string) (datapoint.Point, bool, error) {
+func (p *Store) LatestFrom(ctx context.Context, from types.Address, model string) (StoredDataPoint, bool, error) {
 	return p.storage.LatestFrom(ctx, from, model)
 }
 
 // Latest returns the latest data points from all addresses.
-func (p *Store) Latest(ctx context.Context, model string) (map[types.Address]datapoint.Point, error) {
+func (p *Store) Latest(ctx context.Context, model string) (map[types.Address]StoredDataPoint, error) {
 	return p.storage.Latest(ctx, model)
 }
 
@@ -140,18 +149,24 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 					WithField("value", point.Value.Value.Print()).
 					Error("Unable to recover address")
 			}
-			if err := p.storage.Add(p.ctx, *from, point.Model, point.Value); err != nil {
+			point := StoredDataPoint{
+				Model:     point.Model,
+				DataPoint: point.Value,
+				From:      *from,
+				Signature: point.Signature,
+			}
+			if err := p.storage.Add(p.ctx, point); err != nil {
 				p.log.
 					WithError(err).
 					WithField("model", point.Model).
-					WithField("value", point.Value.Value.Print()).
+					WithField("value", point.DataPoint.Value.Print()).
 					WithField("from", from.String()).
 					Error("Unable to add data point")
 				return
 			}
 			p.log.
 				WithField("model", point.Model).
-				WithField("value", point.Value.Value.Print()).
+				WithField("value", point.DataPoint.Value.Print()).
 				WithField("from", from.String()).
 				Info("Data point received")
 			return
