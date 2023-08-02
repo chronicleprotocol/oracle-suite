@@ -67,7 +67,7 @@ func Test_Ghost_ValidPrice(t *testing.T) {
 	require.NoError(t, err)
 
 	spireCmd := command(ctx, "..", nil, "./spire", "agent", "-c", "./e2e/testdata/config/spire.hcl", "-v", "debug")
-	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "-v", "debug")
+	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "--gofer.norpc", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = spireCmd.Wait()
@@ -123,7 +123,7 @@ func Test_Ghost_InvalidPrice(t *testing.T) {
 	require.NoError(t, err)
 
 	spireCmd := command(ctx, "..", nil, "./spire", "agent", "-c", "./e2e/testdata/config/spire.hcl", "-v", "debug")
-	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "-v", "debug")
+	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "--gofer.norpc", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = spireCmd.Wait()
