@@ -178,10 +178,7 @@ gofernext {
         origin "okx" { query = "AAVE/USDT" }
         reference { data_model = "USDT/USD" }
       }
-      indirect {
-        origin "hitbtc" { query = "AAVE/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
+      origin "hitbtc" { query = "AAVE/USD" }
       indirect {
         origin "kucoin" { query = "AAVE/USDT" }
         reference { data_model = "USDT/USD" }
@@ -193,12 +190,12 @@ gofernext {
   data_model "ARB/USD" {
     median {
       min_values = 3
-      indirect {
-        alias "ETH/ARB" {
-          origin "uniswapV3Arb" { query = "WETH/ARB" }
-        }
-        reference { data_model = "ETH/USD" }
-      }
+#      indirect {
+#        alias "ETH/ARB" {
+#          origin "uniswapV3Arb" { query = "WETH/ARB" }
+#        }
+#        reference { data_model = "ETH/USD" }
+#      }
       origin "coinbase" { query = "ARB/USD" }
       indirect {
         origin "binance" { query = "ARB/USDT" }
@@ -266,27 +263,27 @@ gofernext {
       origin "kraken" { query = "BTC/USD" }
     }
   }
-
-  data_model "CRV/USD" {
-    median {
-      min_values = 2
-      indirect {
-        origin "binance" { query = "CRV/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      indirect {
-        origin "hitbtc" { query = "CRV/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      indirect {
-        alias "CRV/ETH" {
-          origin "curve" { query = "CRV/WETH" }
-        }
-        reference { data_model = "ETH/USD" }
-      }
-    }
-  }
-
+#
+#  data_model "CRV/USD" {
+#    median {
+#      min_values = 2
+#      indirect {
+#        origin "binance" { query = "CRV/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+#      indirect {
+#        origin "hitbtc" { query = "CRV/USDT" }
+#        reference { data_model = "USDT/USD" }
+#      }
+##      indirect {
+##        alias "CRV/ETH" {
+##          origin "curve" { query = "CRV/WETH" }
+##        }
+##        reference { data_model = "ETH/USD" }
+##      }
+#    }
+#  }
+#
   data_model "ETH/BTC" {
     median {
       min_values = 3
@@ -323,19 +320,15 @@ gofernext {
     median {
       min_values = 3
       indirect {
-        origin "okx" { query = "DAI/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      indirect {
-        origin "uniswapV3" { query = "DAI/WETH" }
-        alias "WETH/USD" {
-          reference { data_model = "ETH/USD" }
+        alias "DAI/ETH" {
+          origin "uniswapV3" { query = "DAI/WETH" }
         }
+        reference { data_model = "ETH/USD" }
       }
-      indirect {
-        origin "curve" { query = "DAI/USDC" }
-        reference { data_model = "USDC/USD" }
-      }
+#      indirect {
+#        origin "curve" { query = "DAI/USDC" }
+#        reference { data_model = "USDC/USD" }
+#      }
       indirect {
         origin "huobi" { query = "DAI/USDT" }
         reference { data_model = "USDT/USD" }
@@ -499,12 +492,12 @@ gofernext {
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "OP/USD" }
-      indirect {
-        alias "OP/ETH" {
-          origin "uniswapV3Op" { query = "OP/WETH" }
-        }
-        reference { data_model = "ETH/USD" }
-      }
+#      indirect {
+#        alias "OP/ETH" {
+#          origin "uniswapV3Op" { query = "OP/WETH" }
+#        }
+#        reference { data_model = "ETH/USD" }
+#      }
     }
   }
 
@@ -545,12 +538,12 @@ gofernext {
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "SNX/USD" }
-      indirect {
-        alias "ETH/SNX" {
-          origin "uniswapV3Op" { query = "WETH/SNX" }
-        }
-        reference { data_model = "ETH/USD" }
-      }
+#      indirect {
+#        alias "ETH/SNX" {
+#          origin "uniswapV3Op" { query = "WETH/SNX" }
+#        }
+#        reference { data_model = "ETH/USD" }
+#      }
     }
   }
 
@@ -595,10 +588,10 @@ gofernext {
         reference { data_model = "USDT/USD" }
       }
       indirect {
-        origin "uniswapV3" { query = "UNI/WETH"}
-        alias "WETH/USD" {
-          reference { data_model = "ETH/USD" }
+        alias "UNI/ETH" {
+          origin "uniswapV3" { query = "UNI/WETH"}
         }
+        reference { data_model = "ETH/USD" }
       }
       origin "coinbase" { query = "UNI/USD" }
       indirect {
@@ -610,21 +603,19 @@ gofernext {
 
   data_model "USDC/USD" {
     median {
-      min_values = 3
-      indirect {
-        origin "uniswapV3" { query = "USDC/WETH" }
-        reference { data_model = "ETH/USD" }
-      }
-      indirect {
-        origin "curve" { query = "USDT/USDC" }
-        reference { data_model = "USDT/USD" }
-      }
+      min_values = 2
+#      indirect {
+#        alias "USDC/ETH" {
+#          origin "uniswapV3" { query = "USDC/WETH" }
+#        }
+#        reference { data_model = "ETH/USD" }
+#      }
+#      indirect {
+#        origin "curve" { query = "USDT/USDC" }
+#        reference { data_model = "USDT/USD" }
+#      }
       indirect {
         origin "okx" { query = "USDT/USDC" }
-        reference { data_model = "USDT/USD" }
-      }
-      indirect {
-        origin "binance" { query ="USDT/USDC" }
         reference { data_model = "USDT/USD" }
       }
       origin "kraken" { query ="USDC/USD" }
@@ -654,17 +645,17 @@ gofernext {
     median {
       min_values = 3
       indirect {
-        origin "uniswapV3" { query = "WBTC/WETH" }
-        alias "WETH/USD" {
-          reference { data_model = "ETH/USD" }
+        alias "WBTC/ETH" {
+          origin "uniswapV3" { query = "WBTC/WETH" }
         }
+        reference { data_model = "ETH/USD" }
       }
-      indirect {
-        origin "curve" { query = "WBTC/WETH" }
-        alias "WETH/USD" {
-          reference { data_model = "ETH/USD" }
-        }
-      }
+#      indirect {
+#        alias "WBTC/ETH" {
+#          origin "curve" { query = "WBTC/WETH" }
+#        }
+#        reference { data_model = "ETH/USD" }
+#      }
       indirect {
         origin "binance" { query = "WBTC/BTC" }
         reference { data_model = "BTC/USD" }
