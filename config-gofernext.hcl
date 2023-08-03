@@ -177,7 +177,6 @@ gofernext {
         }
         reference { data_model = "USDC/USD" }
       }
-      origin "hitbtc" { query = "ETH/USD" }
     }
   }
 
