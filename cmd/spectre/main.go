@@ -24,7 +24,7 @@ import (
 
 func main() {
 	var Config spectre.Config
-	if err := cmd.Command("spectre", &Config).Execute(); err != nil {
+	if err := cmd.DefaultCommand("spectre", &Config).Execute(); err != nil {
 		os.Exit(1)
 	}
 }

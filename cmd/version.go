@@ -15,5 +15,6 @@
 
 package cmd
 
-// Version is being used in executables
+// Version that can be used by commands.
+// It is supposed to by set by the linker during build.
 var Version = "unknown"

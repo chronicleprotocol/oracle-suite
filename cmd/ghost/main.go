@@ -24,7 +24,7 @@ import (
 
 func main() {
 	var Config ghost.Config
-	if err := cmd.Command("ghost", &Config).Execute(); err != nil {
+	if err := cmd.DefaultCommand("ghost", &Config).Execute(); err != nil {
 		os.Exit(1)
 	}
 }

@@ -26,7 +26,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
-func Command(name string, config supervisor.Config) *cobra.Command {
+// DefaultCommand returns a Cobra command with the given name using the provided supervisor.Config.
+// The `config` will be passed to HCL parser in the cmd.FilesFlags' `Load` method.
+// The command will include pflag.FlagSet items created from FilesFlags and LoggerFlags as it's persistent flags.
+// It will also include a default `run` sub-command that utilises the set above FilesFlags and LoggerFlags.
+// Root command will have the version set to Version.
+func DefaultCommand(name string, config supervisor.Config) *cobra.Command {
 	var ConfigFiles FilesFlags
 	var LoggerFlags LoggerFlags
 	cmd := NewRootCommand(
@@ -45,6 +50,8 @@ func Command(name string, config supervisor.Config) *cobra.Command {
 	return cmd
 }
 
+// NewRootCommand returns a Cobra command with the given name and version.
+// It also adds all the provided pflag.FlagSet items to the command's persistent flags.
 func NewRootCommand(name, version string, sets ...*pflag.FlagSet) *cobra.Command {
 	c := &cobra.Command{
 		Use:          name,
