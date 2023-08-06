@@ -3,6 +3,7 @@ package origin
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/defiweb/go-eth/types"
 
@@ -50,28 +51,34 @@ func queryToPairs(query []any) ([]value.Pair, bool) {
 
 const ether = 1e18
 
-type ContractAddresses map[value.Pair]types.Address
+type ContractAddresses map[string]string
 
-func convertAddressMap(addresses map[string]string) (ContractAddresses, error) {
-	typeAddresses := make(map[value.Pair]types.Address)
-	for key, address := range addresses {
-		pair, err := value.PairFromString(key)
-		if err != nil { // return error if invalid pair
-			return nil, err
+func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error) {
+	var baseIndex = -1
+	var quoteIndex = -1
+	var address types.Address
+	for key, hexAddress := range c {
+		tokens := strings.Split(key, "/")
+		for i := range tokens {
+			if tokens[i] == p.Base {
+				baseIndex = i
+				break
+			}
 		}
-		typeAddresses[pair] = types.MustAddressFromHex(address)
+		for i := range tokens {
+			if tokens[i] == p.Quote {
+				quoteIndex = i
+				break
+			}
+		}
+		if baseIndex >= 0 && 0 <= quoteIndex {
+			address = types.MustAddressFromHex(hexAddress)
+			break
+		}
 	}
-	return typeAddresses, nil
-}
-
-func (c ContractAddresses) ByPair(p value.Pair) (types.Address, bool, error) {
-	contract, ok := c[p]
-	invContract, okInv := c[p.Invert()]
-
-	if ok && !okInv {
-		return contract, false, nil
-	} else if !ok && okInv {
-		return invContract, true, nil
-	} // duplicated pairs or not found pair
-	return types.ZeroAddress, false, fmt.Errorf("failed to get contract address for pair: %s", p.String())
+	if baseIndex >= 0 && 0 <= quoteIndex && baseIndex != quoteIndex {
+		return address, baseIndex, quoteIndex, nil
+	}
+	// not found the pair
+	return types.ZeroAddress, -1, -1, fmt.Errorf("failed to get contract address for pair: %s", p.String())
 }

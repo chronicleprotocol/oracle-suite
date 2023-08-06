@@ -9,11 +9,11 @@
     ],
     "inputs": [
       {
-        "type": "int128",
+        "type": "uint256",
         "name": "i"
       },
       {
-        "type": "int128",
+        "type": "uint256",
         "name": "j"
       },
       {

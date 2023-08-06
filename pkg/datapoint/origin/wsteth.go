@@ -52,14 +52,10 @@ func NewWrappedStakedETH(config WrappedStakedETHConfig) (*WrappedStakedETH, erro
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
 
 	return &WrappedStakedETH{
 		client:            config.Client,
-		contractAddresses: addresses,
+		contractAddresses: config.ContractAddresses,
 		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("wsteth", WrappedStakedETHLoggerTag),
@@ -88,7 +84,7 @@ func (w *WrappedStakedETH) FetchDataPoints(ctx context.Context, query []any) (ma
 	totals := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, _, err := w.contractAddresses.ByPair(pair)
+		contract, _, _, err := w.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
@@ -137,8 +133,8 @@ func (w *WrappedStakedETH) FetchDataPoints(ctx context.Context, query []any) (ma
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(w.blocks))))
 
 		// Invert the price if inverted price
-		_, inverted, _ := w.contractAddresses.ByPair(pair)
-		if inverted {
+		_, baseIndex, quoteIndex, _ := w.contractAddresses.ByPair(pair)
+		if baseIndex > quoteIndex {
 			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
 		}
 

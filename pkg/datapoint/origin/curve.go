@@ -11,6 +11,7 @@ import (
 	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
+	"golang.org/x/exp/maps"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
@@ -23,22 +24,28 @@ import (
 //go:embed curve_abi.json
 var curvePoolABI []byte
 
+//go:embed curve_abi2.json
+var curvePoolABI2 []byte
+
 const CurveLoggerTag = "CURVE_ORIGIN"
 
 type CurveConfig struct {
-	Client            rpc.RPC
-	ContractAddresses map[string]string
-	Logger            log.Logger
-	Blocks            []int64
+	Client             rpc.RPC
+	ContractAddresses  map[string]string
+	Contract2Addresses map[string]string
+	Logger             log.Logger
+	Blocks             []int64
 }
 
 type Curve struct {
-	client                    rpc.RPC
-	contractAddresses         ContractAddresses
-	abi                       *abi.Contract
-	baseIndex, quoteIndex, dx *big.Int
-	blocks                    []int64
-	logger                    log.Logger
+	client             rpc.RPC
+	contractAddresses  ContractAddresses
+	contract2Addresses ContractAddresses
+	abi                *abi.Contract
+	abi2               *abi.Contract
+	erc20              *ERC20
+	blocks             []int64
+	logger             log.Logger
 }
 
 func NewCurve(config CurveConfig) (*Curve, error) {
@@ -53,52 +60,123 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
+	a2, err := abi.ParseJSON(curvePoolABI2)
+	if err != nil {
+		return nil, err
+	}
+
+	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Curve{
-		client:            config.Client,
-		contractAddresses: addresses,
-		abi:               a,
-		baseIndex:         big.NewInt(0),
-		quoteIndex:        big.NewInt(1),
-		dx:                new(big.Int).Mul(big.NewInt(1), new(big.Int).SetUint64(ether)),
-		blocks:            config.Blocks,
-		logger:            config.Logger.WithField("curve", CurveLoggerTag),
+		client:             config.Client,
+		contractAddresses:  config.ContractAddresses,
+		contract2Addresses: config.Contract2Addresses,
+		abi:                a,
+		abi2:               a2,
+		erc20:              erc20,
+		blocks:             config.Blocks,
+		logger:             config.Logger.WithField("curve", CurveLoggerTag),
 	}, nil
 }
 
-//nolint:funlen
-func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
-	pairs, ok := queryToPairs(query)
-	if !ok {
-		return nil, fmt.Errorf("invalid query type: %T, expected []Pair", query)
+//nolint:funlen,gocyclo
+func (c *Curve) fetchDataPoints(
+	ctx context.Context,
+	contractAddresses ContractAddresses,
+	abi *abi.Contract,
+	pairs []value.Pair,
+	block *big.Int,
+) (
+	map[value.Pair]datapoint.Point,
+	error,
+) {
+
+	points := make(map[value.Pair]datapoint.Point)
+
+	// Get all the token addresses and their decimals
+	var callsToken []types.Call
+	for _, pair := range pairs {
+		contract, baseIndex, quoteIndex, err := contractAddresses.ByPair(pair)
+		if err != nil {
+			continue
+		}
+		callData, err := abi.Methods["coins"].EncodeArgs(baseIndex)
+		if err != nil {
+			continue
+		}
+		callsToken = append(callsToken, types.Call{
+			To:    &contract,
+			Input: callData,
+		})
+		callData, err = abi.Methods["coins"].EncodeArgs(quoteIndex)
+		if err != nil {
+			continue
+		}
+		callsToken = append(callsToken, types.Call{
+			To:    &contract,
+			Input: callData,
+		})
 	}
 
-	sort.Slice(pairs, func(i, j int) bool {
-		return pairs[i].String() < pairs[j].String()
-	})
+	var tokenDetails map[string]ERC20Details
+	if len(callsToken) > 0 {
+		resp, err := ethereum.MultiCall(ctx, c.client, callsToken, types.LatestBlockNumber)
+		if err != nil {
+			return nil, err
+		}
 
-	points := make(map[any]datapoint.Point)
-
-	block, err := c.client.BlockNumber(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("cannot get block number, %w", err)
+		tokensMap := make(map[types.Address]struct{})
+		for i := range resp {
+			var address types.Address
+			if err := abi.Methods["coins"].DecodeValues(resp[i], &address); err != nil {
+				return nil, fmt.Errorf("failed decoding tokens in the pool: %w", err)
+			}
+			tokensMap[address] = struct{}{}
+		}
+		tokenDetails, err = c.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
+		if err != nil {
+			return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
+		}
 	}
 
-	totals := make([]*big.Int, len(pairs))
+	totals := make([]*big.Float, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, _, err := c.contractAddresses.ByPair(pair)
+		if _, ok := tokenDetails[pair.Base]; !ok {
+			points[pair] = datapoint.Point{Error: fmt.Errorf("not found base token: %s", pair.Base)}
+			continue
+		}
+		if _, ok := tokenDetails[pair.Quote]; !ok {
+			points[pair] = datapoint.Point{Error: fmt.Errorf("not found quote token: %s", pair.Quote)}
+			continue
+		}
+		baseToken := tokenDetails[pair.Base]
+		quoteToken := tokenDetails[pair.Quote]
+
+		contract, baseIndex, quoteIndex, err := contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
 		}
 
-		callData, err := c.abi.Methods["get_dy"].EncodeArgs(c.baseIndex, c.quoteIndex, c.dx)
+		var callData types.Bytes
+		if baseIndex < quoteIndex {
+			callData, err = abi.Methods["get_dy"].EncodeArgs(
+				baseIndex,
+				quoteIndex,
+				new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil),
+			)
+		} else {
+			callData, err = abi.Methods["get_dy"].EncodeArgs(
+				quoteIndex,
+				baseIndex,
+				new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil),
+			)
+		}
+
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get contract args for pair: %s: %w",
@@ -111,7 +189,7 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 			To:    &contract,
 			Input: callData,
 		})
-		totals[i] = new(big.Int).SetInt64(0)
+		totals[i] = new(big.Float).SetInt64(0)
 	}
 
 	if len(calls) > 0 {
@@ -122,11 +200,27 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 			}
 
 			n := 0
-			for i := 0; i < len(pairs); i++ {
+			for i, pair := range pairs {
 				if points[pairs[i]].Error != nil {
 					continue
 				}
-				price := new(big.Int).SetBytes(resp[n][0:32])
+				_, baseIndex, quoteIndex, _ := contractAddresses.ByPair(pair)
+				baseToken := tokenDetails[pair.Base]
+				quoteToken := tokenDetails[pair.Quote]
+
+				price := new(big.Float).SetInt(new(big.Int).SetBytes(resp[n][0:32]))
+				// price = price / 10 ^ quoteDecimals
+				if baseIndex < quoteIndex {
+					price = new(big.Float).Quo(
+						price,
+						new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil)),
+					)
+				} else {
+					price = new(big.Float).Quo(
+						price,
+						new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)),
+					)
+				}
 				totals[i] = totals[i].Add(totals[i], price)
 				n++
 			}
@@ -137,12 +231,11 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		if points[pair].Error != nil {
 			continue
 		}
-		avgPrice := new(big.Float).Quo(new(big.Float).SetInt(totals[i]), new(big.Float).SetUint64(ether))
-		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(c.blocks))))
+		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(c.blocks))))
 
 		// Invert the price if inverted price
-		_, inverted, _ := c.contractAddresses.ByPair(pair)
-		if inverted {
+		_, baseIndex, quoteIndex, _ := contractAddresses.ByPair(pair)
+		if baseIndex > quoteIndex {
 			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
 		}
 
@@ -156,6 +249,65 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 			Time:  time.Now(),
 		}
 	}
+	return points, nil
+}
 
+//nolint:gocyclo
+func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
+	pairs, ok := queryToPairs(query)
+	if !ok {
+		return nil, fmt.Errorf("invalid query type: %T, expected []Pair", query)
+	}
+
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].String() < pairs[j].String()
+	})
+
+	block, err := c.client.BlockNumber(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot get block number, %w", err)
+	}
+
+	points := make(map[any]datapoint.Point)
+
+	// Filter pairs into two group according to their data types in `get_dy`; `int128`, `uint256`
+	pairs1 := make(map[value.Pair]struct{})
+	pairs2 := make(map[value.Pair]struct{})
+	for _, pair := range pairs {
+		_, baseIndex, quoteIndex, err := c.contractAddresses.ByPair(pair)
+		if err == nil && baseIndex >= 0 && quoteIndex >= 0 {
+			pairs1[pair] = struct{}{}
+			continue
+		}
+		_, baseIndex, quoteIndex, err = c.contract2Addresses.ByPair(pair)
+		if err == nil && baseIndex >= 0 && quoteIndex >= 0 {
+			pairs2[pair] = struct{}{}
+			continue
+		}
+		if err != nil {
+			points[pair] = datapoint.Point{Error: err}
+			continue
+		}
+	}
+
+	points1, err1 := c.fetchDataPoints(ctx, c.contractAddresses, c.abi, maps.Keys(pairs1), block)
+	points2, err2 := c.fetchDataPoints(ctx, c.contract2Addresses, c.abi2, maps.Keys(pairs2), block)
+	if err1 != nil {
+		return points, err1
+	}
+	if err2 != nil {
+		return points, err2
+	}
+	if points1 == nil && points2 == nil {
+		return nil, fmt.Errorf("failed to fetch data points")
+	}
+
+	for pair, point := range points1 {
+		points[pair] = point
+	}
+	for pair, point := range points2 {
+		points[pair] = point
+	}
 	return points, nil
 }

@@ -36,6 +36,13 @@ func NewERC20(client rpc.RPC) (*ERC20, error) {
 	}
 
 	cache := make(map[types.Address]ERC20Details)
+	eth := types.MustAddressFromHex("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+	const decimals = 18
+	cache[eth] = ERC20Details{
+		address:  eth,
+		symbol:   "ETH",
+		decimals: decimals,
+	}
 	return &ERC20{
 		client: client,
 		abi:    a,
@@ -71,25 +78,36 @@ func (e *ERC20) GetSymbolAndDecimals(ctx context.Context, addresses []types.Addr
 		})
 	}
 
-	resp, err := ethereum.MultiCall(ctx, e.client, calls, types.LatestBlockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("failed multicall for tokens: %w", err)
+	var resp [][]byte
+	var err error
+	if calls != nil {
+		resp, err = ethereum.MultiCall(ctx, e.client, calls, types.LatestBlockNumber)
+		if err != nil {
+			return nil, fmt.Errorf("failed multicall for tokens: %w", err)
+		}
 	}
 
+	n := 0
 	for i, address := range addresses {
+		if _, ok := e.cache[address]; ok {
+			continue
+		}
+
 		var symbol string
+		var decimals int
 		if strings.ToLower(address.String()) == "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2" {
 			symbol = "MKR"
-		} else if err := e.abi.Methods["symbol"].DecodeValues(resp[i*2], &symbol); err != nil {
+		} else if err := e.abi.Methods["symbol"].DecodeValues(resp[n*2], &symbol); err != nil {
 			return nil, fmt.Errorf("failed decoding token symbol for token %s: %w", address.String(), err)
 		}
 
-		decimals := int(new(big.Int).SetBytes(resp[i*2+1]).Int64())
+		decimals = int(new(big.Int).SetBytes(resp[n*2+1]).Int64())
 		e.cache[addresses[i]] = ERC20Details{
 			address:  addresses[i],
-			symbol:   symbol,
+			symbol:   strings.ToUpper(symbol),
 			decimals: decimals,
 		}
+		n++
 	}
 
 	details := make(map[string]ERC20Details)

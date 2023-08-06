@@ -52,13 +52,21 @@ type configOriginBalancer struct {
 	Contracts configBalancerContracts `hcl:"contracts,block"`
 }
 
-type configContracts struct {
+type configCurveContracts struct {
 	EthereumClient    string            `hcl:"client,label"`
 	ContractAddresses map[string]string `hcl:"addresses"`
+	// `addresses` are the pool address that are using `int256`, whereas `addresses2` are the pool address
+	// that are using `uint256`
+	Contract2Addresses map[string]string `hcl:"addresses2"`
 }
 
 type configOriginCurve struct {
-	Contracts configContracts `hcl:"contracts,block"`
+	Contracts configCurveContracts `hcl:"contracts,block"`
+}
+
+type configContracts struct {
+	EthereumClient    string            `hcl:"client,label"`
+	ContractAddresses map[string]string `hcl:"addresses"`
 }
 
 type configOriginRocketPool struct {
@@ -162,10 +170,11 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		return origin, nil
 	case *configOriginCurve:
 		origin, err := origin.NewCurve(origin.CurveConfig{
-			Client:            d.Clients[o.Contracts.EthereumClient],
-			ContractAddresses: o.Contracts.ContractAddresses,
-			Blocks:            averageFromBlocks,
-			Logger:            d.Logger,
+			Client:             d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses:  o.Contracts.ContractAddresses,
+			Contract2Addresses: o.Contracts.Contract2Addresses,
+			Blocks:             averageFromBlocks,
+			Logger:             d.Logger,
 		})
 		if err != nil {
 			return nil, &hcl.Diagnostic{

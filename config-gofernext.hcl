@@ -42,9 +42,15 @@ gofernext {
   origin "curve" {
     type = "curve"
     contracts "ethereum" {
-      addresses = {
+      addresses = { # int256
         "RETH/WSTETH" = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
-        "ETH/STETH"   = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
+        "ETH/STETH"   = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+        "DAI/USDC/USDT" = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
+        "FRAX/USDC" = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
+      }
+      addresses2 = { # uint256
+        "WETH/LDO" = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
+        "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46"
       }
     }
   }
