@@ -111,7 +111,9 @@ gofernext {
       addresses = {
         "YFI/WETH" = "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c",
         "WETH/CRV" = "0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009",
-        "DAI/WETH" = "0xC3D03e4F041Fd4cD388c549Ee2A29a9E5075882f"
+        "DAI/WETH" = "0xC3D03e4F041Fd4cD388c549Ee2A29a9E5075882f",
+        "WBTC/WETH" = "0xCEfF51756c56CeFFCA006cD410B03FFC46dd3a58",
+        "LINK/WETH" = "0xC40D16476380e4037e6b1A2594cAF6a6cc8Da967"
       }
     }
   }
@@ -133,7 +135,9 @@ gofernext {
         "GNO/WETH" = "0xf56D08221B5942C428Acc5De8f78489A97fC5599",
         "LDO/WETH" = "0xa3f558aebAecAf0e11cA4b2199cC5Ed341edfd74",
         "UNI/WETH"  = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801",
-        "WBTC/WETH"  = "0x4585FE77225b41b697C938B018E2Ac67Ac5a20c0"
+        "WBTC/WETH"  = "0x4585FE77225b41b697C938B018E2Ac67Ac5a20c0",
+        "USDC/SNX" = "0x020C349A0541D76C16F501Abc6B2E9c98AdAe892",
+        "ARB/WETH" = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca"
       }
     }
   }
@@ -166,10 +170,6 @@ gofernext {
         reference { data_model = "USDT/USD" }
       }
       origin "kraken" { query = "AAVE/USD" }
-#      indirect {
-#        origin "bitstamp" { query = "AAVE/EUR" }
-#        reference { data_model = "EUR/USD" }
-#      }
       indirect {
         alias "AAVE/ETH" {
           origin "uniswapV3" { query = "AAVE/WETH" }
@@ -181,13 +181,19 @@ gofernext {
 
   data_model "ARB/USD" {
     median {
-      min_values = 2
+      min_values = 3
       indirect {
         origin "binance" { query = "ARB/USDT" }
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "ARB/USD" }
       origin "kraken" { query = "ARB/USD" }
+      indirect {
+        alias "ARB/ETH" {
+          origin "uniswapV3" { query = "ARB/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
     }
   }
 
@@ -200,8 +206,11 @@ gofernext {
       }
       origin "coinbase" { query = "AVAX/USD" }
       origin "kraken" { query = "AVAX/USD" }
-      origin "bitfinex" { query = "AVAX/USD" }
       origin "bitstamp" { query = "AVAX/USD" }
+      indirect {
+        origin "kucoin" { query = "AVAX/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
     }
   }
 
@@ -209,16 +218,16 @@ gofernext {
     median {
       min_values = 2
       indirect {
-        origin "binance" { query = "BNB/ETH" }
-        reference { data_model = "ETH/USD" }
+        origin "binance" { query = "BNB/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "kucoin" { query = "BNB/USDT" }
+        reference { data_model = "USDT/USD" }
       }
       indirect {
         origin "okx" { query = "BNB/USDT" }
         reference { data_model = "USDT/USD" }
-      }
-      indirect {
-        origin "kucoin" { query = "BNB/BTC" }
-        reference { data_model = "BTC/USD" }
       }
     }
   }
@@ -259,7 +268,7 @@ gofernext {
 
   data_model "DAI/USD" {
     median {
-      min_values = 3
+      min_values = 5
       indirect {
         alias "DAI/ETH" {
           origin "uniswapV3" { query = "DAI/WETH" }
@@ -331,7 +340,7 @@ gofernext {
 
   data_model "GNO/USD" {
     median {
-      min_values = 2
+      min_values = 4
       indirect {
         alias "GNO/ETH" {
           origin "uniswapV3" { query = "GNO/WETH" }
@@ -395,13 +404,14 @@ gofernext {
         reference { data_model = "ETH/USD" }
       }
       origin "kraken" { query = "LINK/USD" }
-#      indirect {
-#        origin "bitstamp" { query = "LINK/EUR" }
-#        reference { data_model = "EUR/USD" }
-#      }
-      origin "bitfinex" { query = "LINK/USD" }
       origin "gemini" { query = "LINK/USD" }
       origin "bitstamp" { query = "LINK/USD" }
+      indirect {
+        alias "LINK/ETH" {
+          origin "sushiswap" { query = "LINK/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
     }
   }
 
@@ -510,19 +520,23 @@ gofernext {
 
   data_model "SNX/USD" {
     median {
-      min_values = 2
+      min_values = 3
       indirect {
         origin "binance" { query = "SNX/USDT" }
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "SNX/USD" }
+      indirect {
+        origin "uniswapV3" { query = "USDC/SNX" }
+        reference { data_model = "USDC/USD" }
+      }
       origin "kraken" { query = "SNX/USD" }
     }
   }
 
   data_model "SOL/USD" {
     median {
-      min_values = 4
+      min_values = 3
       indirect {
         origin "binance" { query = "SOL/USDT" }
         reference { data_model = "USDT/USD" }
@@ -530,7 +544,10 @@ gofernext {
       origin "coinbase" { query = "SOL/USD" }
       origin "kraken" { query = "SOL/USD" }
       origin "gemini" { query = "SOL/USD" }
-      origin "bitfinex" { query = "SOL/USD" }
+      indirect {
+        origin "okx" { query = "SOL/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
     }
   }
 
@@ -554,7 +571,6 @@ gofernext {
       origin "coinbase" { query = "UNI/USD" }
       origin "kraken" { query = "UNI/USD" }
       origin "bitstamp" { query = "UNI/USD" }
-      origin "bitfinex" { query = "UNI/USD" }
       indirect {
         alias "UNI/ETH" {
           origin "uniswapV3" { query = "UNI/WETH"}
@@ -566,32 +582,24 @@ gofernext {
 
   data_model "USDC/USD" {
     median {
-      min_values = 4
+      min_values = 5
       indirect {
         origin "binance" { query = "BTC/USDC" }
         reference { data_model = "BTC/USD" }
       }
       origin "kraken" { query ="USDC/USD" }
       indirect {
-        origin "huobi" { query = "USDC/USDT" }
-        reference { data_model = "USDT/USD" }
-      }
-      indirect {
-        origin "okx" { query = "ETH/USDC" }
-        reference { data_model = "ETH/USD" }
-      }
-      origin "bitstamp" { query = "USDC/USD" }
-      indirect {
         alias "USDC/ETH" {
           origin "uniswapV3" { query = "USDC/WETH" }
         }
         reference { data_model = "ETH/USD" }
       }
+      indirect {
+        origin "curve" { query = "USDC/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      origin "bitstamp" { query = "USDC/USD" }
       origin "gemini" { query = "USDC/USD" }
-#      indirect {
-#        origin "coinbase" { query = "USDC/EUR" }
-#        reference { data_model = "EUR/USD" }
-#      }
     }
   }
 
@@ -632,6 +640,12 @@ gofernext {
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "WBTC/USD" }
+      indirect {
+        alias "WBTC/ETH" {
+          origin "sushiswap" { query = "WBTC/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
     }
   }
 
@@ -651,14 +665,17 @@ gofernext {
 
   data_model "XTZ/USD" {
     median {
-      min_values = 3
+      min_values = 2
       indirect {
         origin "binance" { query = "XTZ/USDT" }
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "XTZ/USD" }
-      origin "bitfinex" { query = "XTZ/USD" }
       origin "kraken" { query = "XTZ/USD" }
+      indirect {
+        origin "bitfinex" { query = "XTZ/BTC" }
+        reference { data_model = "BTC/USD" }
+      }
     }
   }
 
