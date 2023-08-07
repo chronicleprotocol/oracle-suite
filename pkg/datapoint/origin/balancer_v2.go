@@ -55,11 +55,19 @@ func NewBalancerV2(config BalancerV2Config) (*BalancerV2, error) {
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
+	refAddresses, err := convertAddressMap(config.ReferenceAddresses)
+	if err != nil {
+		return nil, err
+	}
 
 	return &BalancerV2{
 		client:             config.Client,
-		contractAddresses:  config.ContractAddresses,
-		referenceAddresses: config.ReferenceAddresses,
+		contractAddresses:  addresses,
+		referenceAddresses: refAddresses,
 		abi:                a,
 		variable:           0, // PAIR_PRICE
 		blocks:             config.Blocks,

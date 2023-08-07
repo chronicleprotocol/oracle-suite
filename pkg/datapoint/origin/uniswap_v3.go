@@ -54,7 +54,10 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -62,7 +65,7 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 
 	return &UniswapV3{
 		client:            config.Client,
-		contractAddresses: config.ContractAddresses,
+		contractAddresses: addresses,
 		erc20:             erc20,
 		abi:               a,
 		blocks:            config.Blocks,

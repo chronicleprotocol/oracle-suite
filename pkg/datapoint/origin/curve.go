@@ -64,7 +64,14 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
+	addresses2, err := convertAddressMap(config.Contract2Addresses)
+	if err != nil {
+		return nil, err
+	}
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -72,8 +79,8 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 
 	return &Curve{
 		client:             config.Client,
-		contractAddresses:  config.ContractAddresses,
-		contract2Addresses: config.Contract2Addresses,
+		contractAddresses:  addresses,
+		contract2Addresses: addresses2,
 		abi:                a,
 		abi2:               a2,
 		erc20:              erc20,

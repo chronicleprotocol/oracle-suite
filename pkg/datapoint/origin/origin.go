@@ -51,7 +51,19 @@ func queryToPairs(query []any) ([]value.Pair, bool) {
 
 const ether = 1e18
 
-type ContractAddresses map[string]string
+type ContractAddresses map[string]types.Address
+
+func convertAddressMap(addresses map[string]string) (ContractAddresses, error) {
+	typeAddresses := make(map[string]types.Address)
+	for key, address := range addresses {
+		tokens := strings.Split(key, "/")
+		if len(tokens) < 2 {
+			return nil, fmt.Errorf("not found pair: %s", key)
+		}
+		typeAddresses[key] = types.MustAddressFromHex(address)
+	}
+	return typeAddresses, nil
+}
 
 func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error) {
 	var baseIndex = -1
@@ -72,7 +84,7 @@ func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error)
 			}
 		}
 		if baseIndex >= 0 && 0 <= quoteIndex {
-			address = types.MustAddressFromHex(hexAddress)
+			address = hexAddress
 			break
 		}
 	}

@@ -53,10 +53,14 @@ func NewRocketPool(config RocketPoolConfig) (*RocketPool, error) {
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 
 	return &RocketPool{
 		client:            config.Client,
-		contractAddresses: config.ContractAddresses,
+		contractAddresses: addresses,
 		abi:               a,
 		baseIndex:         big.NewInt(0),
 		quoteIndex:        big.NewInt(1),

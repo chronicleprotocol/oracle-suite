@@ -52,10 +52,14 @@ func NewWrappedStakedETH(config WrappedStakedETHConfig) (*WrappedStakedETH, erro
 	if err != nil {
 		return nil, err
 	}
+	addresses, err := convertAddressMap(config.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 
 	return &WrappedStakedETH{
 		client:            config.Client,
-		contractAddresses: config.ContractAddresses,
+		contractAddresses: addresses,
 		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("wsteth", WrappedStakedETHLoggerTag),

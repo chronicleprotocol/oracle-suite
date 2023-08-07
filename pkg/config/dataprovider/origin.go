@@ -53,7 +53,7 @@ type configOriginBalancer struct {
 }
 
 type configCurveContracts struct {
-	EthereumClient    string            `hcl:"client,label"`
+	EthereumClient string `hcl:"client,label"`
 	// `addresses` are the pool addresses that are using `int256`
 	ContractAddresses map[string]string `hcl:"addresses"`
 	// `addresses2` are the pool address that are using `uint256`
