@@ -21,12 +21,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-//go:embed curve_abi.json
-var curvePoolABI []byte
-
-//go:embed curve_abi2.json
-var curvePoolABI2 []byte
-
 const CurveLoggerTag = "CURVE_ORIGIN"
 
 type CurveConfig struct {
@@ -41,8 +35,6 @@ type Curve struct {
 	client             rpc.RPC
 	contractAddresses  ContractAddresses
 	contract2Addresses ContractAddresses
-	abi                *abi.Contract
-	abi2               *abi.Contract
 	erc20              *ERC20
 	blocks             []int64
 	logger             log.Logger
@@ -56,14 +48,6 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(curvePoolABI)
-	if err != nil {
-		return nil, err
-	}
-	a2, err := abi.ParseJSON(curvePoolABI2)
-	if err != nil {
-		return nil, err
-	}
 	addresses, err := convertAddressMap(config.ContractAddresses)
 	if err != nil {
 		return nil, err
@@ -81,8 +65,6 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 		client:             config.Client,
 		contractAddresses:  addresses,
 		contract2Addresses: addresses2,
-		abi:                a,
-		abi2:               a2,
 		erc20:              erc20,
 		blocks:             config.Blocks,
 		logger:             config.Logger.WithField("curve", CurveLoggerTag),
@@ -93,15 +75,21 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 func (c *Curve) fetchDataPoints(
 	ctx context.Context,
 	contractAddresses ContractAddresses,
-	abi *abi.Contract,
+	secondary bool,
 	pairs []value.Pair,
 	block *big.Int,
 ) (
 	map[value.Pair]datapoint.Point,
 	error,
 ) {
-
 	points := make(map[value.Pair]datapoint.Point)
+	var getDy *abi.Method
+	if !secondary {
+		getDy = abi.MustParseMethod("get_dy(int128,int128,uint256)(uint256)")
+	} else {
+		getDy = abi.MustParseMethod("get_dy(uint256,uint256,uint256)(uint256)")
+	}
+	coins := abi.MustParseMethod("coins(uint256)(address)")
 
 	// Get all the token addresses and their decimals
 	var callsToken []types.Call
@@ -110,7 +98,7 @@ func (c *Curve) fetchDataPoints(
 		if err != nil {
 			continue
 		}
-		callData, err := abi.Methods["coins"].EncodeArgs(baseIndex)
+		callData, err := coins.EncodeArgs(baseIndex)
 		if err != nil {
 			continue
 		}
@@ -118,7 +106,7 @@ func (c *Curve) fetchDataPoints(
 			To:    &contract,
 			Input: callData,
 		})
-		callData, err = abi.Methods["coins"].EncodeArgs(quoteIndex)
+		callData, err = coins.EncodeArgs(quoteIndex)
 		if err != nil {
 			continue
 		}
@@ -138,7 +126,7 @@ func (c *Curve) fetchDataPoints(
 		tokensMap := make(map[types.Address]struct{})
 		for i := range resp {
 			var address types.Address
-			if err := abi.Methods["coins"].DecodeValues(resp[i], &address); err != nil {
+			if err := coins.DecodeValues(resp[i], &address); err != nil {
 				return nil, fmt.Errorf("failed decoding tokens in the pool: %w", err)
 			}
 			tokensMap[address] = struct{}{}
@@ -171,13 +159,13 @@ func (c *Curve) fetchDataPoints(
 
 		var callData types.Bytes
 		if baseIndex < quoteIndex {
-			callData, err = abi.Methods["get_dy"].EncodeArgs(
+			callData, err = getDy.EncodeArgs(
 				baseIndex,
 				quoteIndex,
 				new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil),
 			)
 		} else {
-			callData, err = abi.Methods["get_dy"].EncodeArgs(
+			callData, err = getDy.EncodeArgs(
 				quoteIndex,
 				baseIndex,
 				new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil),
@@ -298,8 +286,8 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		}
 	}
 
-	points1, err1 := c.fetchDataPoints(ctx, c.contractAddresses, c.abi, maps.Keys(pairs1), block)
-	points2, err2 := c.fetchDataPoints(ctx, c.contract2Addresses, c.abi2, maps.Keys(pairs2), block)
+	points1, err1 := c.fetchDataPoints(ctx, c.contractAddresses, false, maps.Keys(pairs1), block)
+	points2, err2 := c.fetchDataPoints(ctx, c.contract2Addresses, true, maps.Keys(pairs2), block)
 	if err1 != nil {
 		return points, err1
 	}

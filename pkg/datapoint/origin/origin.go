@@ -66,10 +66,9 @@ func convertAddressMap(addresses map[string]string) (ContractAddresses, error) {
 }
 
 func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error) {
-	var baseIndex = -1
-	var quoteIndex = -1
-	var address types.Address
-	for key, hexAddress := range c {
+	for key, address := range c {
+		baseIndex := -1
+		quoteIndex := -1
 		tokens := strings.Split(key, "/")
 		for i := range tokens {
 			if tokens[i] == p.Base {
@@ -83,13 +82,9 @@ func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error)
 				break
 			}
 		}
-		if baseIndex >= 0 && 0 <= quoteIndex {
-			address = hexAddress
-			break
+		if baseIndex >= 0 && 0 <= quoteIndex && baseIndex != quoteIndex {
+			return address, baseIndex, quoteIndex, nil
 		}
-	}
-	if baseIndex >= 0 && 0 <= quoteIndex && baseIndex != quoteIndex {
-		return address, baseIndex, quoteIndex, nil
 	}
 	// not found the pair
 	return types.ZeroAddress, -1, -1, fmt.Errorf("failed to get contract address for pair: %s", p.String())
