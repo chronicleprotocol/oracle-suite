@@ -82,6 +82,7 @@ func (c *Curve) fetchDataPoints(
 	map[value.Pair]datapoint.Point,
 	error,
 ) {
+
 	points := make(map[value.Pair]datapoint.Point)
 	var getDy *abi.Method
 	if !secondary {
