@@ -56,6 +56,9 @@ func (e *ERC20) GetSymbolAndDecimals(ctx context.Context, addresses []types.Addr
 		if _, ok := e.cache[address]; ok {
 			continue
 		}
+		if address == types.ZeroAddress {
+			continue
+		}
 
 		// Calls for `symbol`
 		callData, err := e.abi.Methods["symbol"].EncodeArgs()

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/abi"
@@ -71,12 +72,78 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 	}, nil
 }
 
+// Get all the tokens added in the pools and arrange them according to the pool address
+func (c *Curve) getTokensInPools(ctx context.Context, contractAddresses ContractAddresses, pairs []value.Pair) (
+	map[types.Address][]types.Address,
+	error,
+) {
+
+	coins := abi.MustParseMethod("coins(uint256)(address)")
+
+	var callsToken []types.Call
+	var pools []types.Address
+	for _, pair := range pairs {
+		pool, _, err := contractAddresses.ByPair(pair)
+		if err != nil {
+			continue
+		}
+		// tricky: Get the key of pool defined in config to figure out number of tokens in pool
+		var poolKey string
+		for key, value := range contractAddresses {
+			if value == pool {
+				poolKey = key
+			}
+		}
+		tokens := strings.Split(poolKey, "/")
+		maxCoins := len(tokens) // number of tokens in the pool
+
+		for i := 0; i < maxCoins; i++ {
+			callData, err := coins.EncodeArgs(i)
+			if err != nil {
+				continue
+			}
+			callsToken = append(callsToken, types.Call{
+				To:    &pool,
+				Input: callData,
+			})
+			pools = append(pools, pool)
+		}
+	}
+	if len(callsToken) < 1 { // nothing pairs matched in pools
+		return nil, nil
+	}
+
+	resp, err := ethereum.MultiCall(ctx, c.client, callsToken, types.LatestBlockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	tokensInPools := make(map[types.Address][]types.Address)
+	for i := range resp {
+		var address types.Address
+		if err := coins.DecodeValues(resp[i], &address); err != nil {
+			return nil, fmt.Errorf("failed decoding tokens in the pool: %w", err)
+		}
+		tokensInPools[pools[i]] = append(tokensInPools[pools[i]], address)
+	}
+	return tokensInPools, nil
+}
+
+func getTokenIndex(tokens []types.Address, finding types.Address) int {
+	for i, token := range tokens {
+		if token == finding {
+			return i
+		}
+	}
+	return -1
+}
+
 //nolint:funlen,gocyclo
 func (c *Curve) fetchDataPoints(
 	ctx context.Context,
 	contractAddresses ContractAddresses,
-	secondary bool,
 	pairs []value.Pair,
+	secondary bool,
 	block *big.Int,
 ) (
 	map[value.Pair]datapoint.Point,
@@ -90,57 +157,40 @@ func (c *Curve) fetchDataPoints(
 	} else {
 		getDy = abi.MustParseMethod("get_dy(uint256,uint256,uint256)(uint256)")
 	}
-	coins := abi.MustParseMethod("coins(uint256)(address)")
 
-	// Get all the token addresses and their decimals
-	var callsToken []types.Call
-	for _, pair := range pairs {
-		contract, baseIndex, quoteIndex, err := contractAddresses.ByPair(pair)
-		if err != nil {
-			continue
-		}
-		callData, err := coins.EncodeArgs(baseIndex)
-		if err != nil {
-			continue
-		}
-		callsToken = append(callsToken, types.Call{
-			To:    &contract,
-			Input: callData,
-		})
-		callData, err = coins.EncodeArgs(quoteIndex)
-		if err != nil {
-			continue
-		}
-		callsToken = append(callsToken, types.Call{
-			To:    &contract,
-			Input: callData,
-		})
+	tokensInPools, err := c.getTokensInPools(ctx, contractAddresses, pairs)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting tokens in pools: %w", err)
+	}
+	if tokensInPools == nil {
+		return nil, nil
 	}
 
-	var tokenDetails map[string]ERC20Details
-	if len(callsToken) > 0 {
-		resp, err := ethereum.MultiCall(ctx, c.client, callsToken, types.LatestBlockNumber)
-		if err != nil {
-			return nil, err
-		}
-
-		tokensMap := make(map[types.Address]struct{})
-		for i := range resp {
-			var address types.Address
-			if err := coins.DecodeValues(resp[i], &address); err != nil {
-				return nil, fmt.Errorf("failed decoding tokens in the pool: %w", err)
-			}
+	tokensMap := make(map[types.Address]struct{})
+	for _, tokens := range tokensInPools {
+		for _, address := range tokens {
 			tokensMap[address] = struct{}{}
 		}
-		tokenDetails, err = c.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
-		if err != nil {
-			return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
-		}
+	}
+	tokenDetails, err := c.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
+	if err != nil {
+		return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
 	}
 
 	totals := make([]*big.Float, len(pairs))
 	var calls []types.Call
-	for i, pair := range pairs {
+	n := 0
+	for _, pair := range pairs {
+		pool, _, err := contractAddresses.ByPair(pair)
+		if err != nil {
+			continue
+		}
+		tokensInPool, ok := tokensInPools[pool]
+		if !ok {
+			points[pair] = datapoint.Point{Error: fmt.Errorf("no tokens in pool")}
+			continue
+		}
+
 		if _, ok := tokenDetails[pair.Base]; !ok {
 			points[pair] = datapoint.Point{Error: fmt.Errorf("not found base token: %s", pair.Base)}
 			continue
@@ -152,11 +202,8 @@ func (c *Curve) fetchDataPoints(
 		baseToken := tokenDetails[pair.Base]
 		quoteToken := tokenDetails[pair.Quote]
 
-		contract, baseIndex, quoteIndex, err := contractAddresses.ByPair(pair)
-		if err != nil {
-			points[pair] = datapoint.Point{Error: err}
-			continue
-		}
+		baseIndex := getTokenIndex(tokensInPool, baseToken.address)
+		quoteIndex := getTokenIndex(tokensInPool, quoteToken.address)
 
 		var callData types.Bytes
 		if baseIndex < quoteIndex {
@@ -182,10 +229,11 @@ func (c *Curve) fetchDataPoints(
 			continue
 		}
 		calls = append(calls, types.Call{
-			To:    &contract,
+			To:    &pool,
 			Input: callData,
 		})
-		totals[i] = new(big.Float).SetInt64(0)
+		totals[n] = new(big.Float).SetInt64(0)
+		n++
 	}
 
 	if len(calls) > 0 {
@@ -195,14 +243,22 @@ func (c *Curve) fetchDataPoints(
 				return nil, err
 			}
 
-			n := 0
-			for i, pair := range pairs {
-				if points[pairs[i]].Error != nil {
+			n = 0
+			for _, pair := range pairs {
+				pool, _, err := contractAddresses.ByPair(pair)
+				if err != nil {
 					continue
 				}
-				_, baseIndex, quoteIndex, _ := contractAddresses.ByPair(pair)
+				if points[pair].Error != nil {
+					continue
+				}
+				tokensInPool := tokensInPools[pool]
+
 				baseToken := tokenDetails[pair.Base]
 				quoteToken := tokenDetails[pair.Quote]
+
+				baseIndex := getTokenIndex(tokensInPool, baseToken.address)
+				quoteIndex := getTokenIndex(tokensInPool, quoteToken.address)
 
 				price := new(big.Float).SetInt(new(big.Int).SetBytes(resp[n][0:32]))
 				// price = price / 10 ^ quoteDecimals
@@ -217,20 +273,33 @@ func (c *Curve) fetchDataPoints(
 						new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)),
 					)
 				}
-				totals[i] = totals[i].Add(totals[i], price)
+				totals[n] = totals[n].Add(totals[n], price)
 				n++
 			}
 		}
 	}
 
-	for i, pair := range pairs {
+	n = 0
+	for _, pair := range pairs {
+		pool, _, err := contractAddresses.ByPair(pair)
+		if err != nil {
+			continue
+		}
 		if points[pair].Error != nil {
 			continue
 		}
-		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(c.blocks))))
+		tokensInPool := tokensInPools[pool]
+
+		baseToken := tokenDetails[pair.Base]
+		quoteToken := tokenDetails[pair.Quote]
+
+		baseIndex := getTokenIndex(tokensInPool, baseToken.address)
+		quoteIndex := getTokenIndex(tokensInPool, quoteToken.address)
+
+		avgPrice := new(big.Float).Quo(totals[n], new(big.Float).SetUint64(uint64(len(c.blocks))))
+		n++
 
 		// Invert the price if inverted price
-		_, baseIndex, quoteIndex, _ := contractAddresses.ByPair(pair)
 		if baseIndex > quoteIndex {
 			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
 		}
@@ -265,40 +334,19 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
 
-	points := make(map[any]datapoint.Point)
-
-	// Filter pairs into two group according to their data types in `get_dy`; `int128`, `uint256`
-	pairs1 := make(map[value.Pair]struct{})
-	pairs2 := make(map[value.Pair]struct{})
-	for _, pair := range pairs {
-		_, baseIndex, quoteIndex, err := c.contractAddresses.ByPair(pair)
-		if err == nil && baseIndex >= 0 && quoteIndex >= 0 {
-			pairs1[pair] = struct{}{}
-			continue
-		}
-		_, baseIndex, quoteIndex, err = c.contract2Addresses.ByPair(pair)
-		if err == nil && baseIndex >= 0 && quoteIndex >= 0 {
-			pairs2[pair] = struct{}{}
-			continue
-		}
-		if err != nil {
-			points[pair] = datapoint.Point{Error: err}
-			continue
-		}
-	}
-
-	points1, err1 := c.fetchDataPoints(ctx, c.contractAddresses, false, maps.Keys(pairs1), block)
-	points2, err2 := c.fetchDataPoints(ctx, c.contract2Addresses, true, maps.Keys(pairs2), block)
+	points1, err1 := c.fetchDataPoints(ctx, c.contractAddresses, pairs, false, block)
+	points2, err2 := c.fetchDataPoints(ctx, c.contract2Addresses, pairs, true, block)
 	if err1 != nil {
-		return points, err1
+		return nil, err1
 	}
 	if err2 != nil {
-		return points, err2
+		return nil, err2
 	}
 	if points1 == nil && points2 == nil {
 		return nil, fmt.Errorf("failed to fetch data points")
 	}
 
+	points := make(map[any]datapoint.Point)
 	for pair, point := range points1 {
 		points[pair] = point
 	}

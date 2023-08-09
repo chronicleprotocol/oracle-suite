@@ -58,6 +58,7 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	var calls []types.Call
 	var callsToken []types.Call
 	for i, pair := range pairs {
-		contract, _, _, err := u.contractAddresses.ByPair(pair)
+		contract, _, err := u.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue

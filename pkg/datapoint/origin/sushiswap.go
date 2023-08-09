@@ -58,6 +58,7 @@ func NewSushiswap(config SushiswapConfig) (*Sushiswap, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	var calls []types.Call
 	var callsToken []types.Call
 	for i, pair := range pairs {
-		contract, _, _, err := s.contractAddresses.ByPair(pair)
+		contract, _, err := s.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
