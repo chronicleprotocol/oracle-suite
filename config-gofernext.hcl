@@ -340,7 +340,7 @@ gofernext {
 
   data_model "GNO/USD" {
     median {
-      min_values = 4
+      min_values = 2
       indirect {
         alias "GNO/ETH" {
           origin "uniswapV3" { query = "GNO/WETH" }
