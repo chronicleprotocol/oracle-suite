@@ -186,7 +186,6 @@ func (suite *CurveSuite) TestFailOnWrongPair() {
 		mock.Anything,
 	).Return(big.NewInt(100), nil).Once()
 
-	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
-	suite.Require().NoError(err)
-	suite.Require().EqualError(points[pair].Error, "failed to get contract address for pair: x/y")
+	_, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
+	suite.Require().EqualError(err, "failed to fetch data points")
 }
