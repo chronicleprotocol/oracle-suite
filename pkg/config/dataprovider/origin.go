@@ -65,6 +65,10 @@ type configOriginRocketPool struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
 
+type configOriginSDAI struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
 type configOriginSushiswap struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
@@ -101,6 +105,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginIShares{}
 	case "rocketpool":
 		config = &configOriginRocketPool{}
+	case "sdai":
+		config = &configOriginSDAI{}
 	case "sushiswap":
 		config = &configOriginSushiswap{}
 	case "uniswapV3":
@@ -204,6 +210,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create rocketpool origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginSDAI:
+		origin, err := origin.NewSDAI(origin.SDAIConfig{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create sdai origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
