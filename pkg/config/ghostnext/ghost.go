@@ -39,7 +39,7 @@ import (
 // Config is the configuration for Ghost.
 type Config struct {
 	GhostNext feedConfig.Config      `hcl:"ghostnext,block"`
-	GoferNext configGoferNext.Config `hcl:"gofernext,block"`
+	Gofer     configGoferNext.Config `hcl:"gofer,block"`
 	Ethereum  ethereumConfig.Config  `hcl:"ethereum,block"`
 	Transport transportConfig.Config `hcl:"transport,block"`
 	Logger    *loggerConfig.Config   `hcl:"logger,block,optional"`
@@ -77,7 +77,7 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 	if err != nil {
 		return nil, err
 	}
-	dataProvider, err := c.GoferNext.ConfigureDataProvider(configGoferNext.Dependencies{
+	dataProvider, err := c.Gofer.ConfigureDataProvider(configGoferNext.Dependencies{
 		Clients: clients,
 		Logger:  logger,
 	})

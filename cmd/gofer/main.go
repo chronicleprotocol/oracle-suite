@@ -16,76 +16,28 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"os"
 
 	"github.com/chronicleprotocol/oracle-suite/cmd"
-	"github.com/chronicleprotocol/oracle-suite/pkg/config/gofer"
-	gofer2 "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
+	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 )
 
-// exitCode to be returned by the application.
-var exitCode = 0
-
-// These are the command options that can be set by CLI flags.
-type options struct {
-	cmd.LoggerFlags
-	cmd.FilesFlags
-	Format  formatTypeValue
-	Config  gofer.Config
-	NoRPC   bool
-	Format2 formatTypeValue2
-	Config2 gofer2.Config
-}
-
 func main() {
-	opts := options{
-		Format: formatTypeValue{format: marshal.NDJSON},
-	}
-	rootCmd := cmd.NewRootCommand(
+	var ff cmd.FilesFlags
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand(
 		"gofer",
 		cmd.Version,
-		cmd.NewLoggerFlagSet(&opts.LoggerFlags),
-		cmd.NewFilesFlagSet(&opts.FilesFlags),
+		cmd.NewFilesFlagSet(&ff),
+		cmd.NewLoggerFlagSet(&lf),
 	)
-	rootCmd.PersistentFlags().VarP(
-		&opts.Format,
-		"format",
-		"o",
-		"output format",
+	var config gofer.Config
+	c.AddCommand(
+		cmd.NewRunCmd(&config, &ff, &lf),
+		NewModelsCmd(&config, &ff, &lf),
+		NewDataCmd(&config, &ff, &lf),
 	)
-	rootCmd.PersistentFlags().BoolVar(
-		&opts.NoRPC,
-		"norpc",
-		false,
-		"disable the use of RPC agent",
-	)
-	rootCmd.AddCommand(
-		cmd.NewRunCmd(
-			&opts.Config,
-			&opts.FilesFlags,
-			&opts.LoggerFlags,
-		),
-		NewPairsCmd(&opts),
-		NewPricesCmd(&opts),
-		NewModelsCmd(&opts),
-		NewDataCmd(&opts),
-	)
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("Error: %s\n", err)
-		if exitCode == 0 {
-			os.Exit(1)
-		}
+	if err := c.Execute(); err != nil {
+		os.Exit(1)
 	}
-	os.Exit(exitCode)
-}
-
-func getModelsNames(ctx context.Context, provider datapoint.Provider, args []string) []string {
-	if len(args) == 0 {
-		return provider.ModelNames(ctx)
-	}
-	return args
 }
