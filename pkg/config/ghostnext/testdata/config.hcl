@@ -1,4 +1,4 @@
-ghostnext {
+ghost {
   ethereum_key = "key1"
   interval     = 60
 
