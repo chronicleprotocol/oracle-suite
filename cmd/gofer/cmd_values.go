@@ -38,7 +38,7 @@ func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cob
 	var format formatTypeValue
 	cc := &cobra.Command{
 		Use:     "data [MODEL...]",
-		Aliases: []string{"data"},
+		Aliases: []string{"price", "prices"},
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "Return data points for given models",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
