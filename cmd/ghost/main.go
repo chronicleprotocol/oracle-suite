@@ -26,16 +26,13 @@ import (
 func main() {
 	var ff cmd.FilesFlags
 	var lf cmd.LoggerFlags
-	c := cmd.NewRootCommand(
-		"ghost",
-		suite.Version,
-		cmd.NewFilesFlagSet(&ff),
-		cmd.NewLoggerFlagSet(&lf),
-	)
+	c := cmd.NewRootCommand("ghost", suite.Version, &ff, &lf)
+
 	var config ghost.Config
 	c.AddCommand(
 		cmd.NewRunCmd(&config, &ff, &lf),
 	)
+
 	if err := c.Execute(); err != nil {
 		os.Exit(1)
 	}

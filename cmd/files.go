@@ -27,18 +27,22 @@ type FilesFlags struct {
 }
 
 // Load loads the config files into the given config struct.
-func (cf FilesFlags) Load(c any) error {
-	return config.LoadFiles(c, cf.paths)
+func (ff *FilesFlags) Load(c any) error {
+	return config.LoadFiles(c, ff.paths)
 }
 
-// NewFilesFlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
-func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
+// FlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
+func (ff *FilesFlags) FlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
-		&cfp.paths,
+		&ff.paths,
 		"config", "c",
 		[]string{"./config.hcl"},
 		"config file",
 	)
 	return fs
+}
+
+type FlagSetter interface {
+	FlagSet() *pflag.FlagSet
 }

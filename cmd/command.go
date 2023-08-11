@@ -21,14 +21,13 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 // NewRootCommand returns a Cobra command with the given name and version.
 // It also adds all the provided pflag.FlagSet items to the command's persistent flags.
-func NewRootCommand(name, version string, sets ...*pflag.FlagSet) *cobra.Command {
+func NewRootCommand(name, version string, sets ...FlagSetter) *cobra.Command {
 	c := &cobra.Command{
 		Use:          name,
 		Version:      version,
@@ -36,7 +35,7 @@ func NewRootCommand(name, version string, sets ...*pflag.FlagSet) *cobra.Command
 	}
 	flags := c.PersistentFlags()
 	for _, set := range sets {
-		flags.AddFlagSet(set)
+		flags.AddFlagSet(set.FlagSet())
 	}
 	return c
 }
