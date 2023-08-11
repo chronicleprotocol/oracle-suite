@@ -18,6 +18,7 @@ package main
 import (
 	"os"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
 )
@@ -27,7 +28,7 @@ func main() {
 	var lf cmd.LoggerFlags
 	c := cmd.NewRootCommand(
 		"spectre",
-		cmd.Version,
+		suite.Version,
 		cmd.NewFilesFlagSet(&cf),
 		cmd.NewLoggerFlagSet(&lf),
 	)

@@ -1,6 +1,6 @@
 version: '3'
 services:
-  bootstrap:
+  boot:
     hostname: "bootstrap.local"
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
     command: [ "bootstrap" ]

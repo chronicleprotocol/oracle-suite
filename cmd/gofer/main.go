@@ -18,6 +18,7 @@ package main
 import (
 	"os"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 )
@@ -27,7 +28,7 @@ func main() {
 	var lf cmd.LoggerFlags
 	c := cmd.NewRootCommand(
 		"gofer",
-		cmd.Version,
+		suite.Version,
 		cmd.NewFilesFlagSet(&ff),
 		cmd.NewLoggerFlagSet(&lf),
 	)

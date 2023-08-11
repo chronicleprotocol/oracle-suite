@@ -18,6 +18,7 @@ package main
 import (
 	"os"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 )
@@ -34,7 +35,7 @@ func main() {
 	var opts options
 	rootCmd := cmd.NewRootCommand(
 		"spire",
-		cmd.Version,
+		suite.Version,
 		cmd.NewLoggerFlagSet(&opts.LoggerFlags),
 		cmd.NewFilesFlagSet(&opts.FilesFlags),
 	)

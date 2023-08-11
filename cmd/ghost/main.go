@@ -18,6 +18,7 @@ package main
 import (
 	"os"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	ghost "github.com/chronicleprotocol/oracle-suite/pkg/config/ghostnext"
 )
@@ -27,7 +28,7 @@ func main() {
 	var lf cmd.LoggerFlags
 	c := cmd.NewRootCommand(
 		"ghost",
-		cmd.Version,
+		suite.Version,
 		cmd.NewFilesFlagSet(&ff),
 		cmd.NewLoggerFlagSet(&lf),
 	)

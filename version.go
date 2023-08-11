@@ -13,8 +13,8 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package cmd
+package suite
 
 // Version that can be used by commands.
-// It is supposed to by set by the linker during build.
+// It is set by the linker during build.
 var Version = "unknown"

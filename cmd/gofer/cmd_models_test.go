@@ -23,6 +23,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var modelList = `
+BTC/USD
+ETH/BTC
+ETH/USD
+GNO/USD
+IBTA/USD
+LINK/USD
+MATIC/USD
+MKR/ETH
+MKR/USD
+RETH/ETH
+RETH/USD
+STETH/ETH
+USDC/USD
+USDT/USD
+WSTETH/ETH
+WSTETH/USD
+YFI/USD
+`[1:]
+
+func TestNewModelsCmd_List(t *testing.T) {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	os.Args = []string{"gofer", "-c", "../../config.hcl", "models"}
+	main()
+
+	os.Stdout = stdout
+
+	_ = w.Close()
+	out, _ := io.ReadAll(r)
+
+	assert.Equal(t, modelList, string(out))
+}
+
+func TestNewModelsCmd(t *testing.T) {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	os.Args = []string{"gofer", "-c", "../../config.hcl", "models", "-o", "trace", "--no-color"}
+	main()
+
+	os.Stdout = stdout
+
+	_ = w.Close()
+	out, _ := io.ReadAll(r)
+
+	assert.Equal(t, completeDataModels, string(out))
+}
+
 var completeDataModels = `
 Model for BTC/USD:
 ───reference()
@@ -622,19 +674,3 @@ Model for YFI/USD:
                         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
 
 `[1:]
-
-func TestNewModelsCmd(t *testing.T) {
-	stdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	os.Args = []string{"gofer", "-c", "../../config.hcl", "models", "-o", "trace", "--no-color"}
-	main()
-
-	os.Stdout = stdout
-
-	_ = w.Close()
-	out, _ := io.ReadAll(r)
-
-	assert.Equal(t, completeDataModels, string(out))
-}
