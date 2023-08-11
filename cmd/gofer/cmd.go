@@ -16,8 +16,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
 const (
@@ -26,18 +29,18 @@ const (
 	formatJSON  = "json"
 )
 
-type formatTypeValue2 struct {
+type formatTypeValue struct {
 	format string
 }
 
-func (v *formatTypeValue2) String() string {
+func (v *formatTypeValue) String() string {
 	if v.format == "" {
 		return formatPlain
 	}
 	return v.format
 }
 
-func (v *formatTypeValue2) Set(s string) error {
+func (v *formatTypeValue) Set(s string) error {
 	switch strings.ToLower(s) {
 	case formatPlain:
 		v.format = formatPlain
@@ -51,6 +54,13 @@ func (v *formatTypeValue2) Set(s string) error {
 	return nil
 }
 
-func (v *formatTypeValue2) Type() string {
+func (v *formatTypeValue) Type() string {
 	return "plain|trace|json"
+}
+
+func getModelsNames(ctx context.Context, provider datapoint.Provider, args []string) []string {
+	if len(args) == 0 {
+		return provider.ModelNames(ctx)
+	}
+	return args
 }

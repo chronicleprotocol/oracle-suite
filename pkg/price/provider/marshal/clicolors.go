@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -28,8 +28,8 @@ const (
 
 var colorsEnabled = true
 
-// disableColors disabled colors rendering in color function.
-func disableColors() {
+// DisableColors disabled colors rendering in color function.
+func DisableColors() {
 	colorsEnabled = false
 }
 

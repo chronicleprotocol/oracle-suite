@@ -18,6 +18,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 )
 
@@ -32,7 +33,7 @@ func NewRootCommand() *cobra.Command {
 
 	rootCmd := &cobra.Command{
 		Use:           "toolbox",
-		Version:       cmd.Version,
+		Version:       suite.Version,
 		SilenceErrors: false,
 		SilenceUsage:  true,
 	}

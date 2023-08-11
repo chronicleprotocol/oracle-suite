@@ -26,34 +26,45 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-func NewModelsCmd(opts *options) *cobra.Command {
-	c := &cobra.Command{
+func NewModelsCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	var format formatTypeValue
+	cc := &cobra.Command{
 		Use:     "models [MODEL...]",
 		Aliases: []string{"model"},
 		Args:    cobra.MinimumNArgs(0),
-		Short:   "List all supported models.",
-		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := opts.Load(&opts.Config2); err != nil {
+		Short:   "List all supported models",
+		RunE: func(_ *cobra.Command, args []string) (err error) {
+			if err := f.Load(c); err != nil {
+				return err
+			}
+			services, err := c.Services(l.Logger())
+			if err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer ctxCancel()
-			services, err := opts.Config2.Services(opts.Logger())
-			if err != nil {
-				return err
-			}
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
-			models, err := services.DataProvider.Models(ctx, getModelsNames(ctx, services.DataProvider, args)...)
+			s, ok := services.(*gofer.Services)
+			if !ok {
+				return fmt.Errorf("services are not gofer.Services")
+			}
+			models, err := s.DataProvider.Models(ctx, getModelsNames(ctx, s.DataProvider, args)...)
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalModels(models, opts.Format2.String())
+			marshal.DisableColors()
+			marshaled, err := marshalModels(models, format.String())
 			if err != nil {
 				return err
 			}
@@ -61,13 +72,19 @@ func NewModelsCmd(opts *options) *cobra.Command {
 			return nil
 		},
 	}
-	c.Flags().VarP(
-		&opts.Format2,
+	cc.Flags().VarP(
+		&format,
 		"format",
 		"o",
 		"output format",
 	)
-	return c
+	cc.Flags().BoolVar(
+		&treerender.NoColors,
+		"no-color",
+		false,
+		"disable output coloring",
+	)
+	return cc
 }
 
 func marshalModels(models map[string]datapoint.Model, format string) ([]byte, error) {
