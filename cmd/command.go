@@ -49,15 +49,15 @@ func NewRunCmd(c supervisor.Config, f *FilesFlags, l *LoggerFlags) *cobra.Comman
 			if err := f.Load(c); err != nil {
 				return err
 			}
-			services, err := c.Services(l.Logger())
+			s, err := c.Services(l.Logger())
 			if err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			if err = services.Start(ctx); err != nil {
+			if err = s.Start(ctx); err != nil {
 				return err
 			}
-			return <-services.Wait()
+			return <-s.Wait()
 		},
 	}
 }

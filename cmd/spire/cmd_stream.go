@@ -26,6 +26,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -42,10 +43,12 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 }
 
 func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
-	return &cobra.Command{
-		Use:   "prices",
-		Args:  cobra.ExactArgs(0),
-		Short: "Prints price messages as they are received",
+	var legacy bool
+	cc := &cobra.Command{
+		Use:     "prices",
+		Args:    cobra.ExactArgs(0),
+		Aliases: []string{"data"},
+		Short:   "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
@@ -63,7 +66,12 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 					err = sErr
 				}
 			}()
-			msgCh := services.Transport.Messages(messages.DataPointV1MessageName)
+			var msgCh <-chan transport.ReceivedMessage
+			if legacy {
+				msgCh = services.Transport.Messages(messages.PriceV1MessageName)
+			} else {
+				msgCh = services.Transport.Messages(messages.DataPointV1MessageName)
+			}
 			for {
 				select {
 				case <-ctx.Done():
@@ -78,4 +86,11 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 			}
 		},
 	}
+	cc.Flags().BoolVar(
+		&legacy,
+		"legacy",
+		false,
+		"legacy mode",
+	)
+	return cc
 }

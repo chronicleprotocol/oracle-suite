@@ -48,7 +48,7 @@ variables {
     "GNO/USD",
     "IBTA/USD",
     "LINK/USD",
-    "MANA/USD",
+    "MANA/USD", # Missing data model
     "MATIC/USD",
     "MKR/USD",
     "RETH/USD",
@@ -56,3 +56,5 @@ variables {
     "YFI/USD",
   ]
 }
+
+BTC/USD,ETH/BTC,ETH/USD,GNO/USD,IBTA/USD,LINK/USD,MANA/USD,MATIC/USD,MKR/USD,RETH/USD,WSTETH/USD,YFI/USD,
