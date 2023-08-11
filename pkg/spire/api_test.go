@@ -180,7 +180,7 @@ func TestClient_PullPrices_ByFeed(t *testing.T) {
 	assertEqualValue(t, testPriceAAABBB, prices[0])
 }
 
-func TestClient_PullPrices(t *testing.T) {
+func TestClient_PullPricesErrorOnEmptyFilters(t *testing.T) {
 	var err error
 	var prices []*messages.DataPoint
 
@@ -189,12 +189,11 @@ func TestClient_PullPrices(t *testing.T) {
 
 	wait(func() bool {
 		prices, err = spire.PullPrices("", "")
-		return len(prices) != 0
+		return len(prices) == 0
 	}, time.Second)
 
-	assert.NoError(t, err)
-	assert.Len(t, prices, 1)
-	assertEqualValue(t, testPriceAAABBB, prices[0])
+	assert.Error(t, err)
+	assert.Len(t, prices, 0)
 }
 
 func assertEqualValue(t *testing.T, expected, given *messages.DataPoint) {
