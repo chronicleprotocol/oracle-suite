@@ -97,7 +97,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	var calls []types.Call
 	var callsToken []types.Call
 	for i, pair := range pairs {
-		contract, _, err := s.contractAddresses.ByPair(pair)
+		contract, _, _, err := s.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue

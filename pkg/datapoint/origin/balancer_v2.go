@@ -98,7 +98,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 	refs := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, _, err := b.contractAddresses.ByPair(pair)
+		contract, _, _, err := b.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
@@ -119,7 +119,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			Input: callData,
 		})
 
-		ref, _, err := b.referenceAddresses.ByPair(pair)
+		ref, _, _, err := b.referenceAddresses.ByPair(pair)
 		if err == nil {
 			callData, err := b.abi.Methods["getPriceRateCache"].EncodeArgs(types.MustAddressFromHex(ref.String()))
 			if err != nil {
@@ -153,7 +153,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 					continue
 				}
 				price := new(big.Int).SetBytes(resp[n][0:32])
-				_, _, err := b.referenceAddresses.ByPair(pairs[i])
+				_, _, _, err := b.referenceAddresses.ByPair(pairs[i])
 				if err == nil {
 					refPrice := new(big.Int).SetBytes(resp[n+1][0:32])
 					refs[i] = new(big.Int).Add(refs[i], refPrice)
@@ -180,8 +180,8 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 
 		// Invert the price if inverted price
-		_, inverted, _ := b.contractAddresses.ByPair(pair)
-		if inverted {
+		_, baseIndex, quoteIndex, _ := b.contractAddresses.ByPair(pair)
+		if baseIndex > quoteIndex {
 			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
 		}
 
