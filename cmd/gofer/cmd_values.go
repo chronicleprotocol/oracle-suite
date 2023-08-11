@@ -31,6 +31,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
 func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
@@ -74,6 +75,12 @@ func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cob
 		"format",
 		"o",
 		"output format",
+	)
+	cc.Flags().BoolVar(
+		&treerender.NoColors,
+		"no-color",
+		false,
+		"disable output coloring",
 	)
 	return cc
 }
