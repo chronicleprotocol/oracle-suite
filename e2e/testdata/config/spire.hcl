@@ -21,9 +21,9 @@ spire {
   ethereum_key    = "default"
   rpc_listen_addr = "127.0.0.1:9101"
   rpc_agent_addr  = "127.0.0.1:9101"
-  feeds         = var.feeds
+  feeds           = var.feeds
   pairs           = [
-    "BTCUSD",
-    "ETHBTC",
+    "BTC/USD",
+    "ETH/BTC",
   ]
 }

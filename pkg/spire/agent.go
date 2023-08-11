@@ -25,9 +25,9 @@ import (
 
 	"github.com/defiweb/go-eth/crypto"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/httpserver"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
@@ -44,7 +44,7 @@ type Agent struct {
 }
 
 type AgentConfig struct {
-	PriceStore *store.PriceStore
+	PriceStore *store.Store
 	Transport  transport.Service
 	Address    string
 	Logger     log.Logger

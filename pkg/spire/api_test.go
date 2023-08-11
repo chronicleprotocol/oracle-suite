@@ -16,20 +16,21 @@
 package spire
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"math/big"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/median"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -39,23 +40,20 @@ import (
 
 var (
 	testAddress     = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
-	testPriceAAABBB = &messages.Price{
-		Price: &median.Price{
-			Wat: "AAABBB",
-			Val: big.NewInt(10),
-			Age: time.Unix(100, 0),
-			Sig: types.Signature{
-				V: big.NewInt(1),
-				R: big.NewInt(2),
-				S: big.NewInt(3),
+	testPriceAAABBB = &messages.DataPoint{
+		Model: "AAA/BBB",
+		Value: datapoint.Point{
+			Value: value.StaticValue{Value: bn.Float(10.0)},
+			Time:  time.Unix(1234567890, 0),
+			Meta: map[string]any{
+				"addr": testAddress.String(),
 			},
 		},
-		Trace:   nil,
-		Version: "0.4.10",
+		Signature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
 	}
 	agent      *Agent
 	spire      *Client
-	priceStore *store.PriceStore
+	priceStore *store.Store
 	ctxCancel  context.CancelFunc
 )
 
@@ -67,17 +65,15 @@ func newTestInstances() (*Agent, *Client) {
 	log := null.New()
 	rec := &mocks.Recoverer{}
 	tra := local.New([]byte("test"), 0, map[string]transport.Message{
-		messages.PriceV0MessageName: (*messages.Price)(nil),
-		messages.PriceV1MessageName: (*messages.Price)(nil),
+		messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 	})
 	_ = tra.Start(ctx)
 	priceStore, err = store.New(store.Config{
-		Storage:   store.NewMemoryStorage(),
-		Transport: tra,
-		Pairs:     []string{"AAABBB", "XXXYYY"},
-		Feeds:     []types.Address{testAddress},
-		Logger:    null.New(),
-		Recoverer: rec,
+		Storage:    store.NewMemoryStorage(),
+		Transport:  tra,
+		Models:     []string{"AAA/BBB", "XXX/YYY"},
+		Logger:     null.New(),
+		Recoverers: []datapoint.Recoverer{rec},
 	})
 	if err != nil {
 		panic(err)
@@ -130,65 +126,65 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_PublishPrice(t *testing.T) {
-	err := spire.PublishPrice(testPriceAAABBB)
+	err := spire.Publish(testPriceAAABBB)
 	assert.NoError(t, err)
 }
 
 func TestClient_PullPrice(t *testing.T) {
 	var err error
-	var price *messages.Price
+	var price *messages.DataPoint
 
-	err = spire.PublishPrice(testPriceAAABBB)
+	err = spire.Publish(testPriceAAABBB)
 	assert.NoError(t, err)
 
 	wait(func() bool {
-		price, err = spire.PullPrice("AAABBB", testAddress.String())
+		price, err = spire.PullPrice("AAA/BBB", testAddress.String())
 		return price != nil
 	}, time.Second)
 
 	assert.NoError(t, err)
-	assertEqualPrices(t, testPriceAAABBB, price)
+	assertEqualValue(t, testPriceAAABBB, price)
 }
 
 func TestClient_PullPrices_ByAssetPrice(t *testing.T) {
 	var err error
-	var prices []*messages.Price
+	var prices []*messages.DataPoint
 
-	err = spire.PublishPrice(testPriceAAABBB)
+	err = spire.Publish(testPriceAAABBB)
 	assert.NoError(t, err)
 
 	wait(func() bool {
-		prices, err = spire.PullPrices("AAABBB", "")
+		prices, err = spire.PullPrices("AAA/BBB", "")
 		return len(prices) != 0
 	}, time.Second)
 
 	assert.NoError(t, err)
 	assert.Len(t, prices, 1)
-	assertEqualPrices(t, testPriceAAABBB, prices[0])
+	assertEqualValue(t, testPriceAAABBB, prices[0])
 }
 
 func TestClient_PullPrices_ByFeed(t *testing.T) {
 	var err error
-	var prices []*messages.Price
+	var prices []*messages.DataPoint
 
-	err = spire.PublishPrice(testPriceAAABBB)
+	err = spire.Publish(testPriceAAABBB)
 	assert.NoError(t, err)
 
 	wait(func() bool {
-		prices, err = spire.PullPrices("", testAddress.String())
+		prices, err = spire.PullPrices("AAA/BBB", testAddress.String())
 		return len(prices) != 0
 	}, time.Second)
 
 	assert.NoError(t, err)
 	assert.Len(t, prices, 1)
-	assertEqualPrices(t, testPriceAAABBB, prices[0])
+	assertEqualValue(t, testPriceAAABBB, prices[0])
 }
 
 func TestClient_PullPrices(t *testing.T) {
 	var err error
-	var prices []*messages.Price
+	var prices []*messages.DataPoint
 
-	err = spire.PublishPrice(testPriceAAABBB)
+	err = spire.Publish(testPriceAAABBB)
 	assert.NoError(t, err)
 
 	wait(func() bool {
@@ -198,10 +194,10 @@ func TestClient_PullPrices(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, prices, 1)
-	assertEqualPrices(t, testPriceAAABBB, prices[0])
+	assertEqualValue(t, testPriceAAABBB, prices[0])
 }
 
-func assertEqualPrices(t *testing.T, expected, given *messages.Price) {
+func assertEqualValue(t *testing.T, expected, given *messages.DataPoint) {
 	je, _ := json.Marshal(expected)
 	jg, _ := json.Marshal(given)
 	assert.JSONEq(t, string(je), string(jg))
