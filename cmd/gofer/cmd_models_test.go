@@ -35,6 +35,7 @@ MKR/ETH
 MKR/USD
 RETH/ETH
 RETH/USD
+SDAI/DAI
 STETH/ETH
 USDC/USD
 USDT/USD
@@ -496,6 +497,9 @@ Model for RETH/USD:
                   └──median(min_values:2)
                      ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                      └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+Model for SDAI/DAI:
+───reference()
+   └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:sdai, query:SDAI/DAI)
 Model for STETH/ETH:
 ───reference()
    └──median(min_values:2)
