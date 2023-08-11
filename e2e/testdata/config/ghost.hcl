@@ -29,7 +29,7 @@ transport {
   }
 }
 
-gofernext {
+gofer {
   origin "kraken" {
     type = "tick_generic_jq"
     url  = "http://127.0.0.1:8080/0/public/Ticker?pair=$${ucbase}/$${ucquote}"
@@ -58,7 +58,7 @@ gofernext {
   }
 }
 
-ghostnext {
+ghost {
   ethereum_key = "default"
   interval     = 1
   data_models  = [
