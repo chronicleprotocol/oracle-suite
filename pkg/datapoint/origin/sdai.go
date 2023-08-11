@@ -94,6 +94,10 @@ func (s *SDAI) FetchDataPoints(ctx context.Context, query []any) (map[any]datapo
 			continue
 		}
 
+		// SavingsDai(SDAI) contract is customized and based on ERC4626 interface where asset token is DAI token
+		// As depositing the asset token, users can get proper amount of shares which is represented as SDAI.
+		// In order to get the ratio of SDAI in DAI, should get how many DAI users can redeem,
+		// that means getting the asset amount of given shares
 		callData, err := s.abi.Methods["previewRedeem"].EncodeArgs(big.NewInt(0).SetUint64(ether))
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
