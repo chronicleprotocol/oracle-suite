@@ -3,10 +3,11 @@ package mocks
 import (
 	"context"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
 type Recoverer struct {
@@ -28,7 +29,7 @@ func (r *Recoverer) RecoverTransaction(tx *types.Transaction) (*types.Address, e
 	return args.Get(0).(*types.Address), args.Error(1)
 }
 
-func (r *Recoverer) Supports(_ context.Context, data datapoint.Point) bool {
+func (r *Recoverer) Supports(_ context.Context, _ datapoint.Point) bool {
 	return true
 }
 

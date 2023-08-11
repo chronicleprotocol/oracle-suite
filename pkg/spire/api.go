@@ -67,10 +67,7 @@ func (n *API) Publish(arg *PublishArg, _ *Nothing) error {
 		WithField("model", arg.DataPoint.Model).
 		Info("Publish data point")
 
-	if err := n.transport.Broadcast(messages.DataPointV1MessageName, arg.DataPoint); err != nil {
-		return err
-	}
-	return nil
+	return n.transport.Broadcast(messages.DataPointV1MessageName, arg.DataPoint)
 }
 
 func (n *API) PullPoints(arg *PullPricesArg, resp *PullDataPointsResp) error {
