@@ -1,7 +1,7 @@
 ghost {
   ethereum_key = "default"
   interval     = try(tonumber(env.CFG_GHOST_INTERVAL), 60)
-  data_models  = [
+  data_models  = try(env.CFG_GHOST_PAIRS == "" ? [] : split(",", env.CFG_GHOST_PAIRS), [
     "BTC/USD",
     "ETH/BTC",
     "ETH/USD",
@@ -14,5 +14,5 @@ ghost {
     "RETH/USD",
     "WSTETH/USD",
     "YFI/USD",
-  ]
+  ])
 }
