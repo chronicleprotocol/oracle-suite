@@ -71,6 +71,9 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 	}, nil
 }
 
+// Since curve has `stableswap` pool and `cryptoswap` pool, and their smart contracts have pretty similar interface
+// `stableswap` pool is using `int128` in `get_dy`, `get_dx` ...,
+// while `cryptoswap` pool is using `uint256` in `get_dy`, `get_dx`, ...
 var getDy1 = abi.MustParseMethod("get_dy(int128,int128,uint256)(uint256)")
 var getDy2 = abi.MustParseMethod("get_dy(uint256,uint256,uint256)(uint256)")
 var coins = abi.MustParseMethod("coins(uint256)(address)")
@@ -95,7 +98,7 @@ func (c *Curve) fetchDataPoints(
 		getDy = getDy2
 	}
 
-	// Get all the token addresses and their decimals
+	// Get all the token addresses based on their token indexes in the pool
 	var callsToken []types.Call
 	for _, pair := range pairs {
 		contract, baseIndex, quoteIndex, err := contractAddresses.ByPair(pair)
@@ -162,6 +165,9 @@ func (c *Curve) fetchDataPoints(
 			continue
 		}
 
+		// `get_dy` function requires to pass the token index in first two parameters in ascending order
+		// and the third parameter is the token amount scaled up by first token's decimals
+		// The return value is the token amount scaled up by second token's decimals
 		var callData types.Bytes
 		if baseIndex < quoteIndex {
 			callData, err = getDy.EncodeArgs(
@@ -169,7 +175,7 @@ func (c *Curve) fetchDataPoints(
 				quoteIndex,
 				new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil),
 			)
-		} else {
+		} else { // inverted pair
 			callData, err = getDy.EncodeArgs(
 				quoteIndex,
 				baseIndex,
@@ -212,11 +218,13 @@ func (c *Curve) fetchDataPoints(
 				price := new(big.Float).SetInt(new(big.Int).SetBytes(resp[n][0:32]))
 				// price = price / 10 ^ quoteDecimals
 				if baseIndex < quoteIndex {
+					// The return value of `get_dy` is the number scaled up by quote token
 					price = new(big.Float).Quo(
 						price,
 						new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil)),
 					)
-				} else {
+				} else { // inverted pair
+					// The return value of `get_dy` is the number scaled up by base token
 					price = new(big.Float).Quo(
 						price,
 						new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)),
