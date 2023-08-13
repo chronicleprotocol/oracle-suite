@@ -18,13 +18,25 @@ package main
 import (
 	"os"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	ghost "github.com/chronicleprotocol/oracle-suite/pkg/config/ghostnext"
 )
 
 func main() {
-	var Config ghost.Config
-	if err := cmd.DefaultCommand("ghost", &Config).Execute(); err != nil {
+	var ff cmd.FilesFlags
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand(
+		"ghost",
+		suite.Version,
+		cmd.NewFilesFlagSet(&ff),
+		cmd.NewLoggerFlagSet(&lf),
+	)
+	var config ghost.Config
+	c.AddCommand(
+		cmd.NewRunCmd(&config, &ff, &lf),
+	)
+	if err := c.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

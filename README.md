@@ -1,7 +1,7 @@
 # Oracle Suite
 
 [![Run Tests](https://github.com/chronicleprotocol/oracle-suite/actions/workflows/test.yml/badge.svg)](https://github.com/chronicleprotocol/oracle-suite/actions/workflows/test.yml)
-[![Build & Push Docker Image](https://github.com/chronicleprotocol/oracle-suite/actions/workflows/docker.yml/badge.svg)](https://github.com/chronicleprotocol/oracle-suite/actions/workflows/docker.yml)
+[![Release Assets](https://github.com/chronicleprotocol/oracle-suite/actions/workflows/release.yml/badge.svg)](https://github.com/chronicleprotocol/oracle-suite/actions/workflows/release.yml)
 
 A set of tools that can be used to run Oracles.
 

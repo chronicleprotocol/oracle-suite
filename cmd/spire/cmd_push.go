@@ -42,7 +42,7 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price",
 		Args:  cobra.MaximumNArgs(1),
-		Short: "Push a price message to the network",
+		Short: "Push a data point message to the network",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
 			if err := opts.Load(&opts.Config); err != nil {
 				return err
@@ -73,13 +73,13 @@ func NewPushPriceCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			msg := &messages.Price{}
+			msg := &messages.DataPoint{}
 			err = msg.Unmarshall(input)
 			if err != nil {
 				return err
 			}
 			// Send price message to RPC client:
-			err = services.SpireClient.PublishPrice(msg)
+			err = services.SpireClient.Publish(msg)
 			if err != nil {
 				return err
 			}

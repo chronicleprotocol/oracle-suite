@@ -6,12 +6,10 @@ include = [
   "config-defaults.hcl",
   "config-ethereum.hcl",
   "config-transport.hcl",
-  "config-ghost.hcl",
-  "config-gofer.hcl",
   "config-spectre.hcl",
   "config-spire.hcl",
-  "config-gofernext.hcl",
-  "config-ghostnext.hcl",
+  "config-gofer.hcl",
+  "config-ghost.hcl",
 ]
 
 

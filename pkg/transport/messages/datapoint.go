@@ -1,6 +1,8 @@
 package messages
 
 import (
+	"encoding/json"
+
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
@@ -13,12 +15,24 @@ const DataPointV1MessageName = "data_point/v1"
 
 type DataPoint struct {
 	// Model of the data point.
-	Model string
+	Model string `json:"model"`
 
 	// Value is a binary representation of the data point.
-	Value datapoint.Point
+	Value datapoint.Point `json:"value"`
 
-	Signature types.Signature
+	Signature types.Signature `json:"signature"`
+}
+
+func (d *DataPoint) Marshall() ([]byte, error) {
+	return json.Marshal(d)
+}
+
+func (d *DataPoint) Unmarshall(b []byte) error {
+	err := json.Unmarshal(b, d)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // MarshallBinary implements the transport.Message interface.

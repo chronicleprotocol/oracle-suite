@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/defiweb/go-anymapper v0.0.0-20230411235658-fe3bd78a1f8e
-	github.com/defiweb/go-eth v0.1.0
+	github.com/defiweb/go-anymapper v0.1.0
+	github.com/defiweb/go-eth v0.1.1
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/hashicorp/go-multierror v1.1.1
@@ -20,6 +20,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
 	github.com/zclconf/go-cty v1.13.1
+	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
 	golang.org/x/net v0.8.0
 	golang.org/x/sys v0.6.0
 	golang.org/x/time v0.3.0
@@ -44,8 +45,8 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
-	github.com/defiweb/go-rlp v0.0.0-20221110234728-569c5d013937 // indirect
-	github.com/defiweb/go-sigparser v0.0.0-20221125211146-2e4b90d8e269 // indirect
+	github.com/defiweb/go-rlp v0.1.0 // indirect
+	github.com/defiweb/go-sigparser v0.1.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/elastic/gosigar v0.14.2 // indirect
@@ -142,7 +143,6 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/text v0.8.0 // indirect

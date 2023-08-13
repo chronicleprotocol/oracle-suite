@@ -18,13 +18,25 @@ package main
 import (
 	"os"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
 )
 
 func main() {
-	var Config spectre.Config
-	if err := cmd.DefaultCommand("spectre", &Config).Execute(); err != nil {
+	var cf cmd.FilesFlags
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand(
+		"spectre",
+		suite.Version,
+		cmd.NewFilesFlagSet(&cf),
+		cmd.NewLoggerFlagSet(&lf),
+	)
+	var config spectre.Config
+	c.AddCommand(
+		cmd.NewRunCmd(&config, &cf, &lf),
+	)
+	if err := c.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

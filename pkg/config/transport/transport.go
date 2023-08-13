@@ -31,7 +31,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/net/proxy"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -222,7 +222,7 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 		BlockedAddrs:     c.LibP2P.BlockedAddrs,
 		Logger:           d.Logger,
 		AppName:          "spire-bootstrap",
-		AppVersion:       cmd.Version,
+		AppVersion:       suite.Version,
 	}
 	p, err := libp2p.New(cfg)
 	if err != nil {
@@ -367,7 +367,7 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 		Signer:           key,
 		Logger:           d.Logger,
 		AppName:          "spire",
-		AppVersion:       cmd.Version,
+		AppVersion:       suite.Version,
 	}
 	libP2PTransport, err := libp2p.New(cfg)
 	if err != nil {

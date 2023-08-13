@@ -8,7 +8,7 @@ RUN go mod vendor && mkdir -p dist
 ARG APP_VERSION="0.0.0-dev.0"
 ARG APP_NAME
 RUN CGO_ENABLED=0 go build -v \
-    -ldflags "-X github.com/chronicleprotocol/oracle-suite/cmd.Version=${APP_VERSION}" \
+    -ldflags "-X github.com/chronicleprotocol/oracle-suite.Version=${APP_VERSION}" \
     -o ./dist/chronicle-app ./cmd/${APP_NAME}
 
 # ----------------------------------------------------------------------------------------

@@ -25,7 +25,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
+	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
@@ -126,7 +126,7 @@ func (c *Config) Logger(d Dependencies) (log.Logger, error) {
 	logger = logger.
 		WithFields(log.Fields{
 			"x-appName":    d.AppName,
-			"x-appVersion": cmd.Version,
+			"x-appVersion": suite.Version,
 			"x-goVersion":  runtime.Version(),
 			"x-goOS":       runtime.GOOS,
 			"x-goArch":     runtime.GOARCH,

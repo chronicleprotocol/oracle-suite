@@ -30,57 +30,38 @@ transport {
 }
 
 gofer {
-  origin "bitstamp" {
-    type   = "bitstamp"
-    params = {
-      url = "http://127.0.0.1:8080"
-    }
-  }
-
   origin "kraken" {
-    type   = "kraken"
-    params = {
-      url = "http://127.0.0.1:8080"
-    }
-  }
-  origin "coinbasepro" {
-    type   = "coinbasepro"
-    params = {
-      url = "http://127.0.0.1:8080"
-    }
+    type = "tick_generic_jq"
+    url  = "http://127.0.0.1:8080/0/public/Ticker?pair=$${ucbase}/$${ucquote}"
+    jq   = "($ucbase + \"/\" + $ucquote) as $pair | {price: .result[$pair].c[0]|tonumber, time: now|round, volume: .result[$pair].v[0]|tonumber}"
   }
 
-  origin "gemini" {
-    type   = "gemini"
-    params = {
-      url = "http://127.0.0.1:8080"
+  data_model "BTC/USD" {
+    median {
+      min_values = 1
+      origin "kraken" { query = "BTC/USD" }
     }
   }
 
-  origin "binance_us" {
-    type   = "binance"
-    params = {
-      url = "http://127.0.0.1:8080"
+  data_model "ETH/BTC" {
+    median {
+      min_values = 1
+      origin "kraken" { query = "ETH/BTC" }
     }
   }
 
-  price_model "BTC/USD" "origin" {
-    origin = "kraken"
-  }
-
-  price_model "ETH/BTC" "origin" {
-    origin = "kraken"
-  }
-
-  price_model "ETH/USD" "origin" {
-    origin = "kraken"
+  data_model "ETH/USD" {
+    median {
+      min_values = 1
+      origin "kraken" { query = "ETH/USD" }
+    }
   }
 }
 
 ghost {
   ethereum_key = "default"
   interval     = 1
-  pairs        = [
+  data_models  = [
     "BTC/USD",
     "ETH/BTC",
   ]

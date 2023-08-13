@@ -63,7 +63,7 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 					err = sErr
 				}
 			}()
-			msgCh := services.Transport.Messages(messages.PriceV1MessageName)
+			msgCh := services.Transport.Messages(messages.DataPointV1MessageName)
 			for {
 				select {
 				case <-ctx.Done():
