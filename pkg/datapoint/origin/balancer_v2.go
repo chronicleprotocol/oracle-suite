@@ -27,8 +27,8 @@ const BalancerV2LoggerTag = "BALANCERV2_ORIGIN"
 
 type BalancerV2Config struct {
 	Client             rpc.RPC
-	ContractAddresses  map[string]string
-	ReferenceAddresses map[string]string
+	ContractAddresses  ContractAddresses
+	ReferenceAddresses ContractAddresses
 	Logger             log.Logger
 	Blocks             []int64
 }
@@ -55,19 +55,11 @@ func NewBalancerV2(config BalancerV2Config) (*BalancerV2, error) {
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
-	refAddresses, err := convertAddressMap(config.ReferenceAddresses)
-	if err != nil {
-		return nil, err
-	}
 
 	return &BalancerV2{
 		client:             config.Client,
-		contractAddresses:  addresses,
-		referenceAddresses: refAddresses,
+		contractAddresses:  config.ContractAddresses,
+		referenceAddresses: config.ReferenceAddresses,
 		abi:                a,
 		variable:           0, // PAIR_PRICE
 		blocks:             config.Blocks,

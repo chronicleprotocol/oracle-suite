@@ -26,8 +26,8 @@ func (suite *RocketPoolSuite) SetupTest() {
 	suite.client = &ethereumMocks.RPC{}
 	o, err := NewRocketPool(RocketPoolConfig{
 		Client: suite.client,
-		ContractAddresses: map[string]string{
-			"RETH/ETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+		ContractAddresses: ContractAddresses{
+			AssetPair{"RETH", "ETH"}: types.MustAddressFromHex("0xae78736Cd615f374D3085123A210448E74Fc6393"),
 		},
 		Blocks: []int64{0, 10, 20},
 		Logger: nil,

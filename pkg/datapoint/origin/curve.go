@@ -25,8 +25,8 @@ const CurveLoggerTag = "CURVE_ORIGIN"
 
 type CurveConfig struct {
 	Client             rpc.RPC
-	ContractAddresses  map[string]string
-	Contract2Addresses map[string]string
+	ContractAddresses  ContractAddresses
+	Contract2Addresses ContractAddresses
 	Logger             log.Logger
 	Blocks             []int64
 }
@@ -48,14 +48,6 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 		config.Logger = null.New()
 	}
 
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
-	addresses2, err := convertAddressMap(config.Contract2Addresses)
-	if err != nil {
-		return nil, err
-	}
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -63,8 +55,8 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 
 	return &Curve{
 		client:             config.Client,
-		contractAddresses:  addresses,
-		contract2Addresses: addresses2,
+		contractAddresses:  config.ContractAddresses,
+		contract2Addresses: config.Contract2Addresses,
 		erc20:              erc20,
 		blocks:             config.Blocks,
 		logger:             config.Logger.WithField("curve", CurveLoggerTag),

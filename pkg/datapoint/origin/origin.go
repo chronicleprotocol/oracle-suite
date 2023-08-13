@@ -27,7 +27,33 @@ type Origin interface {
 
 const ether = 1e18
 
-type ContractAddresses map[string]types.Address
+const maxTokenCount = 3 // Maximum token count being used as key of the contract
+
+type AssetPair [maxTokenCount]string
+
+func (a *AssetPair) UnmarshalText(text []byte) error {
+	ss := strings.Split(string(text), "/")
+	if len(ss) < 2 {
+		return fmt.Errorf("asset pair must have at least two tokens, got %q", string(text))
+	}
+	pairs := AssetPair{"", "", ""}
+	for i := 0; i < len(ss) && i < len(pairs); i++ {
+		pairs[i] = strings.ToUpper(ss[i])
+	}
+	*a = pairs
+	return nil
+}
+
+func (a AssetPair) IndexOf(token string) int {
+	for i, val := range a {
+		if val == token {
+			return i
+		}
+	}
+	return -1
+}
+
+type ContractAddresses map[AssetPair]types.Address
 
 // ByPair returns the contract address and the indexes of tokens, where the contract contains the given pair
 // If not found base and quote token, return zero address and -1 for indexes
@@ -39,21 +65,8 @@ func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error)
 		// It should be listed with the separator '/' and is sorted by ascending order.
 		// i.e. `3pool` in curve is the pool of DAI, USDC and USDT,
 		// so it is defined as "DAI/USDC/USDT = 0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7"
-		baseIndex := -1
-		quoteIndex := -1
-		tokens := strings.Split(key, "/")
-		for i := range tokens {
-			if tokens[i] == p.Base {
-				baseIndex = i
-				break
-			}
-		}
-		for i := range tokens {
-			if tokens[i] == p.Quote {
-				quoteIndex = i
-				break
-			}
-		}
+		baseIndex := key.IndexOf(p.Base)
+		quoteIndex := key.IndexOf(p.Quote)
 		if baseIndex >= 0 && 0 <= quoteIndex && baseIndex != quoteIndex {
 			// if p is inverted pair, baseIndex should be greater than quoteIndex
 			return address, baseIndex, quoteIndex, nil
@@ -61,18 +74,6 @@ func (c ContractAddresses) ByPair(p value.Pair) (types.Address, int, int, error)
 	}
 	// not found the pair
 	return types.ZeroAddress, -1, -1, fmt.Errorf("failed to get contract address for pair: %s", p.String())
-}
-
-func convertAddressMap(addresses map[string]string) (ContractAddresses, error) {
-	typeAddresses := make(map[string]types.Address)
-	for key, address := range addresses {
-		tokens := strings.Split(key, "/")
-		if len(tokens) < 2 {
-			return nil, fmt.Errorf("not found pair: %s", key)
-		}
-		typeAddresses[key] = types.MustAddressFromHex(address)
-	}
-	return typeAddresses, nil
 }
 
 func fillDataPointsWithError(points map[any]datapoint.Point, pairs []value.Pair, err error) map[any]datapoint.Point {

@@ -38,10 +38,10 @@ type configOriginIShares struct {
 }
 
 type configBalancerContracts struct {
-	EthereumClient    string            `hcl:"client,label"`
-	ContractAddresses map[string]string `hcl:"addresses"`
+	EthereumClient    string                   `hcl:"client,label"`
+	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 	// `references` are optional, the key should be matched with `addresses` as the additional address.
-	ReferenceAddresses map[string]string `hcl:"references,optional"`
+	ReferenceAddresses origin.ContractAddresses `hcl:"references,optional"`
 }
 
 type configOriginBalancer struct {
@@ -55,9 +55,9 @@ type configOriginBalancer struct {
 type configCurveContracts struct {
 	EthereumClient string `hcl:"client,label"`
 	// `addresses` are the pool addresses that are using `int256`
-	ContractAddresses map[string]string `hcl:"addresses"`
+	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 	// `addresses2` are the pool address that are using `uint256`
-	Contract2Addresses map[string]string `hcl:"addresses2"`
+	Contract2Addresses origin.ContractAddresses `hcl:"addresses2"`
 }
 
 type configOriginCurve struct {
@@ -65,8 +65,8 @@ type configOriginCurve struct {
 }
 
 type configContracts struct {
-	EthereumClient    string            `hcl:"client,label"`
-	ContractAddresses map[string]string `hcl:"addresses"`
+	EthereumClient    string                   `hcl:"client,label"`
+	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 }
 
 type configOriginRocketPool struct {

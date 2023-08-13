@@ -28,7 +28,7 @@ const SushiswapLoggerTag = "SUSHISWAP_ORIGIN"
 
 type SushiswapConfig struct {
 	Client            rpc.RPC
-	ContractAddresses map[string]string
+	ContractAddresses ContractAddresses
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -54,10 +54,6 @@ func NewSushiswap(config SushiswapConfig) (*Sushiswap, error) {
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
 
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
@@ -66,7 +62,7 @@ func NewSushiswap(config SushiswapConfig) (*Sushiswap, error) {
 
 	return &Sushiswap{
 		client:            config.Client,
-		contractAddresses: addresses,
+		contractAddresses: config.ContractAddresses,
 		erc20:             erc20,
 		abi:               a,
 		blocks:            config.Blocks,

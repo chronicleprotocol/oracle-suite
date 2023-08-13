@@ -27,7 +27,7 @@ const WrappedStakedETHLoggerTag = "WSTETH_ORIGIN"
 
 type WrappedStakedETHConfig struct {
 	Client            rpc.RPC
-	ContractAddresses map[string]string
+	ContractAddresses ContractAddresses
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -52,14 +52,10 @@ func NewWrappedStakedETH(config WrappedStakedETHConfig) (*WrappedStakedETH, erro
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
 
 	return &WrappedStakedETH{
 		client:            config.Client,
-		contractAddresses: addresses,
+		contractAddresses: config.ContractAddresses,
 		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("wsteth", WrappedStakedETHLoggerTag),

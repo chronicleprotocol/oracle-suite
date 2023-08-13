@@ -27,7 +27,7 @@ const RocketPoolLoggerTag = "ROCKETPOOL_ORIGIN"
 
 type RocketPoolConfig struct {
 	Client            rpc.RPC
-	ContractAddresses map[string]string
+	ContractAddresses ContractAddresses
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -53,14 +53,10 @@ func NewRocketPool(config RocketPoolConfig) (*RocketPool, error) {
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
 
 	return &RocketPool{
 		client:            config.Client,
-		contractAddresses: addresses,
+		contractAddresses: config.ContractAddresses,
 		abi:               a,
 		baseIndex:         big.NewInt(0),
 		quoteIndex:        big.NewInt(1),

@@ -26,13 +26,13 @@ func (suite *BalancerV2Suite) SetupTest() {
 	suite.client = &ethereumMocks.RPC{}
 	o, err := NewBalancerV2(BalancerV2Config{
 		Client: suite.client,
-		ContractAddresses: map[string]string{
-			"RETH/WETH":  "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276",
-			"STETH/WETH": "0x32296969ef14eb0c6d29669c550d4a0449130230",
-			"WETH/YFI":   "0x186084ff790c65088ba694df11758fae4943ee9e",
+		ContractAddresses: ContractAddresses{
+			AssetPair{"RETH", "WETH"}:  types.MustAddressFromHex("0x1E19CF2D73a72Ef1332C882F20534B6519Be0276"),
+			AssetPair{"STETH", "WETH"}: types.MustAddressFromHex("0x32296969ef14eb0c6d29669c550d4a0449130230"),
+			AssetPair{"WETH", "YFI"}:   types.MustAddressFromHex("0x186084ff790c65088ba694df11758fae4943ee9e"),
 		},
-		ReferenceAddresses: map[string]string{
-			"RETH/WETH": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+		ReferenceAddresses: ContractAddresses{
+			AssetPair{"RETH", "WETH"}: types.MustAddressFromHex("0xae78736Cd615f374D3085123A210448E74Fc6393"),
 		},
 		Blocks: []int64{0, 10, 20},
 		Logger: nil,
