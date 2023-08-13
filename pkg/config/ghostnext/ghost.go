@@ -22,7 +22,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	dataproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
+	configGoferNext "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feednext"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
@@ -38,11 +38,11 @@ import (
 
 // Config is the configuration for Ghost.
 type Config struct {
-	Ghost     feedConfig.Config         `hcl:"ghostnext,block"`
-	Gofer     dataproviderConfig.Config `hcl:"gofernext,block"`
-	Ethereum  ethereumConfig.Config     `hcl:"ethereum,block"`
-	Transport transportConfig.Config    `hcl:"transport,block"`
-	Logger    *loggerConfig.Config      `hcl:"logger,block,optional"`
+	Ghost     feedConfig.Config      `hcl:"ghost,block"`
+	Gofer     configGoferNext.Config `hcl:"gofer,block"`
+	Ethereum  ethereumConfig.Config  `hcl:"ethereum,block"`
+	Transport transportConfig.Config `hcl:"transport,block"`
+	Logger    *loggerConfig.Config   `hcl:"logger,block,optional"`
 
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
@@ -50,7 +50,7 @@ type Config struct {
 }
 
 // Services returns the services configured for Lair.
-func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
+func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "ghost",
 		BaseLogger: baseLogger,
@@ -77,7 +77,7 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 	if err != nil {
 		return nil, err
 	}
-	dataProvider, err := c.Gofer.ConfigureDataProvider(dataproviderConfig.Dependencies{
+	dataProvider, err := c.Gofer.ConfigureDataProvider(configGoferNext.Dependencies{
 		Clients: clients,
 		Logger:  logger,
 	})
@@ -103,7 +103,7 @@ func (c *Config) Services(baseLogger log.Logger) (*Services, error) {
 // Services returns the services that are configured from the Config struct.
 type Services struct {
 	Feed      *feed.Feed
-	Transport pkgTransport.Transport
+	Transport pkgTransport.Service
 	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor

@@ -48,7 +48,7 @@ func NewBootstrapCmd(opts *options) *cobra.Command {
 		Short:   "Starts bootstrap node",
 		Long:    ``,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.LoadConfigFiles(&opts.BootstrapConfig); err != nil {
+			if err := opts.Load(&opts.BootstrapConfig); err != nil {
 				return fmt.Errorf(`config error: %w`, err)
 			}
 			l, err := opts.BootstrapConfig.Logger.Logger(logger.Dependencies{

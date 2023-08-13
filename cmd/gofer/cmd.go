@@ -16,39 +16,51 @@
 package main
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+	"fmt"
+	"strings"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
-func NewRootCommand(opts *options) *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use:     "gofer",
-		Version: cmd.Version,
-		Short:   "Tool for providing reliable data in the blockchain ecosystem",
-		Long: `
-Gofer is a tool that provides reliable asset prices taken from various sources.
+const (
+	formatPlain = "plain"
+	formatTrace = "trace"
+	formatJSON  = "json"
+)
 
-It is a tool that allows for easy data retrieval from various sources
-with aggregates that increase reliability in the DeFi environment.`,
-		SilenceErrors: true,
-		SilenceUsage:  true,
+type formatTypeValue struct {
+	format string
+}
+
+func (v *formatTypeValue) String() string {
+	if v.format == "" {
+		return formatPlain
 	}
+	return v.format
+}
 
-	rootCmd.PersistentFlags().AddFlagSet(cmd.NewLoggerFlagSet(&opts.LoggerFlags))
-	rootCmd.PersistentFlags().AddFlagSet(cmd.NewFilesFlagSet(&opts.FilesFlags))
-	rootCmd.PersistentFlags().VarP(
-		&opts.Format,
-		"format",
-		"o",
-		"output format",
-	)
-	rootCmd.PersistentFlags().BoolVar(
-		&opts.NoRPC,
-		"norpc",
-		false,
-		"disable the use of RPC agent",
-	)
+func (v *formatTypeValue) Set(s string) error {
+	switch strings.ToLower(s) {
+	case formatPlain:
+		v.format = formatPlain
+	case formatTrace:
+		v.format = formatTrace
+	case formatJSON:
+		v.format = formatJSON
+	default:
+		return fmt.Errorf("unsupported format: %s", s)
+	}
+	return nil
+}
 
-	return rootCmd
+func (v *formatTypeValue) Type() string {
+	return "plain|trace|json"
+}
+
+func getModelsNames(ctx context.Context, provider datapoint.Provider, args []string) []string {
+	if len(args) == 0 {
+		return provider.ModelNames(ctx)
+	}
+	return args
 }

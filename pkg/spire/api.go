@@ -17,14 +17,14 @@ package spire
 
 import (
 	"context"
-	"strings"
+	"fmt"
 	"time"
 
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -34,14 +34,14 @@ const defaultRPCTimeout = time.Minute
 type Nothing = struct{}
 
 type API struct {
-	transport  transport.Transport
-	priceStore *store.PriceStore
+	transport  transport.Service
+	priceStore *store.Store
 	recover    crypto.Recoverer
 	log        log.Logger
 }
 
-type PublishPriceArg struct {
-	Price *messages.Price
+type PublishArg struct {
+	DataPoint *messages.DataPoint
 }
 
 type PullPricesArg struct {
@@ -49,8 +49,8 @@ type PullPricesArg struct {
 	FilterFeed      string
 }
 
-type PullPricesResp struct {
-	Prices []*messages.Price
+type PullDataPointsResp struct {
+	DataPoints []*messages.DataPoint
 }
 
 type PullPriceArg struct {
@@ -58,88 +58,86 @@ type PullPriceArg struct {
 	Feed      string
 }
 
-type PullPriceResp struct {
-	Price *messages.Price
+type PullDataPointResp struct {
+	DataPoint *messages.DataPoint
 }
 
-func (n *API) PublishPrice(arg *PublishPriceArg, _ *Nothing) error {
+func (n *API) Publish(arg *PublishArg, _ *Nothing) error {
 	n.log.
-		WithFields(arg.Price.Price.Fields(n.recover)).
-		Info("Publish price")
+		WithField("model", arg.DataPoint.Model).
+		Info("Publish data point")
 
-	if err := n.transport.Broadcast(messages.PriceV0MessageName, arg.Price.AsV0()); err != nil {
-		return err
-	}
-	if err := n.transport.Broadcast(messages.PriceV1MessageName, arg.Price.AsV1()); err != nil {
-		return err
-	}
-	return nil
+	return n.transport.Broadcast(messages.DataPointV1MessageName, arg.DataPoint)
 }
 
-func (n *API) PullPrices(arg *PullPricesArg, resp *PullPricesResp) error {
+func (n *API) PullPoints(arg *PullPricesArg, resp *PullDataPointsResp) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
 	defer ctxCancel()
 
 	n.log.
-		WithField("assetPair", arg.FilterAssetPair).
+		WithField("model", arg.FilterAssetPair).
 		WithField("feed", arg.FilterFeed).
-		Info("Pull prices")
+		Info("Pull data points")
 
-	var err error
-	var prices []*messages.Price
+	var dataPoints []*messages.DataPoint
 
 	switch {
 	case arg.FilterAssetPair != "" && arg.FilterFeed != "":
-		price, err := n.priceStore.GetByFeed(ctx, arg.FilterAssetPair, types.MustAddressFromHex(arg.FilterFeed))
+		price, _, err := n.priceStore.LatestFrom(ctx, types.MustAddressFromHex(arg.FilterFeed), arg.FilterAssetPair)
 		if err != nil {
 			return err
 		}
-		prices = []*messages.Price{price}
+		point := &messages.DataPoint{
+			Model:     price.Model,
+			Value:     price.DataPoint,
+			Signature: price.Signature,
+		}
+		dataPoints = []*messages.DataPoint{point}
 	case arg.FilterAssetPair != "":
-		prices, err = n.priceStore.GetByAssetPair(ctx, arg.FilterAssetPair)
+		points, err := n.priceStore.Latest(ctx, arg.FilterAssetPair)
 		if err != nil {
 			return err
 		}
-	case arg.FilterFeed != "":
-		feedPrices, err := n.priceStore.GetAll(ctx)
-		if err != nil {
-			return err
-		}
-		for fp, price := range feedPrices {
-			if strings.EqualFold(arg.FilterFeed, fp.Feed.String()) {
-				prices = append(prices, price)
+		for _, p := range points {
+			point := &messages.DataPoint{
+				Model:     p.Model,
+				Value:     p.DataPoint,
+				Signature: p.Signature,
 			}
+			dataPoints = append(dataPoints, point)
 		}
 	default:
-		allPrices, err := n.priceStore.GetAll(ctx)
-		if err != nil {
-			return err
-		}
-		for _, price := range allPrices {
-			prices = append(prices, price)
-		}
+		return fmt.Errorf("please provide model")
 	}
 
-	*resp = PullPricesResp{Prices: prices}
+	*resp = PullDataPointsResp{DataPoints: dataPoints}
 
 	return nil
 }
 
-func (n *API) PullPrice(arg *PullPriceArg, resp *PullPriceResp) error {
+func (n *API) PullPoint(arg *PullPriceArg, resp *PullDataPointResp) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
 	defer ctxCancel()
 
 	n.log.
-		WithField("assetPair", arg.AssetPair).
+		WithField("model", arg.AssetPair).
 		WithField("feed", arg.Feed).
 		Info("Pull price")
 
-	price, err := n.priceStore.GetByFeed(ctx, arg.AssetPair, types.MustAddressFromHex(arg.Feed))
+	price, ok, err := n.priceStore.LatestFrom(ctx, types.MustAddressFromHex(arg.Feed), arg.AssetPair)
 	if err != nil {
 		return err
 	}
+	if !ok {
+		return nil
+	}
 
-	*resp = PullPriceResp{Price: price}
+	point := &messages.DataPoint{
+		Model:     price.Model,
+		Value:     price.DataPoint,
+		Signature: price.Signature,
+	}
+	*resp = PullDataPointResp{DataPoint: point}
 
 	return nil
 }

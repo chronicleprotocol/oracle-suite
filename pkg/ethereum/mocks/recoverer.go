@@ -1,9 +1,13 @@
 package mocks
 
 import (
+	"context"
+
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
 type Recoverer struct {
@@ -23,6 +27,14 @@ func (r *Recoverer) RecoverMessage(data []byte, sig types.Signature) (*types.Add
 func (r *Recoverer) RecoverTransaction(tx *types.Transaction) (*types.Address, error) {
 	args := r.Called(tx)
 	return args.Get(0).(*types.Address), args.Error(1)
+}
+
+func (r *Recoverer) Supports(_ context.Context, _ datapoint.Point) bool {
+	return true
+}
+
+func (r *Recoverer) Recover(_ context.Context, _ string, p datapoint.Point, _ types.Signature) (*types.Address, error) {
+	return types.MustAddressFromHexPtr(p.Meta["addr"].(string)), nil
 }
 
 var _ crypto.Recoverer = (*Recoverer)(nil)

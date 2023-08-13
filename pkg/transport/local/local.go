@@ -32,12 +32,20 @@ var ErrNotSubscribed = errors.New("topic is not subscribed")
 // Local is a simple implementation of the transport.Transport interface
 // using local channels.
 type Local struct {
+	*base
+	author []byte
+}
+
+type base struct {
 	mu     sync.RWMutex
 	ctx    context.Context
 	waitCh chan error
+	subs   map[string]*subscription
+}
 
-	id   []byte
-	subs map[string]*subscription
+type rawMsg struct {
+	author []byte
+	data   []byte
 }
 
 type subscription struct {
@@ -45,7 +53,7 @@ type subscription struct {
 	typ reflect.Type
 
 	// rawMsgCh is a channel used to broadcast raw message data.
-	rawMsgCh chan []byte
+	rawMsgCh chan rawMsg
 
 	// msgCh is a channel used to broadcast unmarshalled messages.
 	msgCh chan transport.ReceivedMessage
@@ -59,17 +67,19 @@ type subscription struct {
 // supported subscriptions must be given as a map in the topics argument, where
 // the key is the name of the subscription topic, and the value of the map is
 // type of the message given as a nil pointer, e.g.: (*Message)(nil).
-func New(id []byte, queue int, topics map[string]transport.Message) *Local {
+func New(author []byte, queue int, topics map[string]transport.Message) *Local {
 	l := &Local{
-		id:     id,
-		waitCh: make(chan error),
-		subs:   make(map[string]*subscription),
+		base: &base{
+			waitCh: make(chan error),
+			subs:   make(map[string]*subscription),
+		},
+		author: author,
 	}
 	for topic, typ := range topics {
 		msgCh := make(chan transport.ReceivedMessage)
 		sub := &subscription{
 			typ:       reflect.TypeOf(typ).Elem(),
-			rawMsgCh:  make(chan []byte, queue),
+			rawMsgCh:  make(chan rawMsg, queue),
 			msgCh:     msgCh,
 			msgFanOut: chanutil.NewFanOut(msgCh),
 		}
@@ -77,6 +87,10 @@ func New(id []byte, queue int, topics map[string]transport.Message) *Local {
 		go l.unmarshallRoutine(sub)
 	}
 	return l
+}
+
+func (l *Local) WithAuthor(author []byte) *Local {
+	return &Local{base: l.base, author: author}
 }
 
 // Start implements the transport.Transport interface.
@@ -99,12 +113,14 @@ func (l *Local) Wait() <-chan error {
 
 // Broadcast implements the transport.Transport interface.
 func (l *Local) Broadcast(topic string, message transport.Message) error {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	if sub, ok := l.subs[topic]; ok {
-		rawMsg, err := message.MarshallBinary()
+		data, err := message.MarshallBinary()
 		if err != nil {
 			return err
 		}
-		sub.rawMsgCh <- rawMsg
+		sub.rawMsgCh <- rawMsg{author: l.author, data: data}
 		return nil
 	}
 	return ErrNotSubscribed
@@ -128,10 +144,10 @@ func (l *Local) unmarshallRoutine(sub *subscription) {
 		}
 		l.mu.RLock()
 		msg := reflect.New(sub.typ).Interface().(transport.Message)
-		err := msg.UnmarshallBinary(rawMsg)
+		err := msg.UnmarshallBinary(rawMsg.data)
 		sub.msgCh <- transport.ReceivedMessage{
 			Message: msg,
-			Author:  l.id,
+			Author:  rawMsg.author,
 			Error:   err,
 			Meta:    transport.Meta{Transport: TransportName},
 		}

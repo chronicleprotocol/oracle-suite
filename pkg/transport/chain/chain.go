@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -28,11 +28,11 @@ import (
 type Chain struct {
 	ctx    context.Context
 	waitCh <-chan error
-	ts     []transport.Transport
+	ts     []transport.Service
 }
 
 // New creates a new Chain instance.
-func New(ts ...transport.Transport) *Chain {
+func New(ts ...transport.Service) *Chain {
 	fi := chanutil.NewFanIn[error]()
 	for _, t := range ts {
 		_ = fi.Add(t.Wait())

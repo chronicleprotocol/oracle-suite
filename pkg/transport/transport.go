@@ -49,10 +49,13 @@ type Message interface {
 	UnmarshallBinary([]byte) error
 }
 
-// Transport implements a mechanism for exchanging messages between Oracles.
-type Transport interface {
+// Service implements a mechanism for exchanging messages between Oracles.
+type Service interface {
 	supervisor.Service
+	Transport
+}
 
+type Transport interface {
 	// Broadcast sends a message with a given topic.
 	Broadcast(topic string, message Message) error
 

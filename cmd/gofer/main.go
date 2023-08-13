@@ -16,43 +16,29 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"os"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
+	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 )
 
-// exitCode to be returned by the application.
-var exitCode = 0
-
 func main() {
-	opts := options{
-		Format: formatTypeValue{format: marshal.NDJSON},
-	}
-
-	rootCmd := NewRootCommand(&opts)
-	rootCmd.AddCommand(
-		NewPairsCmd(&opts),
-		NewPricesCmd(&opts),
-		NewRunCmd(&opts),
-		NewModelsCmd(&opts),
-		NewDataCmd(&opts),
+	var ff cmd.FilesFlags
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand(
+		"gofer",
+		suite.Version,
+		cmd.NewFilesFlagSet(&ff),
+		cmd.NewLoggerFlagSet(&lf),
 	)
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("Error: %s\n", err)
-		if exitCode == 0 {
-			os.Exit(1)
-		}
+	var config gofer.Config
+	c.AddCommand(
+		cmd.NewRunCmd(&config, &ff, &lf),
+		NewModelsCmd(&config, &ff, &lf),
+		NewDataCmd(&config, &ff, &lf),
+	)
+	if err := c.Execute(); err != nil {
+		os.Exit(1)
 	}
-	os.Exit(exitCode)
-}
-
-func getModelsNames(ctx context.Context, provider datapoint.Provider, args []string) []string {
-	if len(args) == 0 {
-		return provider.ModelNames(ctx)
-	}
-	return args
 }

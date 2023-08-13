@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -32,6 +32,12 @@ func TestMap(t *testing.T) {
 	m := []string{"a", "b", "c"}
 	assert.Equal(t, []string{"A", "B", "C"}, Map(m, strings.ToUpper))
 	assert.NotSame(t, m, Map(m, strings.ToUpper))
+}
+
+func TestFilter(t *testing.T) {
+	m := []string{"a", "b", "c"}
+	assert.Equal(t, []string{"a", "b"}, Filter(m, func(s string) bool { return s != "c" }))
+	assert.NotSame(t, m, Filter(m, func(s string) bool { return s != "c" }))
 }
 
 func TestIsUnique(t *testing.T) {

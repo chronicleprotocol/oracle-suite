@@ -21,22 +21,31 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 )
 
 func TestMemoryStorage_Add(t *testing.T) {
-	ctx := context.Background()
-	addr := types.Address{}
-	model := "model1"
-	point := datapoint.Point{Time: time.Now()}
-	oldPoint := datapoint.Point{Time: time.Now().Add(-time.Hour)}
+	var (
+		ctx      = context.Background()
+		addr     = types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		sig      = types.MustSignatureFromHex("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00")
+		model    = "model"
+		point    = datapoint.Point{Time: time.Now()}
+		oldPoint = datapoint.Point{Time: time.Now().Add(-time.Hour)}
+	)
 
 	t.Run("adding first point", func(t *testing.T) {
 		storage := NewMemoryStorage()
 
-		err := storage.Add(ctx, addr, model, point)
+		err := storage.Add(ctx, StoredDataPoint{
+			Model:     model,
+			DataPoint: point,
+			From:      addr,
+			Signature: sig,
+		})
 		require.NoError(t, err)
 
 		_, exists := storage.ds[dataPointKey{feed: addr, model: model}]
@@ -44,32 +53,56 @@ func TestMemoryStorage_Add(t *testing.T) {
 	})
 	t.Run("adding older point", func(t *testing.T) {
 		storage := NewMemoryStorage()
-		err := storage.Add(ctx, addr, model, point)
+		err := storage.Add(ctx, StoredDataPoint{
+			Model:     model,
+			DataPoint: point,
+			From:      addr,
+			Signature: sig,
+		})
 		require.NoError(t, err)
 
-		err = storage.Add(ctx, addr, model, oldPoint) // should be ignored
+		err = storage.Add(ctx, StoredDataPoint{
+			Model:     model,
+			DataPoint: oldPoint,
+			From:      addr,
+			Signature: sig,
+		})
 		require.NoError(t, err)
 
 		storedPoint, _ := storage.ds[dataPointKey{feed: addr, model: model}]
-		require.Equal(t, point, storedPoint)
+		assert.Equal(t, model, storedPoint.Model)
+		assert.Equal(t, addr, storedPoint.From)
+		assert.Equal(t, sig, storedPoint.Signature)
+		assert.Equal(t, point, storedPoint.DataPoint)
 	})
 }
 
 func TestMemoryStorage_LatestFrom(t *testing.T) {
-	ctx := context.Background()
-	addr := types.Address{}
-	model := "model1"
-	point := datapoint.Point{Time: time.Now()}
+	var (
+		ctx   = context.Background()
+		addr  = types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		sig   = types.MustSignatureFromHex("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00")
+		model = "model"
+		point = datapoint.Point{Time: time.Now()}
+	)
 
 	t.Run("point exists", func(t *testing.T) {
 		storage := NewMemoryStorage()
-		err := storage.Add(ctx, addr, model, point)
+		err := storage.Add(ctx, StoredDataPoint{
+			Model:     model,
+			DataPoint: point,
+			From:      addr,
+			Signature: sig,
+		})
 		require.NoError(t, err)
 
 		retPoint, ok, err := storage.LatestFrom(ctx, addr, model)
 		require.NoError(t, err)
 		require.True(t, ok)
-		require.Equal(t, point, retPoint)
+		assert.Equal(t, model, retPoint.Model)
+		assert.Equal(t, addr, retPoint.From)
+		assert.Equal(t, sig, retPoint.Signature)
+		assert.Equal(t, point, retPoint.DataPoint)
 	})
 	t.Run("point does not exist", func(t *testing.T) {
 		storage := NewMemoryStorage()
@@ -81,20 +114,31 @@ func TestMemoryStorage_LatestFrom(t *testing.T) {
 }
 
 func TestMemoryStorage_Latest(t *testing.T) {
-	ctx := context.Background()
-	addr := types.Address{}
-	model := "model"
-	point := datapoint.Point{Time: time.Now()}
+	var (
+		ctx   = context.Background()
+		addr  = types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		sig   = types.MustSignatureFromHex("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00")
+		model = "model"
+		point = datapoint.Point{Time: time.Now()}
+	)
 
 	t.Run("model exists", func(t *testing.T) {
 		storage := NewMemoryStorage()
-		err := storage.Add(ctx, addr, model, point)
+		err := storage.Add(ctx, StoredDataPoint{
+			Model:     model,
+			DataPoint: point,
+			From:      addr,
+			Signature: sig,
+		})
 		require.NoError(t, err)
 
 		points, err := storage.Latest(ctx, model)
 		require.NoError(t, err)
 		require.Len(t, points, 1)
-		require.Equal(t, point, points[addr])
+		assert.Equal(t, model, points[addr].Model)
+		assert.Equal(t, addr, points[addr].From)
+		assert.Equal(t, sig, points[addr].Signature)
+		assert.Equal(t, point, points[addr].DataPoint)
 	})
 	t.Run("model does not exist", func(t *testing.T) {
 		storage := NewMemoryStorage()

@@ -26,6 +26,10 @@ import (
 
 const LoggerTag = "SUPERVISOR"
 
+type Config interface {
+	Services(log.Logger) (Service, error)
+}
+
 // Service that could be managed by Supervisor.
 type Service interface {
 	// Start starts the service.

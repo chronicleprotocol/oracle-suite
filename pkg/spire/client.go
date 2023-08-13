@@ -66,30 +66,30 @@ func (c *Client) Wait() <-chan error {
 	return c.waitCh
 }
 
-func (c *Client) PublishPrice(price *messages.Price) error {
-	err := c.rpc.Call("API.PublishPrice", PublishPriceArg{Price: price}, &Nothing{})
+func (c *Client) Publish(dataPoint *messages.DataPoint) error {
+	err := c.rpc.Call("API.Publish", PublishArg{DataPoint: dataPoint}, &Nothing{})
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Client) PullPrices(assetPair string, feed string) ([]*messages.Price, error) {
-	resp := &PullPricesResp{}
-	err := c.rpc.Call("API.PullPrices", PullPricesArg{FilterAssetPair: assetPair, FilterFeed: feed}, resp)
+func (c *Client) PullPrices(assetPair string, feed string) ([]*messages.DataPoint, error) {
+	resp := &PullDataPointsResp{}
+	err := c.rpc.Call("API.PullPoints", PullPricesArg{FilterAssetPair: assetPair, FilterFeed: feed}, resp)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Prices, nil
+	return resp.DataPoints, nil
 }
 
-func (c *Client) PullPrice(assetPair string, feed string) (*messages.Price, error) {
-	resp := &PullPriceResp{}
-	err := c.rpc.Call("API.PullPrice", PullPriceArg{AssetPair: assetPair, Feed: feed}, resp)
+func (c *Client) PullPrice(assetPair string, feed string) (*messages.DataPoint, error) {
+	resp := &PullDataPointResp{}
+	err := c.rpc.Call("API.PullPoint", PullPriceArg{AssetPair: assetPair, Feed: feed}, resp)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Price, nil
+	return resp.DataPoint, nil
 }
 
 func (c *Client) contextCancelHandler() {

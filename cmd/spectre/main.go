@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -17,17 +17,26 @@ package main
 
 import (
 	"os"
+
+	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/spectre"
 )
 
 func main() {
-	var opts options
-	rootCmd := NewRootCommand(&opts)
-
-	rootCmd.AddCommand(
-		NewRunCmd(&opts),
+	var cf cmd.FilesFlags
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand(
+		"spectre",
+		suite.Version,
+		cmd.NewFilesFlagSet(&cf),
+		cmd.NewLoggerFlagSet(&lf),
 	)
-
-	if err := rootCmd.Execute(); err != nil {
+	var config spectre.Config
+	c.AddCommand(
+		cmd.NewRunCmd(&config, &cf, &lf),
+	)
+	if err := c.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

@@ -26,35 +26,43 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-func NewDataCmd(opts *options) *cobra.Command {
-	c := &cobra.Command{
-		Use:     "data [models...]",
-		Aliases: []string{"data"},
+func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	var format formatTypeValue
+	cc := &cobra.Command{
+		Use:     "data [MODEL...]",
+		Aliases: []string{"price", "prices"},
 		Args:    cobra.MinimumNArgs(0),
-		Short:   "Return data points for given models.",
-		Long:    `Return data points for given models.`,
-		RunE: func(c *cobra.Command, args []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config2); err != nil {
+		Short:   "Return data points for given models",
+		RunE: func(_ *cobra.Command, args []string) (err error) {
+			if err := f.Load(c); err != nil {
+				return err
+			}
+			services, err := c.Services(l.Logger())
+			if err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer ctxCancel()
-			services, err := opts.Config2.Services(opts.Logger())
-			if err != nil {
-				return err
-			}
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
-			ticks, err := services.DataProvider.DataPoints(ctx, getModelsNames(ctx, services.DataProvider, args)...)
+			s, ok := services.(*gofer.Services)
+			if !ok {
+				return fmt.Errorf("services are not gofer.Services")
+			}
+			ticks, err := s.DataProvider.DataPoints(ctx, getModelsNames(ctx, s.DataProvider, args)...)
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalDataPoints(ticks, opts.Format2.String())
+			marshaled, err := marshalDataPoints(ticks, format.String())
 			if err != nil {
 				return err
 			}
@@ -62,13 +70,19 @@ func NewDataCmd(opts *options) *cobra.Command {
 			return nil
 		},
 	}
-	c.Flags().VarP(
-		&opts.Format2,
+	cc.Flags().VarP(
+		&format,
 		"format",
 		"o",
 		"output format",
 	)
-	return c
+	cc.Flags().BoolVar(
+		&treerender.NoColors,
+		"no-color",
+		false,
+		"disable output coloring",
+	)
+	return cc
 }
 
 func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte, error) {

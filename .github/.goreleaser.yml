@@ -21,54 +21,38 @@ builds:
       - linux
       # - darwin
 
-  - main: ./cmd/leeloo
-    id: "leeloo"
-    binary: leeloo
+  - main: ./cmd/ghost
+    id: "ghost"
+    binary: ghost
     goos:
       - linux
-      # - darwin
+      - darwin
 
-  - main: ./cmd/lair
-    id: "lair"
-    binary: lair
-    goos:
-      - linux
-      # - darwin
-
-  - main: ./cmd/rpc-splitter
-    id: "rpc-splitter"
-    binary: rpc-splitter
+  - main: ./cmd/spectre
+    id: "spectre"
+    binary: spectre
     goos:
       - linux
       - darwin
 
 archives:
-  - 
-    id: "gofer"
+  - id: "gofer"
     builds:
       - gofer
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
-  - 
-    id: "spire"
+  - id: "spire"
     builds:
       - spire
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
-  -
-    id: "leeloo"
+  - id: "ghost"
     builds:
-      - leeloo
+      - ghost
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
-  -
-    id: "lair"
+  - id: "spectre"
     builds:
-      - lair
+      - spectre
     name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
-  -
-    id: "rpc-splitter"
-    builds:
-      - rpc-splitter
-    name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"

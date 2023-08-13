@@ -47,7 +47,7 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
-			if err := opts.LoadConfigFiles(&opts.Config); err != nil {
+			if err := opts.Load(&opts.Config); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -63,7 +63,7 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 					err = sErr
 				}
 			}()
-			msgCh := services.Transport.Messages(messages.PriceV1MessageName)
+			msgCh := services.Transport.Messages(messages.DataPointV1MessageName)
 			for {
 				select {
 				case <-ctx.Done():

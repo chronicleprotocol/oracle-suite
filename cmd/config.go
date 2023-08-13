@@ -21,11 +21,17 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 )
 
+// FilesFlags is used to load multiple config files.
 type FilesFlags struct {
-	//TODO: think of ways to make it a pflag.Value interface
 	paths []string
 }
 
+// Load loads the config files into the given config struct.
+func (cf FilesFlags) Load(c any) error {
+	return config.LoadFiles(c, cf.paths)
+}
+
+// NewFilesFlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
 func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
@@ -35,8 +41,4 @@ func NewFilesFlagSet(cfp *FilesFlags) *pflag.FlagSet {
 		"config file",
 	)
 	return fs
-}
-
-func (cf FilesFlags) LoadConfigFiles(c any) error {
-	return config.LoadFiles(c, cf.paths)
 }

@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package e2e
 
 import (
@@ -14,23 +29,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type spirePriceMessage struct {
-	Price spirePrice      `json:"price"`
-	Trace json.RawMessage `json:"trace"`
+type spireDataPointMessage struct {
+	Value spireDataPoint `json:"value"`
+	Model string         `json:"model"`
 }
 
 type spirePrice struct {
-	Wat string `json:"wat"`
-	Val string `json:"val"`
-	Age int64  `json:"age"`
-	V   string `json:"v"`
-	R   string `json:"r"`
-	S   string `json:"s"`
+	Pair  string `json:"pair"`
+	Price string `json:"price"`
 }
 
-func parseSpirePriceMessage(price []byte) (spirePriceMessage, error) {
-	var p spirePriceMessage
-	err := json.Unmarshal(price, &p)
+type spireDataPoint struct {
+	Value spirePrice `json:"value"`
+	Time  time.Time  `json:"time"`
+}
+
+func parseSpireDataPointMessage(dataPoint []byte) (spireDataPointMessage, error) {
+	var p spireDataPointMessage
+	err := json.Unmarshal(dataPoint, &p)
 	if err != nil {
 		return p, err
 	}
@@ -52,7 +68,7 @@ func Test_Ghost_ValidPrice(t *testing.T) {
 	require.NoError(t, err)
 
 	spireCmd := command(ctx, "..", nil, "./spire", "agent", "-c", "./e2e/testdata/config/spire.hcl", "-v", "debug")
-	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "--gofer.norpc", "-v", "debug")
+	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = spireCmd.Wait()
@@ -69,29 +85,29 @@ func Test_Ghost_ValidPrice(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	btcusdMessage, err := execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
+	btcusdMessage, err := execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "BTC/USD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
 
-	ethusdMessage, err := execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "ETHBTC", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
+	ethusdMessage, err := execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "ETH/BTC", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	require.NoError(t, err)
 
 	// ETHUSD price should not be available because it is missing ghost.pairs config.
-	_, err = execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "ETHUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
+	_, err = execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "ETH/USD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	assert.Error(t, err)
 
-	btcusdPrice, err := parseSpirePriceMessage(btcusdMessage)
+	btcusdPrice, err := parseSpireDataPointMessage(btcusdMessage)
 	require.NoError(t, err)
 
-	ethusdPrice, err := parseSpirePriceMessage(ethusdMessage)
+	ethusdPrice, err := parseSpireDataPointMessage(ethusdMessage)
 	require.NoError(t, err)
 
-	assert.Equal(t, "1000000000000000000", btcusdPrice.Price.Val)
-	assert.InDelta(t, time.Now().Unix(), btcusdPrice.Price.Age, 10)
-	assert.Equal(t, "BTCUSD", btcusdPrice.Price.Wat)
+	assert.Equal(t, "1", btcusdPrice.Value.Value.Price)
+	assert.InDelta(t, time.Now().Unix(), btcusdPrice.Value.Time.Unix(), 10)
+	assert.Equal(t, "BTC/USD", btcusdPrice.Value.Value.Pair)
 
-	assert.Equal(t, "1000000000000000000", ethusdPrice.Price.Val)
-	assert.InDelta(t, time.Now().Unix(), ethusdPrice.Price.Age, 10)
-	assert.Equal(t, "ETHBTC", ethusdPrice.Price.Wat)
+	assert.Equal(t, "1", ethusdPrice.Value.Value.Price)
+	assert.InDelta(t, time.Now().Unix(), ethusdPrice.Value.Time.Unix(), 10)
+	assert.Equal(t, "ETH/BTC", ethusdPrice.Value.Value.Pair)
 }
 
 func Test_Ghost_InvalidPrice(t *testing.T) {
@@ -108,7 +124,7 @@ func Test_Ghost_InvalidPrice(t *testing.T) {
 	require.NoError(t, err)
 
 	spireCmd := command(ctx, "..", nil, "./spire", "agent", "-c", "./e2e/testdata/config/spire.hcl", "-v", "debug")
-	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "--gofer.norpc", "-v", "debug")
+	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = spireCmd.Wait()
@@ -123,9 +139,9 @@ func Test_Ghost_InvalidPrice(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	_, err = execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "BTCUSD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
+	_, err = execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "BTC/USD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	assert.Error(t, err)
 
-	_, err = execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "ETHBTC", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
+	_, err = execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "ETH/BTC", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
 	assert.Error(t, err)
 }

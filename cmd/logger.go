@@ -27,6 +27,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/formatter"
 )
 
+// LoggerFlags is a set of flags for configuring a logger.
+// It glues together the pflag.Value interface with the log.Logger interface.
 type LoggerFlags struct {
 	verbosityFlag
 	formatterFlag

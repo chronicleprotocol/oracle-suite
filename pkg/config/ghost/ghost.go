@@ -52,7 +52,7 @@ type Config struct {
 // Services returns the services that are configured from the Config struct.
 type Services struct {
 	Feed      *feed.Feed
-	Transport pkgTransport.Transport
+	Transport pkgTransport.Service
 	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor

@@ -42,7 +42,7 @@ type Feed struct {
 
 	priceProvider provider.Provider
 	signer        wallet.Key
-	transport     transport.Transport
+	transport     transport.Service
 	interval      *timeutil.Ticker
 	pairs         []provider.Pair
 	log           log.Logger
@@ -61,7 +61,7 @@ type Config struct {
 
 	// Transport is an implementation of transport used to send prices to
 	// the network.
-	Transport transport.Transport
+	Transport transport.Service
 
 	// Interval describes how often we should send prices to the network.
 	Interval *timeutil.Ticker

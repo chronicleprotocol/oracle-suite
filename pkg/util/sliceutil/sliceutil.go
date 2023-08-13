@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -38,6 +38,18 @@ func Map[T, U any](s []T, f func(T) U) []U {
 	out := make([]U, len(s))
 	for i, x := range s {
 		out[i] = f(x)
+	}
+	return out
+}
+
+// Filter returns a new slice with the elements of the original slice that
+// satisfy the predicate f.
+func Filter[T any](s []T, f func(T) bool) []T {
+	out := make([]T, 0, len(s))
+	for _, x := range s {
+		if f(x) {
+			out = append(out, x)
+		}
 	}
 	return out
 }

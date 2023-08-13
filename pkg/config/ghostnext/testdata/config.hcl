@@ -1,4 +1,4 @@
-ghostnext {
+ghost {
   ethereum_key = "key1"
   interval     = 60
 
@@ -7,7 +7,7 @@ ghostnext {
   ]
 }
 
-gofernext {
+gofer {
   origin "coinbase" {
     type = "tick_generic_jq"
     url  = "https://api.pro.coinbase.com/products/$${ucbase}-$${ucquote}/ticker"

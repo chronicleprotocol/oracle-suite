@@ -135,8 +135,8 @@ func TestStore(t *testing.T) {
 	// Verify if the messages are stored correctly.
 	a, _ := store.Latest(context.Background(), "AAABBB")
 	b, _ := store.Latest(context.Background(), "XXXYYY")
-	assert.Equal(t, "aaabbb_val1", a[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].Value.Print())
-	assert.Equal(t, "aaabbb_val2", a[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].Value.Print())
-	assert.Equal(t, "xxxyyy_val1", b[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].Value.Print())
-	assert.Equal(t, "xxxyyy_val2", b[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].Value.Print())
+	assert.Equal(t, "aaabbb_val1", a[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].DataPoint.Value.Print())
+	assert.Equal(t, "aaabbb_val2", a[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].DataPoint.Value.Print())
+	assert.Equal(t, "xxxyyy_val1", b[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].DataPoint.Value.Print())
+	assert.Equal(t, "xxxyyy_val2", b[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].DataPoint.Value.Print())
 }
