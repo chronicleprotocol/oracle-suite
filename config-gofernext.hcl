@@ -130,14 +130,15 @@ gofernext {
         "YFI/WETH"  = "0x04916039B1f59D9745Bf6E0a21f191D1e0A84287",
         "AAVE/WETH"  = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB",
         "WETH/CRV"  = "0x919Fa96e88d67499339577Fa202345436bcDaf79",
-        "DAI/WETH"  = "0x60594a405d53811d3BC4766596EFD80fd545A270",
+        "DAI/USDC"  = "0x5777d92f208679db4b9778590fa3cab3ac9e2168",
         "FRAX/USDT" = "0xc2A856c3afF2110c1171B8f942256d40E980C726",
         "GNO/WETH" = "0xf56D08221B5942C428Acc5De8f78489A97fC5599",
         "LDO/WETH" = "0xa3f558aebAecAf0e11cA4b2199cC5Ed341edfd74",
         "UNI/WETH"  = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801",
         "WBTC/WETH"  = "0x4585FE77225b41b697C938B018E2Ac67Ac5a20c0",
         "USDC/SNX" = "0x020C349A0541D76C16F501Abc6B2E9c98AdAe892",
-        "ARB/WETH" = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca"
+        "ARB/WETH" = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
+        "DAI/FRAX" = "0x97e7d56A0408570bA1a7852De36350f7713906ec"
       }
     }
   }
@@ -193,6 +194,10 @@ gofernext {
           origin "uniswapV3" { query = "ARB/WETH" }
         }
         reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "okx" { query = "ARB/USDT" }
+        reference { data_model = "USDT/USD" }
       }
     }
   }
@@ -263,6 +268,10 @@ gofernext {
         }
         reference { data_model = "ETH/USD" }
       }
+      indirect {
+        origin "okx" { query = "CRV/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
     }
   }
 
@@ -270,10 +279,10 @@ gofernext {
     median {
       min_values = 5
       indirect {
-        alias "DAI/ETH" {
-          origin "uniswapV3" { query = "DAI/WETH" }
+        alias "DAI/USDC" {
+          origin "uniswapV3" { query = "DAI/USDC" }
         }
-        reference { data_model = "ETH/USD" }
+        reference { data_model = "USDC/USD" }
       }
       indirect {
         origin "binance" { query = "USDT/DAI" }
@@ -334,6 +343,10 @@ gofernext {
       indirect {
         origin "uniswapV3" { query = "FRAX/USDT" }
         reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "uniswapV3" { query = "DAI/FRAX" }
+        reference { data_model = "DAI/USD" }
       }
     }
   }
@@ -491,8 +504,8 @@ gofernext {
       }
       origin "coinbase" { query = "OP/USD" }
       indirect {
-        origin "okx" { query = "OP/USDC" }
-        reference { data_model = "USDC/USD" }
+        origin "okx" { query = "OP/USDT" }
+        reference { data_model = "USDT/USD" }
       }
     }
   }
