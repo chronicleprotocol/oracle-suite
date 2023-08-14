@@ -8,18 +8,7 @@ spire {
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
   pairs = try(env.CFG_SPIRE_PAIRS == "" ? [] : split(",", env.CFG_SPIRE_PAIRS), [
-    "BTCUSD",
-    "ETHBTC",
-    "ETHUSD",
-    "GNOUSD",
-    "IBTAUSD",
-    "LINKUSD",
-    "MANAUSD",
-    "MATICUSD",
-    "MKRUSD",
-    "RETHUSD",
-    "WSTETHUSD",
-    "YFIUSD",
+    for s in var.data_symbols : replace(s, "/", "")
   ])
 
   # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.

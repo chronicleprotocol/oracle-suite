@@ -28,7 +28,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 )
 
+// Deprecated: use DataPointV1MessageName instead.
 const PriceV0MessageName = "price/v0"
+
+// Deprecated: use DataPointV1MessageName instead.
 const PriceV1MessageName = "price/v1"
 
 const priceMessageMaxSize = 1 * 1024 * 1024 // 1MB
@@ -39,6 +42,8 @@ var (
 	ErrInvalidPriceMessage        = errors.New("invalid price message")
 )
 
+// Price is a message that contains a price and a trace of the price.
+// Deprecated: move to datapoint/v1 message.
 type Price struct {
 	Price   *median.Price   `json:"price"`
 	Trace   json.RawMessage `json:"trace"`

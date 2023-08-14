@@ -7,9 +7,15 @@ services:
     environment:
       CFG_LIBP2P_BOOTSTRAP_ADDRS: ""
       CFG_LIBP2P_PK_SEED: "FEDCBA9876543210FEDCBA98765432100123456789ABCDEF0123456789ABCDEF"
+  streamer:
+    image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
+    command: [ "stream", "data" ]
+    environment:
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
   ghost1:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
-    command: [ "run","-v","debug" ]
+    command: [ "run" ]
     environment:
       CFG_ETH_FROM: ${ETH_FROM_A}
       CFG_ETH_KEYS: ${ETH_KEYS_A}
@@ -19,6 +25,7 @@ services:
       CFG_GOFER_OPENEXCHANGERATES_API_KEY:
       CFG_WEBAPI_ENABLE: 0
       CFG_GHOST_INTERVAL: 10
+      CFG_GHOST_PAIRS: "BTC/USD,ETH/BTC,ETH/USD,GNO/USD,IBTA/USD,LINK/USD,MATIC/USD,MKR/USD,RETH/USD,WSTETH/USD,YFI/USD"
   ghost2:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     environment:

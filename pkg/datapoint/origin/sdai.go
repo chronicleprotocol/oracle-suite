@@ -24,7 +24,7 @@ const SDAILoggerTag = "SDAI_ORIGIN"
 
 type SDAIConfig struct {
 	Client            rpc.RPC
-	ContractAddresses map[string]string
+	ContractAddresses ContractAddresses
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -44,14 +44,9 @@ func NewSDAI(config SDAIConfig) (*SDAI, error) {
 		config.Logger = null.New()
 	}
 
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
-
 	return &SDAI{
 		client:            config.Client,
-		contractAddresses: addresses,
+		contractAddresses: config.ContractAddresses,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("sdai", SDAILoggerTag),
 	}, nil
@@ -81,7 +76,7 @@ func (s *SDAI) FetchDataPoints(ctx context.Context, query []any) (map[any]datapo
 	totals := make([]*big.Int, len(pairs))
 	var calls []types.Call
 	for i, pair := range pairs {
-		contract, _, err := s.contractAddresses.ByPair(pair)
+		contract, _, _, err := s.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue
@@ -134,8 +129,8 @@ func (s *SDAI) FetchDataPoints(ctx context.Context, query []any) (map[any]datapo
 		avgPrice = avgPrice.Quo(avgPrice, new(big.Float).SetUint64(uint64(len(s.blocks))))
 
 		// Invert the price if inverted price
-		_, inverted, _ := s.contractAddresses.ByPair(pair)
-		if inverted {
+		_, baseIndex, quoteIndex, _ := s.contractAddresses.ByPair(pair)
+		if baseIndex > quoteIndex {
 			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
 		}
 

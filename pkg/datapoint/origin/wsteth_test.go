@@ -26,8 +26,8 @@ func (suite *WrappedStakedETHSuite) SetupTest() {
 	suite.client = &ethereumMocks.RPC{}
 	o, err := NewWrappedStakedETH(WrappedStakedETHConfig{
 		Client: suite.client,
-		ContractAddresses: map[string]string{
-			"WSTETH/STETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+		ContractAddresses: ContractAddresses{
+			AssetPair{"WSTETH", "STETH"}: types.MustAddressFromHex("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
 		},
 		Blocks: []int64{0, 10, 20},
 		Logger: nil,

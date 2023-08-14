@@ -20,14 +20,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
@@ -71,7 +75,7 @@ type ConfigSpire struct {
 	// Configured services:
 	agent      *spire.Agent
 	client     *spire.Client
-	priceStore *store.PriceStore
+	priceStore *store.Store
 }
 
 // ClientServices returns the services that are configured from the Config struct.
@@ -86,7 +90,7 @@ type ClientServices struct {
 type AgentServices struct {
 	SpireAgent *spire.Agent
 	Transport  pkgTransport.Service
-	PriceStore *store.PriceStore
+	PriceStore *store.Store
 	Logger     log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
@@ -198,8 +202,7 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 		Keys:    keys,
 		Clients: clients,
 		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName: (*messages.Price)(nil),
-			messages.PriceV1MessageName: (*messages.Price)(nil),
+			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 		},
 		Logger: logger,
 	})
@@ -243,8 +246,9 @@ func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) 
 		Keys:    keys,
 		Clients: clients,
 		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName: (*messages.Price)(nil),
-			messages.PriceV1MessageName: (*messages.Price)(nil),
+			messages.PriceV0MessageName:     (*messages.Price)(nil), //nolint:staticcheck
+			messages.PriceV1MessageName:     (*messages.Price)(nil), //nolint:staticcheck
+			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 		},
 		Logger: logger,
 	})
@@ -260,7 +264,7 @@ func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) 
 func (c *ConfigSpire) ConfigureAgent(
 	logger log.Logger,
 	transport pkgTransport.Service,
-	priceStore *store.PriceStore,
+	priceStore *store.Store,
 ) (
 	*spire.Agent, error,
 ) {
@@ -307,16 +311,16 @@ func (c *ConfigSpire) ConfigureClient(kr ethereumConfig.KeyRegistry) (*spire.Cli
 	return client, nil
 }
 
-func (c *ConfigSpire) PriceStore(l log.Logger, t pkgTransport.Service) (*store.PriceStore, error) {
+func (c *ConfigSpire) PriceStore(l log.Logger, t pkgTransport.Service) (*store.Store, error) {
 	if c.priceStore != nil {
 		return c.priceStore, nil
 	}
 	priceStore, err := store.New(store.Config{
-		Storage:   store.NewMemoryStorage(),
-		Transport: t,
-		Pairs:     c.Pairs,
-		Feeds:     c.Feeds,
-		Logger:    l,
+		Storage:    store.NewMemoryStorage(),
+		Transport:  t,
+		Models:     c.Pairs,
+		Recoverers: []datapoint.Recoverer{signer.NewTickRecoverer(crypto.ECRecoverer)},
+		Logger:     l,
 	})
 	if err != nil {
 		return nil, &hcl.Diagnostic{

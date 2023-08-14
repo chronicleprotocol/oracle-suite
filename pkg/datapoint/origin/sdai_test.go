@@ -26,8 +26,8 @@ func (suite *SDAISuite) SetupTest() {
 	suite.client = &ethereumMocks.RPC{}
 	o, err := NewWrappedStakedETH(WrappedStakedETHConfig{
 		Client: suite.client,
-		ContractAddresses: map[string]string{
-			"SDAI/DAI": "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
+		ContractAddresses: ContractAddresses{
+			AssetPair{"SDAI", "DAI"}: types.MustAddressFromHex("0x83F20F44975D03b1b09e64809B757c47f942BEeA"),
 		},
 		Blocks: []int64{0, 10, 20},
 		Logger: nil,

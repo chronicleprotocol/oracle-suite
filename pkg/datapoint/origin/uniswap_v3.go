@@ -28,7 +28,7 @@ const UniswapV3LoggerTag = "UNISWAPV3_ORIGIN"
 
 type UniswapV3Config struct {
 	Client            rpc.RPC
-	ContractAddresses map[string]string
+	ContractAddresses ContractAddresses
 	Logger            log.Logger
 	Blocks            []int64
 }
@@ -54,10 +54,6 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 	if err != nil {
 		return nil, err
 	}
-	addresses, err := convertAddressMap(config.ContractAddresses)
-	if err != nil {
-		return nil, err
-	}
 
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
@@ -66,7 +62,7 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 
 	return &UniswapV3{
 		client:            config.Client,
-		contractAddresses: addresses,
+		contractAddresses: config.ContractAddresses,
 		erc20:             erc20,
 		abi:               a,
 		blocks:            config.Blocks,
@@ -97,7 +93,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	var calls []types.Call
 	var callsToken []types.Call
 	for i, pair := range pairs {
-		contract, _, err := u.contractAddresses.ByPair(pair)
+		contract, _, _, err := u.contractAddresses.ByPair(pair)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: err}
 			continue

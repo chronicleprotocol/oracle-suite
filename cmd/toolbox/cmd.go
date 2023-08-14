@@ -38,7 +38,7 @@ func NewRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 	}
 
-	rootCmd.PersistentFlags().AddFlagSet(cmd.NewFilesFlagSet(&opts.FilesFlags))
+	rootCmd.PersistentFlags().AddFlagSet(opts.FilesFlags.FlagSet())
 
 	rootCmd.AddCommand(
 		NewMedianCmd(&opts),
