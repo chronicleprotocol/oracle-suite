@@ -544,6 +544,10 @@ gofer {
         reference { data_model = "USDC/USD" }
       }
       origin "kraken" { query = "SNX/USD" }
+      indirect {
+        origin "okx" { query = "SNX/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
     }
   }
 
