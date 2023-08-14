@@ -48,7 +48,7 @@ variables {
     "GNO/USD",
     "IBTA/USD",
     "LINK/USD",
-    "MANA/USD", # Missing data model
+    #"MANA/USD", # Missing data model
     "MATIC/USD",
     "MKR/USD",
     "RETH/USD",
