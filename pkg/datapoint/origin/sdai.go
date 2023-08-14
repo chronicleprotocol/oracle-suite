@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/abi"
+
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
@@ -19,9 +20,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-//go:embed sdai_abi.json
-var sdaiABI []byte
 
 const SDAILoggerTag = "SDAI_ORIGIN"
 
@@ -35,7 +33,6 @@ type SDAIConfig struct {
 type SDAI struct {
 	client            rpc.RPC
 	contractAddresses ContractAddresses
-	abi               *abi.Contract
 	blocks            []int64
 	logger            log.Logger
 }
@@ -48,10 +45,6 @@ func NewSDAI(config SDAIConfig) (*SDAI, error) {
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(sdaiABI)
-	if err != nil {
-		return nil, err
-	}
 	addresses, err := convertAddressMap(config.ContractAddresses)
 	if err != nil {
 		return nil, err
@@ -60,11 +53,12 @@ func NewSDAI(config SDAIConfig) (*SDAI, error) {
 	return &SDAI{
 		client:            config.Client,
 		contractAddresses: addresses,
-		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("sdai", SDAILoggerTag),
 	}, nil
 }
+
+var previewRedeem = abi.MustParseMethod("previewRedeem(uint256)(uint256)")
 
 //nolint:funlen
 func (s *SDAI) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
@@ -98,7 +92,7 @@ func (s *SDAI) FetchDataPoints(ctx context.Context, query []any) (map[any]datapo
 		// As depositing the asset token, users can get proper amount of shares which is represented as SDAI.
 		// In order to get the ratio of SDAI in DAI, should get how many DAI users can redeem,
 		// that means getting the asset amount of given shares
-		callData, err := s.abi.Methods["previewRedeem"].EncodeArgs(big.NewInt(0).SetUint64(ether))
+		callData, err := previewRedeem.EncodeArgs(big.NewInt(0).SetUint64(ether))
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get contract args for pair: %s: %w",
