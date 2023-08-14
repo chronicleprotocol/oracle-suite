@@ -160,7 +160,7 @@ gofer {
 
   data_model "AAVE/USD" {
     median {
-      min_values = 4
+      min_values = 3
       indirect {
         origin "binance" { query = "AAVE/USDT" }
         reference { data_model = "USDT/USD" }
@@ -171,6 +171,7 @@ gofer {
         reference { data_model = "USDT/USD" }
       }
       origin "kraken" { query = "AAVE/USD" }
+      origin "bitstamp" { query = "AAVE/USD" }
       indirect {
         alias "AAVE/ETH" {
           origin "uniswapV3" { query = "AAVE/WETH" }
@@ -505,6 +506,10 @@ gofer {
       origin "coinbase" { query = "OP/USD" }
       indirect {
         origin "okx" { query = "OP/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "kucoin" { query = "OP/USDT" }
         reference { data_model = "USDT/USD" }
       }
     }
