@@ -24,20 +24,20 @@ import (
 const CurveLoggerTag = "CURVE_ORIGIN"
 
 type CurveConfig struct {
-	Client             rpc.RPC
-	ContractAddresses  ContractAddresses
-	Contract2Addresses ContractAddresses
-	Logger             log.Logger
-	Blocks             []int64
+	Client                      rpc.RPC
+	StableSwapContractAddresses ContractAddresses
+	CryptoSwapContractAddresses ContractAddresses
+	Logger                      log.Logger
+	Blocks                      []int64
 }
 
 type Curve struct {
-	client             rpc.RPC
-	contractAddresses  ContractAddresses
-	contract2Addresses ContractAddresses
-	erc20              *ERC20
-	blocks             []int64
-	logger             log.Logger
+	client                       rpc.RPC
+	stableSwapContractAddresses  ContractAddresses
+	cryptoSwapContract2Addresses ContractAddresses
+	erc20                        *ERC20
+	blocks                       []int64
+	logger                       log.Logger
 }
 
 func NewCurve(config CurveConfig) (*Curve, error) {
@@ -54,12 +54,12 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 	}
 
 	return &Curve{
-		client:             config.Client,
-		contractAddresses:  config.ContractAddresses,
-		contract2Addresses: config.Contract2Addresses,
-		erc20:              erc20,
-		blocks:             config.Blocks,
-		logger:             config.Logger.WithField("curve", CurveLoggerTag),
+		client:                       config.Client,
+		stableSwapContractAddresses:  config.StableSwapContractAddresses,
+		cryptoSwapContract2Addresses: config.CryptoSwapContractAddresses,
+		erc20:                        erc20,
+		blocks:                       config.Blocks,
+		logger:                       config.Logger.WithField("curve", CurveLoggerTag),
 	}, nil
 }
 
@@ -278,12 +278,12 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 	pairs1 := make(map[value.Pair]struct{})
 	pairs2 := make(map[value.Pair]struct{})
 	for _, pair := range pairs {
-		_, baseIndex, quoteIndex, err := c.contractAddresses.ByPair(pair)
+		_, baseIndex, quoteIndex, err := c.stableSwapContractAddresses.ByPair(pair)
 		if err == nil && baseIndex >= 0 && quoteIndex >= 0 {
 			pairs1[pair] = struct{}{}
 			continue
 		}
-		_, baseIndex, quoteIndex, err = c.contract2Addresses.ByPair(pair)
+		_, baseIndex, quoteIndex, err = c.cryptoSwapContract2Addresses.ByPair(pair)
 		if err == nil && baseIndex >= 0 && quoteIndex >= 0 {
 			pairs2[pair] = struct{}{}
 			continue
@@ -294,8 +294,8 @@ func (c *Curve) FetchDataPoints(ctx context.Context, query []any) (map[any]datap
 		}
 	}
 
-	points1, err1 := c.fetchDataPoints(ctx, c.contractAddresses, maps.Keys(pairs1), false, block)
-	points2, err2 := c.fetchDataPoints(ctx, c.contract2Addresses, maps.Keys(pairs2), true, block)
+	points1, err1 := c.fetchDataPoints(ctx, c.stableSwapContractAddresses, maps.Keys(pairs1), false, block)
+	points2, err2 := c.fetchDataPoints(ctx, c.cryptoSwapContract2Addresses, maps.Keys(pairs2), true, block)
 	if err1 != nil {
 		return points, err1
 	}

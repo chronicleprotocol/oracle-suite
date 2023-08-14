@@ -54,10 +54,10 @@ type configOriginBalancer struct {
 
 type configCurveContracts struct {
 	EthereumClient string `hcl:"client,label"`
-	// `addresses` are the pool addresses that are using `int256`
-	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
-	// `addresses2` are the pool address that are using `uint256`
-	Contract2Addresses origin.ContractAddresses `hcl:"addresses2"`
+	// `addresses` are the pool addresses that are using `int256` (stableswap)
+	StableSwapContractAddresses origin.ContractAddresses `hcl:"addresses"`
+	// `addresses2` are the pool address that are using `uint256` (cryptoswap)
+	CryptoSwapContractAddresses origin.ContractAddresses `hcl:"addresses2"`
 }
 
 type configOriginCurve struct {
@@ -170,11 +170,11 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		return origin, nil
 	case *configOriginCurve:
 		origin, err := origin.NewCurve(origin.CurveConfig{
-			Client:             d.Clients[o.Contracts.EthereumClient],
-			ContractAddresses:  o.Contracts.ContractAddresses,
-			Contract2Addresses: o.Contracts.Contract2Addresses,
-			Blocks:             averageFromBlocks,
-			Logger:             d.Logger,
+			Client:                      d.Clients[o.Contracts.EthereumClient],
+			StableSwapContractAddresses: o.Contracts.StableSwapContractAddresses,
+			CryptoSwapContractAddresses: o.Contracts.CryptoSwapContractAddresses,
+			Blocks:                      averageFromBlocks,
+			Logger:                      d.Logger,
 		})
 		if err != nil {
 			return nil, &hcl.Diagnostic{
