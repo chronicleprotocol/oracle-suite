@@ -44,7 +44,7 @@ func TestStore(t *testing.T) {
 	tra := local.New(
 		[]byte("test"),
 		0,
-		map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)},
+		map[string]transport.Message{messages.PriceV0MessageName: (*messages.Price)(nil)}, //nolint:staticcheck
 	)
 	require.NoError(t, tra.Start(ctx))
 	time.Sleep(100 * time.Millisecond)
@@ -68,10 +68,10 @@ func TestStore(t *testing.T) {
 	rec.On("RecoverMessage", mock.Anything, testutil.PriceXXXYYY1.Price.Sig).Return(&testutil.Address1, nil)
 	rec.On("RecoverMessage", mock.Anything, testutil.PriceXXXYYY2.Price.Sig).Return(&testutil.Address2, nil)
 
-	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB1))
-	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB2))
-	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceXXXYYY1))
-	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceXXXYYY2))
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB1)) //nolint:staticcheck
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceAAABBB2)) //nolint:staticcheck
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceXXXYYY1)) //nolint:staticcheck
+	assert.NoError(t, tra.Broadcast(messages.PriceV0MessageName, testutil.PriceXXXYYY2)) //nolint:staticcheck
 
 	// PriceStore fetches prices asynchronously, so we wait up to 1 second:
 	var aaabbb, xxxyyy []*messages.Price

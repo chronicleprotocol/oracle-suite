@@ -34,7 +34,7 @@ type LoggerFlags struct {
 	formatterFlag
 }
 
-func NewLoggerFlagSet(logger *LoggerFlags) *pflag.FlagSet {
+func (logger *LoggerFlags) FlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("log", pflag.PanicOnError)
 	fs.VarP(
 		&logger.verbosityFlag,

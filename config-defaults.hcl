@@ -39,4 +39,20 @@ variables {
       "0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4",
     ]
   }
+
+  # List of supported assets.
+  data_symbols = [
+    "BTC/USD",
+    "ETH/BTC",
+    "ETH/USD",
+    "GNO/USD",
+    "IBTA/USD",
+    "LINK/USD",
+    "MANA/USD", # Missing data model
+    "MATIC/USD",
+    "MKR/USD",
+    "RETH/USD",
+    "WSTETH/USD",
+    "YFI/USD",
+  ]
 }

@@ -199,8 +199,8 @@ func (p *PriceStore) isFeedSupported(feed string) bool {
 }
 
 func (p *PriceStore) priceCollectorRoutine() {
-	priceV0Ch := p.transport.Messages(messages.PriceV0MessageName)
-	priceV1Ch := p.transport.Messages(messages.PriceV1MessageName)
+	priceV0Ch := p.transport.Messages(messages.PriceV0MessageName) //nolint:staticcheck
+	priceV1Ch := p.transport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
 	for {
 		select {
 		case <-p.ctx.Done():

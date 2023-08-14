@@ -148,10 +148,10 @@ func (g *Feed) broadcast(pair provider.Pair) error {
 	if err != nil {
 		return err
 	}
-	if err = g.transport.Broadcast(messages.PriceV0MessageName, msg.AsV0()); err != nil {
+	if err = g.transport.Broadcast(messages.PriceV0MessageName, msg.AsV0()); err != nil { //nolint:staticcheck
 		return err
 	}
-	if err = g.transport.Broadcast(messages.PriceV1MessageName, msg.AsV1()); err != nil {
+	if err = g.transport.Broadcast(messages.PriceV1MessageName, msg.AsV1()); err != nil { //nolint:staticcheck
 		return err
 	}
 	return err

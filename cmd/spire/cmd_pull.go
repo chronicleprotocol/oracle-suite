@@ -24,34 +24,35 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 )
 
-func NewPullCmd(opts *options) *cobra.Command {
-	cmd := &cobra.Command{
+func NewPullCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	cc := &cobra.Command{
 		Use:   "pull",
 		Args:  cobra.ExactArgs(1),
 		Short: "Pulls data from the Spire datastore (require agent)",
 	}
-
-	cmd.AddCommand(
-		NewPullPriceCmd(opts),
-		NewPullPricesCmd(opts),
+	cc.AddCommand(
+		NewPullPriceCmd(c, f, l),
+		NewPullPricesCmd(c, f, l),
 	)
-
-	return cmd
+	return cc
 }
 
-func NewPullPriceCmd(opts *options) *cobra.Command {
+func NewPullPriceCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price ASSET_PAIR FEED",
 		Args:  cobra.ExactArgs(2),
 		Short: "Pulls latest price for a given pair and feed",
 		RunE: func(_ *cobra.Command, args []string) error {
-			if err := opts.Load(&opts.Config); err != nil {
-				return err
+			if err := f.Load(c); err != nil {
+				return fmt.Errorf(`config error: %w`, err)
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.ClientServices(opts.Logger())
+			services, err := c.ClientServices(l.Logger())
 			if err != nil {
 				return err
 			}
@@ -86,19 +87,18 @@ type pullPricesOptions struct {
 	FilterFrom string
 }
 
-func NewPullPricesCmd(opts *options) *cobra.Command {
+func NewPullPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var pullPricesOpts pullPricesOptions
-
-	cmd := &cobra.Command{
+	cc := &cobra.Command{
 		Use:   "prices",
 		Args:  cobra.ExactArgs(0),
 		Short: "Pulls all prices",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			if err := opts.Load(&opts.Config); err != nil {
+			if err := f.Load(&c); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.ClientServices(opts.Logger())
+			services, err := c.ClientServices(l.Logger())
 			if err != nil {
 				return err
 			}
@@ -123,20 +123,17 @@ func NewPullPricesCmd(opts *options) *cobra.Command {
 			return
 		},
 	}
-
-	cmd.PersistentFlags().StringVar(
+	cc.PersistentFlags().StringVar(
 		&pullPricesOpts.FilterFrom,
 		"filter.from",
 		"",
 		"",
 	)
-
-	cmd.PersistentFlags().StringVar(
+	cc.PersistentFlags().StringVar(
 		&pullPricesOpts.FilterPair,
 		"filter.pair",
 		"",
 		"",
 	)
-
-	return cmd
+	return cc
 }

@@ -24,34 +24,37 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func NewStreamCmd(opts *options) *cobra.Command {
-	cmd := &cobra.Command{
+func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	cc := &cobra.Command{
 		Use:   "stream",
 		Args:  cobra.ExactArgs(1),
 		Short: "Streams data from the network",
 	}
-
-	cmd.AddCommand(
-		NewStreamPricesCmd(opts),
+	cc.AddCommand(
+		NewStreamPricesCmd(c, f, l),
 	)
-
-	return cmd
+	return cc
 }
 
-func NewStreamPricesCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:   "prices",
-		Args:  cobra.ExactArgs(0),
-		Short: "Prints price messages as they are received",
+func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	var legacy bool
+	cc := &cobra.Command{
+		Use:     "prices",
+		Args:    cobra.ExactArgs(0),
+		Aliases: []string{"data"},
+		Short:   "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
-			if err := opts.Load(&opts.Config); err != nil {
+			if err := f.Load(c); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := opts.Config.StreamServices(opts.Logger())
+			services, err := c.StreamServices(l.Logger())
 			if err != nil {
 				return err
 			}
@@ -63,7 +66,12 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 					err = sErr
 				}
 			}()
-			msgCh := services.Transport.Messages(messages.DataPointV1MessageName)
+			var msgCh <-chan transport.ReceivedMessage
+			if legacy {
+				msgCh = services.Transport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
+			} else {
+				msgCh = services.Transport.Messages(messages.DataPointV1MessageName)
+			}
 			for {
 				select {
 				case <-ctx.Done():
@@ -78,4 +86,11 @@ func NewStreamPricesCmd(opts *options) *cobra.Command {
 			}
 		},
 	}
+	cc.Flags().BoolVar(
+		&legacy,
+		"legacy",
+		false,
+		"legacy mode",
+	)
+	return cc
 }

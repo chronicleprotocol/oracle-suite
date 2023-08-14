@@ -38,10 +38,10 @@ type configOriginIShares struct {
 }
 
 type configBalancerContracts struct {
-	EthereumClient    string            `hcl:"client,label"`
-	ContractAddresses map[string]string `hcl:"addresses"`
+	EthereumClient    string                   `hcl:"client,label"`
+	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 	// `references` are optional, the key should be matched with `addresses` as the additional address.
-	ReferenceAddresses map[string]string `hcl:"references,optional"`
+	ReferenceAddresses origin.ContractAddresses `hcl:"references,optional"`
 }
 
 type configOriginBalancer struct {
@@ -52,13 +52,21 @@ type configOriginBalancer struct {
 	Contracts configBalancerContracts `hcl:"contracts,block"`
 }
 
-type configContracts struct {
-	EthereumClient    string            `hcl:"client,label"`
-	ContractAddresses map[string]string `hcl:"addresses"`
+type configCurveContracts struct {
+	EthereumClient string `hcl:"client,label"`
+	// `addresses` are the pool addresses that are using `int256` (stableswap)
+	StableSwapContractAddresses origin.ContractAddresses `hcl:"addresses"`
+	// `addresses2` are the pool address that are using `uint256` (cryptoswap)
+	CryptoSwapContractAddresses origin.ContractAddresses `hcl:"addresses2"`
 }
 
 type configOriginCurve struct {
-	Contracts configContracts `hcl:"contracts,block"`
+	Contracts configCurveContracts `hcl:"contracts,block"`
+}
+
+type configContracts struct {
+	EthereumClient    string                   `hcl:"client,label"`
+	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 }
 
 type configOriginRocketPool struct {
@@ -162,10 +170,11 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		return origin, nil
 	case *configOriginCurve:
 		origin, err := origin.NewCurve(origin.CurveConfig{
-			Client:            d.Clients[o.Contracts.EthereumClient],
-			ContractAddresses: o.Contracts.ContractAddresses,
-			Blocks:            averageFromBlocks,
-			Logger:            d.Logger,
+			Client:                      d.Clients[o.Contracts.EthereumClient],
+			StableSwapContractAddresses: o.Contracts.StableSwapContractAddresses,
+			CryptoSwapContractAddresses: o.Contracts.CryptoSwapContractAddresses,
+			Blocks:                      averageFromBlocks,
+			Logger:                      d.Logger,
 		})
 		if err != nil {
 			return nil, &hcl.Diagnostic{

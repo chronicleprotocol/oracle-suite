@@ -157,8 +157,8 @@ func TestFeed_Broadcast(t *testing.T) {
 
 			ticker := timeutil.NewTicker(0)
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
-				messages.PriceV0MessageName: (*messages.Price)(nil),
-				messages.PriceV1MessageName: (*messages.Price)(nil),
+				messages.PriceV0MessageName: (*messages.Price)(nil), //nolint:staticcheck
+				messages.PriceV1MessageName: (*messages.Price)(nil), //nolint:staticcheck
 			})
 
 			// Prepare mocks.
@@ -188,8 +188,8 @@ func TestFeed_Broadcast(t *testing.T) {
 
 			// Wait for two messages.
 			var pricesV0, pricesV1 []*messages.Price
-			v0ch := localTransport.Messages(messages.PriceV0MessageName)
-			v1ch := localTransport.Messages(messages.PriceV1MessageName)
+			v0ch := localTransport.Messages(messages.PriceV0MessageName) //nolint:staticcheck
+			v1ch := localTransport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
 			for {
 				select {
 				case msg, ok := <-v0ch:

@@ -26,18 +26,15 @@ import (
 func main() {
 	var ff cmd.FilesFlags
 	var lf cmd.LoggerFlags
-	c := cmd.NewRootCommand(
-		"gofer",
-		suite.Version,
-		cmd.NewFilesFlagSet(&ff),
-		cmd.NewLoggerFlagSet(&lf),
-	)
+	c := cmd.NewRootCommand("gofer", suite.Version, &ff, &lf)
+
 	var config gofer.Config
 	c.AddCommand(
 		cmd.NewRunCmd(&config, &ff, &lf),
 		NewModelsCmd(&config, &ff, &lf),
 		NewDataCmd(&config, &ff, &lf),
 	)
+
 	if err := c.Execute(); err != nil {
 		os.Exit(1)
 	}

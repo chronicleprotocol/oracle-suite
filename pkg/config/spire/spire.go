@@ -246,8 +246,8 @@ func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) 
 		Keys:    keys,
 		Clients: clients,
 		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName:     (*messages.Price)(nil), // TODO: Still need ???
-			messages.PriceV1MessageName:     (*messages.Price)(nil), // TODO: Still need ???
+			messages.PriceV0MessageName:     (*messages.Price)(nil), //nolint:staticcheck
+			messages.PriceV1MessageName:     (*messages.Price)(nil), //nolint:staticcheck
 			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
 		},
 		Logger: logger,

@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
@@ -40,25 +41,24 @@ type BootstrapConfig struct {
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func NewBootstrapCmd(opts *options) *cobra.Command {
+func NewBootstrapCmd(c *BootstrapConfig, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "bootstrap",
 		Args:    cobra.ExactArgs(0),
 		Aliases: []string{"boot"},
 		Short:   "Starts bootstrap node",
-		Long:    ``,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := opts.Load(&opts.BootstrapConfig); err != nil {
+			if err := f.Load(c); err != nil {
 				return fmt.Errorf(`config error: %w`, err)
 			}
-			l, err := opts.BootstrapConfig.Logger.Logger(logger.Dependencies{
-				BaseLogger: opts.Logger(),
+			ll, err := c.Logger.Logger(logger.Dependencies{
+				BaseLogger: l.Logger(),
 			})
 			if err != nil {
 				return fmt.Errorf(`ethereum config error: %w`, err)
 			}
-			t, err := opts.BootstrapConfig.Transport.LibP2PBootstrap(transport.BootstrapDependencies{
-				Logger: l,
+			t, err := c.Transport.LibP2PBootstrap(transport.BootstrapDependencies{
+				Logger: ll,
 			})
 			if err != nil {
 				return fmt.Errorf(`transport config error: %w`, err)
@@ -67,9 +67,9 @@ func NewBootstrapCmd(opts *options) *cobra.Command {
 				return errors.New("spire-bootstrap works only with the libp2p transport")
 			}
 
-			s := supervisor.New(l)
-			s.Watch(t, sysmon.New(time.Minute, l))
-			if l, ok := l.(supervisor.Service); ok {
+			s := supervisor.New(ll)
+			s.Watch(t, sysmon.New(time.Minute, ll))
+			if l, ok := ll.(supervisor.Service); ok {
 				s.Watch(l)
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
