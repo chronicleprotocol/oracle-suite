@@ -9,7 +9,7 @@ services:
       CFG_LIBP2P_PK_SEED: "FEDCBA9876543210FEDCBA98765432100123456789ABCDEF0123456789ABCDEF"
   streamer:
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
-    command: [ "stream", "data" ]
+    command: [ "stream", "data", "-v", "warning" ]
     environment:
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/dns4/bootstrap.local/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
