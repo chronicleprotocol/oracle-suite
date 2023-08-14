@@ -175,7 +175,7 @@ func TestRelayer_relay(t *testing.T) {
 			}
 			storageMock := &storeMocks.Storage{}
 			localTransport := local.New([]byte("test"), 0, map[string]transport.Message{
-				messages.PriceV1MessageName: &messages.Price{},
+				messages.PriceV1MessageName: &messages.Price{}, //nolint:staticcheck
 			})
 			mockLogger := logMocks.New()
 			priceStore, err := store.New(store.Config{

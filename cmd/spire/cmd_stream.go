@@ -68,7 +68,7 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 			}()
 			var msgCh <-chan transport.ReceivedMessage
 			if legacy {
-				msgCh = services.Transport.Messages(messages.PriceV1MessageName)
+				msgCh = services.Transport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
 			} else {
 				msgCh = services.Transport.Messages(messages.DataPointV1MessageName)
 			}
