@@ -105,6 +105,15 @@ gofer {
     }
   }
 
+  origin "sdai" {
+    type = "sdai"
+    contracts "ethereum" {
+      addresses = {
+        "SDAI/DAI" = "0x83F20F44975D03b1b09e64809B757c47f942BEeA"
+      }
+    }
+  }
+
   origin "sushiswap" {
     type = "sushiswap"
     contracts "ethereum" {
@@ -534,6 +543,10 @@ gofer {
       reference { data_model = "RETH/ETH" }
       reference { data_model = "ETH/USD" }
     }
+  }
+
+  data_model "SDAI/DAI" {
+    origin "sdai" { query = "SDAI/DAI" }
   }
 
   data_model "SNX/USD" {

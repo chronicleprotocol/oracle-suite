@@ -45,9 +45,9 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var legacy bool
 	cc := &cobra.Command{
-		Use:     "prices",
+		Use:     "data",
 		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"data"},
+		Aliases: []string{"prices"},
 		Short:   "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
 			if err := f.Load(c); err != nil {
