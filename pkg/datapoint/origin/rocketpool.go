@@ -2,13 +2,11 @@ package origin
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"sort"
 	"time"
 
-	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
@@ -19,9 +17,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-//go:embed rocketpool_abi.json
-var rocketPoolABI []byte
 
 const RocketPoolLoggerTag = "ROCKETPOOL_ORIGIN"
 
@@ -35,7 +30,6 @@ type RocketPoolConfig struct {
 type RocketPool struct {
 	client                    rpc.RPC
 	contractAddresses         ContractAddresses
-	abi                       *abi.Contract
 	baseIndex, quoteIndex, dx *big.Int
 	blocks                    []int64
 	logger                    log.Logger
@@ -49,15 +43,9 @@ func NewRocketPool(config RocketPoolConfig) (*RocketPool, error) {
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(rocketPoolABI)
-	if err != nil {
-		return nil, err
-	}
-
 	return &RocketPool{
 		client:            config.Client,
 		contractAddresses: config.ContractAddresses,
-		abi:               a,
 		baseIndex:         big.NewInt(0),
 		quoteIndex:        big.NewInt(1),
 		dx:                new(big.Int).Mul(big.NewInt(1), new(big.Int).SetUint64(ether)),
@@ -94,7 +82,7 @@ func (r *RocketPool) FetchDataPoints(ctx context.Context, query []any) (map[any]
 			continue
 		}
 
-		callData, err := r.abi.Methods["getExchangeRate"].EncodeArgs()
+		callData, err := getExchangeRate.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get contract args for pair: %s: %w",

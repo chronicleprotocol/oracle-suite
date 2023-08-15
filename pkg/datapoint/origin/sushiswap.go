@@ -2,13 +2,11 @@ package origin
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"sort"
 	"time"
 
-	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 	"golang.org/x/exp/maps"
@@ -20,9 +18,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-//go:embed sushiswap_pool_abi.json
-var sushiswapPoolABI []byte
 
 const SushiswapLoggerTag = "SUSHISWAP_ORIGIN"
 
@@ -37,7 +32,6 @@ type Sushiswap struct {
 	client            rpc.RPC
 	contractAddresses ContractAddresses
 	erc20             *ERC20
-	abi               *abi.Contract
 	blocks            []int64
 	logger            log.Logger
 }
@@ -50,11 +44,6 @@ func NewSushiswap(config SushiswapConfig) (*Sushiswap, error) {
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(sushiswapPoolABI)
-	if err != nil {
-		return nil, err
-	}
-
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -64,7 +53,6 @@ func NewSushiswap(config SushiswapConfig) (*Sushiswap, error) {
 		client:            config.Client,
 		contractAddresses: config.ContractAddresses,
 		erc20:             erc20,
-		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("sushiswap", SushiswapLoggerTag),
 	}, nil
@@ -100,7 +88,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		}
 
 		// Calls for `getReserves`
-		callData, err := s.abi.Methods["getReserves"].EncodeArgs()
+		callData, err := getReserves.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get reserves for pair: %s: %w",
@@ -114,7 +102,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 			Input: callData,
 		})
 		// Calls for `token0`
-		callData, err = s.abi.Methods["token0"].EncodeArgs()
+		callData, err = token0Abi.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get token0 for pair: %s: %w",
@@ -128,7 +116,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 			Input: callData,
 		})
 		// Calls for `token1`
-		callData, err = s.abi.Methods["token1"].EncodeArgs()
+		callData, err = token1Abi.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get token1 for pair: %s: %w",
@@ -156,7 +144,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 
 		for i := range resp {
 			var address types.Address
-			if err := s.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
+			if err := token0Abi.DecodeValues(resp[i], &address); err != nil {
 				return nil, fmt.Errorf("failed decoding token address of pool: %w", err)
 			}
 			tokensMap[address] = struct{}{}
@@ -207,7 +195,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 
 				// Reference: https://github.com/sushiswap/sushiswap-subgraph/blob/uniswap-fork/src/mappings/core.ts#L220
 				var reserve0, reserve1 *big.Int
-				if err := s.abi.Methods["getReserves"].DecodeValues(resp[n], &reserve0, &reserve1, nil); err != nil {
+				if err := getReserves.DecodeValues(resp[n], &reserve0, &reserve1, nil); err != nil {
 					points[pair] = datapoint.Point{Error: fmt.Errorf("failed decoding reserves of pool: %w",
 						err)}
 					continue

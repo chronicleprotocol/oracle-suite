@@ -2,13 +2,11 @@ package origin
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"sort"
 	"time"
 
-	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
@@ -19,9 +17,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-//go:embed balancerv2_abi.json
-var balancerV2PoolABI []byte
 
 const BalancerV2LoggerTag = "BALANCERV2_ORIGIN"
 
@@ -37,7 +32,6 @@ type BalancerV2 struct {
 	client             rpc.RPC
 	contractAddresses  ContractAddresses
 	referenceAddresses ContractAddresses
-	abi                *abi.Contract
 	variable           byte
 	blocks             []int64
 	logger             log.Logger
@@ -51,16 +45,10 @@ func NewBalancerV2(config BalancerV2Config) (*BalancerV2, error) {
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(balancerV2PoolABI)
-	if err != nil {
-		return nil, err
-	}
-
 	return &BalancerV2{
 		client:             config.Client,
 		contractAddresses:  config.ContractAddresses,
 		referenceAddresses: config.ReferenceAddresses,
-		abi:                a,
 		variable:           0, // PAIR_PRICE
 		blocks:             config.Blocks,
 		logger:             config.Logger.WithField("balancerV2", BalancerV2LoggerTag),
@@ -97,7 +85,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 		}
 
 		// Calls for `getLatest`
-		callData, err := b.abi.Methods["getLatest"].EncodeArgs(b.variable)
+		callData, err := getLatest.EncodeArgs(b.variable)
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get contract args for pair: %s: %w",
@@ -113,7 +101,7 @@ func (b *BalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]
 
 		ref, _, _, err := b.referenceAddresses.ByPair(pair)
 		if err == nil {
-			callData, err := b.abi.Methods["getPriceRateCache"].EncodeArgs(types.MustAddressFromHex(ref.String()))
+			callData, err := getPriceRateCache.EncodeArgs(types.MustAddressFromHex(ref.String()))
 			if err != nil {
 				points[pair] = datapoint.Point{Error: fmt.Errorf(
 					"failed to pack contract args for getPriceRateCache (pair %s): %w",
