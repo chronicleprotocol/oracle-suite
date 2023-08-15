@@ -5,12 +5,12 @@ gofer {
       addresses = {
         "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
         "RETH/WETH" = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
-        "STETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
+        "WSTETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
         "WETH/YFI" = "0x186084ff790c65088ba694df11758fae4943ee9e" # WeightedPool2Tokens
       }
       references = {
         "RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
-        "STETH/WETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" # token0 of STETH/WETH
+        "WSTETH/WETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" # token0 of WSTETH/WETH
       }
     }
   }
@@ -147,7 +147,8 @@ gofer {
         "WBTC/WETH"  = "0x4585FE77225b41b697C938B018E2Ac67Ac5a20c0",
         "USDC/SNX" = "0x020C349A0541D76C16F501Abc6B2E9c98AdAe892",
         "ARB/WETH" = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
-        "DAI/FRAX" = "0x97e7d56A0408570bA1a7852De36350f7713906ec"
+        "DAI/FRAX" = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
+        "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa"
       }
     }
   }
@@ -589,10 +590,17 @@ gofer {
   data_model "STETH/ETH" {
     median {
       min_values = 2
-      alias "STETH/ETH" {
-        origin "balancerV2" { query = "STETH/WETH" }
-      }
+#      alias "STETH/ETH" {
+#        origin "uniswapV2" { query = "STETH/WETH" }
+#      }
       origin "curve" { query = "STETH/ETH" }
+    }
+  }
+
+  data_model "STETH/USD" {
+    indirect {
+      reference { data_model = "STETH/ETH" }
+      reference { data_model = "ETH/USD" }
     }
   }
 
@@ -685,9 +693,18 @@ gofer {
   }
 
   data_model "WSTETH/ETH" {
-    indirect {
-      origin "wsteth" { query = "WSTETH/STETH" }
-      reference { data_model = "STETH/ETH" }
+    median {
+      min_values = 2
+      alias "WSTETH/ETH" {
+        origin "uniswapV3" { query = "WSTETH/WETH" }
+      }
+      alias "WSTETH/ETH" {
+        origin "balancerV2" { query = "WSTETH/WETH" }
+      }
+      indirect {
+        origin "wsteth" { query = "WSTETH/STETH" }
+        reference { data_model = "STETH/ETH" }
+      }
     }
   }
 
