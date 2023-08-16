@@ -93,9 +93,14 @@ func (p *ReceivedMessage) Fields() log.Fields {
 }
 
 var AllTopics = []string{
-	messages.PriceV0MessageName,
-	messages.PriceV1MessageName,
+	messages.PriceV0MessageName, //nolint:staticcheck
+	messages.PriceV1MessageName, //nolint:staticcheck
 	messages.DataPointV1MessageName,
 	messages.EventV1MessageName,
 	messages.GreetV1MessageName,
+	messages.MuSigStartV1MessageName,
+	messages.MuSigTerminateV1MessageName,
+	messages.MuSigCommitmentV1MessageName,
+	messages.MuSigPartialSignatureV1MessageName,
+	messages.MuSigSignatureV1MessageName,
 }

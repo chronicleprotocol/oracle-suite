@@ -28,19 +28,22 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	cc := &cobra.Command{
-		Use:   "stream TOPIC",
-		Args:  cobra.ExactArgs(1),
+		Use:   "stream [TOPIC...]",
+		Args:  cobra.MinimumNArgs(0),
 		Short: "Streams data from the network",
-		RunE: func(_ *cobra.Command, arg []string) (err error) {
+		RunE: func(_ *cobra.Command, args []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.StreamServices(l.Logger())
+			logger := l.Logger()
+			services, err := c.StreamServices(logger)
 			if err != nil {
 				return err
 			}
@@ -52,26 +55,34 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 					err = sErr
 				}
 			}()
-			var msgCh <-chan transport.ReceivedMessage
-			switch arg[0] {
-			case messages.PriceV0MessageName: //nolint:staticcheck
-				msgCh = services.Transport.Messages(messages.PriceV0MessageName) //nolint:staticcheck
-			case messages.PriceV1MessageName: //nolint:staticcheck
-				msgCh = services.Transport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
-			case messages.DataPointV1MessageName:
-				msgCh = services.Transport.Messages(messages.DataPointV1MessageName)
-			case messages.GreetV1MessageName:
-				msgCh = services.Transport.Messages(messages.GreetV1MessageName)
-			case messages.EventV1MessageName:
-				msgCh = services.Transport.Messages(messages.EventV1MessageName)
-			default:
-				return fmt.Errorf("unknown message type: %s", arg[0])
+			inArgs := func(s string) bool {
+				return sliceutil.Contains[string](args, s)
+			}
+			if len(args) == 0 {
+				args = transport.AllTopics
+				inArgs = func(_ string) bool { return true }
+			}
+			sink := chanutil.NewFanIn[transport.ReceivedMessage]()
+			for _, s := range args {
+				if !inArgs(s) {
+					logger.
+						WithField("name", s).
+						Warn("Skipping unknown topic")
+					continue
+				}
+				err := sink.Add(services.Transport.Messages(s))
+				if err != nil {
+					return err
+				}
+				logger.
+					WithField("name", s).
+					Info("Subscribed to topic")
 			}
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
-				case msg := <-msgCh:
+				case msg := <-sink.Chan():
 					jsonMsg, err := json.Marshal(msg.Message)
 					if err != nil {
 						return err
