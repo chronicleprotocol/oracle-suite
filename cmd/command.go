@@ -44,6 +44,7 @@ func NewRunCmd(c supervisor.Config, f *FilesFlags, l *LoggerFlags) *cobra.Comman
 	return &cobra.Command{
 		Use:     "run",
 		Args:    cobra.NoArgs,
+		Short:   "Run the main service",
 		Aliases: []string{"agent", "server"},
 		RunE: func(_ *cobra.Command, _ []string) error {
 			if err := f.Load(c); err != nil {

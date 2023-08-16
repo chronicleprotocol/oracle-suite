@@ -18,6 +18,7 @@ package transport
 import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 // ReceivedMessage contains a Message received from Transport.
@@ -89,4 +90,12 @@ func (p *ReceivedMessage) Fields() log.Fields {
 		"receivedFromPeerID":   p.Meta.ReceivedFromPeerID,
 		"receivedFromPeerAddr": p.Meta.ReceivedFromPeerAddr,
 	}
+}
+
+var AllTopics = []string{
+	messages.PriceV0MessageName,
+	messages.PriceV1MessageName,
+	messages.DataPointV1MessageName,
+	messages.EventV1MessageName,
+	messages.GreetV1MessageName,
 }

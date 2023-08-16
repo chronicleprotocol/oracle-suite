@@ -249,6 +249,8 @@ func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) 
 			messages.PriceV0MessageName:     (*messages.Price)(nil), //nolint:staticcheck
 			messages.PriceV1MessageName:     (*messages.Price)(nil), //nolint:staticcheck
 			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
+			messages.GreetV1MessageName:     (*messages.Greet)(nil),
+			messages.EventV1MessageName:     (*messages.Event)(nil),
 		},
 		Logger: logger,
 	})
