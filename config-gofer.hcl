@@ -598,9 +598,22 @@ gofer {
   }
 
   data_model "STETH/USD" {
-    indirect {
-      reference { data_model = "STETH/ETH" }
-      reference { data_model = "ETH/USD" }
+    median {
+      min_values = 2
+#      indirect {
+#        alias "STETH/ETH" {
+#          origin "uniswapV2" { query = "STETH/WETH" }
+#        }
+#        reference { data_model = "ETH/USD" }
+#      }
+      indirect {
+        origin "curve" { query = "STETH/ETH" }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "okx" { query = "STETH/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
     }
   }
 
