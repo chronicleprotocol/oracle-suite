@@ -17,6 +17,8 @@ package mocks
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -109,6 +111,9 @@ func (r *RPC) SendRawTransaction(ctx context.Context, data []byte) (*types.Hash,
 }
 
 func (r *RPC) Call(ctx context.Context, call types.Call, block types.BlockNumber) ([]byte, error) {
+	// debug
+	fmt.Println("MockRPC Call", call.To.String(), hex.EncodeToString(call.Input))
+
 	args := r.Called(ctx, call, block)
 	return args.Get(0).([]uint8), args.Error(1)
 }
