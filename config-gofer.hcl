@@ -123,6 +123,15 @@ gofer {
     }
   }
 
+  origin "uniswapV2" {
+    type = "uniswapV2"
+    contracts "ethereum" {
+      addresses = {
+        "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4"
+      }
+    }
+  }
+
   origin "uniswapV3" {
     type = "uniswapV3"
     contracts "ethereum" {
