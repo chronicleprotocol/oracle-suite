@@ -62,13 +62,6 @@ func NewCurve(config CurveConfig) (*Curve, error) {
 	}, nil
 }
 
-// Since curve has `stableswap` pool and `cryptoswap` pool, and their smart contracts have pretty similar interface
-// `stableswap` pool is using `int128` in `get_dy`, `get_dx` ...,
-// while `cryptoswap` pool is using `uint256` in `get_dy`, `get_dx`, ...
-var getDy1 = abi.MustParseMethod("get_dy(int128,int128,uint256)(uint256)")
-var getDy2 = abi.MustParseMethod("get_dy(uint256,uint256,uint256)(uint256)")
-var coins = abi.MustParseMethod("coins(uint256)(address)")
-
 //nolint:funlen,gocyclo
 func (c *Curve) fetchDataPoints(
 	ctx context.Context,

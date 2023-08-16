@@ -2,7 +2,6 @@ package origin
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"sort"
@@ -19,9 +18,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-//go:embed wsteth_abi.json
-var wstethABI []byte
 
 const WrappedStakedETHLoggerTag = "WSTETH_ORIGIN"
 
@@ -48,15 +44,9 @@ func NewWrappedStakedETH(config WrappedStakedETHConfig) (*WrappedStakedETH, erro
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(wstethABI)
-	if err != nil {
-		return nil, err
-	}
-
 	return &WrappedStakedETH{
 		client:            config.Client,
 		contractAddresses: config.ContractAddresses,
-		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("wsteth", WrappedStakedETHLoggerTag),
 	}, nil
@@ -90,7 +80,7 @@ func (w *WrappedStakedETH) FetchDataPoints(ctx context.Context, query []any) (ma
 			continue
 		}
 
-		callData, err := w.abi.Methods["stEthPerToken"].EncodeArgs()
+		callData, err := stEthPerToken.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf(
 				"failed to get contract args for pair: %s: %w",

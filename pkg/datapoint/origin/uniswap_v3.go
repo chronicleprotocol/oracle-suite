@@ -2,13 +2,11 @@ package origin
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"sort"
 	"time"
 
-	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 	"golang.org/x/exp/maps"
@@ -20,9 +18,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-//go:embed uniswap_v3_pool_abi.json
-var uniswapV3PoolABI []byte
 
 const UniswapV3LoggerTag = "UNISWAPV3_ORIGIN"
 
@@ -37,7 +32,6 @@ type UniswapV3 struct {
 	client            rpc.RPC
 	contractAddresses ContractAddresses
 	erc20             *ERC20
-	abi               *abi.Contract
 	blocks            []int64
 	logger            log.Logger
 }
@@ -50,11 +44,6 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 		config.Logger = null.New()
 	}
 
-	a, err := abi.ParseJSON(uniswapV3PoolABI)
-	if err != nil {
-		return nil, err
-	}
-
 	erc20, err := NewERC20(config.Client)
 	if err != nil {
 		return nil, err
@@ -64,7 +53,6 @@ func NewUniswapV3(config UniswapV3Config) (*UniswapV3, error) {
 		client:            config.Client,
 		contractAddresses: config.ContractAddresses,
 		erc20:             erc20,
-		abi:               a,
 		blocks:            config.Blocks,
 		logger:            config.Logger.WithField("uniswapV3", UniswapV3LoggerTag),
 	}, nil
@@ -100,7 +88,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		}
 
 		// Calls for `slot0`
-		callData, err := u.abi.Methods["slot0"].EncodeArgs()
+		callData, err := slot0.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf("failed to get slot0 for pair: %s: %w",
 				pair.String(), err)}
@@ -111,7 +99,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 			Input: callData,
 		})
 		// Calls for `token0`
-		callData, err = u.abi.Methods["token0"].EncodeArgs()
+		callData, err = token0Abi.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf("failed to get token0 for pair: %s: %w",
 				pair.String(), err)}
@@ -122,7 +110,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 			Input: callData,
 		})
 		// Calls for `token1`
-		callData, err = u.abi.Methods["token1"].EncodeArgs()
+		callData, err = token1Abi.EncodeArgs()
 		if err != nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf("failed to get token1 for pair: %s: %w",
 				pair.String(), err)}
@@ -147,7 +135,7 @@ func (u *UniswapV3) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 
 		for i := range resp {
 			var address types.Address
-			if err := u.abi.Methods["token0"].DecodeValues(resp[i], &address); err != nil {
+			if err := token0Abi.DecodeValues(resp[i], &address); err != nil {
 				return nil, fmt.Errorf("failed decoding token address of pool: %w", err)
 			}
 			tokensMap[address] = struct{}{}

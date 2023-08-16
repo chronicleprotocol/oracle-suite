@@ -38,6 +38,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 const LoggerTag = "LIBP2P"
@@ -204,7 +205,9 @@ func New(cfg Config) (*P2P, error) {
 	if cfg.PeerPrivKey != nil {
 		opts = append(opts, internal.PeerPrivKey(cfg.PeerPrivKey))
 	}
-
+	if cfg.Signer != nil && !sliceutil.Contains[types.Address](cfg.AuthorAllowlist, cfg.Signer.Address()) {
+		cfg.AuthorAllowlist = append(cfg.AuthorAllowlist, cfg.Signer.Address())
+	}
 	for _, addr := range cfg.AuthorAllowlist {
 		logger.
 			WithField("addr", addr.String()).

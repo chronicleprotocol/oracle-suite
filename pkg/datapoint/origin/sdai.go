@@ -7,8 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/defiweb/go-eth/abi"
-
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
@@ -51,8 +49,6 @@ func NewSDAI(config SDAIConfig) (*SDAI, error) {
 		logger:            config.Logger.WithField("sdai", SDAILoggerTag),
 	}, nil
 }
-
-var previewRedeem = abi.MustParseMethod("previewRedeem(uint256)(uint256)")
 
 //nolint:funlen
 func (s *SDAI) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
