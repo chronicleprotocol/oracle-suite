@@ -81,6 +81,10 @@ type configOriginSushiswap struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
 
+type configOriginUniswapV2 struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
 type configOriginUniswapV3 struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
@@ -117,6 +121,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginSDAI{}
 	case "sushiswap":
 		config = &configOriginSushiswap{}
+	case "uniswapV2":
+		config = &configOriginUniswapV2{}
 	case "uniswapV3":
 		config = &configOriginUniswapV3{}
 	case "wsteth":
@@ -251,6 +257,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create sushiswap origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginUniswapV2:
+		origin, err := origin.NewUniswapV2(origin.UniswapV2Config{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create uniswap v2 origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}

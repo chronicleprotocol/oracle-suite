@@ -28,16 +28,95 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	cc := &cobra.Command{
-		Use:   "stream",
-		Args:  cobra.ExactArgs(1),
+		Use:   "stream [TOPIC...]",
+		Args:  cobra.MinimumNArgs(0),
 		Short: "Streams data from the network",
+		RunE: func(_ *cobra.Command, args []string) (err error) {
+			if err := f.Load(c); err != nil {
+				return err
+			}
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+			logger := l.Logger()
+			services, err := c.StreamServices(logger)
+			if err != nil {
+				return err
+			}
+			if err = services.Start(ctx); err != nil {
+				return err
+			}
+			defer func() {
+				if sErr := <-services.Wait(); err == nil {
+					err = sErr
+				}
+			}()
+			inArgs := func(s string) bool {
+				return sliceutil.Contains[string](args, s)
+			}
+			if len(args) == 0 {
+				args = transport.AllTopics
+				inArgs = func(_ string) bool { return true }
+			}
+			sink := chanutil.NewFanIn[transport.ReceivedMessage]()
+			for _, s := range args {
+				if !inArgs(s) {
+					logger.
+						WithField("name", s).
+						Warn("Skipping unknown topic")
+					continue
+				}
+				err := sink.Add(services.Transport.Messages(s))
+				if err != nil {
+					return err
+				}
+				logger.
+					WithField("name", s).
+					Info("Subscribed to topic")
+			}
+			for {
+				select {
+				case <-ctx.Done():
+					return nil
+				case msg := <-sink.Chan():
+					jsonMsg, err := json.Marshal(msg.Message)
+					if err != nil {
+						return err
+					}
+					fmt.Println(string(jsonMsg))
+				}
+			}
+		},
 	}
 	cc.AddCommand(
 		NewStreamPricesCmd(c, f, l),
+		NewTopicsCmd(),
+	)
+	return cc
+}
+
+func NewTopicsCmd() *cobra.Command {
+	var legacy bool
+	cc := &cobra.Command{
+		Use:   "topics",
+		Args:  cobra.ExactArgs(0),
+		Short: "List all available topics",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			for _, topic := range transport.AllTopics {
+				fmt.Println(topic)
+			}
+			return nil
+		},
+	}
+	cc.Flags().BoolVar(
+		&legacy,
+		"legacy",
+		false,
+		"legacy mode",
 	)
 	return cc
 }
@@ -45,10 +124,9 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var legacy bool
 	cc := &cobra.Command{
-		Use:     "data",
-		Args:    cobra.ExactArgs(0),
-		Aliases: []string{"prices"},
-		Short:   "Prints price messages as they are received",
+		Use:   "prices",
+		Args:  cobra.ExactArgs(0),
+		Short: "Prints price messages as they are received",
 		RunE: func(_ *cobra.Command, _ []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err

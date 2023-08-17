@@ -127,6 +127,15 @@ gofer {
     }
   }
 
+  origin "uniswapV2" {
+    type = "uniswapV2"
+    contracts "ethereum" {
+      addresses = {
+        "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4"
+      }
+    }
+  }
+
   origin "uniswapV3" {
     type = "uniswapV3"
     contracts "ethereum" {
@@ -590,9 +599,9 @@ gofer {
   data_model "STETH/ETH" {
     median {
       min_values = 2
-#      alias "STETH/ETH" {
-#        origin "uniswapV2" { query = "STETH/WETH" }
-#      }
+      alias "STETH/ETH" {
+        origin "uniswapV2" { query = "STETH/WETH" }
+      }
       origin "curve" { query = "STETH/ETH" }
     }
   }
@@ -600,12 +609,12 @@ gofer {
   data_model "STETH/USD" {
     median {
       min_values = 2
-#      indirect {
-#        alias "STETH/ETH" {
-#          origin "uniswapV2" { query = "STETH/WETH" }
-#        }
-#        reference { data_model = "ETH/USD" }
-#      }
+      indirect {
+        alias "STETH/ETH" {
+          origin "uniswapV2" { query = "STETH/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
       indirect {
         origin "curve" { query = "STETH/ETH" }
         reference { data_model = "ETH/USD" }

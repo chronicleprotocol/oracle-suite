@@ -21,13 +21,19 @@ var getExchangeRate = abi.MustParseMethod("getExchangeRate()(uint256)")
 var previewRedeem = abi.MustParseMethod("previewRedeem(uint256)(uint256)")
 
 // [Sushiswap]
-var getReserves = abi.MustParseMethod("getReserves()(uint112,uint112,uint32)")
+var getReserves = abi.MustParseMethod("getReserves()(uint112 _reserve0,uint112 _reserve1,uint32 _blockTimestampLast)")
 var token0Abi = abi.MustParseMethod("token0()(address)")
 var token1Abi = abi.MustParseMethod("token1()(address)")
 
-// [Uniswap]
+// [Uniswap v3]
 var slot0 = abi.MustParseMethod("slot0()(uint160,int24,uint16,uint16,uint16,uint8,bool)")
 
+// var token0Abi = abi.MustParseMethod("token0()(address)")
+// var token1Abi = abi.MustParseMethod("token1()(address)")
+
+// [Uniswap v2]
+// var getReserves =
+//     abi.MustParseMethod("getReserves()(uint112 _reserve0,uint112 _reserve1,uint32 _blockTimestampLast)")
 // var token0Abi = abi.MustParseMethod("token0()(address)")
 // var token1Abi = abi.MustParseMethod("token1()(address)")
 

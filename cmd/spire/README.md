@@ -151,7 +151,7 @@ transport {
   webapi {
     # List of feed addresses. Only messages signed by these addresses are accepted.
     feeds = var.feeds
-    
+
     # Listen address for the WebAPI transport. The address must be in the format `host:port`.
     # If used with Tor, it is recommended to listen on 0.0.0.0 address.
     listen_addr = "0.0.0.0.8080"
@@ -240,20 +240,35 @@ Usage:
   spire [command]
 
 Available Commands:
-  agent       Starts the Spire agent
+  run         Run the main service Agent
+  bootstrap   Starts bootstrap node
+  completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  pull        Pulls data from the Spire datastore (require agent)
-  push        Push a message to the network (require agent)
+  pull        Pulls data from the Spire datastore (requires Agent)
+  push        Push a message to the network (requires Agent)
   stream      Streams data from the network
 
 Flags:
-  -c, --config string                                  spire config file (default "./config.hcl")
+  -c, --config strings                                 config file (default [./config.hcl])
   -h, --help                                           help for spire
-      --log.format text|json                           log format (default text)
-  -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default warning)
+  -f, --log.format text|json                           log format (default text)
+  -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default info)
       --version                                        version for spire
 
 Use "spire [command] --help" for more information about a command.
+```
+
+### Stream Sub-command
+
+```
+Usage:
+  spire stream TOPIC [flags]
+  spire stream [command]
+
+Available Commands:
+  prices      Prints price messages as they are received
+  topics      List all available topics
+
 ```
 
 ## License

@@ -1,8 +1,9 @@
 variables {
-  webapi_enable           = tobool(try(env.CFG_WEBAPI_ENABLE, "1"))
-  webapi_listen_addr      = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0:8080")
-  webapi_static_addr_book = try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "cqsdvjamh6vh5bmavgv6hdb5rrhjqgqtqzy6cfgbmzqhpxfrppblupqd.onion:8888")
-  webapi_eth_addr_book    = try(env.CFG_WEBAPI_ETH_ADDR_BOOK, "0xd51Fd30C873356b432F766eB55fc599586734a95")
+  webapi_enable            = tobool(try(env.CFG_WEBAPI_ENABLE, "1"))
+  webapi_listen_addr       = try(env.CFG_WEBAPI_LISTEN_ADDR, "0.0.0.0:8080")
+  webapi_static_addr_book  = try(env.CFG_WEBAPI_STATIC_ADDR_BOOK, "cqsdvjamh6vh5bmavgv6hdb5rrhjqgqtqzy6cfgbmzqhpxfrppblupqd.onion:8888")
+  webapi_eth_addr_book     = try(env.CFG_WEBAPI_ETH_ADDR_BOOK, "0xd51Fd30C873356b432F766eB55fc599586734a95")
+  webapi_socks5_proxy_addr = try(env.CFG_WEBAPI_SOCKS5_PROXY_ADDR, "") # will not try to connect to a proxy if empty
 
   libp2p_enable = tobool(try(env.CFG_LIBP2P_ENABLE, "1"))
 }
@@ -21,7 +22,7 @@ transport {
       ])
       direct_peers_addrs = try(env.CFG_LIBP2P_DIRECT_PEERS_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_DIRECT_PEERS_ADDRS), [])
       blocked_addrs      = try(env.CFG_LIBP2P_BLOCKED_ADDRS == "" ? [] : split(",", env.CFG_LIBP2P_BLOCKED_ADDRS), [])
-      disable_discovery  = tobool(try(env.CFG_LIBP2P_DISABLE_DISCOVERY, false))
+      disable_discovery  = tobool(try(env.CFG_LIBP2P_DISABLE_DISCOVERY, "0"))
       ethereum_key       = "default"
     }
   }
@@ -32,7 +33,7 @@ transport {
     content {
       feeds             = try(env.CFG_FEEDS, "")=="*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[try(env.CFG_FEEDS, "prod")], split(",", try(env.CFG_FEEDS, "")))
       listen_addr       = var.webapi_listen_addr
-      socks5_proxy_addr = try(env.CFG_WEBAPI_SOCKS5_PROXY_ADDR, "") # will not try to connect to a proxy if empty
+      socks5_proxy_addr = var.webapi_socks5_proxy_addr # will not try to connect to a proxy if empty
       ethereum_key      = "default"
 
       # Ethereum based address book. Enabled if CFG_WEBAPI_ETH_ADDR_BOOK is set to a contract address.

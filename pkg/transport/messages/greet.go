@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,7 @@ import (
 const GreetV1MessageName = "greet/v1"
 
 type Greet struct {
-	Signature types.Signature
+	Signature types.Signature `json:"signature"`
 }
 
 // MarshallBinary implements the transport.Message interface.
