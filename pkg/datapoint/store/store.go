@@ -54,6 +54,14 @@ type StoredDataPoint struct {
 	Signature types.Signature
 }
 
+func Fields(o StoredDataPoint) log.Fields {
+	return log.Fields{
+		"model":     o.Model,
+		"from":      o.From.String(),
+		"signature": o.Signature.String(),
+	}
+}
+
 // Store stores latest data points from feeds.
 type Store struct {
 	ctx    context.Context
@@ -146,35 +154,34 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 				p.log.
 					WithError(err).
 					WithField("model", point.Model).
-					WithField("value", point.Value.Value.Print()).
+					WithField("from", from.String()).
+					WithFields(datapoint.Fields(point.Value)).
 					Error("Unable to recover address")
 			}
-			point := StoredDataPoint{
+			sdp := StoredDataPoint{
 				Model:     point.Model,
 				DataPoint: point.Value,
 				From:      *from,
 				Signature: point.Signature,
 			}
-			if err := p.storage.Add(p.ctx, point); err != nil {
+			if err := p.storage.Add(p.ctx, sdp); err != nil {
 				p.log.
 					WithError(err).
-					WithField("model", point.Model).
-					WithField("value", point.DataPoint.Value.Print()).
-					WithField("from", from.String()).
+					WithFields(Fields(sdp)).
+					WithFields(datapoint.Fields(point.Value)).
 					Error("Unable to add data point")
 				return
 			}
 			p.log.
-				WithField("model", point.Model).
-				WithField("value", point.DataPoint.Value.Print()).
-				WithField("from", from.String()).
-				Info("Data point received")
+				WithFields(Fields(sdp)).
+				WithFields(datapoint.Fields(point.Value)).
+				Info("Data point collected")
 			return
 		}
 	}
 	p.log.
 		WithField("model", point.Model).
-		WithField("value", point.Value.Value.Print()).
+		WithFields(datapoint.Fields(point.Value)).
 		Error("Unable to find recoverer for the data point")
 }
 

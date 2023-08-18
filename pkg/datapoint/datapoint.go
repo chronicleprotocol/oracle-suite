@@ -26,6 +26,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/pb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
@@ -285,4 +286,15 @@ func (p Point) MarshalTrace() ([]byte, error) {
 			Error:     point.Validate(),
 		}
 	}, []any{p}, 0), nil
+}
+
+func Fields(point Point) log.Fields {
+	fields := log.Fields{
+		"value":   point.Value.Print(),
+		"msgTime": point.Time.In(time.UTC).Format(time.RFC3339),
+	}
+	for k, v := range point.Meta {
+		fields["meta."+k] = v
+	}
+	return fields
 }
