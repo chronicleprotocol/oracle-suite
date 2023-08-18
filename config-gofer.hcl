@@ -55,6 +55,15 @@ gofer {
     }
   }
 
+  origin "dsr" {
+    type = "dsr"
+    contracts "ethereum" {
+      addresses = {
+        "DSR/RATE" = "0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7" # address to pot contract
+      }
+    }
+  }
+
   origin "gemini" {
     type = "tick_generic_jq"
     url  = "https://api.gemini.com/v1/pubticker/$${lcbase}$${lcquote}"
@@ -157,7 +166,8 @@ gofer {
         "USDC/SNX" = "0x020C349A0541D76C16F501Abc6B2E9c98AdAe892",
         "ARB/WETH" = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
         "DAI/FRAX" = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
-        "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa"
+        "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
+        "MATIC/WETH" = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
       }
     }
   }
@@ -328,6 +338,10 @@ gofer {
     }
   }
 
+  data_model "DSR/RATE" {
+    origin "dsr" { query = "DSR/RATE" }
+  }
+
   data_model "ETH/BTC" {
     median {
       min_values = 3
@@ -456,12 +470,17 @@ gofer {
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "MATIC/USD" }
-      origin "gemini" { query = "MATIC/USD" }
       indirect {
-        origin "huobi" { query = "MATIC/USDT" }
+        origin "kucoin" { query = "MATIC/USDT" }
         reference { data_model = "USDT/USD" }
       }
       origin "kraken" { query = "MATIC/USD" }
+      indirect {
+        alias "MATIC/ETH" {
+          origin "uniswapV3" { query = "MATIC/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
     }
   }
 
@@ -557,6 +576,26 @@ gofer {
 
   data_model "SDAI/DAI" {
     origin "sdai" { query = "SDAI/DAI" }
+  }
+
+  data_model "SDAI/ETH" {
+    indirect {
+      indirect {
+        reference { data_model = "SDAI/DAI" }
+        reference { data_model = "DAI/USD" }
+      }
+      reference { data_model = "ETH/USD" }
+    }
+  }
+
+  data_model "SDAI/MATIC" {
+    indirect {
+      indirect {
+        reference { data_model = "SDAI/DAI" }
+        reference { data_model = "DAI/USD" }
+      }
+      reference { data_model = "MATIC/USD" }
+    }
   }
 
   data_model "SNX/USD" {
