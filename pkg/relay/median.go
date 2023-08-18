@@ -96,7 +96,7 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 	// - Price differs from the current price by more than is specified in the
 	//   OracleSpread field.
 	isExpired := time.Since(age) >= w.expiration
-	isStale := math.IsInf(spread, 0) || spread >= w.spread
+	isStale := spread >= w.spread
 
 	// Print logs.
 	w.log.
