@@ -1,8 +1,59 @@
 package bn
 
-import "math/big"
+import (
+	"math/big"
+)
+
+var (
+	intOne   = big.NewInt(1)
+	intTen   = big.NewInt(10)
+	floatOne = big.NewFloat(1)
+)
+
+func convertIntToDecFixedPoint(x *IntNumber, n uint8) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: x.Mul(decFixedPointScale(n)).BigInt(), n: n}
+}
+
+func convertFloatToDecFixedPoint(x *FloatNumber, n uint8) *DecFixedPointNumber {
+	i, _ := new(big.Float).Mul(x.BigFloat(), new(big.Float).SetInt(decFixedPointScale(n))).Int(nil)
+	return &DecFixedPointNumber{x: i, n: n}
+}
+
+func convertBigIntToDecFixedPoint(x *big.Int, n uint8) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Mul(x, decFixedPointScale(n)), n: n}
+}
+
+func convertBigFloatToDecFixedPoint(x *big.Float, n uint8) *DecFixedPointNumber {
+	i, _ := new(big.Float).Mul(x, new(big.Float).SetInt(decFixedPointScale(n))).Int(nil)
+	return &DecFixedPointNumber{x: i, n: n}
+}
+
+func convertInt64ToDecFixedPoint(x int64, n uint8) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Mul(new(big.Int).SetInt64(x), decFixedPointScale(n)), n: n}
+}
+
+func convertUint64ToDecFixedPoint(x uint64, n uint8) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Mul(new(big.Int).SetUint64(x), decFixedPointScale(n)), n: n}
+}
+
+func convertFloat64ToDecFixedPoint(x float64, n uint8) *DecFixedPointNumber {
+	i, _ := new(big.Float).Mul(big.NewFloat(x), new(big.Float).SetInt(decFixedPointScale(n))).Int(nil)
+	return &DecFixedPointNumber{x: i, n: n}
+}
+
+func convertStringToDecFixedPoint(x string, n uint8) *DecFixedPointNumber {
+	if f, ok := new(big.Float).SetString(x); ok {
+		i, _ := new(big.Float).Mul(f, new(big.Float).SetInt(decFixedPointScale(n))).Int(nil)
+		return &DecFixedPointNumber{x: i, n: n}
+	}
+	return nil
+}
 
 func convertIntNumberToFloat(x *IntNumber) *FloatNumber {
+	return &FloatNumber{x: x.BigFloat()}
+}
+
+func convertDecFixedPointToFloat(x *DecFixedPointNumber) *FloatNumber {
 	return &FloatNumber{x: x.BigFloat()}
 }
 
@@ -37,6 +88,10 @@ func convertFloatNumberToInt(x *FloatNumber) *IntNumber {
 	return &IntNumber{x: x.BigInt()}
 }
 
+func convertDecFixedPointToInt(x *DecFixedPointNumber) *IntNumber {
+	return &IntNumber{x: x.BigInt()}
+}
+
 func convertBigIntToInt(x *big.Int) *IntNumber {
 	return &IntNumber{x: x}
 }
@@ -68,6 +123,10 @@ func convertStringToInt(x string) *IntNumber {
 
 func convertBytesToInt(x []byte) *IntNumber {
 	return &IntNumber{x: new(big.Int).SetBytes(x)}
+}
+
+func decFixedPointScale(n uint8) *big.Int {
+	return new(big.Int).Exp(intTen, big.NewInt(int64(n)), nil)
 }
 
 func anyToInt64(x any) int64 {

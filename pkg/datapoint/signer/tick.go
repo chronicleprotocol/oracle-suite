@@ -30,7 +30,9 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-const valPrecision = 1e18
+// contractPricePrecision is the number of decimal places used by Oracle
+// contracts to represent prices.
+const contractPricePrecision = 18
 
 // TickSigner signs tick data points and recovers the signer address from a
 // signature.
@@ -90,7 +92,7 @@ func (t *TickRecoverer) Recover(
 func hashTick(model string, price *bn.FloatNumber, time time.Time) types.Hash {
 	// Price (val):
 	val := make([]byte, 32)
-	price.Mul(valPrecision).BigInt().FillBytes(val)
+	price.DecFixedPoint(contractPricePrecision).RawBigInt().FillBytes(val)
 
 	// Time (age):
 	age := make([]byte, 32)

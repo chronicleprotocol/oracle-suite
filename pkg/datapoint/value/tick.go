@@ -18,7 +18,6 @@ package value
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -27,15 +26,23 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-// TickPricePrecision is a precision of tick prices.
-// Price is multiplied by this value before being marshaled.
-const TickPricePrecision = 1e18
+// TickPricePrecision specified number of decimal places for tick prices
+// during marshaling.
+const TickPricePrecision = 18
+
+// TickVolumePrecision specified number of decimal places for tick volumes
+// during marshaling.
+const TickVolumePrecision = 18
 
 // Tick contains a price, volume and other information for a given asset pair
 // at a given time.
 //
 // Before using this data, you should check if it is valid by calling
 // Tick.Validate() method.
+//
+// During marshaling, the price and volume are converted to fixed-point
+// numbers with the precision specified by TickPricePrecision and
+// TickVolumePrecision constants.
 type Tick struct {
 	// Pair is an asset pair for which this price is calculated.
 	Pair Pair
@@ -66,13 +73,26 @@ func (t Tick) Print() string {
 
 // MarshalBinary implements the Value interface.
 func (t Tick) MarshalBinary() ([]byte, error) {
-	var volume24HBytes []byte
+	var (
+		priceBytes     []byte
+		volume24HBytes []byte
+		err            error
+	)
+	if t.Price != nil {
+		priceBytes, err = t.Price.DecFixedPoint(TickPricePrecision).MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+	}
 	if t.Volume24h != nil {
-		volume24HBytes = t.Volume24h.Mul(TickPricePrecision).BigInt().Bytes()
+		volume24HBytes, err = t.Volume24h.DecFixedPoint(TickVolumePrecision).MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return proto.Marshal(&pb.Tick{
 		Pair:      t.Pair.String(),
-		Price:     t.Price.Mul(TickPricePrecision).BigInt().Bytes(),
+		Price:     priceBytes,
 		Volume24H: volume24HBytes,
 	})
 }
@@ -88,9 +108,19 @@ func (t *Tick) UnmarshalBinary(bytes []byte) error {
 		return err
 	}
 	t.Pair = pair
-	t.Price = bn.Float(new(big.Int).SetBytes(pbTick.Price)).Div(TickPricePrecision)
-	if pbTick.Volume24H != nil {
-		t.Volume24h = bn.Float(new(big.Int).SetBytes(pbTick.Volume24H)).Div(TickPricePrecision)
+	if len(pbTick.Price) > 0 {
+		price := &bn.DecFixedPointNumber{}
+		if err := price.UnmarshalBinary(pbTick.Price); err != nil {
+			return err
+		}
+		t.Price = price.Float()
+	}
+	if len(pbTick.Volume24H) > 0 {
+		volume24h := &bn.DecFixedPointNumber{}
+		if err := volume24h.UnmarshalBinary(pbTick.Volume24H); err != nil {
+			return err
+		}
+		t.Volume24h = volume24h.Float()
 	}
 	return nil
 }

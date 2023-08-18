@@ -4,8 +4,6 @@ import (
 	"math/big"
 )
 
-var intOne = big.NewInt(1)
-
 // Int returns the IntNumber representation of x.
 //
 // The argument x can be one of the following types:
@@ -24,12 +22,16 @@ func Int(x any) *IntNumber {
 	switch x := x.(type) {
 	case IntNumber:
 		return &x
-	case FloatNumber:
-		return convertFloatNumberToInt(&x)
 	case *IntNumber:
 		return x
+	case FloatNumber:
+		return convertFloatNumberToInt(&x)
 	case *FloatNumber:
 		return convertFloatNumberToInt(x)
+	case DecFixedPointNumber:
+		return convertDecFixedPointToInt(&x)
+	case *DecFixedPointNumber:
+		return convertDecFixedPointToInt(x)
 	case *big.Int:
 		return convertBigIntToInt(x)
 	case *big.Float:
@@ -53,24 +55,23 @@ type IntNumber struct {
 	x *big.Int
 }
 
-// String returns the 10-base string representation of the Int.
-func (i *IntNumber) String() string {
-	return i.x.String()
-}
-
-// Text returns the string representation of the Int in the given base.
-func (i *IntNumber) Text(base int) string {
-	return i.x.Text(base)
-}
-
 // Float returns the Float representation of the Int.
 func (i *IntNumber) Float() *FloatNumber {
 	return &FloatNumber{x: new(big.Float).SetInt(i.x)}
 }
 
+func (i *IntNumber) DecFixedPoint(n uint8) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Mul(i.x, decFixedPointScale(n)), n: n}
+}
+
 // BigInt returns the *big.Int representation of the Int.
 func (i *IntNumber) BigInt() *big.Int {
 	return new(big.Int).Set(i.x)
+}
+
+// BigFloat returns the *big.Float representation of the Int.
+func (i *IntNumber) BigFloat() *big.Float {
+	return new(big.Float).SetInt(i.x)
 }
 
 // Int64 returns the int64 representation of the Int.
@@ -83,9 +84,14 @@ func (i *IntNumber) Uint64() uint64 {
 	return i.x.Uint64()
 }
 
-// BigFloat returns the *big.Float representation of the Int.
-func (i *IntNumber) BigFloat() *big.Float {
-	return new(big.Float).SetInt(i.x)
+// String returns the 10-base string representation of the Int.
+func (i *IntNumber) String() string {
+	return i.x.String()
+}
+
+// Text returns the string representation of the Int in the given base.
+func (i *IntNumber) Text(base int) string {
+	return i.x.Text(base)
 }
 
 // Sign returns:
