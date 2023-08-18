@@ -580,21 +580,22 @@ gofer {
 
   data_model "SDAI/ETH" {
     indirect {
-      indirect {
-        reference { data_model = "SDAI/DAI" }
-        reference { data_model = "DAI/USD" }
-      }
+      reference { data_model = "SDAI/USD" }
       reference { data_model = "ETH/USD" }
     }
   }
 
   data_model "SDAI/MATIC" {
     indirect {
-      indirect {
-        reference { data_model = "SDAI/DAI" }
-        reference { data_model = "DAI/USD" }
-      }
+      reference { data_model = "SDAI/USD" }
       reference { data_model = "MATIC/USD" }
+    }
+  }
+
+  data_model "SDAI/USD" {
+    indirect {
+      reference { data_model = "SDAI/DAI" }
+      reference { data_model = "DAI/USD" }
     }
   }
 
