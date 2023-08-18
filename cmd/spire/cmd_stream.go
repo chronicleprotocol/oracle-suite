@@ -42,7 +42,7 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 			}
 			logger := l.Logger()
 			if len(topics) == 0 {
-				topics = transport.AllTopics
+				topics = transport.AllMessagesMap.Keys()
 			}
 			services, err := c.StreamServices(logger, topics...)
 			if err != nil {
@@ -98,7 +98,7 @@ func NewTopicsCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "List all available topics",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			for _, topic := range transport.AllTopics {
+			for _, topic := range transport.AllMessagesMap.Keys() {
 				fmt.Println(topic)
 			}
 			return nil

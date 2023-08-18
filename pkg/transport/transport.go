@@ -16,11 +16,12 @@
 package transport
 
 import (
-	"fmt"
+	"sort"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
 // ReceivedMessage contains a Message received from Transport.
@@ -94,33 +95,17 @@ func (p *ReceivedMessage) Fields() log.Fields {
 	}
 }
 
-var AllTopics = []string{
-	messages.PriceV0MessageName, //nolint:staticcheck
-	messages.PriceV1MessageName, //nolint:staticcheck
-	messages.DataPointV1MessageName,
-	messages.EventV1MessageName,
-	messages.GreetV1MessageName,
-	messages.MuSigStartV1MessageName,
-	messages.MuSigTerminateV1MessageName,
-	messages.MuSigCommitmentV1MessageName,
-	messages.MuSigPartialSignatureV1MessageName,
-	messages.MuSigSignatureV1MessageName,
-}
-
 type MessageMap map[string]Message
+
+// Keys returns a sorted list of keys.
+func (mm MessageMap) Keys() []string {
+	return maputil.SortKeys(mm, sort.Strings)
+}
 
 // SelectByTopic returns a new MessageMap with messages selected by topic.
 // Empty topic list will yield an empty map.
 func (mm MessageMap) SelectByTopic(topics ...string) (MessageMap, error) {
-	nmm := make(MessageMap, len(topics))
-	for _, s := range topics {
-		m, ok := mm[s]
-		if !ok {
-			return nil, fmt.Errorf("unknown topic: %s", s)
-		}
-		nmm[s] = m
-	}
-	return nmm, nil
+	return maputil.Select(mm, topics)
 }
 
 var AllMessagesMap = MessageMap{
