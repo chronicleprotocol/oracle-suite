@@ -66,13 +66,17 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 	if err != nil {
 		return nil, err
 	}
+	messageMap, err := pkgTransport.AllMessagesMap.SelectByTopic(
+		messages.DataPointV1MessageName,
+	)
+	if err != nil {
+		return nil, err
+	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:    keys,
-		Clients: clients,
-		Messages: map[string]pkgTransport.Message{
-			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
-		},
-		Logger: logger,
+		Keys:     keys,
+		Clients:  clients,
+		Messages: messageMap,
+		Logger:   logger,
 	})
 	if err != nil {
 		return nil, err

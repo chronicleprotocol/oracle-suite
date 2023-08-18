@@ -16,6 +16,8 @@
 package transport
 
 import (
+	"fmt"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -103,4 +105,34 @@ var AllTopics = []string{
 	messages.MuSigCommitmentV1MessageName,
 	messages.MuSigPartialSignatureV1MessageName,
 	messages.MuSigSignatureV1MessageName,
+}
+
+type MessageMap map[string]Message
+
+// SelectByTopic returns a new MessageMap with messages selected by topic.
+// Empty topic list will yield an empty map.
+func (mm MessageMap) SelectByTopic(topics ...string) (MessageMap, error) {
+	nmm := make(MessageMap, len(topics))
+	for _, s := range topics {
+		m, ok := mm[s]
+		if !ok {
+			return nil, fmt.Errorf("unknown topic: %s", s)
+		}
+		nmm[s] = m
+	}
+	return nmm, nil
+}
+
+var AllMessagesMap = MessageMap{
+	messages.PriceV0MessageName:                    (*messages.Price)(nil), //nolint:staticcheck
+	messages.PriceV1MessageName:                    (*messages.Price)(nil), //nolint:staticcheck
+	messages.DataPointV1MessageName:                (*messages.DataPoint)(nil),
+	messages.GreetV1MessageName:                    (*messages.Greet)(nil),
+	messages.EventV1MessageName:                    (*messages.Event)(nil),
+	messages.MuSigStartV1MessageName:               (*messages.MuSigInitialize)(nil),
+	messages.MuSigTerminateV1MessageName:           (*messages.MuSigTerminate)(nil),
+	messages.MuSigCommitmentV1MessageName:          (*messages.MuSigCommitment)(nil),
+	messages.MuSigPartialSignatureV1MessageName:    (*messages.MuSigPartialSignature)(nil),
+	messages.MuSigSignatureV1MessageName:           (*messages.MuSigSignature)(nil),
+	messages.MuSigOptimisticSignatureV1MessageName: (*messages.MuSigOptimisticSignature)(nil),
 }

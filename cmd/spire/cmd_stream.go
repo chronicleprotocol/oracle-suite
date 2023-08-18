@@ -29,7 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
@@ -37,16 +36,19 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 		Use:   "stream [TOPIC...]",
 		Args:  cobra.MinimumNArgs(0),
 		Short: "Streams data from the network",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
+		RunE: func(_ *cobra.Command, topics []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			logger := l.Logger()
-			services, err := c.StreamServices(logger)
+			if len(topics) == 0 {
+				topics = transport.AllTopics
+			}
+			services, err := c.StreamServices(logger, topics...)
 			if err != nil {
 				return err
 			}
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
@@ -55,23 +57,13 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 					err = sErr
 				}
 			}()
-			inArgs := func(s string) bool {
-				return sliceutil.Contains[string](args, s)
-			}
-			if len(args) == 0 {
-				args = transport.AllTopics
-				inArgs = func(_ string) bool { return true }
-			}
 			sink := chanutil.NewFanIn[transport.ReceivedMessage]()
-			for _, s := range args {
-				if !inArgs(s) {
-					logger.
-						WithField("name", s).
-						Warn("Skipping unknown topic")
-					continue
+			for _, s := range topics {
+				ch := services.Transport.Messages(s)
+				if ch == nil {
+					return fmt.Errorf("unconfigured topic: %s", s)
 				}
-				err := sink.Add(services.Transport.Messages(s))
-				if err != nil {
+				if err := sink.Add(ch); err != nil {
 					return err
 				}
 				logger.

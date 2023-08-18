@@ -100,19 +100,23 @@ func (c *Config) Services(baseLogger log.Logger) (supervisor.Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	messageMap, err := transport.AllMessagesMap.SelectByTopic(
+		messages.DataPointV1MessageName,
+		messages.MuSigStartV1MessageName,
+		messages.MuSigTerminateV1MessageName,
+		messages.MuSigCommitmentV1MessageName,
+		messages.MuSigPartialSignatureV1MessageName,
+		messages.MuSigSignatureV1MessageName,
+		messages.MuSigOptimisticSignatureV1MessageName,
+	)
+	if err != nil {
+		return nil, err
+	}
 	transportSrv, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:    keys,
-		Clients: clients,
-		Messages: map[string]transport.Message{
-			messages.DataPointV1MessageName:                (*messages.DataPoint)(nil),
-			messages.MuSigStartV1MessageName:               (*messages.MuSigInitialize)(nil),
-			messages.MuSigTerminateV1MessageName:           (*messages.MuSigTerminate)(nil),
-			messages.MuSigCommitmentV1MessageName:          (*messages.MuSigCommitment)(nil),
-			messages.MuSigPartialSignatureV1MessageName:    (*messages.MuSigPartialSignature)(nil),
-			messages.MuSigSignatureV1MessageName:           (*messages.MuSigSignature)(nil),
-			messages.MuSigOptimisticSignatureV1MessageName: (*messages.MuSigOptimisticSignature)(nil),
-		},
-		Logger: logger,
+		Keys:     keys,
+		Clients:  clients,
+		Messages: messageMap,
+		Logger:   logger,
 	})
 	if err != nil {
 		return nil, err
