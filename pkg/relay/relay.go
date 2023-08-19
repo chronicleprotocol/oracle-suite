@@ -132,13 +132,16 @@ type ConfigOptimisticScribe struct {
 }
 
 func New(cfg Config) (*Relay, error) {
+	logger := cfg.Logger.WithField("tag", LoggerTag)
 	r := &Relay{
 		waitCh: make(chan error),
-		log:    cfg.Logger.WithField("tag", LoggerTag),
+		log:    logger,
 	}
 	for _, m := range cfg.Medians {
 		r.medians = append(r.medians, &medianWorker{
+			log:            logger,
 			dataPointStore: m.DataPointStore,
+			feedAddresses:  m.FeedAddresses,
 			contract:       contract.NewMedian(m.Client, m.ContractAddress),
 			dataModel:      m.DataModel,
 			spread:         m.Spread,
@@ -148,6 +151,7 @@ func New(cfg Config) (*Relay, error) {
 	}
 	for _, s := range cfg.Scribes {
 		r.scribes = append(r.scribes, &scribeWorker{
+			log:        logger,
 			muSigStore: s.MuSigStore,
 			contract:   contract.NewScribe(s.Client, s.ContractAddress),
 			dataModel:  s.DataModel,
@@ -158,6 +162,7 @@ func New(cfg Config) (*Relay, error) {
 	}
 	for _, s := range cfg.OptimisticScribes {
 		r.opScribes = append(r.opScribes, &opScribeWorker{
+			log:        nil,
 			muSigStore: s.MuSigStore,
 			contract:   contract.NewOpScribe(s.Client, s.ContractAddress),
 			dataModel:  s.DataModel,

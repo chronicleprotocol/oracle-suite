@@ -54,7 +54,9 @@ func (w *medianWorker) workerRoutine(ctx context.Context) {
 			return
 		case <-w.ticker.TickCh():
 			if err := w.tryUpdate(ctx); err != nil {
-				w.log.WithError(err).Error("Failed to update Median contract")
+				w.log.
+					WithError(err).
+					Error("Failed to update Median contract")
 			}
 		}
 	}

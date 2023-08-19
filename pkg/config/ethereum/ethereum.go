@@ -382,7 +382,7 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 		logger.
 			WithField("name", c.Name).
 			WithField("url", u.String()).
-			Debug("Ethereum Client")
+			Info("Ethereum Client")
 	}
 
 	client, err := rpc.NewClient(opts...)

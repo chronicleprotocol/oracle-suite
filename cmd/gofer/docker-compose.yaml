@@ -18,6 +18,3 @@ services:
 
       # Gofer RPC listening address
       #CFG_GOFER_RPC_ADDR: "0.0.0.0:9200"
-
-      # Gofer RPC OpenExchangeRates API key
-      CFG_GOFER_OPENEXCHANGERATES_API_KEY:
