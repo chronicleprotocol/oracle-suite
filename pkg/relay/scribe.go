@@ -76,6 +76,9 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) error {
 
 	// Feed list required to generate signersBlob.
 	feeds, indices, err := w.contract.Feeds(ctx)
+	if err != nil {
+		return err
+	}
 
 	// Iterate over all signatures to check if any of them can be used to update
 	// the price on the Scribe contract.

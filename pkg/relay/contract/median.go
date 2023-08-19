@@ -30,6 +30,8 @@ import (
 )
 
 const MedianPricePrecision = 18
+const MedianPokeGesLimit = 200000
+const MedianPokeMaxFeePerGas = 2000 * 1e9
 
 type Median struct {
 	client  rpc.RPC
@@ -136,9 +138,9 @@ func (m *Median) Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []
 		SetTo(m.address).
 		SetInput(calldata).
 		SetNonce(nonce).
-		SetGasLimit(200000).
+		SetGasLimit(MedianPokeGesLimit).
 		SetMaxPriorityFeePerGas(big.NewInt(1)).
-		SetMaxFeePerGas(big.NewInt(2000 * 1e9)) // 2000 Gwei TODO: use gas estimator
+		SetMaxFeePerGas(big.NewInt(MedianPokeMaxFeePerGas))
 	if err := simulateTransaction(ctx, m.client, *tx); err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}

@@ -94,11 +94,7 @@ func toPokeDataStruct(p PokeData) PokeDataStruct {
 }
 
 func toSchnorrDataStruct(s SchnorrData) SchnorrDataStruct {
-	return SchnorrDataStruct{
-		Signature:   s.Signature,
-		Commitment:  s.Commitment,
-		SignersBlob: s.SignersBlob,
-	}
+	return SchnorrDataStruct(s)
 }
 
 func toECDSADataStruct(s types.Signature) ECDSADataStruct {

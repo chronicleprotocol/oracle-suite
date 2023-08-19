@@ -30,6 +30,8 @@ import (
 )
 
 const ScribePricePrecision = 18
+const ScribePokeGasLimit = 200000
+const ScribePokeMaxFeePerGas = 2000 * 1e9
 
 type Scribe struct {
 	client  rpc.RPC
@@ -143,9 +145,9 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 		SetTo(s.address).
 		SetInput(calldata).
 		SetNonce(nonce).
-		SetGasLimit(200000).
+		SetGasLimit(ScribePokeGasLimit).
 		SetMaxPriorityFeePerGas(big.NewInt(1)).
-		SetMaxFeePerGas(big.NewInt(2000 * 1e9)) // 2000 Gwei TODO: use gas estimator
+		SetMaxFeePerGas(big.NewInt(ScribePokeMaxFeePerGas)) // 2000 Gwei TODO: use gas estimator
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}

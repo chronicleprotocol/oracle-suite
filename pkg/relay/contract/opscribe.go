@@ -37,6 +37,9 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
+const ScribeOpPokeGasLimit = 200000
+const ScribeOpPokeMaxFeePerGas = 2000 * 1e9
+
 func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) error {
 	calldata, err := abiOpScribe["opPoke"].EncodeArgs(
 		toPokeDataStruct(pokeData),
@@ -59,9 +62,9 @@ func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData Sc
 		SetTo(s.address).
 		SetInput(calldata).
 		SetNonce(nonce).
-		SetGasLimit(200000).
+		SetGasLimit(ScribeOpPokeGasLimit).
 		SetMaxPriorityFeePerGas(big.NewInt(1)).
-		SetMaxFeePerGas(big.NewInt(2000 * 1e9)) // 2000 Gwei TODO: use gas estimator
+		SetMaxFeePerGas(big.NewInt(ScribeOpPokeMaxFeePerGas)) // 2000 Gwei TODO: use gas estimator
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}
