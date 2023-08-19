@@ -198,7 +198,7 @@ func TestDecFixedPointNumber_Div(t *testing.T) {
 		{
 			name:     "same precision",
 			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(425), n: 2},   // 004.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(425), n: 2},   // 4.25
 			expected: "25",
 		},
 		{

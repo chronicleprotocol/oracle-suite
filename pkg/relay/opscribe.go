@@ -18,6 +18,7 @@ package relay
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 	"time"
 
@@ -107,7 +108,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 		//   OracleSpread field.
 		spread := calculateSpread(val, sigVal)
 		isExpired := time.Since(age) >= w.expiration
-		isStale := spread >= w.spread
+		isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 		// Generate signersBlob.
 		signersBlob := make([]byte, len(s.Signers))

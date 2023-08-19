@@ -166,7 +166,7 @@ func (d *DecFixedPointNumber) Div(x any) *DecFixedPointNumber {
 	if f.x.Sign() == 0 {
 		panic("division by zero")
 	}
-	return &DecFixedPointNumber{x: new(big.Int).Mul(new(big.Int).Div(d.x, f.x), decFixedPointScale(f.n)), n: d.n}
+	return &DecFixedPointNumber{x: new(big.Int).Div(new(big.Int).Mul(d.x, decFixedPointScale(d.n)), f.x), n: d.n}
 }
 
 // Cmp compares the number to x and returns:
