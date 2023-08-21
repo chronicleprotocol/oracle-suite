@@ -123,7 +123,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		if err != nil {
 			f.log.
 				WithError(err).
-				WithFields(datapoint.Fields(point)).
+				WithFields(point.LogFields()).
 				Error("Unable to sign data point")
 		}
 		msg := &messages.DataPoint{
@@ -134,12 +134,12 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		if err := f.transport.Broadcast(messages.DataPointV1MessageName, msg); err != nil {
 			f.log.
 				WithError(err).
-				WithFields(datapoint.Fields(point)).
+				WithFields(point.LogFields()).
 				WithFields(messages.Fields(*msg)).
 				Error("Unable to broadcast data point")
 		} else {
 			f.log.
-				WithFields(datapoint.Fields(point)).
+				WithFields(point.LogFields()).
 				WithFields(messages.Fields(*msg)).
 				Info("Data point broadcast")
 		}
@@ -147,7 +147,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 	if !found {
 		f.log.
 			WithField("model", model).
-			WithFields(datapoint.Fields(point)).
+			WithFields(point.LogFields()).
 			Warn("Unable to find handler for data point")
 	}
 }

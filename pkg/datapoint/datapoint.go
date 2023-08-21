@@ -288,12 +288,19 @@ func (p Point) MarshalTrace() ([]byte, error) {
 	}, []any{p}, 0), nil
 }
 
-func Fields(point Point) log.Fields {
-	fields := log.Fields{
-		"value":   point.Value.Print(),
-		"msgTime": point.Time.In(time.UTC).Format(time.RFC3339),
+// LogFields returns a set of log fields for the data point.
+func (p Point) LogFields() log.Fields {
+	fields := log.Fields{}
+	if p.Value != nil {
+		fields["value"] = p.Value.Print()
 	}
-	for k, v := range point.Meta {
+	if !p.Time.IsZero() {
+		fields["time"] = p.Time
+	}
+	if err := p.Validate(); err != nil {
+		fields["error"] = err.Error()
+	}
+	for k, v := range p.Meta {
 		fields["meta."+k] = v
 	}
 	return fields

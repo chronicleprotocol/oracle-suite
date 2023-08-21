@@ -54,12 +54,17 @@ type StoredDataPoint struct {
 	Signature types.Signature
 }
 
-func Fields(o StoredDataPoint) log.Fields {
-	return log.Fields{
+// LogFields returns a set of log fields for the data point.
+func (o StoredDataPoint) LogFields() log.Fields {
+	f := log.Fields{
 		"model":     o.Model,
 		"from":      o.From.String(),
 		"signature": o.Signature.String(),
 	}
+	for k, v := range o.DataPoint.LogFields() {
+		f[k] = v
+	}
+	return f
 }
 
 // Store stores latest data points from feeds.
@@ -154,8 +159,8 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 				p.log.
 					WithError(err).
 					WithField("model", point.Model).
-					WithField("from", from.String()).
-					WithFields(datapoint.Fields(point.Value)).
+					WithField("from", from).
+					WithFields(point.Value.LogFields()).
 					Error("Unable to recover address")
 			}
 			sdp := StoredDataPoint{
@@ -167,21 +172,19 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 			if err := p.storage.Add(p.ctx, sdp); err != nil {
 				p.log.
 					WithError(err).
-					WithFields(Fields(sdp)).
-					WithFields(datapoint.Fields(point.Value)).
+					WithFields(sdp.LogFields()).
 					Error("Unable to add data point")
 				return
 			}
 			p.log.
-				WithFields(Fields(sdp)).
-				WithFields(datapoint.Fields(point.Value)).
+				WithFields(sdp.LogFields()).
 				Info("Data point collected")
 			return
 		}
 	}
 	p.log.
 		WithField("model", point.Model).
-		WithFields(datapoint.Fields(point.Value)).
+		WithFields(point.Value.LogFields()).
 		Error("Unable to find recoverer for the data point")
 }
 
