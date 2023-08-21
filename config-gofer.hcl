@@ -351,6 +351,12 @@ gofer {
       origin "coinbase" { query = "ETH/USD" }
       origin "gemini" { query = "ETH/USD" }
       origin "kraken" { query = "ETH/USD" }
+      indirect {
+        alias "ETH/USDC" {
+          origin "uniswapV3" { query = "WETH/USDC" }
+        }
+        reference { data_model = "USDC/USD" }
+      }
     }
   }
 
@@ -648,18 +654,12 @@ gofer {
 
   data_model "USDC/USD" {
     median {
-      min_values = 5
+      min_values = 4
       indirect {
         origin "binance" { query = "BTC/USDC" }
         reference { data_model = "BTC/USD" }
       }
       origin "kraken" { query ="USDC/USD" }
-      indirect {
-        alias "USDC/ETH" {
-          origin "uniswapV3" { query = "USDC/WETH" }
-        }
-        reference { data_model = "ETH/USD" }
-      }
       indirect {
         origin "curve" { query = "USDC/USDT" }
         reference { data_model = "USDT/USD" }
