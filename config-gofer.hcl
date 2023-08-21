@@ -133,7 +133,8 @@ gofer {
     contracts "ethereum" {
       addresses = {
         "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4",
-        "MKR/DAI" = "0x517F9dD285e75b599234F7221227339478d0FcC8"
+        "MKR/DAI" = "0x517F9dD285e75b599234F7221227339478d0FcC8",
+        "YFI/WETH" = "0x2fDbAdf3C4D5A8666Bc06645B8358ab803996E28"
       }
     }
   }
@@ -778,12 +779,12 @@ gofer {
         }
         reference { data_model = "ETH/USD" }
       }
-#      indirect {
-#        alias "YFI/ETH" {
-#          origin "uniswapV2" { query = "YFI/WETH" }
-#        }
-#        reference { data_model = "ETH/USD" }
-#      }
+      indirect {
+        alias "YFI/ETH" {
+          origin "uniswapV2" { query = "YFI/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
     }
   }
 }
