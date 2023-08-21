@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 	"time"
 
@@ -176,6 +177,10 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 			points, err := gh.FetchDataPoints(context.Background(), tt.pairs)
 			require.NoError(t, err)
 			require.Len(t, requests, len(tt.expectedURLs))
+			// Because of changing order in `requests` sometimes, the assertion of comparing urls may have a break.
+			sort.Slice(requests, func(i, j int) bool {
+				return requests[i].URL.String() < requests[j].URL.String()
+			})
 			for i, url := range tt.expectedURLs {
 				assert.Equal(t, url, requests[i].URL.String())
 			}
