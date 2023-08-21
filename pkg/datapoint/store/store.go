@@ -215,15 +215,22 @@ func (p *Store) contextCancelHandler() {
 
 func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
-		p.log.WithError(msg.Error).Error("Unable to receive message")
+		p.log.
+			WithError(msg.Error).
+			Error("Unable to receive message")
 		return
 	}
 	point, ok := msg.Message.(*messages.DataPoint)
 	if !ok {
-		p.log.Error("Unexpected value returned from the transport layer")
+		p.log.
+			WithFields(msg.Fields()).
+			Error("Unexpected value returned from the transport layer")
 		return
 	}
 	if !p.shouldCollect(point.Model) {
+		p.log.
+			WithFields(msg.Fields()).
+			Warn("Data point rejected")
 		return
 	}
 	p.collectDataPoint(point)

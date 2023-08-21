@@ -34,16 +34,17 @@ type LoggerFlags struct {
 	formatterFlag
 }
 
-func (logger *LoggerFlags) FlagSet() *pflag.FlagSet {
+// FlagSet binds CLI args [ --log.verbosity | -v ] and [ --log.format | -f ] for config files as a pflag.FlagSet.
+func (lf *LoggerFlags) FlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("log", pflag.PanicOnError)
 	fs.VarP(
-		&logger.verbosityFlag,
+		&lf.verbosityFlag,
 		"log.verbosity",
 		"v",
 		"verbosity level",
 	)
 	fs.VarP(
-		&logger.formatterFlag,
+		&lf.formatterFlag,
 		"log.format",
 		"f",
 		"log format",
@@ -51,10 +52,10 @@ func (logger *LoggerFlags) FlagSet() *pflag.FlagSet {
 	return fs
 }
 
-func (logger *LoggerFlags) Logger() log.Logger {
+func (lf *LoggerFlags) Logger() log.Logger {
 	l := logrus.New()
-	l.SetLevel(logger.Verbosity())
-	l.SetFormatter(logger.Formatter())
+	l.SetLevel(lf.Verbosity())
+	l.SetFormatter(lf.Formatter())
 	return logrus2.New(l)
 }
 

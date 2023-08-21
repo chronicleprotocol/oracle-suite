@@ -40,7 +40,7 @@ variables {
     ]
   }
 
-  # List of supported assets.
+  # List of supported asset symbols. This determines Feed behavior.
   data_symbols = [
     "BTC/USD",
     "ETH/BTC",

@@ -94,7 +94,7 @@ func NewPullPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *c
 		Args:  cobra.ExactArgs(0),
 		Short: "Pulls all prices",
 		RunE: func(_ *cobra.Command, args []string) (err error) {
-			if err := f.Load(&c); err != nil {
+			if err := f.Load(c); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

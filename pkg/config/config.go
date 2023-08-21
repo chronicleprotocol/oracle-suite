@@ -29,10 +29,12 @@ import (
 
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/include"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/variables"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/funcs"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 var hclContext = &hcl.EvalContext{
@@ -45,7 +47,7 @@ var hclContext = &hcl.EvalContext{
 		"length":  stdlib.LengthFunc,
 		"range":   stdlib.RangeFunc,
 		"replace": stdlib.ReplaceFunc,
-		"split":   stdlib.SplitFunc,
+		"join":    stdlib.JoinFunc,
 		"merge":   stdlib.MergeFunc,
 		"concat":  stdlib.ConcatFunc,
 		"try":     tryfunc.TryFunc,
@@ -57,6 +59,10 @@ var hclContext = &hcl.EvalContext{
 		"tonumber": funcs.MakeToFunc(cty.Number),
 		"toset":    funcs.MakeToFunc(cty.Set(cty.DynamicPseudoType)),
 		"tostring": funcs.MakeToFunc(cty.String),
+
+		// Even more customer functions:
+		"env":     envFunc,
+		"explode": explodeFunc,
 	},
 }
 
@@ -71,6 +77,67 @@ func getEnvVars() cty.Value {
 	}
 	return cty.ObjectVal(envVars)
 }
+
+var envFunc = function.New(&function.Spec{
+	Description: `Returns the environment variable for a given key.`,
+	Params: []function.Parameter{
+		{Name: "key", Type: cty.String},
+		{Name: "default", Type: cty.String},
+	},
+	Type: func(args []cty.Value) (ret cty.Type, err error) {
+		return cty.String, nil
+	},
+	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
+		key := args[0].AsString()
+		def := args[1].AsString()
+		suf := " # default: " + def
+		val, ok := os.LookupEnv(key)
+		if !ok {
+			val = def
+			suf = " # default"
+		}
+		if globals.ShowEnvVarsUsedInConfig {
+			s := fmt.Sprintf("%s=%s%s", key, val, suf)
+			if !sliceutil.Contains[string](globals.EnvVars, s) {
+				globals.EnvVars = append(globals.EnvVars, s)
+			}
+		}
+		return cty.StringVal(val), nil
+	},
+})
+
+var explodeFunc = function.New(&function.Spec{
+	Description: "Produces a list of one or more strings by splitting the given string at all instances of a given separator substring. Empty string becomes an empty List", //nolint:lll
+	Params: []function.Parameter{
+		{
+			Name:        "separator",
+			Description: "The substring that delimits the result strings.",
+			Type:        cty.String,
+		},
+		{
+			Name:        "str",
+			Description: "The string to split.",
+			Type:        cty.String,
+		},
+	},
+	Type: function.StaticReturnType(cty.List(cty.String)),
+	Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
+		str := args[1].AsString()
+		if len(str) == 0 {
+			return cty.ListValEmpty(cty.String), nil
+		}
+		sep := args[0].AsString()
+		elems := strings.Split(str, sep)
+		elemVals := make([]cty.Value, len(elems))
+		for i, s := range elems {
+			elemVals[i] = cty.StringVal(s)
+		}
+		if len(elemVals) == 0 {
+			return cty.ListValEmpty(cty.String), nil
+		}
+		return cty.ListVal(elemVals), nil
+	},
+})
 
 // LoadFiles loads the given paths into the given config, merging contents of
 // multiple HCL files specified by the "include" attribute using glob patterns,

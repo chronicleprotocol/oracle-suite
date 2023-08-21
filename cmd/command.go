@@ -21,6 +21,7 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
@@ -61,4 +62,8 @@ func NewRunCmd(c supervisor.Config, f *FilesFlags, l *LoggerFlags) *cobra.Comman
 			return <-s.Wait()
 		},
 	}
+}
+
+type FlagSetter interface {
+	FlagSet() *pflag.FlagSet
 }
