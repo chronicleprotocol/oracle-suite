@@ -18,73 +18,527 @@ package main
 import (
 	"io"
 	"os"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-)
+	"github.com/stretchr/testify/require"
 
-var modelList = `
-BTC/USD
-ETH/BTC
-ETH/USD
-GNO/USD
-IBTA/USD
-LINK/USD
-MATIC/USD
-MKR/ETH
-MKR/USD
-RETH/ETH
-RETH/USD
-SDAI/DAI
-STETH/ETH
-USDC/USD
-USDT/USD
-WSTETH/ETH
-WSTETH/USD
-YFI/USD
-`[1:]
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
+)
 
 func TestNewModelsCmd_List(t *testing.T) {
 	stdout := os.Stdout
+	defer func() { os.Stdout = stdout }()
+
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	os.Args = []string{"gofer", "-c", "../../config.hcl", "models"}
+	os.Args = []string{"gofer", "-c", "../../config.hcl", "-v", "warning", "models"}
 	main()
-
-	os.Stdout = stdout
 
 	_ = w.Close()
 	out, _ := io.ReadAll(r)
+
+	keys := maputil.Keys(completeDataModels)
+	sort.Strings(keys)
+	modelList := strings.Join(keys, "\n") + "\n"
 
 	assert.Equal(t, modelList, string(out))
 }
 
 func TestNewModelsCmd(t *testing.T) {
 	stdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	defer func() { os.Stdout = stdout }()
 
-	os.Args = []string{"gofer", "-c", "../../config.hcl", "models", "-o", "trace", "--no-color"}
-	main()
+	keys := maputil.Keys(completeDataModels)
+	sort.Strings(keys)
+	modelList := strings.Join(keys, "\n") + "\n"
 
-	os.Stdout = stdout
+	for _, model := range strings.Split(strings.Trim(modelList, "\n"), "\n") {
+		t.Run("Model for "+model, func(t *testing.T) {
+			r, w, _ := os.Pipe()
+			os.Stdout = w
 
-	_ = w.Close()
-	out, _ := io.ReadAll(r)
+			os.Args = []string{"gofer", "-c", "../../config.hcl", "models", "-v", "warning", "-o", "trace", "--no-color", model}
+			main()
 
-	assert.Equal(t, completeDataModels, string(out))
+			_ = w.Close()
+			out, _ := io.ReadAll(r)
+
+			s, ok := completeDataModels[model]
+			require.Truef(t, ok, "missing model for %s", model)
+			assert.Equal(t, strings.Trim(s, "\n")+"\n\n", string(out))
+		})
+	}
 }
 
-var completeDataModels = `
-Model for BTC/USD:
+var completeDataModels = map[string]string{
+	"BTCUSD": `Model for BTCUSD:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+`,
+	"ETHBTC": `Model for ETHBTC:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/BTC)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/BTC)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/BTC)
+         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/BTC)
+`,
+	"ETHUSD": `Model for ETHUSD:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+         └──indirect()
+            ├──alias(alias:ETH/USDC)
+            │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+            └──reference()
+               └──median(min_values:2)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+                  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+`,
+	"GNOUSD": `Model for GNOUSD:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──indirect()
+         │  ├──alias(alias:ETH/GNO)
+         │  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:WETH/GNO)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+         │        └──indirect()
+         │           ├──alias(alias:ETH/USDC)
+         │           │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+         │           └──reference()
+         │              └──median(min_values:2)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+         ├──indirect()
+         │  ├──alias(alias:GNO/ETH)
+         │  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:GNO/WETH)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+         │        └──indirect()
+         │           ├──alias(alias:ETH/USDC)
+         │           │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+         │           └──reference()
+         │              └──median(min_values:2)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:GNO/BTC)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         └──indirect()
+            ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:GNO/USDT)
+            └──reference()
+               └──median(min_values:3)
+                  ├──indirect()
+                  │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:BTC/USDT)
+                  │  └──reference()
+                  │     └──median(min_values:3)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+                  │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+                  ├──alias(alias:USDT/USD)
+                  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitfinex, query:UST/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:USDT/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDT/USD)
+                  └──indirect()
+                     ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:okx, query:BTC/USDT)
+                     └──reference()
+                        └──median(min_values:3)
+                           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+                           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+                           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+                           └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+`,
+	"IBTAUSD": `Model for IBTAUSD:
+───reference()
+   └──reference()
+      └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:ishares, query:IBTA/USD)
+`,
+	"LINKUSD": `Model for LINKUSD:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:LINK/BTC)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:LINK/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:LINK/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:LINK/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:LINK/USD)
+         └──indirect()
+            ├──alias(alias:LINK/ETH)
+            │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:LINK/WETH)
+            └──reference()
+               └──median(min_values:3)
+                  ├──indirect()
+                  │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+                  │  └──reference()
+                  │     └──median(min_values:3)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+                  │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+                  └──indirect()
+                     ├──alias(alias:ETH/USDC)
+                     │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+                     └──reference()
+                        └──median(min_values:2)
+                           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+                           └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+`,
+	"MATICUSD": `Model for MATICUSD:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:MATIC/USDT)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:BTC/USDT)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──alias(alias:USDT/USD)
+         │        │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitfinex, query:UST/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:USDT/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDT/USD)
+         │        └──indirect()
+         │           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:okx, query:BTC/USDT)
+         │           └──reference()
+         │              └──median(min_values:3)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:MATIC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:MATIC/USD)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:huobi, query:MATIC/USDT)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:BTC/USDT)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──alias(alias:USDT/USD)
+         │        │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitfinex, query:UST/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:USDT/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDT/USD)
+         │        └──indirect()
+         │           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:okx, query:BTC/USDT)
+         │           └──reference()
+         │              └──median(min_values:3)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:MATIC/USD)
+`,
+	"MKRUSD": `Model for MKRUSD:
+───reference()
+   └──reference()
+      └──median(min_values:3)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:MKR/BTC)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:MKR/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:MKR/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:MKR/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:MKR/USD)
+         ├──indirect()
+         │  ├──alias(alias:MKR/ETH)
+         │  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:MKR/WETH)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+         │        └──indirect()
+         │           ├──alias(alias:ETH/USDC)
+         │           │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+         │           └──reference()
+         │              └──median(min_values:2)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+         └──indirect()
+            ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:MKR/USDC)
+            └──reference()
+               └──median(min_values:2)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+                  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+`,
+	"RETHUSD": `Model for RETHUSD:
+───reference()
+   └──reference()
+      └──indirect()
+         ├──reference()
+         │  └──median(min_values:3)
+         │     ├──alias(alias:RETH/ETH)
+         │     │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:RETH/WETH)
+         │     ├──indirect()
+         │     │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:curve, query:RETH/WSTETH)
+         │     │  └──reference()
+         │     │     └──indirect()
+         │     │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:wsteth, query:WSTETH/STETH)
+         │     │        └──reference()
+         │     │           └──median(min_values:2)
+         │     │              ├──alias(alias:STETH/ETH)
+         │     │              │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:STETH/WETH)
+         │     │              └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:curve, query:STETH/ETH)
+         │     └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:rocketpool, query:RETH/ETH)
+         └──reference()
+            └──median(min_values:3)
+               ├──indirect()
+               │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+               │  └──reference()
+               │     └──median(min_values:3)
+               │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+               │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+               │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+               │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+               └──indirect()
+                  ├──alias(alias:ETH/USDC)
+                  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+                  └──reference()
+                     └──median(min_values:2)
+                        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+                        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+`,
+	"WSTETHUSD": `Model for WSTETHUSD:
+───reference()
+   └──reference()
+      └──indirect()
+         ├──reference()
+         │  └──indirect()
+         │     ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:wsteth, query:WSTETH/STETH)
+         │     └──reference()
+         │        └──median(min_values:2)
+         │           ├──alias(alias:STETH/ETH)
+         │           │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:STETH/WETH)
+         │           └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:curve, query:STETH/ETH)
+         └──reference()
+            └──median(min_values:3)
+               ├──indirect()
+               │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+               │  └──reference()
+               │     └──median(min_values:3)
+               │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+               │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+               │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+               │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+               ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+               └──indirect()
+                  ├──alias(alias:ETH/USDC)
+                  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+                  └──reference()
+                     └──median(min_values:2)
+                        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+                        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+`,
+	"YFIUSD": `Model for YFIUSD:
+───reference()
+   └──reference()
+      └──median(min_values:2)
+         ├──indirect()
+         │  ├──alias(alias:ETH/YFI)
+         │  │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:WETH/YFI)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+         │        └──indirect()
+         │           ├──alias(alias:ETH/USDC)
+         │           │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+         │           └──reference()
+         │              └──median(min_values:2)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:YFI/USDT)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:BTC/USDT)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──alias(alias:USDT/USD)
+         │        │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitfinex, query:UST/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:USDT/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDT/USD)
+         │        └──indirect()
+         │           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:okx, query:BTC/USDT)
+         │           └──reference()
+         │              └──median(min_values:3)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:YFI/USD)
+         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:YFI/USD)
+         ├──indirect()
+         │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:okx, query:YFI/USDT)
+         │  └──reference()
+         │     └──median(min_values:3)
+         │        ├──indirect()
+         │        │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:BTC/USDT)
+         │        │  └──reference()
+         │        │     └──median(min_values:3)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │        │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │        │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         │        ├──alias(alias:USDT/USD)
+         │        │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitfinex, query:UST/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:USDT/USD)
+         │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDT/USD)
+         │        └──indirect()
+         │           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:okx, query:BTC/USDT)
+         │           └──reference()
+         │              └──median(min_values:3)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+         │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+         │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+         └──indirect()
+            ├──alias(alias:YFI/ETH)
+            │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:sushiswap, query:YFI/WETH)
+            └──reference()
+               └──median(min_values:3)
+                  ├──indirect()
+                  │  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
+                  │  └──reference()
+                  │     └──median(min_values:3)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
+                  │        ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
+                  │        └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:ETH/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/USD)
+                  ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/USD)
+                  └──indirect()
+                     ├──alias(alias:ETH/USDC)
+                     │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:uniswapV3, query:WETH/USDC)
+                     └──reference()
+                        └──median(min_values:2)
+                           ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
+                           └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
+`,
+	"BTC/USD": `Model for BTC/USD:
 ───reference()
    └──median(min_values:3)
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:BTC/USD)
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
       └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
-Model for ETH/BTC:
+`,
+	"ETH/BTC": `Model for ETH/BTC:
 ───reference()
    └──median(min_values:3)
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:binance, query:ETH/BTC)
@@ -92,7 +546,8 @@ Model for ETH/BTC:
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:ETH/BTC)
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:ETH/BTC)
       └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:ETH/BTC)
-Model for ETH/USD:
+`,
+	"ETH/USD": `Model for ETH/USD:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -114,7 +569,8 @@ Model for ETH/USD:
             └──median(min_values:2)
                ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for GNO/USD:
+`,
+	"GNO/USD": `Model for GNO/USD:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -197,10 +653,12 @@ Model for GNO/USD:
                         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
                         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
                         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
-Model for IBTA/USD:
+`,
+	"IBTA/USD": `Model for IBTA/USD:
 ───reference()
    └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:ishares, query:IBTA/USD)
-Model for LINK/USD:
+`,
+	"LINK/USD": `Model for LINK/USD:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -239,7 +697,8 @@ Model for LINK/USD:
                      └──median(min_values:2)
                         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for MATIC/USD:
+`,
+	"MATIC/USD": `Model for MATIC/USD:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -293,7 +752,8 @@ Model for MATIC/USD:
       │                 ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
       │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
       └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:MATIC/USD)
-Model for MKR/ETH:
+`,
+	"MKR/ETH": `Model for MKR/ETH:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -397,7 +857,8 @@ Model for MKR/ETH:
                      └──median(min_values:2)
                         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for MKR/USD:
+`,
+	"MKR/USD": `Model for MKR/USD:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -442,7 +903,8 @@ Model for MKR/USD:
             └──median(min_values:2)
                ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for RETH/ETH:
+`,
+	"RETH/ETH": `Model for RETH/ETH:
 ───reference()
    └──median(min_values:3)
       ├──alias(alias:RETH/ETH)
@@ -458,7 +920,8 @@ Model for RETH/ETH:
       │              │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:STETH/WETH)
       │              └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:curve, query:STETH/ETH)
       └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:rocketpool, query:RETH/ETH)
-Model for RETH/USD:
+`,
+	"RETH/USD": `Model for RETH/USD:
 ───reference()
    └──indirect()
       ├──reference()
@@ -497,21 +960,25 @@ Model for RETH/USD:
                   └──median(min_values:2)
                      ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                      └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for SDAI/DAI:
+`,
+	"SDAI/DAI": `Model for SDAI/DAI:
 ───reference()
    └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:sdai, query:SDAI/DAI)
-Model for STETH/ETH:
+`,
+	"STETH/ETH": `Model for STETH/ETH:
 ───reference()
    └──median(min_values:2)
       ├──alias(alias:STETH/ETH)
       │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:STETH/WETH)
       └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:curve, query:STETH/ETH)
-Model for USDC/USD:
+`,
+	"USDC/USD": `Model for USDC/USD:
 ───reference()
    └──median(min_values:2)
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
       └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for USDT/USD:
+`,
+	"USDT/USD": `Model for USDT/USD:
 ───reference()
    └──median(min_values:3)
       ├──indirect()
@@ -534,7 +1001,8 @@ Model for USDT/USD:
                ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:coinbase, query:BTC/USD)
                ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:BTC/USD)
                └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
-Model for WSTETH/ETH:
+`,
+	"WSTETH/ETH": `Model for WSTETH/ETH:
 ───reference()
    └──indirect()
       ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:wsteth, query:WSTETH/STETH)
@@ -543,7 +1011,8 @@ Model for WSTETH/ETH:
             ├──alias(alias:STETH/ETH)
             │  └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:balancerV2, query:STETH/WETH)
             └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:curve, query:STETH/ETH)
-Model for WSTETH/USD:
+`,
+	"WSTETH/USD": `Model for WSTETH/USD:
 ───reference()
    └──indirect()
       ├──reference()
@@ -575,7 +1044,8 @@ Model for WSTETH/USD:
                   └──median(min_values:2)
                      ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                      └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-Model for YFI/USD:
+`,
+	"YFI/USD": `Model for YFI/USD:
 ───reference()
    └──median(min_values:2)
       ├──indirect()
@@ -676,5 +1146,5 @@ Model for YFI/USD:
                      └──median(min_values:2)
                         ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
                         └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:USDC/USD)
-
-`[1:]
+`,
+}

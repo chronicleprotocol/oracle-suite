@@ -29,7 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/provider/marshal"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
@@ -63,7 +62,6 @@ func NewModelsCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *c
 			if err != nil {
 				return err
 			}
-			marshal.DisableColors()
 			marshaled, err := marshalModels(models, format.String())
 			if err != nil {
 				return err
