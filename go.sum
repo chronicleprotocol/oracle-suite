@@ -87,8 +87,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0/go.mod h1:v57UDF4pDQJcEfFUCRop3
 github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0tEMk218=
 github.com/defiweb/go-anymapper v0.2.0 h1:CaZtWtsuGfMffOqFTItzndUxPQtI5HDJUVwwr/pCdGo=
 github.com/defiweb/go-anymapper v0.2.0/go.mod h1:UGHNA1/MvvVGjqf26wej0J8Y8SiXl0F+rKVriTnfYAA=
-github.com/defiweb/go-eth v0.1.2-0.20230819023016-ea4812e6a435 h1:/lkIas0BZd3o2utQR51etk4w31FC4oM0rjgKGE2ZutM=
-github.com/defiweb/go-eth v0.1.2-0.20230819023016-ea4812e6a435/go.mod h1:9PPPT7X8LUF9hRwu8RM72jaqMbTe69Lhi4zuJpRuoSo=
+github.com/defiweb/go-eth v0.2.0 h1:UtA+4dfSF3rEBzjIoYi9K7RxZqTanWkOfM1XSnKBWqI=
+github.com/defiweb/go-eth v0.2.0/go.mod h1:vKqVZTmLswrdTMt4p0iIgjsewYORqgLROpJKAtZw3h4=
 github.com/defiweb/go-rlp v0.2.0 h1:JhiNuCavWt3BWLHFhLn2rnPTLvNpyqPyvJrkSgVinRI=
 github.com/defiweb/go-rlp v0.2.0/go.mod h1:95Zf97QlsRRPxiqWyAekiDIq/w3CzF1TWBY8rUsUzHI=
 github.com/defiweb/go-sigparser v0.2.0 h1:tN0FUzjerV1WTo4J4Ztcz5H1WaRi6/Y4hGQW5kZZ274=
@@ -203,8 +203,8 @@ github.com/google/pprof v0.0.0-20221203041831-ce31453925ec h1:fR20TYVVwhK4O7r7y+
 github.com/google/pprof v0.0.0-20221203041831-ce31453925ec/go.mod h1:dDKJzRmX4S37WGHujM7tX//fmj1uioxKzKxz3lo4HJo=
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
-github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/google/uuid v1.3.1 h1:KjJaJ9iWZ3jOFZIf1Lqf4laDRCasjl0BCmnEGxkdLb4=
+github.com/google/uuid v1.3.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go v2.0.0+incompatible/go.mod h1:SFVmujtThgffbyetf+mdk2eWhX2bMyUtNHzFKcPA9HY=
 github.com/googleapis/gax-go/v2 v2.0.3/go.mod h1:LLvjysVCY1JZeum8Z6l8qUty8fiNwE08qbEPm1M08qg=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 h1:EGx4pi6eqNxGaHF6qqu48+N2wcFQ5qg5FXgOdqsJ5d8=
