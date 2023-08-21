@@ -134,13 +134,11 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		if err := f.transport.Broadcast(messages.DataPointV1MessageName, msg); err != nil {
 			f.log.
 				WithError(err).
-				WithFields(point.LogFields()).
-				WithFields(messages.Fields(*msg)).
+				WithFields(msg.LogFields()).
 				Error("Unable to broadcast data point")
 		} else {
 			f.log.
-				WithFields(point.LogFields()).
-				WithFields(messages.Fields(*msg)).
+				WithFields(msg.LogFields()).
 				Info("Data point broadcast")
 		}
 	}

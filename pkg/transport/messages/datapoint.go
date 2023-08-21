@@ -39,13 +39,6 @@ type DataPoint struct {
 	Signature types.Signature `json:"signature"`
 }
 
-func Fields(o DataPoint) log.Fields {
-	return log.Fields{
-		"model":     o.Model,
-		"signature": o.Signature.String(),
-	}
-}
-
 func (d *DataPoint) Marshall() ([]byte, error) {
 	return json.Marshal(d)
 }
@@ -88,4 +81,18 @@ func (d *DataPoint) UnmarshallBinary(data []byte) error {
 	d.Model = msg.Model
 	d.Signature = sig
 	return nil
+}
+
+func (d *DataPoint) LogFields() log.Fields {
+	if d == nil {
+		return nil
+	}
+	f := log.Fields{
+		"model":     d.Model,
+		"signature": d.Signature.String(),
+	}
+	for k, v := range d.Value.LogFields() {
+		f[k] = v
+	}
+	return f
 }
