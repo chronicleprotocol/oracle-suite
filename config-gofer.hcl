@@ -131,7 +131,8 @@ gofer {
     type = "uniswapV2"
     contracts "ethereum" {
       addresses = {
-        "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4"
+        "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4",
+        "MKR/DAI" = "0x517F9dD285e75b599234F7221227339478d0FcC8"
       }
     }
   }
@@ -483,8 +484,8 @@ gofer {
         reference { data_model = "ETH/USD" }
       }
       indirect {
-        origin "uniswapV3" { query = "MKR/USDC" }
-        reference { data_model = "USDC/USD" }
+        origin "uniswapV2" { query = "MKR/DAI" }
+        reference { data_model = "DAI/USD" }
       }
     }
   }
