@@ -16,26 +16,43 @@
 package messages
 
 import (
+	"math/big"
+
 	"github.com/defiweb/go-eth/types"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const GreetV1MessageName = "greet/v1"
 
 type Greet struct {
-	Signature types.Signature `json:"signature"`
+	Signature  types.Signature
+	PublicKeyX *big.Int
+	PublicKeyY *big.Int
 }
 
 // MarshallBinary implements the transport.Message interface.
 func (e *Greet) MarshallBinary() ([]byte, error) {
-	return e.Signature.Bytes(), nil
+	return proto.Marshal(&pb.Greet{
+		Signature: e.Signature.Bytes(),
+		PubKeyX:   e.PublicKeyX.Bytes(),
+		PubKeyY:   e.PublicKeyY.Bytes(),
+	})
 }
 
 // UnmarshallBinary implements the transport.Message interface.
-func (e *Greet) UnmarshallBinary(data []byte) error {
-	sig, err := types.SignatureFromBytes(data)
+func (e *Greet) UnmarshallBinary(data []byte) (err error) {
+	msg := pb.Greet{}
+	if err := proto.Unmarshal(data, &msg); err != nil {
+		return err
+	}
+	e.Signature, err = types.SignatureFromBytes(msg.Signature)
 	if err != nil {
 		return err
 	}
-	e.Signature = sig
+	e.PublicKeyX = new(big.Int).SetBytes(msg.PubKeyX)
+	e.PublicKeyY = new(big.Int).SetBytes(msg.PubKeyY)
 	return nil
 }

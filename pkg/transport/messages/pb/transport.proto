@@ -86,3 +86,9 @@ message MuSigOptimisticSignatureMessage {
   MuSigSignatureMessage signature = 1;
   bytes ecdsaSignature = 2;
 }
+
+message Greet {
+  bytes signature = 1;
+  bytes pubKeyX = 2;
+  bytes pubKeyY = 3;
+}

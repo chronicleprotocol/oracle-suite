@@ -702,6 +702,69 @@ func (x *MuSigOptimisticSignatureMessage) GetEcdsaSignature() []byte {
 	return nil
 }
 
+type Greet struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Signature []byte `protobuf:"bytes,1,opt,name=signature,proto3" json:"signature,omitempty"`
+	PubKeyX   []byte `protobuf:"bytes,2,opt,name=pubKeyX,proto3" json:"pubKeyX,omitempty"`
+	PubKeyY   []byte `protobuf:"bytes,3,opt,name=pubKeyY,proto3" json:"pubKeyY,omitempty"`
+}
+
+func (x *Greet) Reset() {
+	*x = Greet{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Greet) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Greet) ProtoMessage() {}
+
+func (x *Greet) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Greet.ProtoReflect.Descriptor instead.
+func (*Greet) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Greet) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *Greet) GetPubKeyX() []byte {
+	if x != nil {
+		return x.PubKeyX
+	}
+	return nil
+}
+
+func (x *Greet) GetPubKeyY() []byte {
+	if x != nil {
+		return x.PubKeyY
+	}
+	return nil
+}
+
 type Event_Signature struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -714,7 +777,7 @@ type Event_Signature struct {
 func (x *Event_Signature) Reset() {
 	*x = Event_Signature{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_transport_proto_msgTypes[9]
+		mi := &file_transport_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -727,7 +790,7 @@ func (x *Event_Signature) String() string {
 func (*Event_Signature) ProtoMessage() {}
 
 func (x *Event_Signature) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_msgTypes[9]
+	mi := &file_transport_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -769,7 +832,7 @@ type DataPointMessage_Signature struct {
 func (x *DataPointMessage_Signature) Reset() {
 	*x = DataPointMessage_Signature{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_transport_proto_msgTypes[12]
+		mi := &file_transport_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -782,7 +845,7 @@ func (x *DataPointMessage_Signature) String() string {
 func (*DataPointMessage_Signature) ProtoMessage() {}
 
 func (x *DataPointMessage_Signature) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_msgTypes[12]
+	mi := &file_transport_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -937,11 +1000,17 @@ var file_transport_proto_rawDesc = []byte{
 	0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x26, 0x0a, 0x0e, 0x65, 0x63, 0x64, 0x73,
 	0x61, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c,
 	0x52, 0x0e, 0x65, 0x63, 0x64, 0x73, 0x61, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65,
-	0x42, 0x45, 0x5a, 0x43, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63,
-	0x68, 0x72, 0x6f, 0x6e, 0x69, 0x63, 0x6c, 0x65, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c,
-	0x2f, 0x6f, 0x72, 0x61, 0x63, 0x6c, 0x65, 0x2d, 0x73, 0x75, 0x69, 0x74, 0x65, 0x2f, 0x70, 0x6b,
-	0x67, 0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2f, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x73, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x59, 0x0a, 0x05, 0x47, 0x72, 0x65, 0x65, 0x74, 0x12, 0x1c, 0x0a, 0x09, 0x73, 0x69, 0x67,
+	0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x09, 0x73, 0x69,
+	0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x75, 0x62, 0x4b, 0x65,
+	0x79, 0x58, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x07, 0x70, 0x75, 0x62, 0x4b, 0x65, 0x79,
+	0x58, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x75, 0x62, 0x4b, 0x65, 0x79, 0x59, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0c, 0x52, 0x07, 0x70, 0x75, 0x62, 0x4b, 0x65, 0x79, 0x59, 0x42, 0x45, 0x5a, 0x43, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x68, 0x72, 0x6f, 0x6e, 0x69,
+	0x63, 0x6c, 0x65, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x6f, 0x72, 0x61, 0x63,
+	0x6c, 0x65, 0x2d, 0x73, 0x75, 0x69, 0x74, 0x65, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x74, 0x72, 0x61,
+	0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x2f,
+	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -956,7 +1025,7 @@ func file_transport_proto_rawDescGZIP() []byte {
 	return file_transport_proto_rawDescData
 }
 
-var file_transport_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_transport_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_transport_proto_goTypes = []interface{}{
 	(*Price)(nil),                           // 0: Price
 	(*Event)(nil),                           // 1: Event
@@ -967,20 +1036,21 @@ var file_transport_proto_goTypes = []interface{}{
 	(*MuSigPartialSignatureMessage)(nil),    // 6: MuSigPartialSignatureMessage
 	(*MuSigSignatureMessage)(nil),           // 7: MuSigSignatureMessage
 	(*MuSigOptimisticSignatureMessage)(nil), // 8: MuSigOptimisticSignatureMessage
-	(*Event_Signature)(nil),                 // 9: Event.Signature
-	nil,                                     // 10: Event.DataEntry
-	nil,                                     // 11: Event.SignaturesEntry
-	(*DataPointMessage_Signature)(nil),      // 12: DataPointMessage.Signature
-	nil,                                     // 13: MuSigInitializeMessage.MsgMetaEntry
-	nil,                                     // 14: MuSigSignatureMessage.MsgMetaEntry
+	(*Greet)(nil),                           // 9: Greet
+	(*Event_Signature)(nil),                 // 10: Event.Signature
+	nil,                                     // 11: Event.DataEntry
+	nil,                                     // 12: Event.SignaturesEntry
+	(*DataPointMessage_Signature)(nil),      // 13: DataPointMessage.Signature
+	nil,                                     // 14: MuSigInitializeMessage.MsgMetaEntry
+	nil,                                     // 15: MuSigSignatureMessage.MsgMetaEntry
 }
 var file_transport_proto_depIdxs = []int32{
-	10, // 0: Event.data:type_name -> Event.DataEntry
-	11, // 1: Event.signatures:type_name -> Event.SignaturesEntry
-	13, // 2: MuSigInitializeMessage.msgMeta:type_name -> MuSigInitializeMessage.MsgMetaEntry
-	14, // 3: MuSigSignatureMessage.msgMeta:type_name -> MuSigSignatureMessage.MsgMetaEntry
+	11, // 0: Event.data:type_name -> Event.DataEntry
+	12, // 1: Event.signatures:type_name -> Event.SignaturesEntry
+	14, // 2: MuSigInitializeMessage.msgMeta:type_name -> MuSigInitializeMessage.MsgMetaEntry
+	15, // 3: MuSigSignatureMessage.msgMeta:type_name -> MuSigSignatureMessage.MsgMetaEntry
 	7,  // 4: MuSigOptimisticSignatureMessage.signature:type_name -> MuSigSignatureMessage
-	9,  // 5: Event.SignaturesEntry.value:type_name -> Event.Signature
+	10, // 5: Event.SignaturesEntry.value:type_name -> Event.Signature
 	6,  // [6:6] is the sub-list for method output_type
 	6,  // [6:6] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
@@ -1103,6 +1173,18 @@ func file_transport_proto_init() {
 			}
 		}
 		file_transport_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Greet); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Event_Signature); i {
 			case 0:
 				return &v.state
@@ -1114,7 +1196,7 @@ func file_transport_proto_init() {
 				return nil
 			}
 		}
-		file_transport_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_transport_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DataPointMessage_Signature); i {
 			case 0:
 				return &v.state
@@ -1133,7 +1215,7 @@ func file_transport_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_transport_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
