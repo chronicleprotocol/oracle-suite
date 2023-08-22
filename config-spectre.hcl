@@ -1,6 +1,20 @@
 variables {
-  spectre_target_network  = env("CFG_SPECTRE_TARGET_NETWORK", "ethereum-mainnet")
-  spectre_ethereum_client = explode("-", env("CFG_SPECTRE_TARGET_NETWORK", "ethereum-mainnet"))[0]
+  spectre_target_network = env("CFG_SPECTRE_TARGET_NETWORK", "")
+
+  rpc_urls = explode(",", env("CFG_RPC_URLS", "https://rpc2.sepolia.org,https://rpc-sepolia.rockx.com,https://rpc.sepolia.ethpandaops.io"))
+  chain_id = tonumber(env("CFG_CHAIN_ID", "11155111"))
+}
+
+ethereum {
+  dynamic "client" {
+    for_each = var.spectre_target_network == "" || length(var.rpc_urls) == 0 ? [] : [1]
+    labels   = ["default"]
+    content {
+      rpc_urls     = var.rpc_urls
+      chain_id     = var.chain_id
+      ethereum_key = "default"
+    }
+  }
 }
 
 spectre {
@@ -9,7 +23,7 @@ spectre {
     iterator = contract
     content {
       # Ethereum client to use for interacting with the Median contract.
-      ethereum_client = var.spectre_ethereum_client
+      ethereum_client = "default"
 
       # Address of the Median contract.
       contract_addr = contract.value.oracle

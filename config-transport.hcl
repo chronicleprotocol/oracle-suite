@@ -42,7 +42,7 @@ transport {
         for_each = var.webapi_eth_addr_book == "" ? [] : [1]
         content {
           contract_addr   = var.webapi_eth_addr_book
-          ethereum_client = "ethereum"
+          ethereum_client = "default"
         }
       }
 

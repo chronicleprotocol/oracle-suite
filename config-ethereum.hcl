@@ -1,8 +1,8 @@
 variables {
   # RPC URLs for specific blockchain clients. SOME apps are chain type aware.
-  eth_rpc_urls = explode(",", env("CFG_ETH_RPC_URLS", "https://eth.public-rpc.com"))
-  arb_rpc_urls = explode(",", env("CFG_ARB_RPC_URLS", "https://arbitrum.public-rpc.com"))
-  opt_rpc_urls = explode(",", env("CFG_OPT_RPC_URLS", "https://mainnet.optimism.io"))
+  eth_rpc_urls = explode(",", env("CFG_ETH_RPC_URLS", env("CFG_SPECTRE_TARGET_NETWORK", "") == "" ? "https://eth.public-rpc.com,https://cloudflare-eth.com,https://ethereum.publicnode.com" : ""))
+  arb_rpc_urls = explode(",", env("CFG_ARB_RPC_URLS", ""))
+  opt_rpc_urls = explode(",", env("CFG_OPT_RPC_URLS", ""))
 }
 
 ethereum {
