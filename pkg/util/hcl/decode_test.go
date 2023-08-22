@@ -525,3 +525,37 @@ func TestEmbeddedStruct(t *testing.T) {
 	assert.Equal(t, "bar", dest.Block.Attr)
 	assert.Equal(t, "baz", dest.Block.EmbAttr)
 }
+
+func TestDuplicatedBlocks(t *testing.T) {
+	type config struct {
+		Block struct{} `hcl:"block,block"`
+	}
+	var data = `
+		block {}
+		block {}
+	`
+	var dest config
+	file, diags := hclsyntax.ParseConfig([]byte(data), "test.hcl", hcl.Pos{})
+	if diags.HasErrors() {
+		assert.Fail(t, "parse config failed", diags)
+	}
+	diags = Decode(&hcl.EvalContext{}, file.Body, &dest)
+	require.True(t, diags.HasErrors(), diags.Error())
+}
+
+func TestDuplicatedOptionalBlocks(t *testing.T) {
+	type config struct {
+		Block struct{} `hcl:"block,block,optional"`
+	}
+	var data = `
+		block {}
+		block {}
+	`
+	var dest config
+	file, diags := hclsyntax.ParseConfig([]byte(data), "test.hcl", hcl.Pos{})
+	if diags.HasErrors() {
+		assert.Fail(t, "parse config failed", diags)
+	}
+	diags = Decode(&hcl.EvalContext{}, file.Body, &dest)
+	require.True(t, diags.HasErrors(), diags.Error())
+}

@@ -171,11 +171,11 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 
 	// Check for missing or extraneous blocks.
 	for _, field := range meta.Blocks {
-		if field.Ignore || field.Optional || field.Multiple {
+		if field.Ignore || field.Multiple {
 			continue
 		}
 		blocksOfType := content.Blocks.OfType(field.Name)
-		if len(blocksOfType) == 0 {
+		if !field.Optional && len(blocksOfType) == 0 {
 			return hcl.Diagnostics{{
 				Severity: hcl.DiagError,
 				Summary:  "Decode error",
