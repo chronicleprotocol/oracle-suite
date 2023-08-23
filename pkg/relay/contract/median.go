@@ -128,7 +128,6 @@ func (m *Median) Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []
 		return fmt.Errorf("median: poke failed: %v", err)
 	}
 	tx := (&types.Transaction{}).
-		SetType(types.DynamicFeeTxType).
 		SetTo(m.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, m.client, *tx); err != nil {

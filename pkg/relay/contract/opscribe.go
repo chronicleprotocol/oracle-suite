@@ -46,7 +46,6 @@ func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData Sc
 		return fmt.Errorf("opScribe: opPoke failed: %v", err)
 	}
 	tx := (&types.Transaction{}).
-		SetType(types.DynamicFeeTxType).
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {

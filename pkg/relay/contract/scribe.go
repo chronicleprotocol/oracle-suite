@@ -131,7 +131,6 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 		return fmt.Errorf("scribe: poke failed: %v", err)
 	}
 	tx := (&types.Transaction{}).
-		SetType(types.DynamicFeeTxType).
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
