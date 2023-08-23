@@ -1,13 +1,11 @@
 module github.com/chronicleprotocol/oracle-suite
 
-go 1.21
-
-toolchain go1.21.0
+go 1.20
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/defiweb/go-anymapper v0.2.0
-	github.com/defiweb/go-eth v0.2.1-0.20230823133759-f04fd9a3812c
+	github.com/defiweb/go-anymapper v0.3.0
+	github.com/defiweb/go-eth v0.3.1-0.20230823150114-4f119e44e84b
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/hashicorp/hcl/v2 v2.16.2
@@ -46,8 +44,8 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
-	github.com/defiweb/go-rlp v0.2.0 // indirect
-	github.com/defiweb/go-sigparser v0.2.0 // indirect
+	github.com/defiweb/go-rlp v0.3.0 // indirect
+	github.com/defiweb/go-sigparser v0.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/elastic/gosigar v0.14.2 // indirect
