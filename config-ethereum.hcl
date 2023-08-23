@@ -40,27 +40,34 @@ ethereum {
     for_each = length(var.eth_rpc_urls) == 0 ? [1] : [1] # gofer always needs an ethereum client
     labels   = ["ethereum"]
     content {
-      rpc_urls     = var.eth_rpc_urls
-      chain_id     = tonumber(env("CFG_ETH_CHAIN_ID", "1"))
-      ethereum_key = "default"
+      rpc_urls                    = var.eth_rpc_urls
+      chain_id                    = tonumber(env("CFG_ETH_CHAIN_ID", "1"))
+      ethereum_key                = "default"
+      tx_type                     = "eip1559"
+      gas_fee_multiplier          = 2.0
+      gas_priority_fee_multiplier = 1.5
     }
   }
   dynamic "client" {
     for_each = length(var.arb_rpc_urls) == 0 ? [] : [1]
     labels   = ["arbitrum"]
     content {
-      rpc_urls     = var.arb_rpc_urls
-      chain_id     = tonumber(env("CFG_ARB_CHAIN_ID", "42161"))
-      ethereum_key = "default"
+      rpc_urls           = var.arb_rpc_urls
+      chain_id           = tonumber(env("CFG_ARB_CHAIN_ID", "42161"))
+      ethereum_key       = "default"
+      tx_type            = "legacy"
+      gas_fee_multiplier = 1.25
     }
   }
   dynamic "client" {
     for_each = length(var.opt_rpc_urls) == 0 ? [] : [1]
     labels   = ["optimism"]
     content {
-      rpc_urls     = var.opt_rpc_urls
-      chain_id     = tonumber(env("CFG_OPT_CHAIN_ID", "10"))
-      ethereum_key = "default"
+      rpc_urls           = var.opt_rpc_urls
+      chain_id           = tonumber(env("CFG_OPT_CHAIN_ID", "10"))
+      ethereum_key       = "default"
+      tx_type            = "legacy"
+      gas_fee_multiplier = 1.25
     }
   }
 }
