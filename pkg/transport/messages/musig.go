@@ -180,16 +180,16 @@ func (m *MuSigPartialSignature) UnmarshallBinary(bytes []byte) error {
 
 type MuSigSignature struct {
 	// Unique SessionID of the MuSig session.
-	SessionID types.Hash `json:"session_id"`
+	SessionID types.Hash `json:"sessionID"`
 
 	// ComputedAt is the time at which the signature was computed.
-	ComputedAt time.Time `json:"computed_at"`
+	ComputedAt time.Time `json:"computedAt"`
 
 	// Type of the data that was signed.
-	MsgType string `json:"msg_type"`
+	MsgType string `json:"msgType"`
 
 	// Data that was signed.
-	MsgBody types.Hash `json:"msg_body"`
+	MsgBody types.Hash `json:"msgBody"`
 
 	// Meta is a map of metadata associated with the message.
 	MsgMeta map[string][]byte
@@ -202,7 +202,7 @@ type MuSigSignature struct {
 
 	// SchnorrSignature is a MuSig Schnorr signature calculated from the partial
 	// signatures of all participants.
-	SchnorrSignature *big.Int `json:"schnorr_signature"`
+	SchnorrSignature *big.Int `json:"schnorrSignature"`
 }
 
 func (m *MuSigSignature) toProtobuf() *pb.MuSigSignatureMessage {

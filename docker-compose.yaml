@@ -36,8 +36,8 @@ services:
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
       CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS}
-      CFG_ETH_CHAIN_ID: ${ETH_CHID}
+      CFG_ETH_RPC_URLS: ${RPCS}
+      CFG_ETH_CHAIN_ID: ${CHID}
   ghost2:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
@@ -53,8 +53,8 @@ services:
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
       CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS}
-      CFG_ETH_CHAIN_ID: ${ETH_CHID}
+      CFG_ETH_RPC_URLS: ${RPCS}
+      CFG_ETH_CHAIN_ID: ${CHID}
   ghost3:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
@@ -70,8 +70,8 @@ services:
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
       CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS}
-      CFG_ETH_CHAIN_ID: ${ETH_CHID}
+      CFG_ETH_RPC_URLS: ${RPCS}
+      CFG_ETH_CHAIN_ID: ${CHID}
   ghost4:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
@@ -87,8 +87,8 @@ services:
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
       CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS}
-      CFG_ETH_CHAIN_ID: ${ETH_CHID}
+      CFG_ETH_RPC_URLS: ${RPCS}
+      CFG_ETH_CHAIN_ID: ${CHID}
 
   spectre1:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0

@@ -78,9 +78,17 @@ func New(cfg Config) (*Feed, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
+
+	ll := cfg.Logger.WithField("tag", LoggerTag)
+	for _, model := range cfg.DataModels {
+		ll.
+			WithField("model", model).
+			Info("Data model configured")
+	}
+
 	g := &Feed{
 		waitCh:       make(chan error),
-		log:          cfg.Logger.WithField("tag", LoggerTag),
+		log:          ll,
 		dataProvider: cfg.DataProvider,
 		dataModels:   cfg.DataModels,
 		signers:      cfg.Signers,
