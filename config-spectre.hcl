@@ -1,10 +1,14 @@
 variables {
   spectre_target_network = env("CFG_SPECTRE_TARGET_NETWORK", "")
+  spectre_pairs          = explode(",", env("CFG_SPECTRE_PAIRS", ""))
 }
 
 spectre {
   dynamic "median" {
-    for_each = try(var.median_contracts[var.spectre_target_network], [])
+    for_each = {
+      for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
+      var.median_contracts[var.spectre_target_network][p]
+    }
     iterator = contract
     content {
       # Ethereum client to use for interacting with the Median contract.

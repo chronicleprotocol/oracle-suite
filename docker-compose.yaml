@@ -94,55 +94,59 @@ services:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
     environment:
-      CFG_SPECTRE_TARGET_NETWORK: "arbitrum-goerli"
       CFG_ETH_FROM: ${ETH_FROM_E}
       CFG_ETH_KEYS: ${ETH_KEYS_E}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
-      CFG_WEBAPI_ENABLE: 0
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_PAIRS: "ETH/USD"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8022"
-      CFG_RPC_URLS: ${ARB_RPCS}
-      CFG_CHAIN_ID: ${ARB_CHID}
+      CFG_WEBAPI_ENABLE: 0
+      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
+      CFG_RPC_URLS: ${ETH_RPCS}
+      CFG_CHAIN_ID: ${ETH_CHID}
   spectre2:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
     environment:
-      CFG_SPECTRE_TARGET_NETWORK: "optimism-goerli"
       CFG_ETH_FROM: ${ETH_FROM_F}
       CFG_ETH_KEYS: ${ETH_KEYS_F}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
-      CFG_WEBAPI_ENABLE: 0
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_PAIRS: "ETH/USD"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8023"
+      CFG_WEBAPI_ENABLE: 0
+      CFG_SPECTRE_TARGET_NETWORK: "optimism-goerli"
       CFG_RPC_URLS: ${OPT_RPCS}
       CFG_CHAIN_ID: ${OPT_CHID}
   spectre3:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
     environment:
-      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
       CFG_ETH_FROM: ${ETH_FROM_G}
       CFG_ETH_KEYS: ${ETH_KEYS_G}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
-      CFG_WEBAPI_ENABLE: 0
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_PAIRS: "ETH/USD"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8024"
-      CFG_RPC_URLS: ${ETH_RPCS}
-      CFG_CHAIN_ID: ${ETH_CHID}
+      CFG_WEBAPI_ENABLE: 0
+      CFG_SPECTRE_TARGET_NETWORK: "arbitrum-goerli"
+      CFG_RPC_URLS: ${ARB_RPCS}
+      CFG_CHAIN_ID: ${ARB_CHID}
   spectre4:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
     environment:
-      CFG_SPECTRE_TARGET_NETWORK: "sep"
       CFG_ETH_FROM: ${ETH_FROM_H}
       CFG_ETH_KEYS: ${ETH_KEYS_H}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
-      CFG_WEBAPI_ENABLE: 0
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_PAIRS: "ETH/USD"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8021"
+      CFG_WEBAPI_ENABLE: 0
+      CFG_SPECTRE_TARGET_NETWORK: "sep"
       CFG_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}

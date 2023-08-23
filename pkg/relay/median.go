@@ -17,7 +17,6 @@ package relay
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -187,7 +186,7 @@ func (w *medianWorker) getDataPoints(ctx context.Context, after time.Time, quoru
 		}
 	}
 	if len(dataPoints) != quorum {
-		return nil, nil, errors.New("unable to obtain enough data points")
+		return nil, nil, fmt.Errorf("unable to obtain enough data points, want %d, got %d", quorum, len(dataPoints))
 	}
 
 	return dataPoints, signatures, nil
