@@ -18,21 +18,6 @@ message Price {
   string version = 9;
 }
 
-message Event {
-  message Signature {
-    bytes signer = 1;
-    bytes signature = 2;
-  }
-
-  string type = 1;
-  bytes id = 2;
-  bytes index = 3;
-  int64 eventTimestamp = 4;
-  int64 messageTimestamp = 5;
-  map<string, bytes> data = 6;
-  map<string, Signature> signatures = 7;
-}
-
 message DataPointMessage {
   message Signature {
     bytes signer = 1;

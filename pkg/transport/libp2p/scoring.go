@@ -83,36 +83,6 @@ func calculatePriceTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error
 	}).calculate()
 }
 
-func calculateEventTopicScoreParams(cfg Config) (*pubsub.TopicScoreParams, error) {
-	// NOTE: The scoring parameters for events are just guesses at the moment, we will have to update them when we
-	// know how many events we can expect.
-
-	var maxPeers = float64(pubsub.GossipSubDhi)
-	// Minimum and maximum expected number of feeds connected to the network:
-	var minFeedCount = float64(len(cfg.AuthorAllowlist)) / 2 // assume that 50% of feeds are offline
-	var maxFeedCount = float64(len(cfg.AuthorAllowlist))
-	// Minimum and maximum expected number of messages to be received from a single peer in a mesh:
-	var minMsgsPerSecond = minFeedCount * minEventsPerSecond / maxPeers
-	var maxMsgsPerSecond = maxFeedCount * maxEventsPerSecond
-
-	//nolint:gomnd
-	return (&scoreParams{
-		p1Score:              500,
-		p2Score:              500,
-		p3Score:              -1000,
-		p3bScore:             -1000,
-		p4Score:              -1000,
-		p1Length:             120 * time.Minute,
-		p2Length:             120 * time.Minute,
-		p3Length:             120 * time.Minute,
-		p3bLength:            15 * time.Minute,
-		p4Length:             time.Hour,
-		minMessagesPerSecond: minMsgsPerSecond,
-		maxMessagesPerSecond: maxMsgsPerSecond,
-		maxInvalidMessages:   maxInvalidMsgsPerHour,
-	}).calculate()
-}
-
 // scoreParams helps to calculate score parameters for libp2p's PubSub.
 type scoreParams struct {
 	p1Score              float64

@@ -40,7 +40,6 @@ func TestMessageMap_Keys(t *testing.T) {
 			mm:   AllMessagesMap,
 			want: []string{
 				"data_point/v1",
-				"event/v1",
 				"greet/v1",
 				"musig_commitment/v1",
 				"musig_initialize/v1",
@@ -82,7 +81,6 @@ func TestMessageMap_SelectByTopic(t *testing.T) {
 			mm:   AllMessagesMap,
 			topics: []string{
 				"data_point/v1",
-				"event/v1",
 				"greet/v1",
 				"musig_commitment/v1",
 				"musig_initialize/v1",
