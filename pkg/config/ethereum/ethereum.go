@@ -39,9 +39,10 @@ import (
 const LoggerTag = "CONFIG_ETHEREUM"
 
 const (
-	splitterVirtualHost    = "rpc-splitter"
-	defaultTotalTimeout    = 10
-	defaultGracefulTimeout = 1
+	splitterVirtualHost       = "rpc-splitter"
+	defaultTotalTimeout       = 10
+	defaultGracefulTimeout    = 1
+	defaultGasLimitMultiplier = 1.25
 )
 
 type (
@@ -370,7 +371,7 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 	opts := []rpc.ClientOptions{
 		rpc.WithTransport(rpcTransport),
 		rpc.WithTXModifiers(
-			txmodifier.NewGasLimitEstimator(1.25, 0, 0),
+			txmodifier.NewGasLimitEstimator(defaultGasLimitMultiplier, 0, 0),
 			txmodifier.NewNonceProvider(false),
 		),
 	}
