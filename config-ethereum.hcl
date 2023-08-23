@@ -3,7 +3,7 @@ variables {
   chain_id = tonumber(env("CFG_CHAIN_ID", "0"))
 
   # RPC URLs for specific blockchain clients. SOME apps are chain type aware.
-  eth_rpc_urls = explode(",", env("CFG_ETH_RPC_URLS", ""))
+  eth_rpc_urls = explode(",", env("CFG_ETH_RPC_URLS", "https://eth.public-rpc.com"))
   arb_rpc_urls = explode(",", env("CFG_ARB_RPC_URLS", ""))
   opt_rpc_urls = explode(",", env("CFG_OPT_RPC_URLS", ""))
 }
@@ -37,7 +37,7 @@ ethereum {
     }
   }
   dynamic "client" {
-    for_each = length(var.eth_rpc_urls) == 0 ? [] : [1]
+    for_each = length(var.eth_rpc_urls) == 0 ? [1] : [1] # gofer always needs an ethereum client
     labels   = ["ethereum"]
     content {
       rpc_urls     = var.eth_rpc_urls
