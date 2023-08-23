@@ -8,6 +8,7 @@ spectre {
     for_each = {
       for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
       var.median_contracts[var.spectre_target_network][p]
+      if contains(try(keys(var.median_contracts[var.spectre_target_network]), []), p)
     }
     iterator = contract
     content {
@@ -34,8 +35,43 @@ spectre {
     }
   }
 
+  dynamic "scribe" {
+    for_each = {
+      for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
+      var.scribe_contracts[var.spectre_target_network][p]
+      if contains(try(keys(var.scribe_contracts[var.spectre_target_network]), []), p)
+    }
+    iterator = contract
+    content {
+      # Ethereum client to use for interacting with the Median contract.
+      ethereum_client = "default"
+
+      # Address of the Median contract.
+      contract_addr = contract.value.address
+
+      # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
+      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+
+      # Name of the pair to fetch the price for.
+      data_model = contract.key
+
+      # Spread in percent points above which the price is considered stale.
+      spread = contract.value.spread * 2
+
+      # Time in seconds after which the price is considered stale.
+      expiration = contract.value.expiration * 2
+
+      # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
+      interval = contract.value.interval * 2
+    }
+  }
+
   dynamic "optimistic_scribe" {
-    for_each = try(var.scribe_contracts[var.spectre_target_network], [])
+    for_each = {
+      for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
+      var.scribe_contracts[var.spectre_target_network][p]
+      if contains(try(keys(var.scribe_contracts[var.spectre_target_network]), []), p)
+    }
     iterator = contract
     content {
       # Ethereum client to use for interacting with the Median contract.

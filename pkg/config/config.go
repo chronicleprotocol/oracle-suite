@@ -43,14 +43,16 @@ var hclContext = &hcl.EvalContext{
 	},
 	Functions: map[string]function.Function{
 		// Standard library functions:
-		"can":     tryfunc.CanFunc,
-		"length":  stdlib.LengthFunc,
-		"range":   stdlib.RangeFunc,
-		"replace": stdlib.ReplaceFunc,
-		"join":    stdlib.JoinFunc,
-		"merge":   stdlib.MergeFunc,
-		"concat":  stdlib.ConcatFunc,
-		"try":     tryfunc.TryFunc,
+		"can":      tryfunc.CanFunc,
+		"length":   stdlib.LengthFunc,
+		"range":    stdlib.RangeFunc,
+		"replace":  stdlib.ReplaceFunc,
+		"join":     stdlib.JoinFunc,
+		"merge":    stdlib.MergeFunc,
+		"concat":   stdlib.ConcatFunc,
+		"try":      tryfunc.TryFunc,
+		"contains": stdlib.ContainsFunc,
+		"keys":     stdlib.KeysFunc,
 
 		// Custom functions:
 		"tobool":   funcs.MakeToFunc(cty.Bool),
