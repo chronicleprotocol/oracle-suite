@@ -22,10 +22,16 @@ client "client1" {
 
 # With optionals
 client "client2" {
-  rpc_urls          = ["https://rpc2.example"]
-  timeout           = 10
-  graceful_timeout  = 5
-  max_blocks_behind = 100
-  ethereum_key      = "key2"
-  chain_id          = 1
+  rpc_urls                    = ["https://rpc2.example"]
+  timeout                     = 10
+  graceful_timeout            = 5
+  max_blocks_behind           = 100
+  ethereum_key                = "key2"
+  chain_id                    = 1
+  tx_type                     = "eip1559"
+  gas_fee_multiplier          = 1.5
+  gas_priority_fee_multiplier = 1.25
+  max_gas_fee                 = 1000000000000
+  max_gas_priority_fee        = 1000000000000
+  max_gas_limit               = 10000000
 }

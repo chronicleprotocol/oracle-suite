@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,12 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, uint64(100), cfg.Clients[1].MaxBlocksBehind)
 				assert.Equal(t, "key2", cfg.Clients[1].EthereumKey)
 				assert.Equal(t, uint64(1), cfg.Clients[1].ChainID)
+				assert.Equal(t, "eip1559", cfg.Clients[1].TransactionType)
+				assert.Equal(t, float64(1.5), cfg.Clients[1].GasFeeMultiplier)
+				assert.Equal(t, float64(1.25), cfg.Clients[1].GasPriorityFeeMultiplier)
+				assert.Equal(t, big.NewInt(1000000000000), cfg.Clients[1].MaxGasFee)
+				assert.Equal(t, big.NewInt(1000000000000), cfg.Clients[1].MaxGasPriorityFee)
+				assert.Equal(t, big.NewInt(10000000), cfg.Clients[1].MaxGasLimit)
 			},
 		},
 		{
