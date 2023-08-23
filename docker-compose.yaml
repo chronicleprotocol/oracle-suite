@@ -6,10 +6,10 @@ services:
     network_mode: "host"
     command: [ "bootstrap" ]
     environment:
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: ""
       CFG_LIBP2P_PK_SEED: "FFDCBA9876543210FEDCBA98765432100123456789ABCDEF0123456789ABCDEF"
-
-      CFG_WEBAPI_ENABLE: 0
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: ""
+      # Consider using this to connect bootstrap nodes to each other
+      #CFG_LIBP2P_DIRECT_PEERS_ADDRS: "/ip4/.../"
 
   spire:
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0

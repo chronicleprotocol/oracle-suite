@@ -32,6 +32,9 @@ func TestNewModelsCmd_List(t *testing.T) {
 	stdout := os.Stdout
 	defer func() { os.Stdout = stdout }()
 
+	err := os.Setenv("ETH_RPC_URL", "http://localhost:8545")
+	require.NoErrorf(t, err, "failed to set ETH_RPC_URL")
+
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
@@ -51,6 +54,9 @@ func TestNewModelsCmd_List(t *testing.T) {
 func TestNewModelsCmd(t *testing.T) {
 	stdout := os.Stdout
 	defer func() { os.Stdout = stdout }()
+
+	err := os.Setenv("ETH_RPC_URL", "http://localhost:8545")
+	require.NoErrorf(t, err, "failed to set ETH_RPC_URL")
 
 	keys := maputil.Keys(completeDataModels)
 	sort.Strings(keys)
