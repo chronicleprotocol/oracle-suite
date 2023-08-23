@@ -32,6 +32,7 @@ import (
 )
 
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	var raw bool
 	cc := &cobra.Command{
 		Use:   "stream [TOPIC...]",
 		Args:  cobra.MinimumNArgs(0),
@@ -79,6 +80,14 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 				case <-ctx.Done():
 					return nil
 				case msg := <-sink.Chan():
+					if raw {
+						jsonMsg, err := json.Marshal(msg.Message)
+						if err != nil {
+							return err
+						}
+						fmt.Println(string(jsonMsg))
+						continue
+					}
 					m := mm{
 						Meta: msg.Meta,
 						Data: msg.Message,
@@ -95,6 +104,12 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 	cc.AddCommand(
 		NewStreamPricesCmd(c, f, l),
 		NewTopicsCmd(),
+	)
+	cc.Flags().BoolVar(
+		&raw,
+		"raw",
+		false,
+		"show only data without meta",
 	)
 	return cc
 }
