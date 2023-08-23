@@ -18,7 +18,6 @@ package contract
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
@@ -37,9 +36,6 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
-const ScribeOpPokeGasLimit = 200000
-const ScribeOpPokeMaxFeePerGas = 2000 * 1e9
-
 func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) error {
 	calldata, err := abiOpScribe["opPoke"].EncodeArgs(
 		toPokeDataStruct(pokeData),
@@ -49,22 +45,10 @@ func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData Sc
 	if err != nil {
 		return fmt.Errorf("opScribe: opPoke failed: %v", err)
 	}
-	nonce, err := s.client.GetTransactionCount(
-		ctx,
-		s.address,
-		types.LatestBlockNumber,
-	)
-	if err != nil {
-		return fmt.Errorf("scribe: poke failed: %v", err)
-	}
 	tx := (&types.Transaction{}).
 		SetType(types.DynamicFeeTxType).
 		SetTo(s.address).
-		SetInput(calldata).
-		SetNonce(nonce).
-		SetGasLimit(ScribeOpPokeGasLimit).
-		SetMaxPriorityFeePerGas(big.NewInt(1)).
-		SetMaxFeePerGas(big.NewInt(ScribeOpPokeMaxFeePerGas)) // 2000 Gwei TODO: use gas estimator
+		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}

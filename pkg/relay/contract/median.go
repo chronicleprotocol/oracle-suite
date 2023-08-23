@@ -30,8 +30,6 @@ import (
 )
 
 const MedianPricePrecision = 18
-const MedianPokeGesLimit = 200000
-const MedianPokeMaxFeePerGas = 2000 * 1e9
 
 type Median struct {
 	client  rpc.RPC
@@ -129,22 +127,10 @@ func (m *Median) Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []
 	if err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}
-	nonce, err := m.client.GetTransactionCount(
-		ctx,
-		m.address,
-		types.LatestBlockNumber,
-	)
-	if err != nil {
-		return fmt.Errorf("median: poke failed: %v", err)
-	}
 	tx := (&types.Transaction{}).
 		SetType(types.DynamicFeeTxType).
 		SetTo(m.address).
-		SetInput(calldata).
-		SetNonce(nonce).
-		SetGasLimit(MedianPokeGesLimit).
-		SetMaxPriorityFeePerGas(big.NewInt(1)).
-		SetMaxFeePerGas(big.NewInt(MedianPokeMaxFeePerGas))
+		SetInput(calldata)
 	if err := simulateTransaction(ctx, m.client, *tx); err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}

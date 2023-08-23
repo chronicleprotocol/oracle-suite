@@ -30,8 +30,6 @@ import (
 )
 
 const ScribePricePrecision = 18
-const ScribePokeGasLimit = 200000
-const ScribePokeMaxFeePerGas = 2000 * 1e9
 
 type Scribe struct {
 	client  rpc.RPC
@@ -132,22 +130,10 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 	if err != nil {
 		return fmt.Errorf("scribe: poke failed: %v", err)
 	}
-	nonce, err := s.client.GetTransactionCount(
-		ctx,
-		s.address,
-		types.LatestBlockNumber,
-	)
-	if err != nil {
-		return fmt.Errorf("scribe: poke failed: %v", err)
-	}
 	tx := (&types.Transaction{}).
 		SetType(types.DynamicFeeTxType).
 		SetTo(s.address).
-		SetInput(calldata).
-		SetNonce(nonce).
-		SetGasLimit(ScribePokeGasLimit).
-		SetMaxPriorityFeePerGas(big.NewInt(1)).
-		SetMaxFeePerGas(big.NewInt(ScribePokeMaxFeePerGas)) // 2000 Gwei TODO: use gas estimator
+		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}
