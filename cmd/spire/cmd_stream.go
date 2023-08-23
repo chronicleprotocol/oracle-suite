@@ -100,7 +100,6 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 }
 
 func NewTopicsCmd() *cobra.Command {
-	var legacy bool
 	cc := &cobra.Command{
 		Use:   "topics",
 		Args:  cobra.ExactArgs(0),
@@ -112,12 +111,6 @@ func NewTopicsCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cc.Flags().BoolVar(
-		&legacy,
-		"legacy",
-		false,
-		"legacy mode",
-	)
 	return cc
 }
 
