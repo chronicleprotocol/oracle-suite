@@ -6,15 +6,18 @@ services:
     network_mode: "host"
     command: [ "bootstrap" ]
     environment:
+      CFG_WEBAPI_ENABLE: 0
       CFG_LIBP2P_BOOTSTRAP_ADDRS: ""
       CFG_LIBP2P_PK_SEED: "FFDCBA9876543210FEDCBA98765432100123456789ABCDEF0123456789ABCDEF"
+      CFG_ETH_RPC_URLS: ""
 
   spire:
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
     network_mode: "host"
-    command: [ "stream" ]
+    command: [ "stream", "greet/v1", "musig_signature/v1", "musig_optimistic_signature/v1" ]
     environment:
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_WEBAPI_ENABLE: 0
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8090"
 
@@ -26,13 +29,15 @@ services:
       CFG_ETH_FROM: ${ETH_FROM_A}
       CFG_ETH_KEYS: ${ETH_KEYS_A}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_WEBAPI_ENABLE: 0
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8011"
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
-      CFG_GHOST_PAIRS: "BTC/USD"
+      CFG_GHOST_PAIRS: "ETH/USD"
+      CFG_ETH_RPC_URLS: ${ETH_RPCS}
+      CFG_ETH_CHAIN_ID: ${ETH_CHID}
   ghost2:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
@@ -41,13 +46,15 @@ services:
       CFG_ETH_FROM: ${ETH_FROM_B}
       CFG_ETH_KEYS: ${ETH_KEYS_B}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_WEBAPI_ENABLE: 0
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8012"
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
-      CFG_GHOST_PAIRS: "BTC/USD"
+      CFG_GHOST_PAIRS: "ETH/USD"
+      CFG_ETH_RPC_URLS: ${ETH_RPCS}
+      CFG_ETH_CHAIN_ID: ${ETH_CHID}
   ghost3:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
@@ -56,33 +63,34 @@ services:
       CFG_ETH_FROM: ${ETH_FROM_C}
       CFG_ETH_KEYS: ${ETH_KEYS_C}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_WEBAPI_ENABLE: 0
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8013"
       CFG_GHOST_INTERVAL: 10
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
-      CFG_GHOST_PAIRS: "BTC/USD"
-
-  spectre1:
-    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
+      CFG_GHOST_PAIRS: "ETH/USD"
+      CFG_ETH_RPC_URLS: ${ETH_RPCS}
+      CFG_ETH_CHAIN_ID: ${ETH_CHID}
+  ghost4:
+    image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
+    command: [ "run" ]
     environment:
-      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
       CFG_ETH_FROM: ${ETH_FROM_D}
       CFG_ETH_KEYS: ${ETH_KEYS_D}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_WEBAPI_ENABLE: 0
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8031"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls, set to empty string to disable
-      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
-      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls, set to empty string to disable
-      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
-      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls, set to empty string to disable
-      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
-  spectre2:
+      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8014"
+      CFG_GHOST_INTERVAL: 10
+      CFG_WEBAPI_ETH_ADDR_BOOK: "0xB18C42Ec40A258eD7970CCa8a532A90bd2DBacaB"
+      CFG_GHOST_PAIRS: "ETH/USD"
+      CFG_ETH_RPC_URLS: ${ETH_RPCS}
+      CFG_ETH_CHAIN_ID: ${ETH_CHID}
+
+  spectre1:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
     environment:
@@ -90,17 +98,13 @@ services:
       CFG_ETH_FROM: ${ETH_FROM_E}
       CFG_ETH_KEYS: ${ETH_KEYS_E}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_WEBAPI_ENABLE: 0
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8032"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls, set to empty string to disable
-      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
-      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls, set to empty string to disable
-      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
-      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls, set to empty string to disable
-      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
-  spectre3:
+      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8022"
+      CFG_RPC_URLS: ${ARB_RPCS}
+      CFG_CHAIN_ID: ${ARB_CHID}
+  spectre2:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
     environment:
@@ -108,13 +112,37 @@ services:
       CFG_ETH_FROM: ${ETH_FROM_F}
       CFG_ETH_KEYS: ${ETH_KEYS_F}
       CFG_ETH_PASS: ""
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C}"
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
       CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
       CFG_WEBAPI_ENABLE: 0
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8033"
-      CFG_ETH_RPC_URLS: ${ETH_RPCS} # comma separated list of ethereum rpc urls, set to empty string to disable
-      CFG_ETH_CHAIN_ID: ${ETH_CHID} # ethereum chain id
-      CFG_ARB_RPC_URLS: ${ARB_RPCS} # comma separated list of arbitrum rpc urls, set to empty string to disable
-      CFG_ARB_CHAIN_ID: ${ARB_CHID} # arbitrum chain id
-      CFG_OPT_RPC_URLS: ${OPT_RPCS} # comma separated list of optimism rpc urls, set to empty string to disable
-      CFG_OPT_CHAIN_ID: ${OPT_CHID} # optimism chain id
+      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8023"
+      CFG_RPC_URLS: ${OPT_RPCS}
+      CFG_CHAIN_ID: ${OPT_CHID}
+  spectre3:
+    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
+    network_mode: "host"
+    environment:
+      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
+      CFG_ETH_FROM: ${ETH_FROM_G}
+      CFG_ETH_KEYS: ${ETH_KEYS_G}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_WEBAPI_ENABLE: 0
+      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8024"
+      CFG_RPC_URLS: ${ETH_RPCS}
+      CFG_CHAIN_ID: ${ETH_CHID}
+  spectre4:
+    image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
+    network_mode: "host"
+    environment:
+      CFG_SPECTRE_TARGET_NETWORK: "sep"
+      CFG_ETH_FROM: ${ETH_FROM_H}
+      CFG_ETH_KEYS: ${ETH_KEYS_H}
+      CFG_ETH_PASS: ""
+      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_WEBAPI_ENABLE: 0
+      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8021"
+      CFG_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_ID: ${SEP_CHID}

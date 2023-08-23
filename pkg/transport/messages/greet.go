@@ -28,9 +28,9 @@ import (
 const GreetV1MessageName = "greet/v1"
 
 type Greet struct {
-	Signature  types.Signature
-	PublicKeyX *big.Int
-	PublicKeyY *big.Int
+	Signature  types.Signature `json:"signature"`
+	PublicKeyX *big.Int        `json:"publicKeyX"`
+	PublicKeyY *big.Int        `json:"publicKeyY"`
 }
 
 // MarshallBinary implements the transport.Message interface.

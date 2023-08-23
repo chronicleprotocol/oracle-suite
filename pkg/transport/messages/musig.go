@@ -38,22 +38,22 @@ const (
 
 type MuSigInitialize struct {
 	// SessionID is the unique ID of the MuSig session.
-	SessionID types.Hash
+	SessionID types.Hash `json:"session_id"`
 
 	// CreatedAt is the time when the session was started.
-	StartedAt time.Time
+	StartedAt time.Time `json:"started_at"`
 
 	// Type of the message that will be signed.
-	MsgType string
+	MsgType string `json:"msg_type"`
 
 	// Message body that will be signed.
-	MsgBody types.Hash
+	MsgBody types.Hash `json:"msg_body"`
 
 	// Meta is a map of metadata that may be necessary to verify the message.
-	MsgMeta map[string][]byte
+	MsgMeta map[string][]byte `json:"msg_meta"`
 
 	// Signers is a list of signers that will participate in the MuSig session.
-	Signers []types.Address
+	Signers []types.Address `json:"signers"`
 }
 
 func (m *MuSigInitialize) MarshallBinary() ([]byte, error) {
@@ -96,10 +96,10 @@ func (m *MuSigInitialize) UnmarshallBinary(bytes []byte) (err error) {
 
 type MuSigTerminate struct {
 	// Unique SessionID of the MuSig session.
-	SessionID types.Hash
+	SessionID types.Hash `json:"session_id"`
 
 	// Reason for terminating the MuSig session.
-	Reason string
+	Reason string `json:"reason"`
 }
 
 func (m *MuSigTerminate) MarshallBinary() ([]byte, error) {
@@ -121,13 +121,13 @@ func (m *MuSigTerminate) UnmarshallBinary(bytes []byte) error {
 
 type MuSigCommitment struct {
 	// Unique SessionID of the MuSig session.
-	SessionID types.Hash
+	SessionID types.Hash `json:"session_id"`
 
-	CommitmentKeyX *big.Int
-	CommitmentKeyY *big.Int
+	CommitmentKeyX *big.Int `json:"commitment_key_x"`
+	CommitmentKeyY *big.Int `json:"commitment_key_y"`
 
-	PublicKeyX *big.Int
-	PublicKeyY *big.Int
+	PublicKeyX *big.Int `json:"public_key_x"`
+	PublicKeyY *big.Int `json:"public_key_y"`
 }
 
 func (m *MuSigCommitment) MarshallBinary() ([]byte, error) {
@@ -155,10 +155,10 @@ func (m *MuSigCommitment) UnmarshallBinary(bytes []byte) error {
 
 type MuSigPartialSignature struct {
 	// Unique SessionID of the MuSig session.
-	SessionID types.Hash
+	SessionID types.Hash `json:"session_id"`
 
 	// Partial signature of the MuSig session.
-	PartialSignature *big.Int
+	PartialSignature *big.Int `json:"partial_signature"`
 }
 
 func (m *MuSigPartialSignature) MarshallBinary() ([]byte, error) {
@@ -180,29 +180,29 @@ func (m *MuSigPartialSignature) UnmarshallBinary(bytes []byte) error {
 
 type MuSigSignature struct {
 	// Unique SessionID of the MuSig session.
-	SessionID types.Hash
+	SessionID types.Hash `json:"session_id"`
 
 	// ComputedAt is the time at which the signature was computed.
-	ComputedAt time.Time
+	ComputedAt time.Time `json:"computed_at"`
 
 	// Type of the data that was signed.
-	MsgType string
+	MsgType string `json:"msg_type"`
 
 	// Data that was signed.
-	MsgBody types.Hash
+	MsgBody types.Hash `json:"msg_body"`
 
 	// Meta is a map of metadata associated with the message.
 	MsgMeta map[string][]byte
 
 	// Commitment of the MuSig session.
-	Commitment types.Address
+	Commitment types.Address `json:"commitment"`
 
 	// Signers is a list of addresses of the signers that will participate in the MuSig session.
-	Signers []types.Address
+	Signers []types.Address `json:"signers"`
 
 	// SchnorrSignature is a MuSig Schnorr signature calculated from the partial
 	// signatures of all participants.
-	SchnorrSignature *big.Int
+	SchnorrSignature *big.Int `json:"schnorr_signature"`
 }
 
 func (m *MuSigSignature) toProtobuf() *pb.MuSigSignatureMessage {
@@ -264,7 +264,7 @@ type MuSigOptimisticSignature struct {
 
 	// ECDSASignature is a ECDSA signature calculated by the MuSig session
 	// coordinator.
-	ECDSASignature types.Signature
+	ECDSASignature types.Signature `json:"ecdsa_signature"`
 }
 
 func (m *MuSigOptimisticSignature) MarshallBinary() ([]byte, error) {

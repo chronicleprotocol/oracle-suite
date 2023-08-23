@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -31,31 +31,31 @@ const eventMessageMaxSize = 1 * 1024 * 1024 // 1MB
 var ErrEventMessageTooLarge = errors.New("event message too large")
 
 type EventSignature struct {
-	Signer    []byte
-	Signature []byte
+	Signer    []byte `json:"signer"`
+	Signature []byte `json:"signature"`
 }
 
 type Event struct {
 	// Type of the event.
-	Type string
+	Type string `json:"type"`
 
 	// Unique ID of the event.
-	ID []byte
+	ID []byte `json:"id"`
 
 	// Event index used to search for events.
-	Index []byte
+	Index []byte `json:"index"`
 
 	// The date of the event.
-	EventDate time.Time
+	EventDate time.Time `json:"eventDate"`
 
 	// The date when the event message was created.
-	MessageDate time.Time
+	MessageDate time.Time `json:"messageDate"`
 
 	// List of event data.
-	Data map[string][]byte
+	Data map[string][]byte `json:"data"`
 
 	// List of event signatures.
-	Signatures map[string]EventSignature
+	Signatures map[string]EventSignature `json:"signatures"`
 }
 
 // Copy returns a copy of the event.

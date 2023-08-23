@@ -42,7 +42,7 @@ transport {
         for_each = var.webapi_eth_addr_book == "" ? [] : [1]
         content {
           contract_addr   = var.webapi_eth_addr_book
-          ethereum_client = "default"
+          ethereum_client = var.spectre_target_network != "" && length(var.rpc_urls) > 0 ? "default" : "ethereum"
         }
       }
 

@@ -70,12 +70,20 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 					WithField("name", s).
 					Info("Subscribed to topic")
 			}
+			type mm struct {
+				Data any            `json:"data"`
+				Meta transport.Meta `json:"meta"`
+			}
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
 				case msg := <-sink.Chan():
-					jsonMsg, err := json.Marshal(msg.Message)
+					m := mm{
+						Meta: msg.Meta,
+						Data: msg.Message,
+					}
+					jsonMsg, err := json.Marshal(m)
 					if err != nil {
 						return err
 					}

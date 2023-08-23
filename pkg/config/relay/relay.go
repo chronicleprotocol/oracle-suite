@@ -96,7 +96,12 @@ type configCommon struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
+const LoggerTag = "CONFIG_RELAY"
+
 func (c *Config) Relay(d Dependencies) (*Services, error) {
+	logger := d.Logger.
+		WithField("tag", LoggerTag)
+
 	if c.services != nil {
 		return c.services, nil
 	}
@@ -158,6 +163,14 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 				Subject:  cfg.Content.Attributes["ethereum_client"].Range.Ptr(),
 			}
 		}
+
+		logger.
+			WithField("data_model", cfg.DataModel).
+			WithField("client", cfg.EthereumClient).
+			WithField("contract", "Median").
+			WithField("address", cfg.ContractAddr).
+			Info("Contract configuration")
+
 		medianCfgs = append(medianCfgs, relay.ConfigMedian{
 			DataModel:       cfg.DataModel,
 			ContractAddress: cfg.ContractAddr,
@@ -179,6 +192,14 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 				Subject:  cfg.Content.Attributes["ethereum_client"].Range.Ptr(),
 			}
 		}
+
+		logger.
+			WithField("data_model", cfg.DataModel).
+			WithField("client", cfg.EthereumClient).
+			WithField("contract", "Scribe").
+			WithField("address", cfg.ContractAddr).
+			Info("Contract configuration")
+
 		scribeCfgs = append(scribeCfgs, relay.ConfigScribe{
 			DataModel:       cfg.DataModel,
 			ContractAddress: cfg.ContractAddr,
@@ -200,6 +221,14 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 				Subject:  cfg.Content.Attributes["ethereum_client"].Range.Ptr(),
 			}
 		}
+
+		logger.
+			WithField("data_model", cfg.DataModel).
+			WithField("client", cfg.EthereumClient).
+			WithField("contract", "OptimisticScribe").
+			WithField("address", cfg.ContractAddr).
+			Info("Contract configuration")
+
 		opScribeCfgs = append(opScribeCfgs, relay.ConfigOptimisticScribe{
 			DataModel:       cfg.DataModel,
 			ContractAddress: cfg.ContractAddr,

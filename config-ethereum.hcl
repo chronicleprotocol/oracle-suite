@@ -1,13 +1,11 @@
 variables {
+  rpc_urls = explode(",", env("CFG_RPC_URLS", ""))
+  chain_id = tonumber(env("CFG_CHAIN_ID", "0"))
+
   # RPC URLs for specific blockchain clients. SOME apps are chain type aware.
-  eth_rpc_urls = explode(",", env("CFG_ETH_RPC_URLS", env("CFG_SPECTRE_TARGET_NETWORK", "") == "" ? "https://eth.public-rpc.com,https://cloudflare-eth.com,https://ethereum.publicnode.com" : ""))
+  eth_rpc_urls = explode(",", env("CFG_ETH_RPC_URLS", ""))
   arb_rpc_urls = explode(",", env("CFG_ARB_RPC_URLS", ""))
   opt_rpc_urls = explode(",", env("CFG_OPT_RPC_URLS", ""))
-
-  # Configures the spectre target network.
-  spectre_target_network = env("CFG_SPECTRE_TARGET_NETWORK", "")
-  spectre_rpc_urls       = explode(",", env("CFG_RPC_URLS", "https://rpc2.sepolia.org,https://rpc-sepolia.rockx.com,https://rpc.sepolia.ethpandaops.io"))
-  spectre_chain_id       = tonumber(env("CFG_CHAIN_ID", "11155111"))
 }
 
 ethereum {
@@ -29,6 +27,15 @@ ethereum {
     }
   }
 
+  dynamic "client" {
+    for_each = length(var.rpc_urls) == 0 ? [] : [1]
+    labels   = ["default"]
+    content {
+      rpc_urls     = var.rpc_urls
+      chain_id     = var.chain_id
+      ethereum_key = "default"
+    }
+  }
   dynamic "client" {
     for_each = length(var.eth_rpc_urls) == 0 ? [] : [1]
     labels   = ["ethereum"]
@@ -53,17 +60,6 @@ ethereum {
     content {
       rpc_urls     = var.opt_rpc_urls
       chain_id     = tonumber(env("CFG_OPT_CHAIN_ID", "10"))
-      ethereum_key = "default"
-    }
-  }
-
-  # Spectre client
-  dynamic "client" {
-    for_each = var.spectre_target_network == "" || length(var.spectre_rpc_urls) == 0 ? [] : [1]
-    labels   = ["spectre"]
-    content {
-      rpc_urls     = var.spectre_rpc_urls
-      chain_id     = var.spectre_chain_id
       ethereum_key = "default"
     }
   }

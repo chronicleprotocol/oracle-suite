@@ -71,13 +71,13 @@ type Transport interface {
 }
 
 type Meta struct {
-	Transport            string
-	Topic                string
-	MessageID            string
-	PeerID               string
-	PeerAddr             string
-	ReceivedFromPeerID   string
-	ReceivedFromPeerAddr string
+	Transport            string `json:"transport"`
+	Topic                string `json:"topic"`
+	MessageID            string `json:"messageID"`
+	PeerID               string `json:"peerID"`
+	PeerAddr             string `json:"peerAddr"`
+	ReceivedFromPeerID   string `json:"receivedFromPeerID"`
+	ReceivedFromPeerAddr string `json:"receivedFromPeerAddr"`
 }
 
 func (p *ReceivedMessage) Fields() log.Fields {
