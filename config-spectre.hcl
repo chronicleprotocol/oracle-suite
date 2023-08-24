@@ -56,13 +56,13 @@ spectre {
       data_model = contract.key
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.spread * 2
+      spread = contract.value.fallbackSpread
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.expiration * 2
+      expiration = contract.value.fallbackExpiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.interval * 2
+      interval = contract.value.fallbackInterval
     }
   }
 
@@ -87,13 +87,13 @@ spectre {
       data_model = contract.key
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.spread
+      spread = contract.value.opSpread
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.expiration
+      expiration = contract.value.opExpiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.interval
+      interval = contract.value.opInterval
     }
   }
 }

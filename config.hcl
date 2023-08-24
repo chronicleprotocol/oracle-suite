@@ -3,6 +3,7 @@
 # By default, all relative paths will be resolved based on the first config file provided to the application.
 # [-c config.hcl] is the the default.
 include = [
+  "config-contracts.hcl",
   "config-defaults.hcl",
   "config-ethereum.hcl",
   "config-transport.hcl",
