@@ -14,6 +14,9 @@ var getDy1 = abi.MustParseMethod("get_dy(int128,int128,uint256)(uint256)")
 var getDy2 = abi.MustParseMethod("get_dy(uint256,uint256,uint256)(uint256)")
 var coins = abi.MustParseMethod("coins(uint256)(address)")
 
+// [dsr]
+var dsr = abi.MustParseMethod("dsr()(uint256)")
+
 // [RocketPool]
 var getExchangeRate = abi.MustParseMethod("getExchangeRate()(uint256)")
 

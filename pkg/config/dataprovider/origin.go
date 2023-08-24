@@ -69,6 +69,10 @@ type configContracts struct {
 	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 }
 
+type configOriginDSR struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
 type configOriginRocketPool struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
@@ -113,6 +117,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginBalancer{}
 	case "curve":
 		config = &configOriginCurve{}
+	case "dsr":
+		config = &configOriginDSR{}
 	case "ishares":
 		config = &configOriginIShares{}
 	case "rocketpool":
@@ -193,6 +199,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create curve origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginDSR:
+		origin, err := origin.NewDSR(origin.DSRConfig{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create dsr origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
