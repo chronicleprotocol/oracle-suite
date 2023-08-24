@@ -180,7 +180,14 @@ func (f *Feed) broadcasterRoutine() {
 				if err != nil {
 					f.log.
 						WithError(err).
-						Error("Unable to get data points")
+						Error("Unable to get data point")
+					continue
+				}
+				if err := point.Validate(); err != nil {
+					f.log.
+						WithError(err).
+						WithFields(point.LogFields()).
+						Error("Unable to broadcast data point, data point is invalid")
 					continue
 				}
 				f.broadcast(model, point)
