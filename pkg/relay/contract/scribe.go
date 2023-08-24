@@ -16,7 +16,6 @@
 package contract
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -141,13 +140,4 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 		return fmt.Errorf("scribe: poke failed: %v", err)
 	}
 	return nil
-}
-
-// bytesToString converts a string terminated by a null byte to a Go string.
-func bytesToString(b []byte) string {
-	n := bytes.IndexByte(b, 0)
-	if n == -1 {
-		return string(b)
-	}
-	return string(b[:n])
 }

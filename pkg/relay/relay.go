@@ -18,7 +18,6 @@ package relay
 import (
 	"context"
 	"errors"
-	"math/big"
 	"time"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -38,7 +38,7 @@ type MedianContract interface {
 	Age(ctx context.Context) (time.Time, error)
 	Wat(ctx context.Context) (string, error)
 	Bar(ctx context.Context) (int, error)
-	Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []time.Time, v []uint8, r []*big.Int, s []*big.Int) error
+	Poke(ctx context.Context, vals []contract.MedianVal) error
 }
 
 type ScribeContract interface {
@@ -54,6 +54,7 @@ type OpScribeContract interface {
 	OpPoke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) error
 }
 
+// Relay is a service that relays data points to the blockchain.
 type Relay struct {
 	ctx    context.Context
 	waitCh chan error
@@ -64,21 +65,42 @@ type Relay struct {
 	opScribes []*opScribeWorker
 }
 
+// Config is the configuration for the Relay.
 type Config struct {
-	Medians           []ConfigMedian
-	Scribes           []ConfigScribe
+	// Medians is the list of median contracts configured for the relay.
+	Medians []ConfigMedian
+
+	// Scribes is the list of scribe contracts configured for the relay.
+	Scribes []ConfigScribe
+
+	// OptimisticScribes is the list of optimistic scribe contracts configured
+	// for the relay.
 	OptimisticScribes []ConfigOptimisticScribe
-	Logger            log.Logger
+
+	// Logger is a current logger interface used by the Feed.
+	// If nil, null logger will be used.
+	Logger log.Logger
 }
 
 type ConfigMedian struct {
-	DataModel       string
-	ContractAddress types.Address
-	FeedAddresses   []types.Address
-	Client          rpc.RPC
-	DataPointStore  *store.Store
+	// Client is the RPC client used to interact with the blockchain.
+	Client rpc.RPC
 
-	// Spread is the minimum calcSpread between the oracle price and new
+	// DataPointStore is the store used to retrieve data points.
+	DataPointStore *store.Store
+
+	// DataModel is the name of the data model from which data points
+	// are retrieved.
+	DataModel string
+
+	// ContractAddress is the address of the Median contract.
+	ContractAddress types.Address
+
+	// FeedAddresses is the list of feed addresses that are allowed to
+	// update the Median contract.
+	FeedAddresses []types.Address
+
+	// Spread is the minimum spread between the oracle price and new
 	// price required to send update.
 	Spread float64
 
@@ -92,11 +114,22 @@ type ConfigMedian struct {
 }
 
 type ConfigScribe struct {
-	DataModel       string
+	// Client is the RPC client used to interact with the blockchain.
+	Client rpc.RPC
+
+	// MuSigStore is the store used to retrieve MuSig signatures.
+	MuSigStore *MuSigStore
+
+	// DataModel is the name of the data model that is used to update
+	// the Scribe contract.
+	DataModel string
+
+	// ContractAddress is the address of the Scribe contract.
 	ContractAddress types.Address
-	FeedAddresses   []types.Address
-	Client          rpc.RPC
-	MuSigStore      *MuSigStore
+
+	// FeedAddresses is the list of feed addresses that are allowed to
+	// update the Scribe contract.
+	FeedAddresses []types.Address
 
 	// Spread is the minimum calcSpread between the oracle price and new
 	// price required to send update.
@@ -112,18 +145,29 @@ type ConfigScribe struct {
 }
 
 type ConfigOptimisticScribe struct {
-	DataModel       string
+	// Client is the RPC client used to interact with the blockchain.
+	Client rpc.RPC
+
+	// MuSigStore is the store used to retrieve MuSig signatures.
+	MuSigStore *MuSigStore
+
+	// DataModel is the name of the data model that is used to update
+	// the OptimisticScribe contract.
+	DataModel string
+
+	// ContractAddress is the address of the OptimisticScribe contract.
 	ContractAddress types.Address
-	FeedAddresses   []types.Address
-	Client          rpc.RPC
-	MuSigStore      *MuSigStore
+
+	// FeedAddresses is the list of feed addresses that are allowed to
+	// update the Scribe contract.
+	FeedAddresses []types.Address
 
 	// Spread is the minimum calcSpread between the oracle price and new
 	// price required to send update.
 	Spread float64
 
 	// Expiration is the minimum time difference between the last oracle
-	// update on the OpScribe contract and current time required to send
+	// update on the Scribe contract and current time required to send
 	// update.
 	Expiration time.Duration
 
@@ -131,7 +175,11 @@ type ConfigOptimisticScribe struct {
 	Ticker *timeutil.Ticker
 }
 
+// New creates a new Relay instance.
 func New(cfg Config) (*Relay, error) {
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	logger := cfg.Logger.WithField("tag", LoggerTag)
 	r := &Relay{
 		waitCh: make(chan error),

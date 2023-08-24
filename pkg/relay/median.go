@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/big"
 	"sort"
 	"time"
 
@@ -117,21 +116,19 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 
 	// If price is stale or expired, send update.
 	if isExpired || isStale {
-		var (
-			ages = make([]time.Time, len(dataPoints))
-			vs   = make([]uint8, len(signatures))
-			rs   = make([]*big.Int, len(signatures))
-			ss   = make([]*big.Int, len(signatures))
-		)
+		vals := make([]contract.MedianVal, len(prices))
 		for i := range dataPoints {
-			ages = append(ages, dataPoints[i].Time)
-			vs = append(vs, uint8(signatures[i].V.Uint64()))
-			rs = append(rs, signatures[i].R)
-			ss = append(ss, signatures[i].S)
+			vals[i] = contract.MedianVal{
+				Val: prices[i],
+				Age: dataPoints[i].Time,
+				V:   uint8(signatures[i].V.Uint64()),
+				R:   signatures[i].R,
+				S:   signatures[i].S,
+			}
 		}
 
 		// Send *actual* transaction.
-		return w.contract.Poke(ctx, prices, ages, vs, rs, ss)
+		return w.contract.Poke(ctx, vals)
 	}
 
 	return nil

@@ -1,0 +1,204 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+package contract
+
+import (
+	"context"
+	"math/big"
+	"testing"
+	"time"
+
+	"github.com/defiweb/go-eth/hexutil"
+	"github.com/defiweb/go-eth/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+)
+
+func TestMedian_Val(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
+
+	mockClient.On(
+		"GetStorageAt",
+		ctx,
+		types.MustAddressFromHex("0x1122344556677889900112233445566778899001"),
+		types.MustHashFromBigInt(big.NewInt(1)),
+		types.LatestBlockNumber,
+	).
+		Return(
+			types.MustHashFromHexPtr("0x00000000000000000000000064e7d1470000000000000584f61606acd0158000", types.PadNone),
+			nil,
+		)
+
+	val, err := median.Val(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "26064.535", val.String())
+}
+
+func TestMedian_Age(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
+
+	mockClient.On(
+		"Call",
+		ctx,
+		types.Call{
+			To:    &median.address,
+			Input: hexutil.MustHexToBytes("0x262a9dff"),
+		},
+		types.LatestBlockNumber,
+	).
+		Return(
+			hexutil.MustHexToBytes("0x0000000000000000000000000000000000000000000000000000000064e7d147"),
+			nil,
+		)
+
+	age, err := median.Age(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1692913991), age.Unix())
+}
+
+func TestMedian_Wat(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
+
+	mockClient.On(
+		"Call",
+		ctx,
+		types.Call{
+			To:    &median.address,
+			Input: hexutil.MustHexToBytes("0x4ca29923"),
+		},
+		types.LatestBlockNumber,
+	).
+		Return(
+			hexutil.MustHexToBytes("0x4254435553440000000000000000000000000000000000000000000000000000"),
+			nil,
+		)
+
+	wat, err := median.Wat(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "BTCUSD", wat)
+}
+
+func TestMedian_Bar(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
+
+	mockClient.On(
+		"Call",
+		ctx,
+		types.Call{
+			To:    &median.address,
+			Input: hexutil.MustHexToBytes("0xfebb0f7e"),
+		},
+		types.LatestBlockNumber,
+	).
+		Return(
+			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d"),
+			nil,
+		)
+
+	bar, err := median.Bar(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, 13, bar)
+}
+
+func TestMedian_Poke(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
+
+	vals := []MedianVal{
+		{
+			Val: bn.DecFixedPoint(200, 18),
+			Age: time.Unix(1888888888, 0),
+			V:   1,
+			R:   big.NewInt(3),
+			S:   big.NewInt(5),
+		},
+		{
+			Val: bn.DecFixedPoint(100, 18),
+			Age: time.Unix(1888888889, 0),
+			V:   2,
+			R:   big.NewInt(4),
+			S:   big.NewInt(6),
+		},
+	}
+
+	calldata := hexutil.MustHexToBytes(
+		"0x" +
+			"89bbb8b2" +
+			"00000000000000000000000000000000000000000000000000000000000000a0" +
+			"0000000000000000000000000000000000000000000000000000000000000100" +
+			"0000000000000000000000000000000000000000000000000000000000000160" +
+			"00000000000000000000000000000000000000000000000000000000000001c0" +
+			"0000000000000000000000000000000000000000000000000000000000000220" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"0000000000000000000000000000000000000000000000056bc75e2d63100000" +
+			"00000000000000000000000000000000000000000000000ad78ebc5ac6200000" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"0000000000000000000000000000000000000000000000000000000070962839" +
+			"0000000000000000000000000000000000000000000000000000000070962838" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"0000000000000000000000000000000000000000000000000000000000000001" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"0000000000000000000000000000000000000000000000000000000000000004" +
+			"0000000000000000000000000000000000000000000000000000000000000003" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"0000000000000000000000000000000000000000000000000000000000000006" +
+			"0000000000000000000000000000000000000000000000000000000000000005",
+	)
+
+	mockClient.On(
+		"Call",
+		ctx,
+		types.Call{
+			To:    &median.address,
+			Input: calldata,
+		},
+		types.LatestBlockNumber,
+	).
+		Return(
+			[]byte{},
+			nil,
+		)
+
+	mockClient.On(
+		"SendTransaction",
+		ctx,
+		types.Transaction{
+			Call: types.Call{
+				To:    &median.address,
+				Input: calldata,
+			},
+		},
+	).
+		Return(
+			&types.Hash{},
+			nil,
+		)
+
+	err := median.Poke(ctx, vals)
+	require.NoError(t, err)
+}

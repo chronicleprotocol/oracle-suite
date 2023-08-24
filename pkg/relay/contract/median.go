@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -30,6 +31,14 @@ import (
 )
 
 const MedianPricePrecision = 18
+
+type MedianVal struct {
+	Val *bn.DecFixedPointNumber
+	Age time.Time
+	V   uint8
+	R   *big.Int
+	S   *big.Int
+}
 
 type Median struct {
 	client  rpc.RPC
@@ -93,7 +102,7 @@ func (m *Median) Wat(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("median: wat query failed: %v", err)
 	}
-	return string(res), nil
+	return bytesToString(res), nil
 }
 
 func (m *Median) Bar(ctx context.Context) (int, error) {
@@ -111,19 +120,26 @@ func (m *Median) Bar(ctx context.Context) (int, error) {
 	return int(new(big.Int).SetBytes(res).Int64()), nil
 }
 
-func (m *Median) Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []time.Time, v []uint8, r []*big.Int, s []*big.Int) error {
-	intVal := make([]*big.Int, len(val))
-	intAge := make([]uint64, len(age))
-	for i, v := range val {
-		if v.Precision() != MedianPricePrecision {
-			return fmt.Errorf("median: poke failed: invalid precision: %d", v.Precision())
+func (m *Median) Poke(ctx context.Context, vals []MedianVal) error {
+	sort.Slice(vals, func(i, j int) bool {
+		return vals[i].Val.Cmp(vals[j].Val) < 0
+	})
+	valSlice := make([]*big.Int, len(vals))
+	ageSlice := make([]uint64, len(vals))
+	vSlice := make([]uint8, len(vals))
+	rSlice := make([]*big.Int, len(vals))
+	sSlice := make([]*big.Int, len(vals))
+	for i, v := range vals {
+		if v.Val.Precision() != MedianPricePrecision {
+			return fmt.Errorf("median: poke failed: invalid precision: %d", v.Val.Precision())
 		}
-		intVal[i] = v.RawBigInt()
+		valSlice[i] = v.Val.RawBigInt()
+		ageSlice[i] = uint64(v.Age.Unix())
+		vSlice[i] = v.V
+		rSlice[i] = v.R
+		sSlice[i] = v.S
 	}
-	for i, v := range age {
-		intAge[i] = uint64(v.Unix())
-	}
-	calldata, err := abiMedian["poke"].EncodeArgs(intVal, intAge, v, r, s)
+	calldata, err := abiMedian["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
 	if err != nil {
 		return fmt.Errorf("median: poke failed: %v", err)
 	}

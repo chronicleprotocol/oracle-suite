@@ -16,6 +16,7 @@
 package contract
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -24,6 +25,8 @@ import (
 	"github.com/defiweb/go-eth/types"
 )
 
+// simulateTransaction simulates a transaction by calling the contract method
+// and checking for revert or panic.
 func simulateTransaction(ctx context.Context, rpc rpc.RPC, tx types.Transaction) error {
 	res, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
 	if err != nil {
@@ -36,4 +39,13 @@ func simulateTransaction(ctx context.Context, rpc rpc.RPC, tx types.Transaction)
 		return fmt.Errorf("transaction panicked: %v", goethABI.DecodePanic(res))
 	}
 	return nil
+}
+
+// bytesToString converts a string terminated by a null byte to a Go string.
+func bytesToString(b []byte) string {
+	n := bytes.IndexByte(b, 0)
+	if n == -1 {
+		return string(b)
+	}
+	return string(b[:n])
 }
