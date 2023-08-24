@@ -188,7 +188,8 @@ transport {
 ### Environment variables
 
 It is possible to use environment variables anywhere in the configuration file. Environment variables are accessible
-in the `env` object. For example, to use the `HOME` environment variable in the configuration file, use `env.HOME`.
+in the `env` object. For example, to use the `HOME` environment variable in the configuration file, use `env.HOME`
+or `env("HOME",".")` expression.
 
 ## Commands
 

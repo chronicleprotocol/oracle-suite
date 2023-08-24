@@ -78,9 +78,17 @@ func New(cfg Config) (*Feed, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
+
+	ll := cfg.Logger.WithField("tag", LoggerTag)
+	for _, model := range cfg.DataModels {
+		ll.
+			WithField("model", model).
+			Info("Data model configured")
+	}
+
 	g := &Feed{
 		waitCh:       make(chan error),
-		log:          cfg.Logger.WithField("tag", LoggerTag),
+		log:          ll,
 		dataProvider: cfg.DataProvider,
 		dataModels:   cfg.DataModels,
 		signers:      cfg.Signers,
@@ -123,7 +131,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		if err != nil {
 			f.log.
 				WithError(err).
-				WithFields(fields(model, point)).
+				WithFields(point.LogFields()).
 				Error("Unable to sign data point")
 		}
 		msg := &messages.DataPoint{
@@ -134,17 +142,18 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		if err := f.transport.Broadcast(messages.DataPointV1MessageName, msg); err != nil {
 			f.log.
 				WithError(err).
-				WithField("dataPoint", point).
+				WithFields(msg.LogFields()).
 				Error("Unable to broadcast data point")
 		} else {
 			f.log.
-				WithFields(fields(model, point)).
+				WithFields(msg.LogFields()).
 				Info("Data point broadcast")
 		}
 	}
 	if !found {
 		f.log.
-			WithFields(fields(model, point)).
+			WithField("model", model).
+			WithFields(point.LogFields()).
 			Warn("Unable to find handler for data point")
 	}
 }
@@ -184,11 +193,4 @@ func (f *Feed) contextCancelHandler() {
 	defer func() { close(f.waitCh) }()
 	defer f.log.Info("Stopped")
 	<-f.ctx.Done()
-}
-
-func fields(model string, point datapoint.Point) log.Fields {
-	return log.Fields{
-		"model": model,
-		"value": point.Value,
-	}
 }

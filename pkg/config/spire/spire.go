@@ -198,13 +198,17 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 	if err != nil {
 		return nil, err
 	}
+	messageMap, err := pkgTransport.AllMessagesMap.SelectByTopic(
+		messages.DataPointV1MessageName,
+	)
+	if err != nil {
+		return nil, err
+	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:    keys,
-		Clients: clients,
-		Messages: map[string]pkgTransport.Message{
-			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
-		},
-		Logger: logger,
+		Keys:     keys,
+		Clients:  clients,
+		Messages: messageMap,
+		Logger:   logger,
 	})
 	if err != nil {
 		return nil, err
@@ -226,7 +230,7 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 }
 
 // StreamServices returns the services configured for Spire.
-func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) {
+func (c *Config) StreamServices(baseLogger log.Logger, topics ...string) (*StreamServices, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spire",
 		BaseLogger: baseLogger,
@@ -242,17 +246,15 @@ func (c *Config) StreamServices(baseLogger log.Logger) (*StreamServices, error) 
 	if err != nil {
 		return nil, err
 	}
+	messageMap, err := pkgTransport.AllMessagesMap.SelectByTopic(topics...)
+	if err != nil {
+		return nil, err
+	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:    keys,
-		Clients: clients,
-		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName:     (*messages.Price)(nil), //nolint:staticcheck
-			messages.PriceV1MessageName:     (*messages.Price)(nil), //nolint:staticcheck
-			messages.DataPointV1MessageName: (*messages.DataPoint)(nil),
-			messages.GreetV1MessageName:     (*messages.Greet)(nil),
-			messages.EventV1MessageName:     (*messages.Event)(nil),
-		},
-		Logger: logger,
+		Keys:     keys,
+		Clients:  clients,
+		Messages: messageMap,
+		Logger:   logger,
 	})
 	if err != nil {
 		return nil, err

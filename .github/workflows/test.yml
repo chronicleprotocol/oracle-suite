@@ -39,6 +39,8 @@ jobs:
           TEST_REDIS_ADDR: "127.0.0.1:6379"
           TEST_REDIS_PASS: "password123"
           TEST_REDIS_DB: 0
+      - name: Build All Binaries
+        run: go build ./...
 
   #  test-e2e-gofer:
   #    needs: analyze

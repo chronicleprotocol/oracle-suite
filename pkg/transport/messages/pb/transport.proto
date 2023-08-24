@@ -73,9 +73,22 @@ message MuSigPartialSignatureMessage {
 
 message MuSigSignatureMessage {
   bytes sessionID = 1;
-  string msgType = 2;
-  bytes msgBody = 3;
-  bytes commitment = 4;
-  bytes schnorrSignature = 5;
-  bytes ecdsaSignature = 6;
+  int64 computedAtTimestamp = 2;
+  string msgType = 3;
+  bytes msgBody = 4;
+  map<string, bytes> msgMeta = 5;
+  bytes commitment = 6;
+  repeated bytes signers = 7;
+  bytes schnorrSignature = 8;
+}
+
+message MuSigOptimisticSignatureMessage {
+  MuSigSignatureMessage signature = 1;
+  bytes ecdsaSignature = 2;
+}
+
+message Greet {
+  bytes signature = 1;
+  bytes pubKeyX = 2;
+  bytes pubKeyY = 3;
 }

@@ -1,14 +1,14 @@
 // Package datapoint and its subpackages offer utilities for retrieving and
 // manipulating data points.
 //
-// In this package, a data point represents a value from a specific source, or
-// 'origin'. This value could represent anything, such as the price of an asset
-// at a specific time.
+// In this package, a data point represents a value from a specific source, also
+// known as 'origin'. This value could represent anything, such as the price of
+// an asset at a specific time.
 //
 // Different data point types are represented as unique types that implement
 // the Value interface from the value package. All of these types must support
 // binary marshalling, which is essential for transmission across the transport
-// layer.
+// layer (see value/types.go).
 //
 // A provider is a service that produces data points. All providers must
 // implement the Provider interface. Currently, the only implementation of

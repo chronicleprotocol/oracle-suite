@@ -26,12 +26,13 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	relayConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/relay"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/relayer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/price/store"
-	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
-	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
@@ -49,12 +50,13 @@ type Config struct {
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	Relay      *relayer.Relayer
-	PriceStore *store.PriceStore
-	Transport  pkgTransport.Service
+	Relay      *relay.Relay
+	PriceStore *store.Store
+	MuSigStore *relay.MuSigStore
+	Transport  transport.Service
 	Logger     log.Logger
 
-	supervisor *pkgSupervisor.Supervisor
+	supervisor *supervisor.Supervisor
 }
 
 // Start implements the supervisor.Service interface.
@@ -62,9 +64,15 @@ func (s *Services) Start(ctx context.Context) error {
 	if s.supervisor != nil {
 		return fmt.Errorf("services already started")
 	}
-	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Transport, s.PriceStore, s.Relay, sysmon.New(time.Minute, s.Logger))
-	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
+	s.supervisor = supervisor.New(s.Logger)
+	s.supervisor.Watch(
+		s.Transport,
+		s.PriceStore,
+		s.MuSigStore,
+		s.Relay,
+		sysmon.New(time.Minute, s.Logger),
+	)
+	if l, ok := s.Logger.(supervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}
 	return s.supervisor.Start(ctx)
@@ -76,7 +84,7 @@ func (s *Services) Wait() <-chan error {
 }
 
 // Services returns the services configured for Spectre.
-func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
+func (c *Config) Services(baseLogger log.Logger) (supervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    "spectre",
 		BaseLogger: baseLogger,
@@ -92,37 +100,40 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 	if err != nil {
 		return nil, err
 	}
-	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:    keys,
-		Clients: clients,
-		Messages: map[string]pkgTransport.Message{
-			messages.PriceV0MessageName: (*messages.Price)(nil), //nolint:staticcheck
-			messages.PriceV1MessageName: (*messages.Price)(nil), //nolint:staticcheck
-		},
-		Logger: logger,
+	messageMap, err := transport.AllMessagesMap.SelectByTopic(
+		messages.DataPointV1MessageName,
+		messages.MuSigStartV1MessageName,
+		messages.MuSigTerminateV1MessageName,
+		messages.MuSigCommitmentV1MessageName,
+		messages.MuSigPartialSignatureV1MessageName,
+		messages.MuSigSignatureV1MessageName,
+		messages.MuSigOptimisticSignatureV1MessageName,
+	)
+	if err != nil {
+		return nil, err
+	}
+	transportSrv, err := c.Transport.Transport(transportConfig.Dependencies{
+		Keys:     keys,
+		Clients:  clients,
+		Messages: messageMap,
+		Logger:   logger,
 	})
 	if err != nil {
 		return nil, err
 	}
-	priceStore, err := c.Spectre.PriceStore(relayConfig.PriceStoreDependencies{
-		Transport: transport,
+	srvs, err := c.Spectre.Relay(relayConfig.Dependencies{
+		Clients:   clients,
+		Transport: transportSrv,
 		Logger:    logger,
 	})
 	if err != nil {
 		return nil, err
 	}
-	relay, err := c.Spectre.Relay(relayConfig.Dependencies{
-		Clients:    clients,
-		PriceStore: priceStore,
-		Logger:     logger,
-	})
-	if err != nil {
-		return nil, err
-	}
 	return &Services{
-		Relay:      relay,
-		PriceStore: priceStore,
-		Transport:  transport,
+		Relay:      srvs.Relay,
+		PriceStore: srvs.PriceStore,
+		MuSigStore: srvs.MuSigStore,
+		Transport:  transportSrv,
 		Logger:     logger,
 	}, nil
 }

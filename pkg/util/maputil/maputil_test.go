@@ -1,4 +1,4 @@
-//  Copyright (C) 2020 Maker Ecosystem Growth Holdings, INC.
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as
@@ -74,5 +74,51 @@ func TestMerge(t *testing.T) {
 		m1 := map[int]int{1: 1}
 		m2 := map[int]int{2: 2}
 		assert.Equal(t, map[int]int{1: 1, 2: 2}, Merge(m1, m2))
+	})
+}
+
+func TestFilter(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		m := map[string]string{"a": "a", "b": "b", "c": "c"}
+		assert.Equal(t, map[string]string{"a": "a", "c": "c"}, Filter(m, func(k string) bool { return k != "b" }))
+	})
+	t.Run("case-1-all", func(t *testing.T) {
+		m := map[string]string{"a": "a", "b": "b", "c": "c"}
+		assert.Equal(t, m, Filter(m, func(k string) bool { return true }))
+		assert.NotSame(t, m, Filter(m, func(k string) bool { return true }))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		m := map[int]int{1: 1, 2: 2, 3: 3}
+		assert.Equal(t, map[int]int{1: 1, 3: 3}, Filter(m, func(k int) bool { return k != 2 }))
+	})
+	t.Run("case-2-all", func(t *testing.T) {
+		m := map[int]int{1: 1, 2: 2, 3: 3}
+		assert.Equal(t, m, Filter(m, func(k int) bool { return true }))
+		assert.NotSame(t, m, Filter(m, func(k int) bool { return true }))
+	})
+}
+
+func TestSelect(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		m := map[string]string{"a": "a", "b": "b", "c": "c"}
+		mm, err := Select(m, []string{"a", "c"})
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]string{"a": "a", "c": "c"}, mm)
+	})
+	t.Run("case-1-err", func(t *testing.T) {
+		m := map[string]string{"a": "a", "b": "b", "c": "c"}
+		_, err := Select(m, []string{"a", "d"})
+		assert.Error(t, err)
+	})
+	t.Run("case-2", func(t *testing.T) {
+		m := map[int]int{1: 1, 2: 2, 3: 3}
+		mm, err := Select(m, []int{1, 3})
+		assert.NoError(t, err)
+		assert.Equal(t, map[int]int{1: 1, 3: 3}, mm)
+	})
+	t.Run("case-2-err", func(t *testing.T) {
+		m := map[int]int{1: 1, 2: 2, 3: 3}
+		_, err := Select(m, []int{1, 4})
+		assert.Error(t, err)
 	})
 }

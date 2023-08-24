@@ -78,14 +78,6 @@ func execCommand(ctx context.Context, wd string, envs []string, bin string, para
 	return buf.Bytes(), err
 }
 
-func env(env string, def string) string {
-	v := os.Getenv(env)
-	if len(v) == 0 {
-		return def
-	}
-	return v
-}
-
 func mustReadFile(path string) string {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {

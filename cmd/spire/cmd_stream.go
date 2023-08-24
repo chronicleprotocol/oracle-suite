@@ -29,24 +29,27 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+	var raw bool
 	cc := &cobra.Command{
 		Use:   "stream [TOPIC...]",
 		Args:  cobra.MinimumNArgs(0),
 		Short: "Streams data from the network",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
+		RunE: func(_ *cobra.Command, topics []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			logger := l.Logger()
-			services, err := c.StreamServices(logger)
+			if len(topics) == 0 {
+				topics = transport.AllMessagesMap.Keys()
+			}
+			services, err := c.StreamServices(logger, topics...)
 			if err != nil {
 				return err
 			}
+			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
@@ -55,35 +58,41 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 					err = sErr
 				}
 			}()
-			inArgs := func(s string) bool {
-				return sliceutil.Contains[string](args, s)
-			}
-			if len(args) == 0 {
-				args = transport.AllTopics
-				inArgs = func(_ string) bool { return true }
-			}
 			sink := chanutil.NewFanIn[transport.ReceivedMessage]()
-			for _, s := range args {
-				if !inArgs(s) {
-					logger.
-						WithField("name", s).
-						Warn("Skipping unknown topic")
-					continue
+			for _, s := range topics {
+				ch := services.Transport.Messages(s)
+				if ch == nil {
+					return fmt.Errorf("unconfigured topic: %s", s)
 				}
-				err := sink.Add(services.Transport.Messages(s))
-				if err != nil {
+				if err := sink.Add(ch); err != nil {
 					return err
 				}
 				logger.
 					WithField("name", s).
 					Info("Subscribed to topic")
 			}
+			type mm struct {
+				Data any            `json:"data"`
+				Meta transport.Meta `json:"meta"`
+			}
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
 				case msg := <-sink.Chan():
-					jsonMsg, err := json.Marshal(msg.Message)
+					if raw {
+						jsonMsg, err := json.Marshal(msg.Message)
+						if err != nil {
+							return err
+						}
+						fmt.Println(string(jsonMsg))
+						continue
+					}
+					m := mm{
+						Meta: msg.Meta,
+						Data: msg.Message,
+					}
+					jsonMsg, err := json.Marshal(m)
 					if err != nil {
 						return err
 					}
@@ -96,28 +105,27 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 		NewStreamPricesCmd(c, f, l),
 		NewTopicsCmd(),
 	)
+	cc.Flags().BoolVar(
+		&raw,
+		"raw",
+		false,
+		"show only data without meta",
+	)
 	return cc
 }
 
 func NewTopicsCmd() *cobra.Command {
-	var legacy bool
 	cc := &cobra.Command{
 		Use:   "topics",
 		Args:  cobra.ExactArgs(0),
 		Short: "List all available topics",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			for _, topic := range transport.AllTopics {
+			for _, topic := range transport.AllMessagesMap.Keys() {
 				fmt.Println(topic)
 			}
 			return nil
 		},
 	}
-	cc.Flags().BoolVar(
-		&legacy,
-		"legacy",
-		false,
-		"legacy mode",
-	)
 	return cc
 }
 

@@ -26,6 +26,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/pb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
@@ -285,4 +286,22 @@ func (p Point) MarshalTrace() ([]byte, error) {
 			Error:     point.Validate(),
 		}
 	}, []any{p}, 0), nil
+}
+
+// LogFields returns a set of log fields for the data point.
+func (p Point) LogFields() log.Fields {
+	fields := log.Fields{}
+	if p.Value != nil {
+		fields["value"] = p.Value.Print()
+	}
+	if !p.Time.IsZero() {
+		fields["time"] = p.Time
+	}
+	if err := p.Validate(); err != nil {
+		fields["error"] = err.Error()
+	}
+	for k, v := range p.Meta {
+		fields["meta."+k] = v
+	}
+	return fields
 }

@@ -54,6 +54,19 @@ type StoredDataPoint struct {
 	Signature types.Signature
 }
 
+// LogFields returns a set of log fields for the data point.
+func (o StoredDataPoint) LogFields() log.Fields {
+	f := log.Fields{
+		"model":     o.Model,
+		"from":      o.From.String(),
+		"signature": o.Signature.String(),
+	}
+	for k, v := range o.DataPoint.LogFields() {
+		f[k] = v
+	}
+	return f
+}
+
 // Store stores latest data points from feeds.
 type Store struct {
 	ctx    context.Context
@@ -146,35 +159,32 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 				p.log.
 					WithError(err).
 					WithField("model", point.Model).
-					WithField("value", point.Value.Value.Print()).
+					WithField("from", from).
+					WithFields(point.Value.LogFields()).
 					Error("Unable to recover address")
 			}
-			point := StoredDataPoint{
+			sdp := StoredDataPoint{
 				Model:     point.Model,
 				DataPoint: point.Value,
 				From:      *from,
 				Signature: point.Signature,
 			}
-			if err := p.storage.Add(p.ctx, point); err != nil {
+			if err := p.storage.Add(p.ctx, sdp); err != nil {
 				p.log.
 					WithError(err).
-					WithField("model", point.Model).
-					WithField("value", point.DataPoint.Value.Print()).
-					WithField("from", from.String()).
+					WithFields(sdp.LogFields()).
 					Error("Unable to add data point")
 				return
 			}
 			p.log.
-				WithField("model", point.Model).
-				WithField("value", point.DataPoint.Value.Print()).
-				WithField("from", from.String()).
-				Info("Data point received")
+				WithFields(sdp.LogFields()).
+				Info("Data point collected")
 			return
 		}
 	}
 	p.log.
 		WithField("model", point.Model).
-		WithField("value", point.Value.Value.Print()).
+		WithFields(point.Value.LogFields()).
 		Error("Unable to find recoverer for the data point")
 }
 
@@ -208,15 +218,23 @@ func (p *Store) contextCancelHandler() {
 
 func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
-		p.log.WithError(msg.Error).Error("Unable to receive message")
+		p.log.
+			WithError(msg.Error).
+			Error("Unable to receive message")
 		return
 	}
 	point, ok := msg.Message.(*messages.DataPoint)
 	if !ok {
-		p.log.Error("Unexpected value returned from the transport layer")
+		p.log.
+			WithFields(msg.Fields()).
+			Error("Unexpected value returned from the transport layer")
 		return
 	}
 	if !p.shouldCollect(point.Model) {
+		p.log.
+			WithFields(msg.Fields()).
+			WithField("model", point.Model).
+			Warn("Data point rejected - model is not supported")
 		return
 	}
 	p.collectDataPoint(point)

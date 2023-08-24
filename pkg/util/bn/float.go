@@ -4,8 +4,6 @@ import (
 	"math/big"
 )
 
-var floatOne = big.NewFloat(1)
-
 // Float returns the FloatNumber representation of x.
 //
 // The argument x can be one of the following types:
@@ -29,6 +27,10 @@ func Float(x any) *FloatNumber {
 		return convertIntNumberToFloat(x)
 	case *FloatNumber:
 		return x
+	case DecFixedPointNumber:
+		return convertDecFixedPointToFloat(&x)
+	case *DecFixedPointNumber:
+		return convertDecFixedPointToFloat(x)
 	case *big.Int:
 		return convertBigIntToFloat(x)
 	case *big.Float:
@@ -50,21 +52,16 @@ type FloatNumber struct {
 	x *big.Float
 }
 
-// String returns the 10-base string representation of the Float.
-func (f *FloatNumber) String() string {
-	return f.x.String()
-}
-
-// Text returns the string representation of the Float.
-// The format and prec arguments are the same as in big.Float.Text.
-func (f *FloatNumber) Text(format byte, prec int) string {
-	return f.x.Text(format, prec)
-}
-
 // Int returns the IntNumber representation of the Float.
 // The fractional part is discarded.
 func (f *FloatNumber) Int() *IntNumber {
 	return &IntNumber{x: f.BigInt()}
+}
+
+// DecFixedPoint returns the DecFixedPointNumber representation of the Float.
+func (f *FloatNumber) DecFixedPoint(n uint8) *DecFixedPointNumber {
+	i, _ := new(big.Float).Mul(f.x, new(big.Float).SetInt(decFixedPointScale(n))).Int(nil)
+	return &DecFixedPointNumber{x: i, n: n}
 }
 
 // BigInt returns the *big.Int representation of the Float.
@@ -83,6 +80,17 @@ func (f *FloatNumber) BigFloat() *big.Float {
 func (f *FloatNumber) Float64() float64 {
 	f64, _ := f.x.Float64()
 	return f64
+}
+
+// String returns the 10-base string representation of the Float.
+func (f *FloatNumber) String() string {
+	return f.x.String()
+}
+
+// Text returns the string representation of the Float.
+// The format and prec arguments are the same as in big.Float.Text.
+func (f *FloatNumber) Text(format byte, prec int) string {
+	return f.x.Text(format, prec)
 }
 
 // Sign returns:
