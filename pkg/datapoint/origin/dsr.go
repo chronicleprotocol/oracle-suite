@@ -50,7 +50,6 @@ func NewDSR(config DSRConfig) (*DSR, error) {
 	}, nil
 }
 
-//nolint:funlen
 func (d *DSR) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
