@@ -149,7 +149,7 @@ type WebAPI struct {
 	flushTicker  *timeutil.Ticker
 	signer       wallet.Key
 	client       *http.Client
-	server       *httpserver.HTTPServer
+	server       httpserver.Service
 	rand         io.Reader
 	maxClockSkew time.Duration
 	log          log.Logger
@@ -200,7 +200,7 @@ type Config struct {
 
 	// Server is an optional custom HTTP server that will be used to receive
 	// messages. If provided, ListenAddr and Timeout are ignored.
-	Server *httpserver.HTTPServer
+	Server httpserver.Service
 
 	// Client is an optional custom HTTP client that will be used to send
 	// messages. If provided, Timeout is ignored.
@@ -221,9 +221,6 @@ type Config struct {
 
 // New returns a new instance of WebAPI.
 func New(cfg Config) (*WebAPI, error) {
-	if cfg.Server == nil && len(cfg.ListenAddr) == 0 {
-		return nil, errors.New("listen address must be provided")
-	}
 	if cfg.AddressBook == nil {
 		return nil, errors.New("address book must be provided")
 	}
@@ -245,19 +242,26 @@ func New(cfg Config) (*WebAPI, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
-	server := cfg.Server
-	client := cfg.Client
-	if server == nil {
-		server = httpserver.New(&http.Server{
-			Addr:              cfg.ListenAddr,
-			ReadTimeout:       cfg.Timeout,
-			ReadHeaderTimeout: cfg.Timeout,
-			WriteTimeout:      cfg.Timeout,
-			IdleTimeout:       cfg.Timeout,
-		})
+	logger := cfg.Logger.WithField("tag", LoggerTag)
+
+	if cfg.Client == nil {
+		cfg.Client = &http.Client{Timeout: cfg.Timeout}
 	}
-	if client == nil {
-		client = &http.Client{Timeout: cfg.Timeout}
+	if cfg.Server == nil {
+		if cfg.ListenAddr == "" {
+			cfg.Server = &httpserver.NullServer{}
+		} else {
+			logger.
+				WithField("address", cfg.ListenAddr).
+				Info("HTTP server")
+			cfg.Server = httpserver.New(&http.Server{
+				Addr:              cfg.ListenAddr,
+				ReadTimeout:       cfg.Timeout,
+				ReadHeaderTimeout: cfg.Timeout,
+				WriteTimeout:      cfg.Timeout,
+				IdleTimeout:       cfg.Timeout,
+			})
+		}
 	}
 	w := &WebAPI{
 		waitCh:       make(chan error),
@@ -265,15 +269,15 @@ func New(cfg Config) (*WebAPI, error) {
 		allowlist:    sliceutil.Copy(cfg.AuthorAllowlist),
 		addressBook:  cfg.AddressBook,
 		flushTicker:  cfg.FlushTicker,
-		client:       client,
-		server:       server,
+		client:       cfg.Client,
+		server:       cfg.Server,
 		signer:       cfg.Signer,
 		lastReqs:     make(map[types.Address]time.Time),
 		msgCh:        make(map[string]chan transport.ReceivedMessage),
 		msgChFO:      make(map[string]*chanutil.FanOut[transport.ReceivedMessage]),
 		maxClockSkew: cfg.MaxClockSkew,
 		rand:         cfg.Rand,
-		log:          cfg.Logger.WithField("tag", LoggerTag),
+		log:          logger,
 		recover:      crypto.ECRecoverer,
 	}
 	w.server.SetHandler(http.HandlerFunc(w.consumeHandler))
@@ -386,7 +390,7 @@ func (w *WebAPI) flushMessages(ctx context.Context, t time.Time) error {
 // data. The data must be gzipped protobuf-encoded MessagePack. The t parameter
 // is the time used for the URL signature.
 func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t time.Time) {
-	w.log.WithField("addr", addr).Info("Sending messages to consumer")
+	w.log.WithField("address", addr).Info("Sending messages to consumer")
 
 	// Sign the URL.
 	url, err := signURL(
@@ -396,14 +400,14 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 		w.rand,
 	)
 	if err != nil {
-		w.log.WithError(err).WithField("addr", addr).Error("Failed to sign URL")
+		w.log.WithError(err).WithField("address", addr).Error("Failed to sign URL")
 		return
 	}
 
 	// Prepare the request.
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		w.log.WithField("addr", addr).WithError(err).Error("Failed to create request")
+		w.log.WithField("address", addr).WithError(err).Error("Failed to create request")
 	}
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/x-protobuf")
@@ -412,7 +416,7 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 	// Send the request.
 	res, err := w.client.Do(req)
 	if err != nil {
-		w.log.WithField("addr", addr).WithError(err).Error("Failed to send messages to consumer")
+		w.log.WithField("address", addr).WithError(err).Error("Failed to send messages to consumer")
 		return
 	}
 	defer res.Body.Close()

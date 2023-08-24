@@ -140,7 +140,7 @@ func (n *Node) Start(ctx context.Context) error {
 
 	for _, addr := range n.listenAddrStrs() {
 		n.tsLog.get().
-			WithField("addr", addr).
+			WithField("address", addr).
 			Info("Listening")
 	}
 
