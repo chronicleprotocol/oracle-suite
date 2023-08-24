@@ -6,7 +6,6 @@ gofer {
         "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
         "RETH/WETH" = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
         "WSTETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
-        "WETH/YFI" = "0x186084ff790c65088ba694df11758fae4943ee9e" # WeightedPool2Tokens
       }
       references = {
         "RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
@@ -50,7 +49,9 @@ gofer {
       }
       addresses2 = { # uint256, cryptoswap
         "WETH/LDO" = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
-        "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46"
+        "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
+        "WETH/YFI" = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
+        "WETH/RETH" = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
       }
     }
   }
@@ -141,7 +142,8 @@ gofer {
     contracts "ethereum" {
       addresses = {
         "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4",
-        "MKR/DAI" = "0x517F9dD285e75b599234F7221227339478d0FcC8"
+        "MKR/DAI" = "0x517F9dD285e75b599234F7221227339478d0FcC8",
+        "YFI/WETH" = "0x2fDbAdf3C4D5A8666Bc06645B8358ab803996E28"
       }
     }
   }
@@ -562,13 +564,12 @@ gofer {
 
   data_model "RETH/ETH" {
     median {
-      min_values = 3
+      min_values = 2
       alias "RETH/ETH" {
         origin "balancerV2" { query = "RETH/WETH" }
       }
-      indirect {
-        origin "curve" { query = "RETH/WSTETH" }
-        reference { data_model = "WSTETH/ETH" }
+      alias "RETH/ETH" {
+        origin "curve" { query = "RETH/WETH" }
       }
       origin "rocketpool" { query = "RETH/ETH" }
     }
@@ -757,7 +758,7 @@ gofer {
 
   data_model "WSTETH/ETH" {
     median {
-      min_values = 2
+      min_values = 3
       alias "WSTETH/ETH" {
         origin "uniswapV3" { query = "WSTETH/WETH" }
       }
@@ -765,8 +766,8 @@ gofer {
         origin "balancerV2" { query = "WSTETH/WETH" }
       }
       indirect {
-        origin "wsteth" { query = "WSTETH/STETH" }
-        reference { data_model = "STETH/ETH" }
+        origin "curve" { query = "RETH/WSTETH" }
+        reference { data_model = "RETH/ETH" }
       }
     }
   }
@@ -796,19 +797,18 @@ gofer {
 
   data_model "YFI/USD" {
     median {
-      min_values = 2
-      indirect {
-        alias "ETH/YFI" {
-          origin "balancerV2" { query = "WETH/YFI" }
-        }
-        reference { data_model = "ETH/USD" }
-      }
+      min_values = 4
       indirect {
         origin "binance" { query = "YFI/USDT" }
         reference { data_model = "USDT/USD" }
       }
       origin "coinbase" { query = "YFI/USD" }
-      origin "kraken" { query = "YFI/USD" }
+      indirect {
+        alias "ETH/YFI" {
+          origin "curve" { query = "WETH/YFI" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
       indirect {
         origin "okx" { query = "YFI/USDT" }
         reference { data_model = "USDT/USD" }
@@ -816,6 +816,12 @@ gofer {
       indirect {
         alias "YFI/ETH" {
           origin "sushiswap" { query = "YFI/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        alias "YFI/ETH" {
+          origin "uniswapV2" { query = "YFI/WETH" }
         }
         reference { data_model = "ETH/USD" }
       }
