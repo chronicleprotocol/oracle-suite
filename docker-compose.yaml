@@ -18,15 +18,15 @@ services:
     environment:
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8090"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8080"
       ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "tor-proxy:9050" # disable sending messages
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable sending messages
       ### on-chain address book
       CFG_WEBAPI_ETH_ADDR_BOOK: ""
       ### local address book
@@ -35,14 +35,14 @@ services:
   ghost1:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     network_mode: "host"
-    command: [ "run", "-v", "debug" ]
+    command: [ "run" ]
     environment:
       CFG_GHOST_PAIRS: "ETH/USD"
       CFG_GHOST_INTERVAL: 10
 
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
-      # default RPC key
+      # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_A}
       CFG_ETH_KEYS: ${ETH_KEYS_A}
       CFG_ETH_PASS: ""
@@ -52,18 +52,18 @@ services:
       CFG_ETH_CHAIN_ID: ${CHID}
 
       # default RPC client
-      CFG_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
 
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8011"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
       ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: tor-proxy:9050
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
       ### on-chain address book
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
       ### local address book
@@ -78,7 +78,7 @@ services:
 
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
-      # default RPC key
+      # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_B}
       CFG_ETH_KEYS: ${ETH_KEYS_B}
       CFG_ETH_PASS: ""
@@ -88,18 +88,18 @@ services:
       CFG_ETH_CHAIN_ID: ${CHID}
 
       # default RPC client
-      CFG_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
 
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8012"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
       ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: tor-proxy:9050
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
       ### on-chain address book
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
       ### local address book
@@ -114,7 +114,7 @@ services:
 
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
-      # default RPC key
+      # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_C}
       CFG_ETH_KEYS: ${ETH_KEYS_C}
       CFG_ETH_PASS: ""
@@ -124,18 +124,18 @@ services:
       CFG_ETH_CHAIN_ID: ${CHID}
 
       # default RPC client
-      CFG_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
 
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8013"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
       ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: tor-proxy:9050
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
       ### on-chain address book
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
       ### local address book
@@ -150,7 +150,7 @@ services:
 
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
-      # default RPC key
+      # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_D}
       CFG_ETH_KEYS: ${ETH_KEYS_D}
       CFG_ETH_PASS: ""
@@ -160,18 +160,18 @@ services:
       CFG_ETH_CHAIN_ID: ${CHID}
 
       # default RPC client
-      CFG_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
 
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8014"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
       ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: tor-proxy:9050
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
       ### on-chain address book
       CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
       ### local address book
@@ -180,6 +180,7 @@ services:
   spectre1:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     network_mode: "host"
+    command: [ "run" ]
     environment:
       CFG_SPECTRE_PAIRS: "ETH/USD"
       CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
@@ -187,15 +188,20 @@ services:
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
       # default RPC client
-      CFG_RPC_URLS: ${ETH_RPCS}
+      CFG_CHAIN_RPC_URLS: ${ETH_RPCS}
       CFG_CHAIN_ID: ${ETH_CHID}
 
       # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8021"
+      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
+      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
+      CFG_CHAIN_MAX_GAS_FEE: 0
+      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
+      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8081"
       ## sending
@@ -214,15 +220,20 @@ services:
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
       # default RPC client
-      CFG_RPC_URLS: ${OPT_RPCS}
+      CFG_CHAIN_RPC_URLS: ${OPT_RPCS}
       CFG_CHAIN_ID: ${OPT_CHID}
+      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
+      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
+      CFG_CHAIN_MAX_GAS_FEE: 0
+      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
+      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
       # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8022"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8082"
       ## sending
@@ -241,15 +252,20 @@ services:
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
       # default RPC client
-      CFG_RPC_URLS: ${ARB_RPCS}
+      CFG_CHAIN_RPC_URLS: ${ARB_RPCS}
       CFG_CHAIN_ID: ${ARB_CHID}
+      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
+      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
+      CFG_CHAIN_MAX_GAS_FEE: 0
+      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
+      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
       # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8023"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8083"
       ## sending
@@ -268,15 +284,20 @@ services:
       CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
 
       # default RPC client
-      CFG_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
+      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
+      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
+      CFG_CHAIN_MAX_GAS_FEE: 0
+      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
+      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
       # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWRhP3CQxqtmZVU7n9ubfH4QPxtY8fxa7PDsoNPkQ66wF9"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
       CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8024"
 
       # webapi
-      CFG_WEBAPI_ENABLE: 1
+      CFG_WEBAPI_ENABLE: 0
       ## receiving
       CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8084"
       ## sending

@@ -251,9 +251,9 @@ func New(cfg Config) (*WebAPI, error) {
 		if cfg.ListenAddr == "" {
 			cfg.Server = &httpserver.NullServer{}
 		} else {
-			logger.
-				WithField("address", cfg.ListenAddr).
+			logger.WithField("address", cfg.ListenAddr).
 				Info("HTTP server")
+
 			cfg.Server = httpserver.New(&http.Server{
 				Addr:              cfg.ListenAddr,
 				ReadTimeout:       cfg.Timeout,
@@ -419,7 +419,7 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 		w.log.WithField("address", addr).WithError(err).Error("Failed to send messages to consumer")
 		return
 	}
-	defer res.Body.Close()
+	res.Body.Close()
 }
 
 // consumeHandler handles incoming messages from consumers.

@@ -37,9 +37,8 @@ spectre {
 
   dynamic "scribe" {
     for_each = {
-      for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
-      var.scribe_contracts[var.spectre_target_network][p]
-      if contains(try(keys(var.scribe_contracts[var.spectre_target_network]), []), p)
+      for k, v in try(var.scribe_contracts[var.spectre_target_network], {} ) : k=>v
+      if length(var.spectre_pairs)==0 || contains(var.spectre_pairs, k)
     }
     iterator = contract
     content {
@@ -56,21 +55,20 @@ spectre {
       data_model = contract.key
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.fallbackSpread
+      spread = var.scribe_params[var.spectre_target_network][contract.key].pokeConfig.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.fallbackExpiration
+      expiration = var.scribe_params[var.spectre_target_network][contract.key].pokeConfig.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.fallbackInterval
+      interval = tonumber(env("CFG_SPECTRE_INTERVAL", var.scribe_params[var.spectre_target_network][contract.key].pokeConfig.interval))
     }
   }
 
   dynamic "optimistic_scribe" {
     for_each = {
-      for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
-      var.scribe_contracts[var.spectre_target_network][p]
-      if contains(try(keys(var.scribe_contracts[var.spectre_target_network]), []), p)
+      for k, v in try(var.scribe_contracts[var.spectre_target_network], {} ) : k=>v
+      if length(var.spectre_pairs)==0 || contains(var.spectre_pairs, k)
     }
     iterator = contract
     content {
@@ -87,13 +85,13 @@ spectre {
       data_model = contract.key
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.opSpread
+      spread = var.scribe_params[var.spectre_target_network][contract.key].opPokeConfig.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.opExpiration
+      expiration = var.scribe_params[var.spectre_target_network][contract.key].opPokeConfig.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.opInterval
+      interval = tonumber(env("CFG_SPECTRE_INTERVAL", var.scribe_params[var.spectre_target_network][contract.key].opPokeConfig.interval))
     }
   }
 }
