@@ -539,7 +539,7 @@ gofer {
 
   data_model "RETH/ETH" {
     median {
-      min_values = 3
+      min_values = 2
       alias "RETH/ETH" {
         origin "balancerV2" { query = "RETH/WETH" }
       }
