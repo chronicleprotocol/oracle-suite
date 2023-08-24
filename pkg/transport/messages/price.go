@@ -40,6 +40,7 @@ var (
 	ErrPriceMessageTooLarge       = errors.New("price message too large")
 	ErrUnknownPriceMessageVersion = errors.New("unknown message version")
 	ErrInvalidPriceMessage        = errors.New("invalid price message")
+	ErrMessageTooLarge            = errors.New("message too large")
 )
 
 // Price is a message that contains a price and a trace of the price.
@@ -88,7 +89,7 @@ func (p *Price) MarshallBinary() ([]byte, error) {
 			return nil, err
 		}
 		if len(data) > priceMessageMaxSize {
-			return nil, ErrEventMessageTooLarge
+			return nil, ErrMessageTooLarge
 		}
 		return data, nil
 	case 0:

@@ -113,7 +113,7 @@ func (m *Median) Bar(ctx context.Context) (int, error) {
 
 func (m *Median) Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []time.Time, v []uint8, r []*big.Int, s []*big.Int) error {
 	intVal := make([]*big.Int, len(val))
-	intAge := make([]int64, len(age))
+	intAge := make([]uint64, len(age))
 	for i, v := range val {
 		if v.Precision() != MedianPricePrecision {
 			return fmt.Errorf("median: poke failed: invalid precision: %d", v.Precision())
@@ -121,7 +121,7 @@ func (m *Median) Poke(ctx context.Context, val []*bn.DecFixedPointNumber, age []
 		intVal[i] = v.RawBigInt()
 	}
 	for i, v := range age {
-		intAge[i] = v.Unix()
+		intAge[i] = uint64(v.Unix())
 	}
 	calldata, err := abiMedian["poke"].EncodeArgs(intVal, intAge, v, r, s)
 	if err != nil {

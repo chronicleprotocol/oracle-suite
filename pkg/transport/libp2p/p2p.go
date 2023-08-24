@@ -65,8 +65,6 @@ const maxBytesPerSecond float64 = 10 * 1024 * 1024 // 10MB/s
 const priceUpdateInterval = time.Minute
 const minAssetPairs = 10                 // below that, score becomes negative
 const maxAssetPairs = 100                // it limits the maximum possible score only, not the number of supported pairs
-const minEventsPerSecond = 0.1           // below that, score becomes negative
-const maxEventsPerSecond = 1             // it limits the maximum possible score only, not the number of events
 const maxInvalidMsgsPerHour float64 = 60 // per topic
 
 // Timeout has to be a little longer because signing messages using
@@ -225,10 +223,6 @@ func New(cfg Config) (*P2P, error) {
 		if err != nil {
 			return nil, fmt.Errorf("P2P transport error: invalid price topic scoring parameters: %w", err)
 		}
-		eventTopicScoreParams, err := calculateEventTopicScoreParams(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("P2P transport error: invalid event topic scoring parameters: %w", err)
-		}
 		opts = append(opts,
 			internal.MessageLogger(),
 			internal.RateLimiter(rateLimiterConfig(cfg)),
@@ -236,14 +230,10 @@ func New(cfg Config) (*P2P, error) {
 				if topic == messages.PriceV0MessageName || topic == messages.PriceV1MessageName { //nolint:staticcheck
 					return priceTopicScoreParams
 				}
-				if topic == messages.EventV1MessageName {
-					return eventTopicScoreParams
-				}
 				return nil
 			}),
 			messageValidator(cfg.Topics, logger), // must be registered before any other validator
 			feedValidator(cfg.AuthorAllowlist, logger),
-			eventValidator(logger),
 			priceValidator(logger, cryptoETH.ECRecoverer),
 		)
 		if cfg.MessagePrivKey != nil {

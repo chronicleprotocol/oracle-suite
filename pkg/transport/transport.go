@@ -113,7 +113,6 @@ var AllMessagesMap = MessageMap{
 	messages.PriceV1MessageName:                    (*messages.Price)(nil), //nolint:staticcheck
 	messages.DataPointV1MessageName:                (*messages.DataPoint)(nil),
 	messages.GreetV1MessageName:                    (*messages.Greet)(nil),
-	messages.EventV1MessageName:                    (*messages.Event)(nil),
 	messages.MuSigStartV1MessageName:               (*messages.MuSigInitialize)(nil),
 	messages.MuSigTerminateV1MessageName:           (*messages.MuSigTerminate)(nil),
 	messages.MuSigCommitmentV1MessageName:          (*messages.MuSigCommitment)(nil),

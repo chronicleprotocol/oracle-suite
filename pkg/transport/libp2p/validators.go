@@ -87,33 +87,6 @@ func feedAllowed(addr types.Address, feeds []types.Address) bool {
 	return false
 }
 
-// eventValidator adds a validator for event messages.
-func eventValidator(logger log.Logger) internal.Options {
-	return func(n *internal.Node) error {
-		n.AddValidator(func(ctx context.Context, topic string, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
-			eventMsg, ok := psMsg.ValidatorData.(*messages.Event)
-			if !ok {
-				return pubsub.ValidationAccept
-			}
-			feedAddr := ethkey.PeerIDToAddress(psMsg.GetFrom())
-			// Check when message was created, ignore if older than 5 min, reject if older than 10 min:
-			if time.Since(eventMsg.MessageDate) > 5*time.Minute {
-				logger.
-					WithField("peerID", psMsg.GetFrom().String()).
-					WithField("from", feedAddr.String()).
-					WithField("type", eventMsg.Type).
-					Warn("Event message rejected, the message is older than 5 min")
-				if time.Since(eventMsg.MessageDate) > 10*time.Minute {
-					return pubsub.ValidationReject
-				}
-				return pubsub.ValidationIgnore
-			}
-			return pubsub.ValidationAccept
-		})
-		return nil
-	}
-}
-
 // priceValidator adds a validator for price messages. The validator checks if
 // the price message is valid, and if the price is not older than 5 min.
 func priceValidator(logger log.Logger, recoverer crypto.Recoverer) internal.Options {
