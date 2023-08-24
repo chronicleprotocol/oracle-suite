@@ -192,7 +192,7 @@ gofer {
 
   data_model "AAVE/USD" {
     median {
-      min_values = 3
+      min_values = 4
       indirect {
         origin "binance" { query = "AAVE/USDT" }
         reference { data_model = "USDT/USD" }
@@ -695,7 +695,7 @@ gofer {
 
   data_model "USDC/USD" {
     median {
-      min_values = 4
+      min_values = 3
       indirect {
         origin "binance" { query = "BTC/USDC" }
         reference { data_model = "BTC/USD" }
