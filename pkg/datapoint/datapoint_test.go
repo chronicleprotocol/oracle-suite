@@ -92,8 +92,8 @@ func TestDataPoint_LogFields(t *testing.T) {
 				Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 			},
 			expected: log.Fields{
-				"time":  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
-				"value": "value",
+				"point.time":  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+				"point.value": "value",
 			},
 		},
 		{
@@ -104,9 +104,9 @@ func TestDataPoint_LogFields(t *testing.T) {
 				Error: errors.New("some error"),
 			},
 			expected: log.Fields{
-				"time":  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
-				"value": "value",
-				"error": "some error",
+				"point.time":  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+				"point.value": "value",
+				"point.error": "some error",
 			},
 		},
 		{
@@ -119,16 +119,16 @@ func TestDataPoint_LogFields(t *testing.T) {
 				},
 			},
 			expected: log.Fields{
-				"time":     time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
-				"value":    "value",
-				"meta.key": "value",
+				"point.time":     time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+				"point.value":    "value",
+				"point.meta.key": "value",
 			},
 		},
 		{
 			name:      "empty data point",
 			dataPoint: Point{},
 			expected: log.Fields{
-				"error": "value is not set",
+				"point.error": "value is not set",
 			},
 		},
 	}

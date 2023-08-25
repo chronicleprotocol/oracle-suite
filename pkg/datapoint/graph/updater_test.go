@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
@@ -61,7 +60,7 @@ func TestUpdater(t *testing.T) {
 			},
 			null.New(),
 		)
-		require.NoError(t, u.Update(context.Background(), g))
+		u.Update(context.Background(), g)
 		assert.Equal(t, "query_a", g[0].DataPoint().Value.Print())
 		assert.Equal(t, "query_b", g[1].DataPoint().Value.Print())
 	})
@@ -96,7 +95,7 @@ func TestUpdater(t *testing.T) {
 			},
 			null.New(),
 		)
-		require.NoError(t, u.Update(context.Background(), g))
+		u.Update(context.Background(), g)
 		assert.Equal(t, "this_should_not_be_overwritten", g[0].DataPoint().Value.Print())
 	})
 	t.Run("missing tick", func(t *testing.T) {
@@ -136,7 +135,7 @@ func TestUpdater(t *testing.T) {
 			},
 			null.New(),
 		)
-		require.NoError(t, u.Update(context.Background(), g))
+		u.Update(context.Background(), g)
 		assert.Error(t, g[0].DataPoint().Validate())
 		assert.Contains(t, g[0].DataPoint().Validate().Error(), "data point is not set")
 		assert.Equal(t, "query_b", g[1].DataPoint().Value.Print())
@@ -182,7 +181,7 @@ func TestUpdater(t *testing.T) {
 			},
 			l,
 		)
-		require.NoError(t, u.Update(context.Background(), g))
+		u.Update(context.Background(), g)
 		assert.Error(t, g[0].DataPoint().Validate())
 		assert.Contains(t, g[0].DataPoint().Validate().Error(), "data point is not set")
 		assert.Contains(t, logs, "Panic while fetching data points from the origin")
