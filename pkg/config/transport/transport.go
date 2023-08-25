@@ -238,7 +238,7 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 
 func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 	// Configure HTTP client:
-	httpClient := http.DefaultClient
+	httpClient := &http.Client{}
 	if len(c.WebAPI.Socks5ProxyAddr) != 0 {
 		dialer, err := proxy.SOCKS5("tcp", c.WebAPI.Socks5ProxyAddr, nil, proxy.Direct)
 		if err != nil {

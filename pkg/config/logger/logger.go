@@ -206,7 +206,7 @@ func (c *Config) grafanaLogger(d Dependencies) (log.Logger, error) {
 		Interval:         uint(interval),
 		GraphiteEndpoint: c.Grafana.Endpoint.String(),
 		GraphiteAPIKey:   c.Grafana.APIKey,
-		HTTPClient:       http.DefaultClient,
+		HTTPClient:       &http.Client{},
 		Logger:           d.BaseLogger,
 	})
 	if err != nil {
