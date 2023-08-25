@@ -37,12 +37,12 @@ variables {
         "oracleExpiration" : 86400,
         "oracleSpread" : 4
       },
-      "MANA/USD" : {
-        "msgExpiration" : 1800,
-        "oracle" : "0x681c4F8f69cF68852BAd092086ffEaB31F5B812c",
-        "oracleExpiration" : 86400,
-        "oracleSpread" : 4
-      },
+      #      "MANA/USD" : {
+      #        "msgExpiration" : 1800,
+      #        "oracle" : "0x681c4F8f69cF68852BAd092086ffEaB31F5B812c",
+      #        "oracleExpiration" : 86400,
+      #        "oracleSpread" : 4
+      #      },
       "MATIC/USD" : {
         "msgExpiration" : 1800,
         "oracle" : "0xfe1e93840D286C83cF7401cB021B94b5bc1763d2",

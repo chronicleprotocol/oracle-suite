@@ -3,12 +3,12 @@ gofer {
     type = "balancerV2"
     contracts "ethereum" {
       addresses = {
-        "WETH/GNO" = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
-        "RETH/WETH" = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
+        "WETH/GNO"    = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
+        "RETH/WETH"   = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
         "WSTETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
       }
       references = {
-        "RETH/WETH" = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
+        "RETH/WETH"   = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
         "WSTETH/WETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" # token0 of WSTETH/WETH
       }
     }
@@ -48,11 +48,12 @@ gofer {
         "DAI/USDC/USDT" = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
         "FRAX/USDC"     = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
       }
-      addresses2 = { # uint256, cryptoswap
-        "WETH/LDO" = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
+      addresses2 = {
+        # uint256, cryptoswap
+        "WETH/LDO"       = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
         "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
-        "WETH/YFI" = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
-        "WETH/RETH" = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
+        "WETH/YFI"       = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
+        "WETH/RETH"      = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
       }
     }
   }
@@ -86,7 +87,7 @@ gofer {
 
   origin "ishares" {
     type = "ishares"
-    url = "https://ishares.com/uk/individual/en/products/287340/ishares-treasury-bond-1-3yr-ucits-etf?switchLocale=y&siteEntryPassthrough=true"
+    url  = "https://ishares.com/uk/individual/en/products/287340/ishares-treasury-bond-1-3yr-ucits-etf?switchLocale=y&siteEntryPassthrough=true"
   }
 
   origin "kraken" {
@@ -129,9 +130,9 @@ gofer {
     type = "sushiswap"
     contracts "ethereum" {
       addresses = {
-        "YFI/WETH" = "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c",
-        "WETH/CRV" = "0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009",
-        "DAI/WETH" = "0xC3D03e4F041Fd4cD388c549Ee2A29a9E5075882f",
+        "YFI/WETH"  = "0x088ee5007c98a9677165d78dd2109ae4a3d04d0c",
+        "WETH/CRV"  = "0x58Dc5a51fE44589BEb22E8CE67720B5BC5378009",
+        "DAI/WETH"  = "0xC3D03e4F041Fd4cD388c549Ee2A29a9E5075882f",
         "WBTC/WETH" = "0xCEfF51756c56CeFFCA006cD410B03FFC46dd3a58",
         "LINK/WETH" = "0xC40D16476380e4037e6b1A2594cAF6a6cc8Da967"
       }
@@ -143,8 +144,8 @@ gofer {
     contracts "ethereum" {
       addresses = {
         "STETH/WETH" = "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4",
-        "MKR/DAI" = "0x517F9dD285e75b599234F7221227339478d0FcC8",
-        "YFI/WETH" = "0x2fDbAdf3C4D5A8666Bc06645B8358ab803996E28"
+        "MKR/DAI"    = "0x517F9dD285e75b599234F7221227339478d0FcC8",
+        "YFI/WETH"   = "0x2fDbAdf3C4D5A8666Bc06645B8358ab803996E28"
       }
     }
   }
@@ -153,25 +154,25 @@ gofer {
     type = "uniswapV3"
     contracts "ethereum" {
       addresses = {
-        "GNO/WETH"  = "0xf56D08221B5942C428Acc5De8f78489A97fC5599",
-        "LINK/WETH" = "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8",
-        "MKR/USDC"  = "0xC486Ad2764D55C7dc033487D634195d6e4A6917E",
-        "MKR/WETH"  = "0xe8c6c9227491C0a8156A0106A0204d881BB7E531",
-        "USDC/WETH" = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
-        "YFI/WETH"  = "0x04916039B1f59D9745Bf6E0a21f191D1e0A84287",
-        "AAVE/WETH"  = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB",
-        "WETH/CRV"  = "0x919Fa96e88d67499339577Fa202345436bcDaf79",
-        "DAI/USDC"  = "0x5777d92f208679db4b9778590fa3cab3ac9e2168",
-        "FRAX/USDT" = "0xc2A856c3afF2110c1171B8f942256d40E980C726",
-        "GNO/WETH" = "0xf56D08221B5942C428Acc5De8f78489A97fC5599",
-        "LDO/WETH" = "0xa3f558aebAecAf0e11cA4b2199cC5Ed341edfd74",
-        "UNI/WETH"  = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801",
-        "WBTC/WETH"  = "0x4585FE77225b41b697C938B018E2Ac67Ac5a20c0",
-        "USDC/SNX" = "0x020C349A0541D76C16F501Abc6B2E9c98AdAe892",
-        "ARB/WETH" = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
-        "DAI/FRAX" = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
+        "GNO/WETH"    = "0xf56D08221B5942C428Acc5De8f78489A97fC5599",
+        "LINK/WETH"   = "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8",
+        "MKR/USDC"    = "0xC486Ad2764D55C7dc033487D634195d6e4A6917E",
+        "MKR/WETH"    = "0xe8c6c9227491C0a8156A0106A0204d881BB7E531",
+        "USDC/WETH"   = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
+        "YFI/WETH"    = "0x04916039B1f59D9745Bf6E0a21f191D1e0A84287",
+        "AAVE/WETH"   = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB",
+        "WETH/CRV"    = "0x919Fa96e88d67499339577Fa202345436bcDaf79",
+        "DAI/USDC"    = "0x5777d92f208679db4b9778590fa3cab3ac9e2168",
+        "FRAX/USDT"   = "0xc2A856c3afF2110c1171B8f942256d40E980C726",
+        "GNO/WETH"    = "0xf56D08221B5942C428Acc5De8f78489A97fC5599",
+        "LDO/WETH"    = "0xa3f558aebAecAf0e11cA4b2199cC5Ed341edfd74",
+        "UNI/WETH"    = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801",
+        "WBTC/WETH"   = "0x4585FE77225b41b697C938B018E2Ac67Ac5a20c0",
+        "USDC/SNX"    = "0x020C349A0541D76C16F501Abc6B2E9c98AdAe892",
+        "ARB/WETH"    = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
+        "DAI/FRAX"    = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
         "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
-        "MATIC/WETH" = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
+        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
       }
     }
   }
@@ -687,7 +688,7 @@ gofer {
       origin "bitstamp" { query = "UNI/USD" }
       indirect {
         alias "UNI/ETH" {
-          origin "uniswapV3" { query = "UNI/WETH"}
+          origin "uniswapV3" { query = "UNI/WETH" }
         }
         reference { data_model = "ETH/USD" }
       }
@@ -701,7 +702,7 @@ gofer {
         origin "binance" { query = "BTC/USDC" }
         reference { data_model = "BTC/USD" }
       }
-      origin "kraken" { query ="USDC/USD" }
+      origin "kraken" { query = "USDC/USD" }
       indirect {
         origin "curve" { query = "USDC/USDT" }
         reference { data_model = "USDT/USD" }
@@ -830,7 +831,8 @@ gofer {
   }
 
   dynamic "data_model" {
-    for_each = length(var.ghost_pairs) == 0 ? var.data_symbols : var.ghost_pairs
+    #TODO: use contract list as a reference
+    for_each = keys(var.median_contracts["ethereum-mainnet"])
     iterator = symbol
     labels   = [replace(symbol.value, "/", "")]
     content {
@@ -838,3 +840,4 @@ gofer {
     }
   }
 }
+
