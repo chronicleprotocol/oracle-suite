@@ -57,9 +57,9 @@ type StoredDataPoint struct {
 // LogFields returns a set of log fields for the data point.
 func (o StoredDataPoint) LogFields() log.Fields {
 	f := log.Fields{
-		"model":     o.Model,
-		"from":      o.From.String(),
-		"signature": o.Signature.String(),
+		"point.model":     o.Model,
+		"point.from":      o.From.String(),
+		"point.signature": o.Signature.String(),
 	}
 	for k, v := range o.DataPoint.LogFields() {
 		f[k] = v

@@ -39,10 +39,9 @@ func NewUpdater(origins map[string]origin.Origin, logger log.Logger) *Updater {
 // Update updates the origin nodes in the given graphs.
 //
 // Only origin nodes that are not fresh will be updated.
-func (u *Updater) Update(ctx context.Context, graphs []Node) error {
+func (u *Updater) Update(ctx context.Context, graphs []Node) {
 	nodes, queries := u.identifyNodesToUpdate(graphs)
 	u.updateNodesWithDataPoints(nodes, u.fetchDataPoints(ctx, queries))
-	return nil
 }
 
 // identifyNodesToUpdate returns the nodes that need to be updated along

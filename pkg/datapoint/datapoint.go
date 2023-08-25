@@ -292,16 +292,16 @@ func (p Point) MarshalTrace() ([]byte, error) {
 func (p Point) LogFields() log.Fields {
 	fields := log.Fields{}
 	if p.Value != nil {
-		fields["value"] = p.Value.Print()
+		fields["point.value"] = p.Value.Print()
 	}
 	if !p.Time.IsZero() {
-		fields["time"] = p.Time
+		fields["point.time"] = p.Time
 	}
 	if err := p.Validate(); err != nil {
-		fields["error"] = err.Error()
+		fields["point.error"] = err.Error()
 	}
 	for k, v := range p.Meta {
-		fields["meta."+k] = v
+		fields["point.meta."+k] = v
 	}
 	return fields
 }

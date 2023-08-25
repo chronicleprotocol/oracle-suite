@@ -49,9 +49,7 @@ func (p Provider) DataPoint(ctx context.Context, model string) (datapoint.Point,
 		return datapoint.Point{}, ErrModelNotFound{model: model}
 	}
 	if p.updater != nil {
-		if err := p.updater.Update(ctx, []Node{node}); err != nil {
-			return datapoint.Point{}, err
-		}
+		p.updater.Update(ctx, []Node{node})
 	}
 	return node.DataPoint(), nil
 }
@@ -67,9 +65,7 @@ func (p Provider) DataPoints(ctx context.Context, models ...string) (map[string]
 		nodes[i] = node
 	}
 	if p.updater != nil {
-		if err := p.updater.Update(ctx, nodes); err != nil {
-			return nil, err
-		}
+		p.updater.Update(ctx, nodes)
 	}
 	points := make(map[string]datapoint.Point, len(models))
 	for i, model := range models {

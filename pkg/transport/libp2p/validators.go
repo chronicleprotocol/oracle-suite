@@ -47,8 +47,11 @@ func messageValidator(topics map[string]transport.Message, logger log.Logger) in
 				if err != nil {
 					feedAddr := ethkey.PeerIDToAddress(psMsg.GetFrom())
 					logger.
-						WithField("peerID", psMsg.GetFrom().String()).
-						WithField("peerAddr", feedAddr).
+						WithError(err).
+						WithFields(log.Fields{
+							"peerID":   psMsg.GetFrom().String(),
+							"peerAddr": feedAddr.String(),
+						}).
 						Warn("The message has been rejected, unable to unmarshall")
 					return pubsub.ValidationReject
 				}
@@ -67,8 +70,10 @@ func feedValidator(feeds []types.Address, logger log.Logger) internal.Options {
 			from := ethkey.PeerIDToAddress(psMsg.GetFrom())
 			if !feedAllowed(from, feeds) {
 				logger.
-					WithField("peerID", psMsg.GetFrom().String()).
-					WithField("peerAddr", from.String()).
+					WithFields(log.Fields{
+						"peerID":   psMsg.GetFrom().String(),
+						"peerAddr": from.String(),
+					}).
 					Warn("Message ignored, feed is not allowed to send messages")
 				return pubsub.ValidationIgnore
 			}

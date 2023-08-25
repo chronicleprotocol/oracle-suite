@@ -17,6 +17,7 @@ package feed
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
@@ -164,9 +165,8 @@ func (f *Feed) broadcasterRoutine() {
 		case <-f.ctx.Done():
 			return
 		case <-f.interval.TickCh():
-			// Fetch all data points from the provider to update them
-			// at once.
-			_, err := f.dataProvider.DataPoints(f.ctx, f.dataModels...)
+			// Fetch data points from the data provider.
+			points, err := f.dataProvider.DataPoints(f.ctx, f.dataModels...)
 			if err != nil {
 				f.log.
 					WithError(err).
@@ -175,12 +175,20 @@ func (f *Feed) broadcasterRoutine() {
 			}
 
 			// Send data points to the network.
-			for _, model := range f.dataModels {
-				point, err := f.dataProvider.DataPoint(f.ctx, model)
-				if err != nil {
+			for model, point := range points {
+				if err := point.Validate(); err != nil {
+					if log.IsLevel(f.log, log.Debug) {
+						trace, _ := json.Marshal(point)
+						f.log.
+							WithError(err).
+							WithFields(point.LogFields()).
+							WithField("trace", string(trace)).
+							Debug("Invalid data point trace")
+					}
 					f.log.
 						WithError(err).
-						Error("Unable to get data points")
+						WithFields(point.LogFields()).
+						Error("Unable to broadcast data point, data point is invalid")
 					continue
 				}
 				f.broadcast(model, point)

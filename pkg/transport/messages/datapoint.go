@@ -30,12 +30,13 @@ import (
 const DataPointV1MessageName = "data_point/v1"
 
 type DataPoint struct {
-	// Model of the data point.
+	// Model is the name of the data model.
 	Model string `json:"model"`
 
 	// Value is a binary representation of the data point.
 	Value datapoint.Point `json:"value"`
 
+	// Signature is the feed signature of the data point.
 	Signature types.Signature `json:"signature"`
 }
 
@@ -53,7 +54,16 @@ func (d *DataPoint) Unmarshall(b []byte) error {
 
 // MarshallBinary implements the transport.Message interface.
 func (d *DataPoint) MarshallBinary() ([]byte, error) {
-	value, err := d.Value.MarshalBinary()
+	// Copy of the data point without the trace to reduce the size of the
+	// message. In the future, this problem should be solved by using a
+	// compression algorithm.
+	cpy := datapoint.Point{
+		Value: d.Value.Value,
+		Time:  d.Value.Time,
+		Meta:  d.Value.Meta,
+		Error: d.Value.Error,
+	}
+	value, err := cpy.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +98,8 @@ func (d *DataPoint) LogFields() log.Fields {
 		return nil
 	}
 	f := log.Fields{
-		"model":     d.Model,
-		"signature": d.Signature.String(),
+		"point.model":     d.Model,
+		"point.signature": d.Signature.String(),
 	}
 	for k, v := range d.Value.LogFields() {
 		f[k] = v
