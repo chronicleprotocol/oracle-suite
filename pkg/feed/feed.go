@@ -115,7 +115,7 @@ func (f *Feed) Start(ctx context.Context) error {
 	f.log.
 		WithFields(log.Fields{
 			"dataModels": f.dataModels,
-			"interval":   f.interval,
+			"interval":   f.interval.Duration(),
 		}).
 		Debug("Starting")
 	go f.broadcasterRoutine()
