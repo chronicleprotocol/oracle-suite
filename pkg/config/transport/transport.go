@@ -237,6 +237,8 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 }
 
 func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
+	l := d.Logger.WithField("tag", "CONFIG_"+webapi.LoggerTag)
+
 	// Configure HTTP client:
 	httpClient := &http.Client{}
 	if len(c.WebAPI.Socks5ProxyAddr) != 0 {
@@ -254,6 +256,9 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 				return dialer.Dial(network, address)
 			},
 		}
+		l.WithField("address", c).
+			WithField("address", c.WebAPI.Socks5ProxyAddr).
+			Info("SOCKS5 proxy")
 	}
 
 	// Configure address book:
@@ -292,7 +297,6 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 	}
 
 	// Log consumers:
-	l := d.Logger.WithField("tag", "CONFIG_WEBAPI")
 	consumers, err := addressBook.Consumers(context.Background())
 	if err != nil {
 		l.WithError(err).Error("Failed to get consumers")

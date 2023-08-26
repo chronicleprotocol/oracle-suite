@@ -80,17 +80,20 @@ func Monitor() Options {
 				WithField("count", len(n.host.Network().Peers())).
 				Info("Peers")
 		}
+
 		notifeeCh := make(chan struct{})
 		notifee := &monitorNotifee{notifeeCh: notifeeCh}
+
 		n.AddNotifee(notifee)
 		n.AddNodeEventHandler(sets.NodeEventHandlerFunc(func(event interface{}) {
 			if _, ok := event.(sets.NodeStartedEvent); ok {
 				go func() {
-					t := time.NewTicker(time.Minute)
+					t := time.NewTicker(10 * time.Minute)
 					for {
 						select {
 						case <-notifeeCh:
 							log()
+							t.Reset(10 * time.Minute)
 						case <-t.C:
 							log()
 						case <-n.ctx.Done():

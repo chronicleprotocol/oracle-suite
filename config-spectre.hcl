@@ -1,6 +1,6 @@
 variables {
   spectre_target_network = env("CFG_SPECTRE_TARGET_NETWORK", "")
-  spectre_pairs          = explode(",", env("CFG_SPECTRE_PAIRS", ""))
+  spectre_pairs          = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SPECTRE_PAIRS", ""))
 }
 
 spectre {
@@ -19,7 +19,7 @@ spectre {
       contract_addr = contract.value.oracle
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = replace(contract.key, "/", "")
@@ -49,7 +49,7 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = contract.key
@@ -79,7 +79,7 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = contract.key

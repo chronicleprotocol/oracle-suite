@@ -831,7 +831,6 @@ gofer {
   }
 
   dynamic "data_model" {
-    #TODO: use contract list as a reference
     for_each = keys(var.median_contracts["ethereum-mainnet"])
     iterator = symbol
     labels   = [replace(symbol.value, "/", "")]

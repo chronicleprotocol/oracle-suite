@@ -96,7 +96,7 @@ type configCommon struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
-const LoggerTag = "CONFIG_RELAY"
+const LoggerTag = "CONFIG_" + relay.LoggerTag
 
 func (c *Config) Relay(d Dependencies) (*Services, error) {
 	logger := d.Logger.
