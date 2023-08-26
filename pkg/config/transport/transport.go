@@ -238,7 +238,7 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 
 func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 	// Configure HTTP client:
-	httpClient := http.DefaultClient
+	httpClient := &http.Client{}
 	if len(c.WebAPI.Socks5ProxyAddr) != 0 {
 		dialer, err := proxy.SOCKS5("tcp", c.WebAPI.Socks5ProxyAddr, nil, proxy.Direct)
 		if err != nil {
@@ -257,12 +257,8 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 	}
 
 	// Configure address book:
-	var (
-		addressBook  webapi.AddressBook
-		addressBooks []webapi.AddressBook
-	)
-	switch {
-	case c.WebAPI.EthereumAddressBook != nil:
+	var addressBooks []webapi.AddressBook
+	if c.WebAPI.EthereumAddressBook != nil {
 		rpcClient := d.Clients[c.WebAPI.EthereumAddressBook.EthereumClient]
 		if rpcClient == nil {
 			return nil, &hcl.Diagnostic{
@@ -277,24 +273,33 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 			c.WebAPI.EthereumAddressBook.ContractAddr,
 			time.Hour,
 		))
-	case c.WebAPI.StaticAddressBook != nil:
+	}
+	if c.WebAPI.StaticAddressBook != nil {
 		addressBooks = append(
 			addressBooks,
 			webapi.NewStaticAddressBook(c.WebAPI.StaticAddressBook.Addresses),
 		)
 	}
+
+	var addressBook webapi.AddressBook
 	switch {
 	case len(addressBooks) == 0:
-		return nil, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Validation error",
-			Detail:   "At least one address book must be configured.",
-			Subject:  &c.WebAPI.Range,
-		}
+		addressBook = webapi.NullAddressBook{}
 	case len(addressBooks) == 1:
 		addressBook = addressBooks[0]
 	default:
 		addressBook = webapi.NewMultiAddressBook(addressBooks...)
+	}
+
+	// Log consumers:
+	l := d.Logger.WithField("tag", "CONFIG_WEBAPI")
+	consumers, err := addressBook.Consumers(context.Background())
+	if err != nil {
+		l.WithError(err).Error("Failed to get consumers")
+	}
+	for _, c := range consumers {
+		l.WithField("address", c).
+			Info("Consumer")
 	}
 
 	// Configure signer:

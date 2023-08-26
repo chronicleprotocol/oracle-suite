@@ -1,9 +1,26 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package transport
 
 import (
+	"context"
 	"testing"
 
 	"github.com/defiweb/go-eth/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -63,8 +80,16 @@ func TestConfig(t *testing.T) {
 				keyRegistry := ethereum.KeyRegistry{
 					"key": key,
 				}
+				rpc := &mocks.RPC{}
+				rpc.On("Call", context.Background(), types.Call{
+					To:    types.AddressFromHexPtr("0x5678901234567890123456789012345678901234"),
+					Input: hexutil.MustDecode("0x0f560cd7"),
+				}, types.LatestBlockNumber).Return(
+					hexutil.MustDecode("0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000"),
+					nil,
+				)
 				clientRegistry := ethereum.ClientRegistry{
-					"client": &mocks.RPC{},
+					"client": rpc,
 				}
 				transport, err := cfg.Transport(Dependencies{
 					Keys:     keyRegistry,

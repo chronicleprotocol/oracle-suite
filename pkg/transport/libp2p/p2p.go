@@ -208,12 +208,12 @@ func New(cfg Config) (*P2P, error) {
 	}
 	for _, addr := range cfg.AuthorAllowlist {
 		logger.
-			WithField("addr", addr.String()).
+			WithField("address", addr.String()).
 			Info("Feed")
 	}
 	for _, addr := range cfg.BootstrapAddrs {
 		logger.
-			WithField("addr", addr).
+			WithField("address", addr).
 			Info("Bootstrap")
 	}
 

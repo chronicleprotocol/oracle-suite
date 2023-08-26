@@ -21,6 +21,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 const shutdownTimeout = 1 * time.Second
@@ -33,6 +35,37 @@ type MiddlewareFunc func(http.Handler) http.Handler
 
 func (m MiddlewareFunc) Handle(h http.Handler) http.Handler {
 	return m(h)
+}
+
+type Service interface {
+	supervisor.Service
+	SetHandler(http.Handler)
+}
+
+type NullServer struct {
+	waitCh chan error
+}
+
+func (s *NullServer) Start(ctx context.Context) error {
+	if s.waitCh != nil {
+		return errors.New("service can be started only once")
+	}
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
+	s.waitCh = make(chan error)
+	go func() {
+		<-ctx.Done()
+		close(s.waitCh)
+	}()
+	return nil
+}
+
+func (s *NullServer) Wait() <-chan error {
+	return s.waitCh
+}
+
+func (s *NullServer) SetHandler(http.Handler) {
 }
 
 // HTTPServer wraps the default net/http server to add the ability to use

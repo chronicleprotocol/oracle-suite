@@ -54,9 +54,12 @@ type Config struct {
 	DataProvider datapoint.Provider
 
 	// Signers is a list of signers used to sign data points.
+	//
+	// If none of the provided signers can sign the data point, it will be
+	// skipped.
 	Signers []datapoint.Signer
 
-	// Transport is an implementation of transport used to send prices to
+	// Transport is an implementation of transport used to send data points to
 	// the network.
 	Transport transport.Service
 
@@ -73,30 +76,31 @@ func New(cfg Config) (*Feed, error) {
 	if cfg.DataModels == nil {
 		return nil, errors.New("data provider must not be nil")
 	}
+	if cfg.DataProvider == nil {
+		return nil, errors.New("data provider must not be nil")
+	}
 	if cfg.Transport == nil {
 		return nil, errors.New("transport must not be nil")
+	}
+	if len(cfg.DataModels) == 0 {
+		return nil, errors.New("at least one data model must be provided")
+	}
+	if len(cfg.Signers) == 0 {
+		return nil, errors.New("at least one signer must be provided")
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
-
-	ll := cfg.Logger.WithField("tag", LoggerTag)
-	for _, model := range cfg.DataModels {
-		ll.
-			WithField("model", model).
-			Info("Data model configured")
-	}
-
-	g := &Feed{
+	f := &Feed{
 		waitCh:       make(chan error),
-		log:          ll,
+		log:          cfg.Logger.WithField("tag", LoggerTag),
 		dataProvider: cfg.DataProvider,
 		dataModels:   cfg.DataModels,
 		signers:      cfg.Signers,
 		transport:    cfg.Transport,
 		interval:     cfg.Interval,
 	}
-	return g, nil
+	return f, nil
 }
 
 // Start implements the supervisor.Service interface.
@@ -107,9 +111,13 @@ func (f *Feed) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	f.log.Debug("Starting")
 	f.ctx = ctx
-	f.interval.Start(f.ctx)
+	f.log.
+		WithFields(log.Fields{
+			"dataModels": f.dataModels,
+			"interval":   f.interval,
+		}).
+		Debug("Starting")
 	go f.broadcasterRoutine()
 	go f.contextCancelHandler()
 	return nil
@@ -155,11 +163,12 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		f.log.
 			WithField("model", model).
 			WithFields(point.LogFields()).
-			Warn("Unable to find handler for data point")
+			Warn("Unable to find signer for data point")
 	}
 }
 
 func (f *Feed) broadcasterRoutine() {
+	f.interval.Start(f.ctx)
 	for {
 		select {
 		case <-f.ctx.Done():
