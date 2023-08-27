@@ -81,7 +81,7 @@ type Meta struct {
 	UserAgent            string `json:"userAgent"`
 }
 
-func (p *ReceivedMessage) Fields() log.Fields {
+func ReceivedMessageFields(p ReceivedMessage) log.Fields {
 	c := p.Meta.Transport
 	if p.Meta.Topic != "" {
 		c += ":" + p.Meta.Topic

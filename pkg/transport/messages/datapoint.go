@@ -93,15 +93,12 @@ func (d *DataPoint) UnmarshallBinary(data []byte) error {
 	return nil
 }
 
-func (d *DataPoint) LogFields() log.Fields {
-	if d == nil {
-		return nil
-	}
+func DataPointMessageLogFields(d DataPoint) log.Fields {
 	f := log.Fields{
 		"point.model":     d.Model,
 		"point.signature": d.Signature.String(),
 	}
-	for k, v := range d.Value.LogFields() {
+	for k, v := range datapoint.PointLogFields(d.Value) {
 		f[k] = v
 	}
 	return f

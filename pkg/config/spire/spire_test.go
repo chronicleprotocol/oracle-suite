@@ -43,7 +43,7 @@ func TestConfig(t *testing.T) {
 			name: "client",
 			path: "config.hcl",
 			test: func(t *testing.T, cfg *Config) {
-				services, err := cfg.ClientServices(null.New())
+				services, err := cfg.ClientServices(null.New(), "", "")
 				require.NoError(t, err)
 				require.NotNil(t, services.SpireClient)
 				require.NotNil(t, services.Logger)

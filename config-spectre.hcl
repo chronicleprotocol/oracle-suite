@@ -38,7 +38,8 @@ spectre {
   dynamic "scribe" {
     for_each = {
       for k in var.contracts : k.address => k
-      if k.env == var.environment && k.chain == var.spectre_target_network && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
+      if k.env == var.environment && k.chain == var.spectre_target_network
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
     }
     iterator = contract
     content {
@@ -68,7 +69,9 @@ spectre {
   dynamic "optimistic_scribe" {
     for_each = {
       for k in var.contracts : k.address => k
-      if k.env == var.environment && k.chain == var.spectre_target_network && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false) && try(k.i_scribe_optimistic.challenge_period > 0, false)
+      if k.env == var.environment && k.chain == var.spectre_target_network
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
+      && try(k.i_scribe_optimistic.challenge_period > 0, false)
     }
     iterator = contract
     content {

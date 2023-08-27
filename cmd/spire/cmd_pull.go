@@ -47,12 +47,12 @@ func NewPullPriceCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *co
 		Use:   "price ASSET_PAIR FEED",
 		Args:  cobra.ExactArgs(2),
 		Short: "Pulls latest price for a given pair and feed",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cc *cobra.Command, args []string) error {
 			if err := f.Load(c); err != nil {
 				return fmt.Errorf(`config error: %w`, err)
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.ClientServices(l.Logger())
+			services, err := c.ClientServices(l.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}
@@ -93,12 +93,12 @@ func NewPullPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *c
 		Use:   "prices",
 		Args:  cobra.ExactArgs(0),
 		Short: "Pulls all prices",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
+		RunE: func(cc *cobra.Command, args []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.ClientServices(l.Logger())
+			services, err := c.ClientServices(l.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}
