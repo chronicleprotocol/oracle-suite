@@ -93,6 +93,7 @@ func ReceivedMessageFields(p ReceivedMessage) log.Fields {
 		"peerAddr":             p.Meta.PeerAddr,
 		"receivedFromPeerID":   p.Meta.ReceivedFromPeerID,
 		"receivedFromPeerAddr": p.Meta.ReceivedFromPeerAddr,
+		"userAgent":            p.Meta.UserAgent,
 	}
 }
 

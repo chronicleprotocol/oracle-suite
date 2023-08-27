@@ -831,7 +831,7 @@ gofer {
   }
 
   dynamic "data_model" {
-    for_each = keys(var.median_contracts["ethereum-mainnet"])
+    for_each = var.data_symbols
     iterator = symbol
     labels   = [replace(symbol.value, "/", "")]
     content {
