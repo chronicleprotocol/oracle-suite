@@ -40,6 +40,7 @@ func (m MiddlewareFunc) Handle(h http.Handler) http.Handler {
 type Service interface {
 	supervisor.Service
 	SetHandler(http.Handler)
+	Addr() net.Addr
 }
 
 type NullServer struct {
@@ -61,12 +62,9 @@ func (s *NullServer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *NullServer) Wait() <-chan error {
-	return s.waitCh
-}
-
-func (s *NullServer) SetHandler(http.Handler) {
-}
+func (s *NullServer) Wait() <-chan error      { return s.waitCh }
+func (s *NullServer) SetHandler(http.Handler) {}
+func (s *NullServer) Addr() net.Addr          { return nil }
 
 // HTTPServer wraps the default net/http server to add the ability to use
 // middlewares and support for the supervisor.Service interface.
@@ -144,6 +142,9 @@ func (s *HTTPServer) Wait() <-chan error {
 
 // Addr returns the server's network address.
 func (s *HTTPServer) Addr() net.Addr {
+	if s.ln == nil {
+		return nil
+	}
 	return s.ln.Addr()
 }
 

@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	netURL "net/url"
 	"reflect"
@@ -243,7 +244,6 @@ func New(cfg Config) (*WebAPI, error) {
 		cfg.Logger = null.New()
 	}
 	logger := cfg.Logger.WithField("tag", LoggerTag)
-
 	if cfg.Client == nil {
 		cfg.Client = &http.Client{Timeout: cfg.Timeout}
 	}
@@ -251,9 +251,6 @@ func New(cfg Config) (*WebAPI, error) {
 		if cfg.ListenAddr == "" {
 			cfg.Server = &httpserver.NullServer{}
 		} else {
-			logger.WithField("address", cfg.ListenAddr).
-				Info("HTTP server")
-
 			cfg.Server = httpserver.New(&http.Server{
 				Addr:              cfg.ListenAddr,
 				ReadTimeout:       cfg.Timeout,
@@ -293,7 +290,9 @@ func (w *WebAPI) Start(ctx context.Context) error {
 		return errors.New("context must not be nil")
 	}
 	w.ctx = ctx
-	w.log.Debug("Starting")
+	w.log.
+		WithField("address", addrToString(w.server.Addr())).
+		Debug("Starting")
 	for topic := range w.topics {
 		w.msgCh[topic] = make(chan transport.ReceivedMessage, messageChanSize)
 		w.msgChFO[topic] = chanutil.NewFanOut(w.msgCh[topic])
@@ -429,8 +428,7 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 //
 //nolint:funlen,gocyclo
 func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
+	// Skip if the context is canceled.
 	if w.ctx.Err() != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -465,7 +463,6 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Only requests with the protobuf content type are allowed.
-
 	if h := req.Header.Get("Content-Type"); h != "application/x-protobuf" {
 		w.log.
 			WithFields(fields).
@@ -485,8 +482,23 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var (
+		requestAuthor *types.Address
+		timestamp     time.Time
+		err           error
+	)
+	w.mu.RLock()
+	defer func() {
+		w.mu.RUnlock()
+		if requestAuthor != nil {
+			w.mu.Lock()
+			w.lastReqs[*requestAuthor] = timestamp
+			w.mu.Unlock()
+		}
+	}()
+
 	// Verify the request URL signature.
-	requestAuthor, timestamp, err := verifyURL(req.URL.String(), w.recover)
+	requestAuthor, timestamp, err = verifyURL(req.URL.String(), w.recover)
 	if err != nil {
 		w.log.
 			WithFields(fields).
@@ -534,7 +546,6 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
-	w.lastReqs[*requestAuthor] = timestamp
 
 	// Read the request body.
 	body, err := io.ReadAll(req.Body)
@@ -750,4 +761,11 @@ func gzipDecompress(data []byte) ([]byte, error) {
 	}
 	defer r.Close()
 	return io.ReadAll(r)
+}
+
+func addrToString(addr net.Addr) string {
+	if addr == nil {
+		return "<nil>"
+	}
+	return addr.String()
 }
