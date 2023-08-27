@@ -492,7 +492,9 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		w.mu.RUnlock()
 		if requestAuthor != nil {
 			w.mu.Lock()
-			w.lastReqs[*requestAuthor] = timestamp
+			if w.lastReqs[*requestAuthor].Before(timestamp) {
+				w.lastReqs[*requestAuthor] = timestamp
+			}
 			w.mu.Unlock()
 		}
 	}()
