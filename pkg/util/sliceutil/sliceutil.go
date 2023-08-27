@@ -65,3 +65,36 @@ func IsUnique[T comparable](s []T) bool {
 	}
 	return true
 }
+
+// Intersect returns a new slice with the elements that are present in all
+// slices.
+func Intersect[T comparable](slices ...[]T) []T {
+	if len(slices) == 0 {
+		return nil
+	}
+
+	// Find the smallest slice.
+	min := slices[0]
+	for _, s := range slices {
+		if len(s) < len(min) {
+			min = s
+		}
+	}
+
+	// Iterate over the smallest slice and check if the element is present in
+	// all other slices.
+	out := make([]T, 0, len(min))
+	for _, x := range min {
+		found := true
+		for _, s := range slices {
+			if !Contains(s, x) {
+				found = false
+				break
+			}
+		}
+		if found {
+			out = append(out, x)
+		}
+	}
+	return out
+}

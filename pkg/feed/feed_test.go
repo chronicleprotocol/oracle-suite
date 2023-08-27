@@ -96,6 +96,9 @@ func TestFeed_Broadcast(t *testing.T) {
 					Value: pointValue{value: "foo"},
 					Time:  time.Unix(100, 0),
 				}
+				p.On("ModelNames", mock.Anything).Return(
+					[]string{"AAABBB"},
+				)
 				p.On("DataPoints", mock.Anything, []string{"AAABBB"}).Return(
 					map[string]datapoint.Point{"AAABBB": point},
 					nil,
@@ -122,6 +125,9 @@ func TestFeed_Broadcast(t *testing.T) {
 					Value: pointValue{value: "foo"},
 					Time:  time.Unix(100, 0),
 				}
+				p.On("ModelNames", mock.Anything).Return(
+					[]string{"AAABBB", "CCCDDD"},
+				)
 				p.On("DataPoints", mock.Anything, []string{"AAABBB", "CCCDDD"}).Return(
 					map[string]datapoint.Point{"AAABBB": point},
 					nil,

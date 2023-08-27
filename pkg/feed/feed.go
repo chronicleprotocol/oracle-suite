@@ -23,6 +23,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -118,6 +119,7 @@ func (f *Feed) Start(ctx context.Context) error {
 			"interval":   f.interval.Duration(),
 		}).
 		Debug("Starting")
+	f.interval.Start(f.ctx)
 	go f.broadcasterRoutine()
 	go f.contextCancelHandler()
 	return nil
@@ -168,14 +170,19 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 }
 
 func (f *Feed) broadcasterRoutine() {
-	f.interval.Start(f.ctx)
 	for {
 		select {
 		case <-f.ctx.Done():
 			return
 		case <-f.interval.TickCh():
 			// Fetch data points from the data provider.
-			points, err := f.dataProvider.DataPoints(f.ctx, f.dataModels...)
+			points, err := f.dataProvider.DataPoints(
+				f.ctx,
+				sliceutil.Intersect(
+					f.dataProvider.ModelNames(f.ctx),
+					f.dataModels,
+				)...,
+			)
 			if err != nil {
 				f.log.
 					WithError(err).
