@@ -25,7 +25,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/chain"
@@ -34,6 +33,7 @@ import (
 
 type Dependencies struct {
 	AppName    string
+	AppVersion string
 	BaseLogger log.Logger
 }
 
@@ -126,7 +126,7 @@ func (c *Config) Logger(d Dependencies) (log.Logger, error) {
 	logger = logger.
 		WithFields(log.Fields{
 			"x-appName":    d.AppName,
-			"x-appVersion": suite.Version,
+			"x-appVersion": d.AppVersion,
 			"x-goVersion":  runtime.Version(),
 			"x-goOS":       runtime.GOOS,
 			"x-goArch":     runtime.GOARCH,

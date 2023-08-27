@@ -325,24 +325,27 @@ func (p *P2P) subscribe(topic string) error {
 }
 
 func (p *P2P) messagesLoop(topic string, sub *internal.Subscription) {
+	ps := p.node.Peerstore()
 	for {
 		nodeMsg, ok := <-sub.Next()
 		if !ok {
 			return
 		}
+		id := nodeMsg.GetFrom()
 		if msg, ok := nodeMsg.ValidatorData.(transport.Message); ok {
 			p.msgCh[topic] <- transport.ReceivedMessage{
 				Message: msg,
-				Author:  ethkey.PeerIDToAddress(nodeMsg.GetFrom()).Bytes(),
+				Author:  ethkey.PeerIDToAddress(id).Bytes(),
 				Data:    nodeMsg,
 				Meta: transport.Meta{
 					Transport:            TransportName,
 					Topic:                topic,
 					MessageID:            hex.EncodeToString([]byte(nodeMsg.ID)),
-					PeerID:               nodeMsg.GetFrom().String(),
-					PeerAddr:             ethkey.PeerIDToAddress(nodeMsg.GetFrom()).String(),
+					PeerID:               id.String(),
+					PeerAddr:             ethkey.PeerIDToAddress(id).String(),
 					ReceivedFromPeerID:   nodeMsg.ReceivedFrom.String(),
 					ReceivedFromPeerAddr: ethkey.PeerIDToAddress(nodeMsg.ReceivedFrom).String(),
+					UserAgent:            internal.GetPeerUserAgent(ps, id),
 				},
 			}
 		}

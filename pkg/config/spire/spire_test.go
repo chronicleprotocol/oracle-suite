@@ -34,7 +34,7 @@ func TestConfig(t *testing.T) {
 			name: "agent",
 			path: "config.hcl",
 			test: func(t *testing.T, cfg *Config) {
-				services, err := cfg.Services(null.New())
+				services, err := cfg.Services(null.New(), "", "")
 				require.NoError(t, err)
 				require.NotNil(t, services)
 			},
@@ -53,7 +53,7 @@ func TestConfig(t *testing.T) {
 			name: "stream",
 			path: "config.hcl",
 			test: func(t *testing.T, cfg *Config) {
-				services, err := cfg.StreamServices(null.New())
+				services, err := cfg.StreamServices(null.New(), "", "")
 				require.NoError(t, err)
 				require.NotNil(t, services.Transport)
 				require.NotNil(t, services.Logger)

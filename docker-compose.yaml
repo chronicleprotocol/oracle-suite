@@ -1,9 +1,27 @@
 version: '3'
 services:
-  _base:
+  _disabled: &disabled
     image: hello-world
     profiles:
       - disabled
+  #    volumes:
+  #      - ./config.hcl:/usr/share/chronicle-suite/config.hcl
+  #      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
+  #      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
+  #      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
+  #      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
+  #      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
+  #      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
+  #      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
+  #      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
+  #      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
+  #      - ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
+  #    command:
+  #      - run
+  #      - -v
+  #      - debug
+  _base:
+    <<: *disabled
     environment: &base
       CFG_ENVIRONMENT: "stage"
       CFG_ITEM_SEPARATOR: "\n"
@@ -19,9 +37,7 @@ services:
         /dns/bootstrap/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq
 
   _base_ghost:
-    image: hello-world
-    profiles:
-      - disabled
+    <<: *disabled
     environment: &base_ghost
       <<: *base
 
@@ -49,13 +65,11 @@ services:
       CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
   _base_spectre:
-    image: hello-world
-    profiles:
-      - disabled
+    <<: *disabled
     environment: &base_spectre
       <<: *base
 
-      CFG_SPECTRE_INTERVAL: 60
+      CFG_SPECTRE_INTERVAL: 10
       CFG_SPECTRE_PAIRS: |-
         ETH/USD
 
@@ -95,7 +109,9 @@ services:
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
     command:
       - "stream"
-      #- "data_point/v1"
+      - "-v"
+      - "debug"
+      #      - "data_point/v1"
       - "greet/v1"
       - "musig_signature/v1"
       - "musig_optimistic_signature/v1"
@@ -114,18 +130,6 @@ services:
       CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
   ghost1:
-    volumes:
-      - ./config.hcl:/usr/share/chronicle-suite/config.hcl
-      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
-      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
-      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
-      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
-      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
-      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
-      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
-      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
-      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
-      - ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     environment:
       <<: *base_ghost
@@ -135,6 +139,7 @@ services:
       CFG_ETH_KEYS: ${ETH_KEYS_A}
 
   ghost2:
+    <<: *disabled
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     environment:
       <<: *base_ghost

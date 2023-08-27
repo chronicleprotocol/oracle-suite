@@ -19,15 +19,17 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 )
 
 const LoggerTag = "SUPERVISOR"
 
 type Config interface {
-	Services(log.Logger) (Service, error)
+	Services(logger log.Logger, appName string, appVersion string) (Service, error)
 }
 
 // Service that could be managed by Supervisor.
@@ -69,6 +71,7 @@ func (s *Supervisor) Watch(services ...Service) {
 	if s.ctx != nil {
 		s.log.Panic("supervisor was already started")
 	}
+	services = append(services, sysmon.New(time.Minute, s.log))
 	s.services = append(s.services, services...)
 }
 

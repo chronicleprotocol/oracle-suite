@@ -78,6 +78,7 @@ type Meta struct {
 	PeerAddr             string `json:"peerAddr"`
 	ReceivedFromPeerID   string `json:"receivedFromPeerID"`
 	ReceivedFromPeerAddr string `json:"receivedFromPeerAddr"`
+	UserAgent            string `json:"userAgent"`
 }
 
 func (p *ReceivedMessage) Fields() log.Fields {
