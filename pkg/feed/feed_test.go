@@ -206,7 +206,8 @@ func TestFeed_Start(t *testing.T) {
 
 	// Create a new feed.
 	feed, err := New(Config{
-		DataModels:   []string{},
+		DataModels:   []string{"AAABBB"},
+		Signers:      []datapoint.Signer{mockSigner{}},
 		DataProvider: dataProvider,
 		Transport:    localTransport,
 		Interval:     timeutil.NewTicker(time.Second),
