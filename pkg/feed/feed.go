@@ -197,7 +197,7 @@ func (f *Feed) broadcasterRoutine() {
 						trace, _ := json.Marshal(point)
 						f.log.
 							WithError(err).
-							WithFields(point.LogFields()).
+							WithFields(datapoint.PointLogFields(point)).
 							WithField("trace", string(trace)).
 							Debug("Invalid data point trace")
 					}
