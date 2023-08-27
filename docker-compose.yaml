@@ -5,6 +5,7 @@ services:
     profiles:
       - disabled
     environment: &base
+      CFG_ENVIRONMENT: "stage"
       CFG_ITEM_SEPARATOR: "\n"
       CFG_FEEDS: |-
         ${ETH_FROM_A}
@@ -94,7 +95,7 @@ services:
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
     command:
       - "stream"
-      #      - "data_point/v1"
+      #- "data_point/v1"
       - "greet/v1"
       - "musig_signature/v1"
       - "musig_optimistic_signature/v1"
@@ -113,6 +114,18 @@ services:
       CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
   ghost1:
+    volumes:
+      - ./config.hcl:/usr/share/chronicle-suite/config.hcl
+      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
+      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
+      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
+      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
+      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
+      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
+      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
+      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
+      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
+      - ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     environment:
       <<: *base_ghost
