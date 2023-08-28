@@ -98,3 +98,19 @@ func Intersect[T comparable](slices ...[]T) []T {
 	}
 	return out
 }
+
+func Put[T comparable](s []T, e ...T) []T {
+	r := make([]T, 0, len(s))
+	seen := make(map[T]bool)
+	for _, x := range s {
+		seen[x] = true
+		r = append(r, x)
+	}
+
+	for _, x := range e {
+		if !seen[x] {
+			r = append(r, x)
+		}
+	}
+	return r
+}

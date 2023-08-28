@@ -28,7 +28,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -133,11 +132,19 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		opScribeDataModels = append(opScribeDataModels, cfg.DataModel)
 	}
 
+	m := append(append(medianDataModels, scribeDataModels...), opScribeDataModels...)
+
+	logger.
+		WithFields(log.Fields{
+			"data_models": m,
+		}).
+		Debug("Data models")
+
 	// Create a data point store service for all median contracts.
 	priceStoreSrv, err := store.New(store.Config{
 		Storage:    store.NewMemoryStorage(),
 		Transport:  d.Transport,
-		Models:     medianDataModels,
+		Models:     m,
 		Recoverers: []datapoint.Recoverer{signer.NewTickRecoverer(crypto.ECRecoverer)},
 		Logger:     d.Logger,
 	})

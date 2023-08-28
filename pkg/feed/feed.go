@@ -75,7 +75,7 @@ type Config struct {
 // New creates a new instance of the Feed.
 func New(cfg Config) (*Feed, error) {
 	if cfg.DataModels == nil {
-		return nil, errors.New("data provider must not be nil")
+		return nil, errors.New("data models must not be nil")
 	}
 	if cfg.DataProvider == nil {
 		return nil, errors.New("data provider must not be nil")
