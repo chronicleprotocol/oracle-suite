@@ -23,8 +23,10 @@ services:
   _base:
     <<: *disabled
     environment: &base
-      CFG_ENVIRONMENT: "stage"
       CFG_ITEM_SEPARATOR: "\n"
+
+      CFG_ENVIRONMENT: "stage"
+
       CFG_FEEDS: |-
         ${ETH_FROM_A}
         ${ETH_FROM_B}
@@ -139,7 +141,6 @@ services:
       CFG_ETH_KEYS: ${ETH_KEYS_A}
 
   ghost2:
-    <<: *disabled
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     environment:
       <<: *base_ghost
