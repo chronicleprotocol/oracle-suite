@@ -67,6 +67,7 @@ func TestMedian_Age(t *testing.T) {
 	).
 		Return(
 			hexutil.MustHexToBytes("0x0000000000000000000000000000000000000000000000000000000064e7d147"),
+			&types.Call{},
 			nil,
 		)
 
@@ -91,6 +92,7 @@ func TestMedian_Wat(t *testing.T) {
 	).
 		Return(
 			hexutil.MustHexToBytes("0x4254435553440000000000000000000000000000000000000000000000000000"),
+			&types.Call{},
 			nil,
 		)
 
@@ -115,6 +117,7 @@ func TestMedian_Bar(t *testing.T) {
 	).
 		Return(
 			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d"),
+			&types.Call{},
 			nil,
 		)
 
@@ -181,6 +184,7 @@ func TestMedian_Poke(t *testing.T) {
 	).
 		Return(
 			[]byte{},
+			&types.Call{},
 			nil,
 		)
 
@@ -196,9 +200,10 @@ func TestMedian_Poke(t *testing.T) {
 	).
 		Return(
 			&types.Hash{},
+			&types.Transaction{},
 			nil,
 		)
 
-	err := median.Poke(ctx, vals)
+	_, _, err := median.Poke(ctx, vals)
 	require.NoError(t, err)
 }

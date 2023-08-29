@@ -67,7 +67,7 @@ func MultiCall(
 	if err != nil {
 		return nil, fmt.Errorf("multicall: encoding arguments failed: %w", err)
 	}
-	resp, err := client.Call(ctx, types.Call{
+	resp, _, err := client.Call(ctx, types.Call{
 		To:    &multicallContract,
 		Input: callata,
 	}, blockNumber)

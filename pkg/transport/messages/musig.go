@@ -216,7 +216,6 @@ func (m *MuSigSignature) toProtobuf() *pb.MuSigSignatureMessage {
 		Signers:             make([][]byte, len(m.Signers)),
 		SchnorrSignature:    m.SchnorrSignature.Bytes(),
 	}
-	m.Signers = make([]types.Address, len(msg.Signers))
 	for i, signer := range m.Signers {
 		msg.Signers[i] = signer.Bytes()
 	}

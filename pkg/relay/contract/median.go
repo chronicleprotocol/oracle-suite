@@ -76,7 +76,7 @@ func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 }
 
 func (m *Median) Age(ctx context.Context) (time.Time, error) {
-	res, err := m.client.Call(
+	res, _, err := m.client.Call(
 		ctx,
 		types.Call{
 			To:    &m.address,
@@ -91,7 +91,7 @@ func (m *Median) Age(ctx context.Context) (time.Time, error) {
 }
 
 func (m *Median) Wat(ctx context.Context) (string, error) {
-	res, err := m.client.Call(
+	res, _, err := m.client.Call(
 		ctx,
 		types.Call{
 			To:    &m.address,
@@ -106,7 +106,7 @@ func (m *Median) Wat(ctx context.Context) (string, error) {
 }
 
 func (m *Median) Bar(ctx context.Context) (int, error) {
-	res, err := m.client.Call(
+	res, _, err := m.client.Call(
 		ctx,
 		types.Call{
 			To:    &m.address,
@@ -120,7 +120,7 @@ func (m *Median) Bar(ctx context.Context) (int, error) {
 	return int(new(big.Int).SetBytes(res).Int64()), nil
 }
 
-func (m *Median) Poke(ctx context.Context, vals []MedianVal) error {
+func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *types.Transaction, error) {
 	sort.Slice(vals, func(i, j int) bool {
 		return vals[i].Val.Cmp(vals[j].Val) < 0
 	})
@@ -131,7 +131,7 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) error {
 	sSlice := make([]*big.Int, len(vals))
 	for i, v := range vals {
 		if v.Val.Precision() != MedianPricePrecision {
-			return fmt.Errorf("median: poke failed: invalid precision: %d", v.Val.Precision())
+			return nil, nil, fmt.Errorf("median: poke failed: invalid precision: %d", v.Val.Precision())
 		}
 		valSlice[i] = v.Val.RawBigInt()
 		ageSlice[i] = uint64(v.Age.Unix())
@@ -141,17 +141,17 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) error {
 	}
 	calldata, err := abiMedian["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
 	if err != nil {
-		return fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(m.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, m.client, *tx); err != nil {
-		return fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
 	}
-	_, err = m.client.SendTransaction(ctx, *tx)
+	txHash, txCpy, err := m.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
 	}
-	return nil
+	return txHash, txCpy, nil
 }

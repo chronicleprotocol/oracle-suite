@@ -135,7 +135,7 @@ func (c *EthereumAddressBook) fetchConsumers(ctx context.Context) ([]string, err
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.client.Call(ctx, types.Call{
+	res, _, err := c.client.Call(ctx, types.Call{
 		To:    &c.address,
 		Input: cd,
 	}, types.LatestBlockNumber)

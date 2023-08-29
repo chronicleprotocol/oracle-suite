@@ -394,6 +394,24 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 	if c.ChainID != 0 {
 		opts = append(opts, rpc.WithChainID(c.ChainID))
 	}
+
+	// Default values for gas fee estimation.
+	// Setting MaxGasFee or MaxGasPriorityFee to 0 will cause the client to
+	// always use 0 for that fee component. In our case, we want to disable
+	// limiting if the value is 0. To do this, we set the value to nil.
+	if c.MaxGasFee != nil && c.MaxGasFee.Sign() == 0 {
+		c.MaxGasFee = nil
+	}
+	if c.MaxGasPriorityFee != nil && c.MaxGasPriorityFee.Sign() == 0 {
+		c.MaxGasPriorityFee = nil
+	}
+	if c.GasFeeMultiplier == 0 {
+		c.GasFeeMultiplier = 1
+	}
+	if c.GasPriorityFeeMultiplier == 0 {
+		c.GasPriorityFeeMultiplier = 1
+	}
+
 	switch c.TransactionType {
 	case "legacy":
 		opts = append(

@@ -68,6 +68,7 @@ func TestScribe_Wat(t *testing.T) {
 	).
 		Return(
 			hexutil.MustHexToBytes("0x4254435553440000000000000000000000000000000000000000000000000000"),
+			&types.Call{},
 			nil,
 		)
 
@@ -92,6 +93,7 @@ func TestScribe_Bar(t *testing.T) {
 	).
 		Return(
 			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d"),
+			&types.Call{},
 			nil,
 		)
 
@@ -135,6 +137,7 @@ func TestScribe_Feeds(t *testing.T) {
 	).
 		Return(
 			feedData,
+			&types.Call{},
 			nil,
 		)
 
@@ -184,6 +187,7 @@ func TestScribe_Poke(t *testing.T) {
 	).
 		Return(
 			[]byte{},
+			&types.Call{},
 			nil,
 		)
 
@@ -199,9 +203,10 @@ func TestScribe_Poke(t *testing.T) {
 	).
 		Return(
 			&types.Hash{},
+			&types.Transaction{},
 			nil,
 		)
 
-	err := scribe.Poke(ctx, pokeData, schnorrData)
+	_, _, err := scribe.Poke(ctx, pokeData, schnorrData)
 	require.NoError(t, err)
 }

@@ -140,7 +140,7 @@ func TestEthereumAddressBook_Consumers(t *testing.T) {
 			rpc.On("Call", ctx, types.Call{
 				To:    &to,
 				Input: input,
-			}, types.LatestBlockNumber).Return(encodeAddresses(tt.addresses), nil).Once()
+			}, types.LatestBlockNumber).Return(encodeAddresses(tt.addresses), &types.Call{}, nil).Once()
 			book := NewEthereumAddressBook(rpc, to, time.Minute)
 			consumers, err := book.Consumers(ctx)
 			require.NoError(t, err)
@@ -161,7 +161,7 @@ func TestEthereumAddressBook_Cache(t *testing.T) {
 	rpc.On("Call", ctx, types.Call{
 		To:    &to,
 		Input: input,
-	}, types.LatestBlockNumber).Return(encodeAddresses([]string{"domain1.example"}), nil).Once()
+	}, types.LatestBlockNumber).Return(encodeAddresses([]string{"domain1.example"}), &types.Call{}, nil).Once()
 	book := NewEthereumAddressBook(rpc, to, time.Second)
 	_, err := book.Consumers(ctx)
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestEthereumAddressBook_Cache(t *testing.T) {
 	rpc.On("Call", ctx, types.Call{
 		To:    &to,
 		Input: input,
-	}, types.LatestBlockNumber).Return(encodeAddresses([]string{"domain1.example"}), nil).Once()
+	}, types.LatestBlockNumber).Return(encodeAddresses([]string{"domain1.example"}), &types.Call{}, nil).Once()
 	_, err = book.Consumers(ctx)
 	require.NoError(t, err)
 }

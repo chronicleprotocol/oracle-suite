@@ -86,6 +86,7 @@ func TestConfig(t *testing.T) {
 					Input: hexutil.MustDecode("0x0f560cd7"),
 				}, types.LatestBlockNumber).Return(
 					hexutil.MustDecode("0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000"),
+					&types.Call{},
 					nil,
 				)
 				clientRegistry := ethereum.ClientRegistry{

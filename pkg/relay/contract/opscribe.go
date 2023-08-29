@@ -36,24 +36,24 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
-func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) error {
+func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error) {
 	calldata, err := abiOpScribe["opPoke"].EncodeArgs(
 		toPokeDataStruct(pokeData),
 		toSchnorrDataStruct(schnorrData),
 		toECDSADataStruct(ecdsaData),
 	)
 	if err != nil {
-		return fmt.Errorf("opScribe: opPoke failed: %v", err)
+		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %v", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
-		return fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("opScribe: poke failed: %v", err)
 	}
-	_, err = s.client.SendTransaction(ctx, *tx)
+	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return fmt.Errorf("opScribe: opPoke failed: %v", err)
+		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %v", err)
 	}
-	return nil
+	return txHash, txCpy, nil
 }

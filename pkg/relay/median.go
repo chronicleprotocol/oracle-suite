@@ -22,6 +22,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
@@ -128,7 +129,27 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 		}
 
 		// Send *actual* transaction.
-		return w.contract.Poke(ctx, vals)
+		txHash, tx, err := w.contract.Poke(ctx, vals)
+		if err != nil {
+			return err
+		}
+
+		w.log.
+			WithFields(log.Fields{
+				"dataModel":              w.dataModel,
+				"txHash":                 txHash,
+				"txType":                 tx.Type,
+				"txFrom":                 tx.From,
+				"txTo":                   tx.To,
+				"txChainId":              tx.ChainID,
+				"txNonce":                tx.Nonce,
+				"txGasPrice":             tx.GasPrice,
+				"txGasLimit":             tx.GasLimit,
+				"txMaxFeePerGas":         tx.MaxFeePerGas,
+				"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
+				"txInput":                hexutil.BytesToHex(tx.Input),
+			}).
+			Info("Sent update to the Median contract")
 	}
 
 	return nil

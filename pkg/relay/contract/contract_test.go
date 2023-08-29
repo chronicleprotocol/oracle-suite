@@ -37,14 +37,14 @@ func (m *mockRPC) GetStorageAt(ctx context.Context, account types.Address, key t
 	return args.Get(0).(*types.Hash), args.Error(1)
 }
 
-func (m *mockRPC) Call(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, error) {
+func (m *mockRPC) Call(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
 	args := m.Called(ctx, call, blockNumber)
-	return args.Get(0).([]byte), args.Error(1)
+	return args.Get(0).([]byte), args.Get(1).(*types.Call), args.Error(2)
 }
 
-func (m *mockRPC) SendTransaction(ctx context.Context, tx types.Transaction) (*types.Hash, error) {
+func (m *mockRPC) SendTransaction(ctx context.Context, tx types.Transaction) (*types.Hash, *types.Transaction, error) {
 	args := m.Called(ctx, tx)
-	return args.Get(0).(*types.Hash), args.Error(1)
+	return args.Get(0).(*types.Hash), args.Get(1).(*types.Transaction), args.Error(2)
 }
 
 func TestSimulateTransaction(t *testing.T) {
@@ -81,6 +81,7 @@ func TestSimulateTransaction(t *testing.T) {
 			types.LatestBlockNumber,
 		).Return(
 			[]byte{},
+			&types.Call{},
 			nil,
 		)
 
@@ -97,6 +98,7 @@ func TestSimulateTransaction(t *testing.T) {
 			types.LatestBlockNumber,
 		).Return(
 			revertData,
+			&types.Call{},
 			nil,
 		)
 
@@ -114,6 +116,7 @@ func TestSimulateTransaction(t *testing.T) {
 			types.LatestBlockNumber,
 		).Return(
 			panicData,
+			&types.Call{},
 			nil,
 		)
 

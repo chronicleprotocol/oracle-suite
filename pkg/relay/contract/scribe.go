@@ -71,7 +71,7 @@ func (s *Scribe) Read(ctx context.Context) (*bn.DecFixedPointNumber, time.Time, 
 }
 
 func (s *Scribe) Wat(ctx context.Context) (string, error) {
-	res, err := s.client.Call(
+	res, _, err := s.client.Call(
 		ctx,
 		types.Call{
 			To:    &s.address,
@@ -86,7 +86,7 @@ func (s *Scribe) Wat(ctx context.Context) (string, error) {
 }
 
 func (s *Scribe) Bar(ctx context.Context) (int, error) {
-	res, err := s.client.Call(
+	res, _, err := s.client.Call(
 		ctx,
 		types.Call{
 			To:    &s.address,
@@ -105,7 +105,7 @@ func (s *Scribe) Bar(ctx context.Context) (int, error) {
 }
 
 func (s *Scribe) Feeds(ctx context.Context) ([]types.Address, []uint8, error) {
-	res, err := s.client.Call(
+	res, _, err := s.client.Call(
 		ctx,
 		types.Call{
 			To:    &s.address,
@@ -124,20 +124,20 @@ func (s *Scribe) Feeds(ctx context.Context) ([]types.Address, []uint8, error) {
 	return feeds, feedIndices, nil
 }
 
-func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData) error {
+func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData) (*types.Hash, *types.Transaction, error) {
 	calldata, err := abiScribe["poke"].EncodeArgs(toPokeDataStruct(pokeData), toSchnorrDataStruct(schnorrData))
 	if err != nil {
-		return fmt.Errorf("scribe: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
-		return fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
 	}
-	_, err = s.client.SendTransaction(ctx, *tx)
+	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return fmt.Errorf("scribe: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
 	}
-	return nil
+	return txHash, txCpy, nil
 }

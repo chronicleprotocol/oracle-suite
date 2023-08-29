@@ -72,6 +72,7 @@ func TestOpScribe_OpPoke(t *testing.T) {
 	).
 		Return(
 			[]byte{},
+			&types.Call{},
 			nil,
 		)
 
@@ -87,9 +88,10 @@ func TestOpScribe_OpPoke(t *testing.T) {
 	).
 		Return(
 			&types.Hash{},
+			&types.Transaction{},
 			nil,
 		)
 
-	err := scribe.OpPoke(ctx, pokeData, schnorrData, ecdsaData)
+	_, _, err := scribe.OpPoke(ctx, pokeData, schnorrData, ecdsaData)
 	require.NoError(t, err)
 }

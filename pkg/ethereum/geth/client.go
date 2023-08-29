@@ -70,7 +70,8 @@ func (c *Client) Block(ctx context.Context) (*types.Block, error) {
 }
 
 func (c *Client) Call(ctx context.Context, call types.Call) ([]byte, error) {
-	return c.client.Call(ctx, call, blockNumberFromContext(ctx))
+	resp, _, err := c.client.Call(ctx, call, blockNumberFromContext(ctx))
+	return resp, err
 }
 
 func (c *Client) CallBlocks(ctx context.Context, call types.Call, blocks []int64) ([][]byte, error) {
@@ -81,7 +82,7 @@ func (c *Client) CallBlocks(ctx context.Context, call types.Call, blocks []int64
 	var res [][]byte
 	for _, block := range blocks {
 		bn := types.BlockNumberFromBigInt(new(big.Int).Sub(blockNumber, big.NewInt(block)))
-		r, err := c.client.Call(ctx, call, bn)
+		r, _, err := c.client.Call(ctx, call, bn)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +121,7 @@ func (c *Client) MultiCall(ctx context.Context, calls []types.Call) ([][]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("multicall: encoding arguments failed: %w", err)
 	}
-	resp, err := c.client.Call(ctx, types.Call{
+	resp, _, err := c.client.Call(ctx, types.Call{
 		To:    &multicallContract,
 		Input: callata,
 	}, types.LatestBlockNumber)
@@ -202,7 +203,7 @@ func (c *Client) SendTransaction(ctx context.Context, transaction *types.Transac
 	}
 
 	// Send transaction:
-	hash, err := c.client.SendTransaction(ctx, *tx)
+	hash, _, err := c.client.SendTransaction(ctx, *tx)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,10 @@ import (
 // It does not support recursive data.
 //
 //nolint:gocyclo
-func Dump(v interface{}) interface{} {
+func Dump(v any) any {
+	if isNil(v) {
+		return nil
+	}
 	switch tv := v.(type) {
 	case nil:
 		return nil
@@ -43,19 +46,19 @@ func Dump(v interface{}) interface{} {
 		rt := rv.Type()
 		switch rv.Kind() {
 		case reflect.Struct:
-			m := map[string]interface{}{}
+			m := map[string]any{}
 			for n := 0; n < rv.NumField(); n++ {
 				m[rt.Field(n).Name] = Dump(rv.Field(n).Interface())
 			}
 			return toJSON(m)
 		case reflect.Slice, reflect.Array:
-			var m []interface{}
+			var m []any
 			for i := 0; i < rv.Len(); i++ {
 				m = append(m, Dump(rv.Index(i).Interface()))
 			}
 			return toJSON(m)
 		case reflect.Map:
-			m := map[string]interface{}{}
+			m := map[string]any{}
 			for _, k := range rv.MapKeys() {
 				m[fmt.Sprint(Dump(k))] = Dump(rv.MapIndex(k).Interface())
 			}
@@ -68,10 +71,21 @@ func Dump(v interface{}) interface{} {
 	}
 }
 
-func toJSON(v interface{}) json.RawMessage {
+func toJSON(v any) json.RawMessage {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return json.RawMessage(strconv.Quote(err.Error()))
 	}
 	return b
+}
+
+func isNil(i any) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return reflect.ValueOf(i).IsNil()
+	}
+	return false
 }

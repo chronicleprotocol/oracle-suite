@@ -38,7 +38,7 @@ type MedianContract interface {
 	Age(ctx context.Context) (time.Time, error)
 	Wat(ctx context.Context) (string, error)
 	Bar(ctx context.Context) (int, error)
-	Poke(ctx context.Context, vals []contract.MedianVal) error
+	Poke(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error)
 }
 
 type ScribeContract interface {
@@ -46,12 +46,12 @@ type ScribeContract interface {
 	Bar(ctx context.Context) (int, error)
 	Feeds(ctx context.Context) ([]types.Address, []uint8, error)
 	Read(ctx context.Context) (*bn.DecFixedPointNumber, time.Time, error)
-	Poke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData) error
+	Poke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData) (*types.Hash, *types.Transaction, error)
 }
 
 type OpScribeContract interface {
 	ScribeContract
-	OpPoke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) error
+	OpPoke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error)
 }
 
 // Relay is a service that relays data points to the blockchain.

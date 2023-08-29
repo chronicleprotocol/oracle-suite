@@ -22,6 +22,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/defiweb/go-eth/hexutil"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
@@ -111,15 +113,11 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) error {
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 		// Generate signersBlob.
-		signersBlob := make([]byte, len(s.Signers))
-		for i, signer := range s.Signers {
-			f := false
+		signersBlob := make([]byte, 0, len(s.Signers))
+		for _, signer := range s.Signers {
 			for j, feed := range feeds {
 				if feed == signer {
-					f = true
-					signersBlob[i] = indices[j]
-				}
-				if !f {
+					signersBlob = append(signersBlob, indices[j])
 					break
 				}
 			}
@@ -150,8 +148,9 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) error {
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
+			return nil
 			// Send *actual* transaction.
-			return w.contract.Poke(
+			txHash, tx, err := w.contract.Poke(
 				ctx,
 				contract.PokeData{
 					Val: sigVal,
@@ -163,6 +162,26 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) error {
 					SignersBlob: signersBlob,
 				},
 			)
+			if err != nil {
+				return err
+			}
+
+			w.log.
+				WithFields(log.Fields{
+					"dataModel":              w.dataModel,
+					"txHash":                 txHash,
+					"txType":                 tx.Type,
+					"txFrom":                 tx.From,
+					"txTo":                   tx.To,
+					"txChainId":              tx.ChainID,
+					"txNonce":                tx.Nonce,
+					"txGasPrice":             tx.GasPrice,
+					"txGasLimit":             tx.GasLimit,
+					"txMaxFeePerGas":         tx.MaxFeePerGas,
+					"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
+					"txInput":                hexutil.BytesToHex(tx.Input),
+				}).
+				Info("Sent update to the Scribe contract")
 		}
 	}
 

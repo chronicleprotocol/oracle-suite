@@ -28,7 +28,7 @@ import (
 // simulateTransaction simulates a transaction by calling the contract method
 // and checking for revert or panic.
 func simulateTransaction(ctx context.Context, rpc rpc.RPC, tx types.Transaction) error {
-	res, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
+	res, _, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
 	if err != nil {
 		return err
 	}
