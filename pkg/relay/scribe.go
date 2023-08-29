@@ -148,7 +148,6 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) error {
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
-			return nil
 			// Send *actual* transaction.
 			txHash, tx, err := w.contract.Poke(
 				ctx,

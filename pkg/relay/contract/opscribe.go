@@ -36,7 +36,17 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
-func (s *OpScribe) OpPoke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error) {
+func (s *OpScribe) OpPoke(
+	ctx context.Context,
+	pokeData PokeData,
+	schnorrData SchnorrData,
+	ecdsaData types.Signature,
+) (
+	*types.Hash,
+	*types.Transaction,
+	error,
+) {
+
 	calldata, err := abiOpScribe["opPoke"].EncodeArgs(
 		toPokeDataStruct(pokeData),
 		toSchnorrDataStruct(schnorrData),
