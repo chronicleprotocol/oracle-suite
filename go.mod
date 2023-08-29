@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/defiweb/go-anymapper v0.3.0
-	github.com/defiweb/go-eth v0.4.0
+	github.com/defiweb/go-eth v0.4.1
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/itchyny/gojq v0.12.12
@@ -128,7 +128,7 @@ require (
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/objx v0.5.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
