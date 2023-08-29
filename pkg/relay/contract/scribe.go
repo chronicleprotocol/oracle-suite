@@ -133,7 +133,7 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
 	}
 	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
 	if err != nil {
