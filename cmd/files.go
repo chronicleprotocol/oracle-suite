@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -35,10 +36,18 @@ func (ff *FilesFlags) Load(c any) error {
 	if err := config.LoadFiles(c, ff.paths); err != nil {
 		return err
 	}
-	if globals.ShowEnvVarsUsedInConfig {
+	switch {
+	case globals.ShowEnvVarsUsedInConfig:
 		for _, v := range globals.EnvVars {
 			fmt.Println(v)
 		}
+		os.Exit(0)
+	case globals.RenderConfigJSON:
+		marshaled, err := json.Marshal(c)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(marshaled))
 		os.Exit(0)
 	}
 	return nil
@@ -58,7 +67,13 @@ func (ff *FilesFlags) FlagSet() *pflag.FlagSet {
 		&globals.ShowEnvVarsUsedInConfig,
 		"config.env",
 		false,
-		"show environment variables used in config files",
+		"show environment variables used in config files and exit",
+	)
+	fs.BoolVar(
+		&globals.RenderConfigJSON,
+		"config.json",
+		false,
+		"render config as JSON and exit",
 	)
 	return fs
 }

@@ -47,11 +47,11 @@ func NewRunCmd(c supervisor.Config, f *FilesFlags, l *LoggerFlags) *cobra.Comman
 		Args:    cobra.NoArgs,
 		Short:   "Run the main service",
 		Aliases: []string{"agent", "server"},
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.Load(c); err != nil {
 				return err
 			}
-			s, err := c.Services(l.Logger())
+			s, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}

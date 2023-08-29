@@ -18,7 +18,6 @@ package spire
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
@@ -34,7 +33,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/spire"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -110,7 +108,7 @@ func (s *ClientServices) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.SpireClient, sysmon.New(time.Minute, s.Logger))
+	s.supervisor.Watch(s.SpireClient)
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}
@@ -128,7 +126,7 @@ func (s *AgentServices) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Transport, s.PriceStore, s.SpireAgent, sysmon.New(time.Minute, s.Logger))
+	s.supervisor.Watch(s.Transport, s.PriceStore, s.SpireAgent)
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}
@@ -146,7 +144,7 @@ func (s *StreamServices) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Transport, sysmon.New(time.Minute, s.Logger))
+	s.supervisor.Watch(s.Transport)
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}
@@ -159,9 +157,10 @@ func (s *StreamServices) Wait() <-chan error {
 }
 
 // ClientServices returns the services configured for Spire.
-func (c *Config) ClientServices(baseLogger log.Logger) (*ClientServices, error) {
+func (c *Config) ClientServices(baseLogger log.Logger, appName, appVersion string) (*ClientServices, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "spire",
+		AppName:    appName,
+		AppVersion: appVersion,
 		BaseLogger: baseLogger,
 	})
 	if err != nil {
@@ -182,9 +181,10 @@ func (c *Config) ClientServices(baseLogger log.Logger) (*ClientServices, error) 
 }
 
 // Services returns the services configured for Spire.
-func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
+func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "spire",
+		AppName:    appName,
+		AppVersion: appVersion,
 		BaseLogger: baseLogger,
 	})
 	if err != nil {
@@ -205,10 +205,12 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 		return nil, err
 	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:     keys,
-		Clients:  clients,
-		Messages: messageMap,
-		Logger:   logger,
+		Keys:       keys,
+		Clients:    clients,
+		Messages:   messageMap,
+		Logger:     logger,
+		AppName:    appName,
+		AppVersion: appVersion,
 	})
 	if err != nil {
 		return nil, err
@@ -230,9 +232,10 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 }
 
 // StreamServices returns the services configured for Spire.
-func (c *Config) StreamServices(baseLogger log.Logger, topics ...string) (*StreamServices, error) {
+func (c *Config) StreamServices(baseLogger log.Logger, appName string, appVersion string, topics ...string) (*StreamServices, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "spire",
+		AppName:    appName,
+		AppVersion: appVersion,
 		BaseLogger: baseLogger,
 	})
 	if err != nil {
@@ -251,10 +254,12 @@ func (c *Config) StreamServices(baseLogger log.Logger, topics ...string) (*Strea
 		return nil, err
 	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:     keys,
-		Clients:  clients,
-		Messages: messageMap,
-		Logger:   logger,
+		Keys:       keys,
+		Clients:    clients,
+		Messages:   messageMap,
+		Logger:     logger,
+		AppName:    appName,
+		AppVersion: appVersion,
 	})
 	if err != nil {
 		return nil, err

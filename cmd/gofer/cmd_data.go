@@ -41,11 +41,11 @@ func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cob
 		Aliases: []string{"price", "prices"},
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "Return data points for given models",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
+		RunE: func(cc *cobra.Command, args []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
-			services, err := c.Services(l.Logger())
+			services, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}

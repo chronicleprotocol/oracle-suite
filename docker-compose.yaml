@@ -1,32 +1,129 @@
 version: '3'
 services:
+  _disabled: &disabled
+    image: hello-world
+    profiles:
+      - disabled
+  #    volumes:
+  #      - ./config.hcl:/usr/share/chronicle-suite/config.hcl
+  #      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
+  #      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
+  #      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
+  #      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
+  #      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
+  #      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
+  #      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
+  #      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
+  #      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
+  #      - ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
+  #    command:
+  #      - run
+  #      - -v
+  #      - debug
+  _base:
+    <<: *disabled
+    environment: &base
+      CFG_ITEM_SEPARATOR: "\n"
+
+      CFG_ENVIRONMENT: "stage"
+
+      CFG_FEEDS: |-
+        ${ETH_FROM_A}
+        ${ETH_FROM_B}
+        ${ETH_FROM_C}
+        ${ETH_FROM_D}
+
+      CFG_ETH_PASS: ""
+
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: |-
+        /dns/bootstrap/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq
+
+  _base_ghost:
+    <<: *disabled
+    environment: &base_ghost
+      <<: *base
+
+      CFG_GHOST_INTERVAL: 10
+      CFG_GHOST_PAIRS: |-
+        ETH/USD
+
+      # ethereum RPC client
+      CFG_ETH_RPC_URLS: ${RPCS}
+      CFG_ETH_CHAIN_ID: ${CHID}
+
+      # default RPC client
+      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
+      CFG_CHAIN_ID: ${SEP_CHID}
+
+      # webapi
+      CFG_WEBAPI_ENABLE: 1
+      ## receiving
+      CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
+      ## sending
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: tor-proxy:9050
+      ### on-chain address book
+      CFG_WEBAPI_ETH_ADDR_BOOK: "0x504Fdbc4a9386c2C48A5775a6967beB00dAa9E9a" # feeds + relays
+      ### local address book
+      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
+
+  _base_spectre:
+    <<: *disabled
+    environment: &base_spectre
+      <<: *base
+
+      CFG_SPECTRE_INTERVAL: 10
+      CFG_SPECTRE_PAIRS: |-
+        ETH/USD
+
+      # default RPC client
+      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
+      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
+      CFG_CHAIN_MAX_GAS_FEE: 0
+      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
+      CFG_CHAIN_MAX_GAS_LIMIT: 0
+
+      # webapi
+      CFG_WEBAPI_ENABLE: 1
+      ## receiving
+      CFG_WEBAPI_LISTEN_ADDR: ":8080"
+      ## sending
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable proxy
+      ### on-chain address book
+      CFG_WEBAPI_ETH_ADDR_BOOK: ""
+      ### local address book
+      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
+
   bootstrap:
     hostname: "bootstrap.local"
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "bootstrap" ]
+    command:
+      - "bootstrap"
     environment:
-      CFG_LIBP2P_PK_SEED: "FEDCBA9876543210FEDCBA98765432100123456789ABCDEF0123456789ABCDEF"
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: ""
-      # Consider using this to connect bootstrap nodes to each other
+      <<: *base
+
+      # libp2p
+      CFG_LIBP2P_PK_SEED: ${SEED}
+      ## Consider using this to connect bootstrap nodes to each other
       #CFG_LIBP2P_DIRECT_PEERS_ADDRS: "/ip4/.../"
+      CFG_LIBP2P_BOOTSTRAP_ADDRS: "" # ?? or maybe it should be configured here?
 
   spire:
     image: ghcr.io/chronicleprotocol/spire:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "stream", "greet/v1", "musig_signature/v1", "musig_optimistic_signature/v1" ]
+    command:
+      - "stream"
+      #- "data_point/v1"
+      - "greet/v1"
+      - "musig_signature/v1"
+      - "musig_optimistic_signature/v1"
     environment:
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
-
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8090"
+      <<: *base
 
       # webapi
-      CFG_WEBAPI_ENABLE: 0
+      CFG_WEBAPI_ENABLE: 1
       ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8080"
+      CFG_WEBAPI_LISTEN_ADDR: ":8080"
       ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable sending messages
+      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable proxy
       ### on-chain address book
       CFG_WEBAPI_ETH_ADDR_BOOK: ""
       ### local address book
@@ -34,275 +131,81 @@ services:
 
   ghost1:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "run" ]
     environment:
-      CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_GHOST_INTERVAL: 10
-
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      <<: *base_ghost
 
       # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_A}
       CFG_ETH_KEYS: ${ETH_KEYS_A}
-      CFG_ETH_PASS: ""
 
-      # ethereum RPC client
-      CFG_ETH_RPC_URLS: ${RPCS}
-      CFG_ETH_CHAIN_ID: ${CHID}
-
-      # default RPC client
-      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
-      CFG_CHAIN_ID: ${SEP_CHID}
-
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8011"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
   ghost2:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "run" ]
     environment:
-      CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_GHOST_INTERVAL: 10
-
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      <<: *base_ghost
 
       # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_B}
       CFG_ETH_KEYS: ${ETH_KEYS_B}
-      CFG_ETH_PASS: ""
 
-      # ethereum RPC client
-      CFG_ETH_RPC_URLS: ${RPCS}
-      CFG_ETH_CHAIN_ID: ${CHID}
-
-      # default RPC client
-      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
-      CFG_CHAIN_ID: ${SEP_CHID}
-
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8012"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
   ghost3:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "run" ]
     environment:
-      CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_GHOST_INTERVAL: 10
-
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      <<: *base_ghost
 
       # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_C}
       CFG_ETH_KEYS: ${ETH_KEYS_C}
-      CFG_ETH_PASS: ""
 
-      # ethereum RPC client
-      CFG_ETH_RPC_URLS: ${RPCS}
-      CFG_ETH_CHAIN_ID: ${CHID}
-
-      # default RPC client
-      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
-      CFG_CHAIN_ID: ${SEP_CHID}
-
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8013"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
   ghost4:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "run" ]
     environment:
-      CFG_GHOST_PAIRS: "ETH/USD"
-      CFG_GHOST_INTERVAL: 10
-
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      <<: *base_ghost
 
       # default ETH key
       CFG_ETH_FROM: ${ETH_FROM_D}
       CFG_ETH_KEYS: ${ETH_KEYS_D}
-      CFG_ETH_PASS: ""
-
-      # ethereum RPC client
-      CFG_ETH_RPC_URLS: ${RPCS}
-      CFG_ETH_CHAIN_ID: ${CHID}
-
-      # default RPC client
-      CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
-      CFG_CHAIN_ID: ${SEP_CHID}
-
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8014"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "" # disable incoming connections
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "127.0.0.1:9050"
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: "0xfA2EFCb2EfCf65F9E36379716C28b12Fb1F07B83" # relays
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
   spectre1:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
-    network_mode: "host"
-    command: [ "run" ]
     environment:
-      CFG_SPECTRE_PAIRS: "ETH/USD"
-      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
+      <<: *base_spectre
 
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${ETH_RPCS}
       CFG_CHAIN_ID: ${ETH_CHID}
 
-      # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8021"
-      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
-      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
-      CFG_CHAIN_MAX_GAS_FEE: 0
-      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
-      CFG_CHAIN_MAX_GAS_LIMIT: 0
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8081"
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable sending messages
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: ""
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
   spectre2:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
-    network_mode: "host"
     environment:
-      CFG_SPECTRE_PAIRS: "ETH/USD"
-      CFG_SPECTRE_TARGET_NETWORK: "optimism-goerli"
+      <<: *base_spectre
 
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_TARGET_NETWORK: "optimism-goerli"
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${OPT_RPCS}
       CFG_CHAIN_ID: ${OPT_CHID}
-      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
-      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
-      CFG_CHAIN_MAX_GAS_FEE: 0
-      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
-      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
-      # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8022"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8082"
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable sending messages
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: ""
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
   spectre3:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
-    network_mode: "host"
     environment:
-      CFG_SPECTRE_PAIRS: "ETH/USD"
-      CFG_SPECTRE_TARGET_NETWORK: "arbitrum-goerli"
+      <<: *base_spectre
 
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_TARGET_NETWORK: "arbitrum-goerli"
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${ARB_RPCS}
       CFG_CHAIN_ID: ${ARB_CHID}
-      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
-      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
-      CFG_CHAIN_MAX_GAS_FEE: 0
-      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
-      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
-      # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8023"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8083"
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable sending messages
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: ""
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""
   spectre4:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
-    network_mode: "host"
     environment:
-      CFG_SPECTRE_PAIRS: "ETH/USD"
-      CFG_SPECTRE_TARGET_NETWORK: "sep"
+      <<: *base_spectre
 
-      CFG_FEEDS: "${ETH_FROM_A},${ETH_FROM_B},${ETH_FROM_C},${ETH_FROM_D}"
+      CFG_SPECTRE_TARGET_NETWORK: "sep"
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
-      CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
-      CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
-      CFG_CHAIN_MAX_GAS_FEE: 0
-      CFG_CHAIN_MAX_GAS_PRIORITY_FEE: 0
-      CFG_CHAIN_MAX_GAS_LIMIT: 0
 
-      # libp2p
-      CFG_LIBP2P_BOOTSTRAP_ADDRS: "/ip4/127.0.0.1/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq"
-      CFG_LIBP2P_LISTEN_ADDRS: "/ip4/0.0.0.0/tcp/8024"
-
-      # webapi
-      CFG_WEBAPI_ENABLE: 0
-      ## receiving
-      CFG_WEBAPI_LISTEN_ADDR: "0.0.0.0:8084"
-      ## sending
-      CFG_WEBAPI_SOCKS5_PROXY_ADDR: "" # disable sending messages
-      ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: ""
-      ### local address book
-      CFG_WEBAPI_STATIC_ADDR_BOOK: ""

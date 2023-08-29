@@ -36,10 +36,12 @@ func PeerScoring(
 			pubsub.WithPeerScore(params, thresholds),
 			pubsub.WithPeerScoreInspect(func(m map[peer.ID]*pubsub.PeerScoreSnapshot) {
 				for id, ps := range m {
-					n.tsLog.get().
-						WithField("peerID", id).
-						WithField("score", ps).
-						Debug("Peer score")
+					if ps != nil {
+						n.tsLog.get().
+							WithField("peerID", id).
+							WithField("score", ps).
+							Debug("Peer score")
+					}
 				}
 			}, time.Minute),
 		)

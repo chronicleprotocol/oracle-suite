@@ -18,7 +18,6 @@ package ghostnext
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/hcl/v2"
 
@@ -31,7 +30,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -50,9 +48,10 @@ type Config struct {
 }
 
 // Services returns the services configured for Lair.
-func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
+func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "ghost",
+		AppName:    appName,
+		AppVersion: appVersion,
 		BaseLogger: baseLogger,
 	})
 	if err != nil {
@@ -73,10 +72,12 @@ func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) 
 		return nil, err
 	}
 	transport, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:     keys,
-		Clients:  clients,
-		Messages: messageMap,
-		Logger:   logger,
+		Keys:       keys,
+		Clients:    clients,
+		Messages:   messageMap,
+		Logger:     logger,
+		AppName:    appName,
+		AppVersion: appVersion,
 	})
 	if err != nil {
 		return nil, err
@@ -119,7 +120,7 @@ func (s *Services) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Transport, s.Feed, sysmon.New(time.Minute, s.Logger))
+	s.supervisor.Watch(s.Transport, s.Feed)
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}

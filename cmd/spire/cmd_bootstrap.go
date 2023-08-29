@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
@@ -30,7 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p"
 )
 
@@ -47,7 +45,7 @@ func NewBootstrapCmd(c *BootstrapConfig, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 		Args:    cobra.ExactArgs(0),
 		Aliases: []string{"boot"},
 		Short:   "Starts bootstrap node",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cc *cobra.Command, _ []string) error {
 			if err := f.Load(c); err != nil {
 				return fmt.Errorf(`config error: %w`, err)
 			}
@@ -58,7 +56,9 @@ func NewBootstrapCmd(c *BootstrapConfig, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 				return fmt.Errorf(`ethereum config error: %w`, err)
 			}
 			t, err := c.Transport.LibP2PBootstrap(transport.BootstrapDependencies{
-				Logger: ll,
+				Logger:     ll,
+				AppName:    cc.Root().Use,
+				AppVersion: cc.Root().Version,
 			})
 			if err != nil {
 				return fmt.Errorf(`transport config error: %w`, err)
@@ -68,7 +68,7 @@ func NewBootstrapCmd(c *BootstrapConfig, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 			}
 
 			s := supervisor.New(ll)
-			s.Watch(t, sysmon.New(time.Minute, ll))
+			s.Watch(t)
 			if l, ok := ll.(supervisor.Service); ok {
 				s.Watch(l)
 			}

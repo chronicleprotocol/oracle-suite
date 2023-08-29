@@ -54,14 +54,13 @@ type StoredDataPoint struct {
 	Signature types.Signature
 }
 
-// LogFields returns a set of log fields for the data point.
-func (o StoredDataPoint) LogFields() log.Fields {
+func StoredDataPointLogFields(o StoredDataPoint) log.Fields {
 	f := log.Fields{
 		"point.model":     o.Model,
 		"point.from":      o.From.String(),
 		"point.signature": o.Signature.String(),
 	}
-	for k, v := range o.DataPoint.LogFields() {
+	for k, v := range datapoint.PointLogFields(o.DataPoint) {
 		f[k] = v
 	}
 	return f
@@ -160,7 +159,7 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 					WithError(err).
 					WithField("model", point.Model).
 					WithField("from", from).
-					WithFields(point.Value.LogFields()).
+					WithFields(datapoint.PointLogFields(point.Value)).
 					Error("Unable to recover address")
 			}
 			sdp := StoredDataPoint{
@@ -172,19 +171,19 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 			if err := p.storage.Add(p.ctx, sdp); err != nil {
 				p.log.
 					WithError(err).
-					WithFields(sdp.LogFields()).
+					WithFields(StoredDataPointLogFields(sdp)).
 					Error("Unable to add data point")
 				return
 			}
 			p.log.
-				WithFields(sdp.LogFields()).
+				WithFields(StoredDataPointLogFields(sdp)).
 				Info("Data point collected")
 			return
 		}
 	}
 	p.log.
 		WithField("model", point.Model).
-		WithFields(point.Value.LogFields()).
+		WithFields(datapoint.PointLogFields(point.Value)).
 		Error("Unable to find recoverer for the data point")
 }
 
@@ -226,13 +225,13 @@ func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
 	point, ok := msg.Message.(*messages.DataPoint)
 	if !ok {
 		p.log.
-			WithFields(msg.Fields()).
+			WithFields(transport.ReceivedMessageFields(msg)).
 			Error("Unexpected value returned from the transport layer")
 		return
 	}
 	if !p.shouldCollect(point.Model) {
 		p.log.
-			WithFields(msg.Fields()).
+			WithFields(transport.ReceivedMessageFields(msg)).
 			WithField("model", point.Model).
 			Warn("Data point rejected, model is not supported")
 		return

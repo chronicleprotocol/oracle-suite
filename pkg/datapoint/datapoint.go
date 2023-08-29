@@ -288,8 +288,7 @@ func (p Point) MarshalTrace() ([]byte, error) {
 	}, []any{p}, 0), nil
 }
 
-// LogFields returns a set of log fields for the data point.
-func (p Point) LogFields() log.Fields {
+func PointLogFields(p Point) log.Fields {
 	fields := log.Fields{}
 	if p.Value != nil {
 		fields["point.value"] = p.Value.Print()

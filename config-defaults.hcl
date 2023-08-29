@@ -1,4 +1,5 @@
 variables {
+  environment  = env("CFG_ENVIRONMENT", "prod")
   # List of supported asset symbols. This determines Feed behavior.
   data_symbols = [
     "AAVE/USD",

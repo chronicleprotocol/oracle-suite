@@ -78,9 +78,10 @@ type Meta struct {
 	PeerAddr             string `json:"peerAddr"`
 	ReceivedFromPeerID   string `json:"receivedFromPeerID"`
 	ReceivedFromPeerAddr string `json:"receivedFromPeerAddr"`
+	UserAgent            string `json:"userAgent"`
 }
 
-func (p *ReceivedMessage) Fields() log.Fields {
+func ReceivedMessageFields(p ReceivedMessage) log.Fields {
 	c := p.Meta.Transport
 	if p.Meta.Topic != "" {
 		c += ":" + p.Meta.Topic
@@ -92,6 +93,7 @@ func (p *ReceivedMessage) Fields() log.Fields {
 		"peerAddr":             p.Meta.PeerAddr,
 		"receivedFromPeerID":   p.Meta.ReceivedFromPeerID,
 		"receivedFromPeerAddr": p.Meta.ReceivedFromPeerAddr,
+		"userAgent":            p.Meta.UserAgent,
 	}
 }
 

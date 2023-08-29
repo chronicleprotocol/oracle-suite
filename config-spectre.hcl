@@ -1,6 +1,6 @@
 variables {
   spectre_target_network = env("CFG_SPECTRE_TARGET_NETWORK", "")
-  spectre_pairs          = explode(",", env("CFG_SPECTRE_PAIRS", ""))
+  spectre_pairs          = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SPECTRE_PAIRS", ""))
 }
 
 spectre {
@@ -19,7 +19,7 @@ spectre {
       contract_addr = contract.value.oracle
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = replace(contract.key, "/", "")
@@ -37,8 +37,10 @@ spectre {
 
   dynamic "scribe" {
     for_each = {
-      for k, v in try(var.scribe_contracts[var.spectre_target_network], {} ) : k=>v
-      if length(var.spectre_pairs)==0 || contains(var.spectre_pairs, k)
+      for k in var.contracts : k.address => k
+      if k.env == var.environment && k.chain == var.spectre_target_network
+      && try(k.i_scribe.wat != "", false)
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
     }
     iterator = contract
     content {
@@ -49,26 +51,29 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+      feeds = try(keys(contract.value.i_scribe.indexes), [])
 
       # Name of the pair to fetch the price for.
-      data_model = contract.key
+      data_model = contract.value.i_scribe.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = var.scribe_params[var.spectre_target_network][contract.key].pokeConfig.spread
+      spread = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = var.scribe_params[var.spectre_target_network][contract.key].pokeConfig.expiration
+      expiration = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = tonumber(env("CFG_SPECTRE_INTERVAL", var.scribe_params[var.spectre_target_network][contract.key].pokeConfig.interval))
+      interval = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.interval
     }
   }
 
   dynamic "optimistic_scribe" {
     for_each = {
-      for k, v in try(var.scribe_contracts[var.spectre_target_network], {} ) : k=>v
-      if length(var.spectre_pairs)==0 || contains(var.spectre_pairs, k)
+      for k in var.contracts : k.address => k
+      if k.env == var.environment && k.chain == var.spectre_target_network
+      && try(k.i_scribe.wat != "", false)
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
+      && try(k.i_scribe_optimistic.challenge_period > 0, false)
     }
     iterator = contract
     content {
@@ -79,19 +84,19 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(",", env("CFG_FEEDS", "")))
+      feeds = try(keys(contract.value.i_scribe.indexes), [])
 
       # Name of the pair to fetch the price for.
-      data_model = contract.key
+      data_model = contract.value.i_scribe.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = var.scribe_params[var.spectre_target_network][contract.key].opPokeConfig.spread
+      spread = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = var.scribe_params[var.spectre_target_network][contract.key].opPokeConfig.expiration
+      expiration = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = tonumber(env("CFG_SPECTRE_INTERVAL", var.scribe_params[var.spectre_target_network][contract.key].opPokeConfig.interval))
+      interval = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.interval
     }
   }
 }

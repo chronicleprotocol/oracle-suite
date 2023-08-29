@@ -49,8 +49,8 @@ func PeerInfos(c chan<- PeerInfo) Options {
 				peerAddr:        ethkey.PeerIDToAddress(event.Peer),
 				topic:           topic,
 				listens:         p.PeerInfo(event.Peer).Addrs,
-				userAgent:       getPeerUserAgent(p, event.Peer),
-				protocolVersion: getPeerProtocolVersion(p, event.Peer),
+				userAgent:       GetPeerUserAgent(p, event.Peer),
+				protocolVersion: GetPeerProtocolVersion(p, event.Peer),
 				protocols:       pp,
 			}
 		}))
@@ -65,9 +65,9 @@ func PeerLogger() Options {
 			p := n.Peerstore()
 
 			ad := p.PeerInfo(event.Peer).Addrs
-			ua := getPeerUserAgent(p, event.Peer)
-			pp := getPeerProtocols(p, event.Peer)
-			pv := getPeerProtocolVersion(p, event.Peer)
+			ua := GetPeerUserAgent(p, event.Peer)
+			pp := GetPeerProtocols(p, event.Peer)
+			pv := GetPeerProtocolVersion(p, event.Peer)
 			pa := ethkey.PeerIDToAddress(event.Peer)
 
 			switch event.Type {
@@ -76,7 +76,6 @@ func PeerLogger() Options {
 					WithFields(log.Fields{
 						"peerID":          event.Peer,
 						"peerAddr":        pa,
-						"topic":           topic,
 						"listenAddrs":     ad,
 						"userAgent":       ua,
 						"protocolVersion": pv,
@@ -97,12 +96,12 @@ func PeerLogger() Options {
 	}
 }
 
-func getPeerProtocols(ps peerstore.Peerstore, pid peer.ID) []string {
+func GetPeerProtocols(ps peerstore.Peerstore, pid peer.ID) []string {
 	pp, _ := ps.GetProtocols(pid)
 	return protocol.ConvertToStrings(pp)
 }
 
-func getPeerUserAgent(ps peerstore.Peerstore, pid peer.ID) string {
+func GetPeerUserAgent(ps peerstore.Peerstore, pid peer.ID) string {
 	av, _ := ps.Get(pid, "AgentVersion")
 	if s, ok := av.(string); ok {
 		return s
@@ -110,7 +109,7 @@ func getPeerUserAgent(ps peerstore.Peerstore, pid peer.ID) string {
 	return ""
 }
 
-func getPeerProtocolVersion(ps peerstore.Peerstore, pid peer.ID) string {
+func GetPeerProtocolVersion(ps peerstore.Peerstore, pid peer.ID) string {
 	av, _ := ps.Get(pid, "ProtocolVersion")
 	if s, ok := av.(string); ok {
 		return s

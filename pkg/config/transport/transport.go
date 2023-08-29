@@ -31,7 +31,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/net/proxy"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -49,10 +48,18 @@ type Dependencies struct {
 	Clients  ethereum.ClientRegistry
 	Messages map[string]transport.Message
 	Logger   log.Logger
+
+	// Application info:
+	AppName    string
+	AppVersion string
 }
 
 type BootstrapDependencies struct {
 	Logger log.Logger
+
+	// Application info:
+	AppName    string
+	AppVersion string
 }
 
 type Config struct {
@@ -221,8 +228,8 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 		DirectPeersAddrs: c.LibP2P.DirectPeersAddrs,
 		BlockedAddrs:     c.LibP2P.BlockedAddrs,
 		Logger:           d.Logger,
-		AppName:          "spire-bootstrap",
-		AppVersion:       suite.Version,
+		AppName:          d.AppName,
+		AppVersion:       d.AppVersion,
 	}
 	p, err := libp2p.New(cfg)
 	if err != nil {
@@ -237,6 +244,8 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 }
 
 func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
+	l := d.Logger.WithField("tag", "CONFIG_"+webapi.LoggerTag)
+
 	// Configure HTTP client:
 	httpClient := &http.Client{}
 	if len(c.WebAPI.Socks5ProxyAddr) != 0 {
@@ -254,6 +263,9 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 				return dialer.Dial(network, address)
 			},
 		}
+		l.WithField("address", c).
+			WithField("address", c.WebAPI.Socks5ProxyAddr).
+			Info("SOCKS5 proxy")
 	}
 
 	// Configure address book:
@@ -292,7 +304,6 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 	}
 
 	// Log consumers:
-	l := d.Logger.WithField("tag", "CONFIG_WEBAPI")
 	consumers, err := addressBook.Consumers(context.Background())
 	if err != nil {
 		l.WithError(err).Error("Failed to get consumers")
@@ -371,8 +382,8 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 		Discovery:        !c.LibP2P.DisableDiscovery,
 		Signer:           key,
 		Logger:           d.Logger,
-		AppName:          "spire",
-		AppVersion:       suite.Version,
+		AppName:          d.AppName,
+		AppVersion:       d.AppVersion,
 	}
 	libP2PTransport, err := libp2p.New(cfg)
 	if err != nil {

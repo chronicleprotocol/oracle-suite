@@ -28,7 +28,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -96,7 +95,18 @@ type configCommon struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
-const LoggerTag = "CONFIG_RELAY"
+func configCommonFields(c configCommon) log.Fields {
+	return log.Fields{
+		"ethereum_client": c.EthereumClient,
+		"contract_addr":   c.ContractAddr,
+		"data_model":      c.DataModel,
+		"spread":          c.Spread,
+		"expiration":      c.Expiration,
+		"interval":        c.Interval,
+	}
+}
+
+const LoggerTag = "CONFIG_" + relay.LoggerTag
 
 func (c *Config) Relay(d Dependencies) (*Services, error) {
 	logger := d.Logger.
@@ -122,11 +132,19 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		opScribeDataModels = append(opScribeDataModels, cfg.DataModel)
 	}
 
+	m := append(append(medianDataModels, scribeDataModels...), opScribeDataModels...)
+
+	logger.
+		WithFields(log.Fields{
+			"data_models": m,
+		}).
+		Debug("Data models")
+
 	// Create a data point store service for all median contracts.
 	priceStoreSrv, err := store.New(store.Config{
 		Storage:    store.NewMemoryStorage(),
 		Transport:  d.Transport,
-		Models:     medianDataModels,
+		Models:     m,
 		Recoverers: []datapoint.Recoverer{signer.NewTickRecoverer(crypto.ECRecoverer)},
 		Logger:     d.Logger,
 	})
@@ -165,11 +183,9 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		}
 
 		logger.
-			WithField("data_model", cfg.DataModel).
-			WithField("client", cfg.EthereumClient).
 			WithField("contract", "Median").
-			WithField("address", cfg.ContractAddr).
-			Info("Contract configuration")
+			WithFields(configCommonFields(cfg)).
+			Info("Contract")
 
 		medianCfgs = append(medianCfgs, relay.ConfigMedian{
 			DataModel:       cfg.DataModel,
@@ -194,11 +210,9 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		}
 
 		logger.
-			WithField("data_model", cfg.DataModel).
-			WithField("client", cfg.EthereumClient).
 			WithField("contract", "Scribe").
-			WithField("address", cfg.ContractAddr).
-			Info("Contract configuration")
+			WithFields(configCommonFields(cfg)).
+			Info("Contract")
 
 		scribeCfgs = append(scribeCfgs, relay.ConfigScribe{
 			DataModel:       cfg.DataModel,
@@ -223,11 +237,9 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		}
 
 		logger.
-			WithField("data_model", cfg.DataModel).
-			WithField("client", cfg.EthereumClient).
 			WithField("contract", "OptimisticScribe").
-			WithField("address", cfg.ContractAddr).
-			Info("Contract configuration")
+			WithFields(configCommonFields(cfg)).
+			Info("Contract")
 
 		opScribeCfgs = append(opScribeCfgs, relay.ConfigOptimisticScribe{
 			DataModel:       cfg.DataModel,

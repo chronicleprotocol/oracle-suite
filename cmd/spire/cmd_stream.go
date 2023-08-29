@@ -37,7 +37,7 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 		Use:   "stream [TOPIC...]",
 		Args:  cobra.MinimumNArgs(0),
 		Short: "Streams data from the network",
-		RunE: func(_ *cobra.Command, topics []string) (err error) {
+		RunE: func(cc *cobra.Command, topics []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 			if len(topics) == 0 {
 				topics = transport.AllMessagesMap.Keys()
 			}
-			services, err := c.StreamServices(logger, topics...)
+			services, err := c.StreamServices(logger, cc.Root().Use, cc.Root().Version, topics...)
 			if err != nil {
 				return err
 			}
@@ -135,12 +135,12 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 		Use:   "prices",
 		Args:  cobra.ExactArgs(0),
 		Short: "Prints price messages as they are received",
-		RunE: func(_ *cobra.Command, _ []string) (err error) {
+		RunE: func(cc *cobra.Command, _ []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.StreamServices(l.Logger())
+			services, err := c.StreamServices(l.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}

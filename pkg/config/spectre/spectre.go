@@ -18,7 +18,6 @@ package spectre
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/hcl/v2"
 
@@ -31,7 +30,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
@@ -70,7 +68,6 @@ func (s *Services) Start(ctx context.Context) error {
 		s.PriceStore,
 		s.MuSigStore,
 		s.Relay,
-		sysmon.New(time.Minute, s.Logger),
 	)
 	if l, ok := s.Logger.(supervisor.Service); ok {
 		s.supervisor.Watch(l)
@@ -84,9 +81,10 @@ func (s *Services) Wait() <-chan error {
 }
 
 // Services returns the services configured for Spectre.
-func (c *Config) Services(baseLogger log.Logger) (supervisor.Service, error) {
+func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (supervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "spectre",
+		AppName:    appName,
+		AppVersion: appVersion,
 		BaseLogger: baseLogger,
 	})
 	if err != nil {
@@ -113,10 +111,12 @@ func (c *Config) Services(baseLogger log.Logger) (supervisor.Service, error) {
 		return nil, err
 	}
 	transportSrv, err := c.Transport.Transport(transportConfig.Dependencies{
-		Keys:     keys,
-		Clients:  clients,
-		Messages: messageMap,
-		Logger:   logger,
+		Keys:       keys,
+		Clients:    clients,
+		Messages:   messageMap,
+		Logger:     logger,
+		AppName:    appName,
+		AppVersion: appVersion,
 	})
 	if err != nil {
 		return nil, err

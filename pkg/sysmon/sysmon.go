@@ -67,7 +67,7 @@ func (s *Sysmon) Start(ctx context.Context) error {
 	}
 	s.log.Debug("Starting")
 	fields := log.Fields{
-		"appVersion": suite.Version,
+		"appVersion": suite.Version, //TODO: find a better (non-global) source for this
 		"goVersion":  runtime.Version(),
 		"goCompiler": runtime.Compiler,
 		"goOS":       runtime.GOOS,

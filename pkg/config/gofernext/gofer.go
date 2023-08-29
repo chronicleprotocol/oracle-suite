@@ -70,9 +70,10 @@ func (s *Services) Wait() <-chan error {
 }
 
 // Services returns the services configured for Gofer.
-func (c *Config) Services(baseLogger log.Logger) (pkgSupervisor.Service, error) {
+func (c *Config) Services(baseLogger log.Logger, appName, appVersion string) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    "gofer",
+		AppName:    appName,
+		AppVersion: appVersion,
 		BaseLogger: baseLogger,
 	})
 	if err != nil {

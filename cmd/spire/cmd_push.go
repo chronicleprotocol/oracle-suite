@@ -45,12 +45,12 @@ func NewPushPriceCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *co
 		Use:   "price",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Push a data point message to the network",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
+		RunE: func(cc *cobra.Command, args []string) (err error) {
 			if err := f.Load(c); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.ClientServices(l.Logger())
+			services, err := c.ClientServices(l.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}
