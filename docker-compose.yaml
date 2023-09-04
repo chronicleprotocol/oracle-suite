@@ -170,7 +170,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: "ethereum-goerli"
+      CFG_SPECTRE_TARGET_NETWORK: gor
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${ETH_RPCS}
@@ -181,7 +181,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: "optimism-goerli"
+      CFG_SPECTRE_TARGET_NETWORK: ogor
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${OPT_RPCS}
@@ -192,7 +192,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: "arbitrum-goerli"
+      CFG_SPECTRE_TARGET_NETWORK: arb-goerli
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${ARB_RPCS}
@@ -203,7 +203,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: "sep"
+      CFG_SPECTRE_TARGET_NETWORK: sep
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${SEP_RPCS}

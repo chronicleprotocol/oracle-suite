@@ -1,6 +1,6 @@
 variables {
   median_contracts = {
-    "ethereum-mainnet" : {
+    "eth" : {
       "BTC/USD" : {
         "oracle" : "0xe0F30cb149fAADC7247E953746Be9BbBB6B5751f",
         "oracleExpiration" : 86400,
@@ -62,7 +62,7 @@ variables {
         "oracleSpread" : 4
       }
     }
-    "ethereum-goerli" : {
+    "gor" : {
       "BTC/USD" : {
         "oracle" : "0x586409bb88cF89BBAB0e106b0620241a0e4005c9",
         "oracleExpiration" : 14400,
@@ -124,7 +124,7 @@ variables {
         "oracleSpread" : 3
       }
     }
-    "arbitrum-mainnet" : {
+    "arb1" : {
       "BTC/USD" : {
         "oracle" : "0x490d05d7eF82816F47737c7d72D10f5C172e7772",
         "oracleExpiration" : 86400,
@@ -136,7 +136,7 @@ variables {
         "oracleSpread" : 1
       }
     }
-    "arbitrum-goerli" : {
+    "arb-goerli" : {
       "BTC/USD" : {
         "oracle" : "0x490d05d7eF82816F47737c7d72D10f5C172e7772",
         "oracleExpiration" : 14400,
@@ -148,7 +148,7 @@ variables {
         "oracleSpread" : 3
       }
     }
-    "optimism-mainnet" : {
+    "oeth" : {
       "BTC/USD" : {
         "oracle" : "0xdc65E49016ced01FC5aBEbB5161206B0f8063672",
         "oracleExpiration" : 86400,
@@ -160,7 +160,7 @@ variables {
         "oracleSpread" : 1
       }
     }
-    "optimism-goerli" : {
+    "ogor" : {
       "BTC/USD" : {
         "oracle" : "0x1aBBA7EA800f9023Fa4D1F8F840000bE7e3469a1",
         "oracleExpiration" : 14400,

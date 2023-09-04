@@ -21,15 +21,14 @@ function findAllConfigs() {
 	local _contract="$2"
 
 	local i
-	for i in $(find "$_path" -name '*.json'); do
-		jq -c 'select(.contract == "'"$_contract"'")' "$i"
+	for i in $(find "$_path" -name '*.json' | sort); do
+		jq -c 'select(.contract | test("'"$_contract"'","ix"))' "$i"
 	done
 }
 
 function findAll() {
 	{
-		findAllConfigs "$1" Scribe
-		findAllConfigs "$1" ScribeOptimistic
+		findAllConfigs "$1" 'Scribe(Optimistic)?'
   } | jq -c --argjson m '{"production":"prod","staging":"stage"}' '{
   	env: $m[.environment],
   	chain,
@@ -61,13 +60,13 @@ function findAll() {
 	findAll "$1" | jq -c '{(.env + "-" + .chain + "-" + .address):{
 		optimistic_poke: (if .i_scribe_optimistic != null then {
 			spread: 0.5,
-			expiration: 3600,
-			interval: 10,
+			expiration: 28800,
+			interval: 120,
 		} else null end),
 		poke: (if .i_scribe != null then {
-			spread: (0.5*2),
-			expiration: (3600*2),
-			interval: (10*2),
+			spread: 1,
+			expiration: 32400,
+			interval: 120,
 		} else null end),
 	}} | del(..|nulls)' | jq -s 'add'
 	echo "}"
