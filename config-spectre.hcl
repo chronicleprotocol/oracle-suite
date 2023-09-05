@@ -36,12 +36,12 @@ spectre {
   }
 
   dynamic "scribe" {
-    for_each = {
-      for k in var.contracts : k.address => k
-      if k.env == var.environment && k.chain == var.spectre_target_network
-      && try(k.i_scribe.wat != "", false)
-      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
-    }
+    for_each = [
+      for v in var.contracts : v
+      if v.env == var.environment && v.chain == var.spectre_target_network
+      && try(v.wat != "", false)
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
+    ]
     iterator = contract
     content {
       # Ethereum client to use for interacting with the Median contract.
@@ -50,11 +50,8 @@ spectre {
       # Address of the Median contract.
       contract_addr = contract.value.address
 
-      # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = try(keys(contract.value.i_scribe.indexes), [])
-
       # Name of the pair to fetch the price for.
-      data_model = contract.value.i_scribe.wat
+      data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
       spread = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.spread
@@ -68,13 +65,13 @@ spectre {
   }
 
   dynamic "optimistic_scribe" {
-    for_each = {
-      for k in var.contracts : k.address => k
-      if k.env == var.environment && k.chain == var.spectre_target_network
-      && try(k.i_scribe.wat != "", false)
-      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, k.i_scribe.wat), false)
-      && try(k.i_scribe_optimistic.challenge_period > 0, false)
-    }
+    for_each = [
+      for v in var.contracts : v
+      if v.env == var.environment && v.chain == var.spectre_target_network
+      && try(v.wat != "", false)
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
+      && v.contract == "ScribeOptimistic"
+    ]
     iterator = contract
     content {
       # Ethereum client to use for interacting with the Median contract.
@@ -83,11 +80,8 @@ spectre {
       # Address of the Median contract.
       contract_addr = contract.value.address
 
-      # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = try(keys(contract.value.i_scribe.indexes), [])
-
       # Name of the pair to fetch the price for.
-      data_model = contract.value.i_scribe.wat
+      data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
       spread = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.spread

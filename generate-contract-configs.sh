@@ -35,15 +35,8 @@ function findAll() {
   	chain_id,
   	contract,
   	address,
-  	i_scribe: (if .IScribe != null then {
-  		wat: .IScribe.wat,
-  		bar: .IScribe.bar,
-  		decimals: .IScribe.decimals,
-  		indexes: ([.IScribe.feeds, .IScribe.feedIndexes] | transpose | map( {(.[0]): .[1]} ) | add),
-  	} else null end),
-		i_scribe_optimistic: (if .IScribeOptimistic != null then {
-  		challenge_period:.IScribeOptimistic.opChallengePeriod,
-  	} else null end),
+		wat: .IScribe.wat,
+		challenge_period:.IScribeOptimistic.opChallengePeriod,
   } | del(..|nulls)'
 }
 
@@ -54,20 +47,20 @@ function findAll() {
 	echo "}"
 } > config-contracts.hcl
 
-{
-	echo "variables {"
-	echo -n "  contract_params = "
-	findAll "$1" | jq -c '{(.env + "-" + .chain + "-" + .address):{
-		optimistic_poke: (if .i_scribe_optimistic != null then {
-			spread: 0.5,
-			expiration: 28800,
-			interval: 120,
-		} else null end),
-		poke: (if .i_scribe != null then {
-			spread: 1,
-			expiration: 32400,
-			interval: 120,
-		} else null end),
-	}} | del(..|nulls)' | jq -s 'add'
-	echo "}"
-} > config-contract-params.hcl
+#{
+#	echo "variables {"
+#	echo -n "  contract_params = "
+#	findAll "$1" | jq -c '{(.env + "-" + .chain + "-" + .address):{
+#		optimistic_poke: (if .i_scribe_optimistic != null then {
+#			spread: 0.5,
+#			expiration: 28800,
+#			interval: 120,
+#		} else null end),
+#		poke: (if .i_scribe != null then {
+#			spread: 1,
+#			expiration: 32400,
+#			interval: 120,
+#		} else null end),
+#	}} | del(..|nulls)' | jq -s 'add'
+#	echo "}"
+#} > config-contract-params.hcl
