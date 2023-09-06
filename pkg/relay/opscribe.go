@@ -92,7 +92,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 			continue
 		}
 
-		// Check if this signature provide data for optimistic poke.
+		// Check if this signature provides data for optimistic poke.
 		if meta.Optimistic == nil {
 			continue
 		}
@@ -123,7 +123,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 		}
 
 		// Verify if signersBlob is same as provided in the message.
-		if bytes.Equal(signersBlob, meta.Optimistic.SignersBlob) == false {
+		if !bytes.Equal(signersBlob, meta.Optimistic.SignersBlob) {
 			continue
 		}
 
@@ -141,7 +141,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 				"timeToExpiration": time.Since(age).String(),
 				"currentSpread":    spread,
 			}).
-			Info("Trying to update Scribe contract")
+			Info("Trying to update ScribeOptimistic contract")
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
