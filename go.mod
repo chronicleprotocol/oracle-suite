@@ -6,7 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/defiweb/go-anymapper v0.3.0
 	github.com/defiweb/go-eth v0.4.1
-	github.com/ethereum/go-ethereum v1.11.5
+	github.com/ethereum/go-ethereum v1.12.1
 	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/itchyny/gojq v0.12.12
 	github.com/libp2p/go-libp2p v0.30.0
@@ -66,6 +66,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.5 // indirect
+	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/huin/goupnp v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/ipfs/boxo v0.12.0 // indirect
