@@ -111,14 +111,13 @@ func (mm MessageMap) SelectByTopic(topics ...string) (MessageMap, error) {
 }
 
 var AllMessagesMap = MessageMap{
-	messages.PriceV0MessageName:                    (*messages.Price)(nil), //nolint:staticcheck
-	messages.PriceV1MessageName:                    (*messages.Price)(nil), //nolint:staticcheck
-	messages.DataPointV1MessageName:                (*messages.DataPoint)(nil),
-	messages.GreetV1MessageName:                    (*messages.Greet)(nil),
-	messages.MuSigStartV1MessageName:               (*messages.MuSigInitialize)(nil),
-	messages.MuSigTerminateV1MessageName:           (*messages.MuSigTerminate)(nil),
-	messages.MuSigCommitmentV1MessageName:          (*messages.MuSigCommitment)(nil),
-	messages.MuSigPartialSignatureV1MessageName:    (*messages.MuSigPartialSignature)(nil),
-	messages.MuSigSignatureV1MessageName:           (*messages.MuSigSignature)(nil),
-	messages.MuSigOptimisticSignatureV1MessageName: (*messages.MuSigOptimisticSignature)(nil),
+	messages.PriceV0MessageName:                 (*messages.Price)(nil), //nolint:staticcheck
+	messages.PriceV1MessageName:                 (*messages.Price)(nil), //nolint:staticcheck
+	messages.DataPointV1MessageName:             (*messages.DataPoint)(nil),
+	messages.GreetV1MessageName:                 (*messages.Greet)(nil),
+	messages.MuSigStartV1MessageName:            (*messages.MuSigInitialize)(nil),
+	messages.MuSigTerminateV1MessageName:        (*messages.MuSigTerminate)(nil),
+	messages.MuSigCommitmentV1MessageName:       (*messages.MuSigCommitment)(nil),
+	messages.MuSigPartialSignatureV1MessageName: (*messages.MuSigPartialSignature)(nil),
+	messages.MuSigSignatureV1MessageName:        (*messages.MuSigSignature)(nil),
 }

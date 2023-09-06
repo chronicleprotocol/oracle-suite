@@ -58,10 +58,11 @@ func (d *DataPoint) MarshallBinary() ([]byte, error) {
 	// message. In the future, this problem should be solved by using a
 	// compression algorithm.
 	cpy := datapoint.Point{
-		Value: d.Value.Value,
-		Time:  d.Value.Time,
-		Meta:  d.Value.Meta,
-		Error: d.Value.Error,
+		Value:     d.Value.Value,
+		Time:      d.Value.Time,
+		Meta:      d.Value.Meta,
+		Error:     d.Value.Error,
+		SubPoints: d.Value.SubPoints,
 	}
 	value, err := cpy.MarshalBinary()
 	if err != nil {

@@ -41,8 +41,15 @@ func simulateTransaction(ctx context.Context, rpc rpc.RPC, tx types.Transaction)
 	return nil
 }
 
-// bytesToString converts a string terminated by a null byte to a Go string.
-func bytesToString(b []byte) string {
+// stringToBytes32 converts a Go string to bytes32.
+func stringToBytes32(s string) []byte {
+	b := make([]byte, 32)
+	copy(b, s)
+	return b
+}
+
+// bytes32ToString converts bytes32 to a Go string.
+func bytes32ToString(b []byte) string {
 	n := bytes.IndexByte(b, 0)
 	if n == -1 {
 		return string(b)

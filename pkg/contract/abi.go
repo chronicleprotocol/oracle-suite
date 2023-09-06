@@ -26,10 +26,12 @@ import (
 )
 
 var (
-	abi         = goethABI.Default
-	abiMedian   = make(map[string]*goethABI.Method)
-	abiScribe   = make(map[string]*goethABI.Method)
-	abiOpScribe = make(map[string]*goethABI.Method)
+	abi = goethABI.Default
+
+	abiMedian      *goethABI.Contract
+	abiScribe      *goethABI.Contract
+	abiOpScribe    *goethABI.Contract
+	abiWatRegistry *goethABI.Contract
 )
 
 func init() {
@@ -38,9 +40,11 @@ func init() {
 	abi.Types["SchnorrData"], _ = abi.ParseType("(bytes32 signature, address commitment, bytes signersBlob)")
 	abi.Types["ECDSAData"], _ = abi.ParseType("(uint8 v, bytes32 r, bytes32 s)")
 
-	// Median
-	abiMedian["poke"], _ = abi.ParseMethod(
-		`function poke(
+	abiMedian, _ = abi.ParseSignatures(
+		`age()(uint256 age)`,
+		`wat()(bytes32 wat)`,
+		`bar()(uint8 bar)`,
+		`poke(
 			uint256[] calldata val_, 
 			uint256[] calldata age_, 
 			uint8[] calldata v, 
@@ -48,30 +52,24 @@ func init() {
 			bytes32[] calldata s
 		)`,
 	)
-	abiMedian["age"], _ = abi.ParseMethod(`age()`)
-	abiMedian["wat"], _ = abi.ParseMethod(`wat()`)
-	abiMedian["bar"], _ = abi.ParseMethod(`bar()`)
 
-	// Scribe
-	abiScribe["wat"], _ = abi.ParseMethod(`wat()(bytes32)`)
-	abiScribe["bar"], _ = abi.ParseMethod(`bar()(uint8)`)
-	abiScribe["feeds"], _ = abi.ParseMethod(`feeds()(address[] feeds, uint[] feedIndexes)`)
-	abiScribe["poke"], _ = abi.ParseMethod(
-		`function poke(
-			PokeData calldata pokeData, 
-			SchnorrData calldata schnorrData
-		)`,
+	abiScribe, _ = abi.ParseSignatures(
+		`wat()(bytes32 wat)`,
+		`bar()(uint8 bar)`,
+		`feeds()(address[] feeds, uint[] feedIndexes)`,
+		`poke(PokeData pokeData, SchnorrData schnorrData)`,
 	)
 
-	// Optimistic Scribe
-	abiOpScribe["wat"], _ = abi.ParseMethod(`wat()(bytes32)`)
-	abiOpScribe["feeds"], _ = abi.ParseMethod(`feeds()(address[] feeds, uint[] feedIndexes)`)
-	abiOpScribe["opPoke"], _ = abi.ParseMethod(
-		`opPoke(
-			PokeData calldata pokeData, 
-			SchnorrData calldata schnorrData, 
-			ECDSAData calldata ecdsaData
-		)`,
+	abiOpScribe, _ = abi.ParseSignatures(
+		`wat()(bytes32 wat)`,
+		`bar()(uint8 bar)`,
+		`feeds()(address[] feeds, uint[] feedIndexes)`,
+		`opPoke(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
+	)
+
+	abiWatRegistry, _ = abi.ParseSignatures(
+		`bar(bytes32 wat)(uint8 bar)`,
+		`feeds(bytes32 wat)(address[] feeds)`,
 	)
 }
 

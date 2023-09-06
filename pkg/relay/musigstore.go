@@ -40,7 +40,6 @@ type MuSigStore struct {
 	scribeDataModels   []string
 	opScribeDataModels []string
 	signatures         map[storeKey]*messages.MuSigSignature
-	opSignatures       map[storeKey]*messages.MuSigOptimisticSignature
 }
 
 // MuSigStoreConfig is the configuration for MuSigStore.
@@ -69,7 +68,6 @@ func NewMuSigStore(cfg MuSigStoreConfig) *MuSigStore {
 		scribeDataModels:   cfg.ScribeDataModels,
 		opScribeDataModels: cfg.OpScribeDataModels,
 		signatures:         make(map[storeKey]*messages.MuSigSignature),
-		opSignatures:       make(map[storeKey]*messages.MuSigOptimisticSignature),
 	}
 }
 
@@ -113,26 +111,6 @@ func (m *MuSigStore) SignaturesByDataModel(model string) []*messages.MuSigSignat
 	return signatures
 }
 
-func (m *MuSigStore) OptimisticSignaturesByDataModel(model string) []*messages.MuSigOptimisticSignature {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// Collect signatures for the given data model.
-	var signatures []*messages.MuSigOptimisticSignature
-	for k, v := range m.opSignatures {
-		if k.wat == model {
-			signatures = append(signatures, v)
-		}
-	}
-
-	// Sort signatures by newest first.
-	sort.Slice(signatures, func(i, j int) bool {
-		return signatures[i].ComputedAt.After(signatures[j].ComputedAt)
-	})
-
-	return signatures
-}
-
 func (m *MuSigStore) collectSignature(feed types.Address, sig *messages.MuSigSignature) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -147,39 +125,12 @@ func (m *MuSigStore) collectSignature(feed types.Address, sig *messages.MuSigSig
 	m.signatures[key] = sig
 }
 
-func (m *MuSigStore) collectOpSignature(feed types.Address, sig *messages.MuSigOptimisticSignature) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	key := storeKey{wat: m.signatureDataModel(&sig.MuSigSignature), feed: feed}
-
-	// If we already have a signature for the given feed and data model, we
-	// should not override it with an older one.
-	if _, ok := m.opSignatures[key]; ok && sig.ComputedAt.Before(m.opSignatures[key].ComputedAt) {
-		return
-	}
-
-	m.opSignatures[key] = sig
-}
-
 func (m *MuSigStore) shouldCollectSignature(sig *messages.MuSigSignature) bool {
 	model := m.signatureDataModel(sig)
 	if model == "" {
 		return false
 	}
 	for _, a := range m.scribeDataModels {
-		if a == model {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *MuSigStore) shouldCollectOpSignature(sig *messages.MuSigOptimisticSignature) bool {
-	model := m.signatureDataModel(&sig.MuSigSignature)
-	if model == "" {
-		return false
-	}
-	for _, a := range m.opScribeDataModels {
 		if a == model {
 			return true
 		}
@@ -203,41 +154,22 @@ func (m *MuSigStore) handleSignatureMessage(msg transport.ReceivedMessage) {
 	m.collectSignature(msgAuthorToAddr(msg.Author), sig)
 }
 
-func (m *MuSigStore) handleOptimisticSignatureMessage(msg transport.ReceivedMessage) {
-	if msg.Error != nil {
-		m.log.WithError(msg.Error).Error("Unable to receive message")
-		return
-	}
-	sig, ok := msg.Message.(*messages.MuSigOptimisticSignature)
-	if !ok {
-		m.log.Error("Unexpected value returned from the transport layer")
-		return
-	}
-	if !m.shouldCollectOpSignature(sig) {
-		return
-	}
-	m.collectOpSignature(msgAuthorToAddr(msg.Author), sig)
-}
-
 func (m *MuSigStore) signatureDataModel(sig *messages.MuSigSignature) string {
-	model, ok := sig.MsgMeta["wat"]
-	if !ok {
+	msgMeta := sig.MsgMeta.TickV1()
+	if msgMeta == nil {
 		return ""
 	}
-	return string(model)
+	return msgMeta.Wat
 }
 
 func (m *MuSigStore) collectorRoutine() {
 	sigCh := m.transport.Messages(messages.MuSigSignatureV1MessageName)
-	opSigCh := m.transport.Messages(messages.MuSigOptimisticSignatureV1MessageName)
 	for {
 		select {
 		case <-m.ctx.Done():
 			return
 		case msg := <-sigCh:
 			m.handleSignatureMessage(msg)
-		case msg := <-opSigCh:
-			m.handleOptimisticSignatureMessage(msg)
 		}
 	}
 }

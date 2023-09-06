@@ -16,6 +16,7 @@
 package messages
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/defiweb/go-eth/types"
@@ -35,15 +36,28 @@ type Greet struct {
 
 // MarshallBinary implements the transport.Message interface.
 func (e *Greet) MarshallBinary() ([]byte, error) {
+	var (
+		pubKeyX []byte
+		pubKeyY []byte
+	)
+	if e.PublicKeyX != nil {
+		pubKeyX = e.PublicKeyX.Bytes()
+	}
+	if e.PublicKeyY != nil {
+		pubKeyY = e.PublicKeyY.Bytes()
+	}
 	return proto.Marshal(&pb.Greet{
 		Signature: e.Signature.Bytes(),
-		PubKeyX:   e.PublicKeyX.Bytes(),
-		PubKeyY:   e.PublicKeyY.Bytes(),
+		PubKeyX:   pubKeyX,
+		PubKeyY:   pubKeyY,
 	})
 }
 
 // UnmarshallBinary implements the transport.Message interface.
 func (e *Greet) UnmarshallBinary(data []byte) (err error) {
+	if len(data) == 0 {
+		return fmt.Errorf("empty message")
+	}
 	msg := pb.Greet{}
 	if err := proto.Unmarshal(data, &msg); err != nil {
 		return err

@@ -105,7 +105,6 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 		messages.MuSigCommitmentV1MessageName,
 		messages.MuSigPartialSignatureV1MessageName,
 		messages.MuSigSignatureV1MessageName,
-		messages.MuSigOptimisticSignatureV1MessageName,
 	)
 	if err != nil {
 		return nil, err

@@ -99,6 +99,17 @@ func Intersect[T comparable](slices ...[]T) []T {
 	return out
 }
 
+// IndexOf returns the index of the first occurrence of e in s, or -1 if e is
+// not present in s.
+func IndexOf[T comparable](s []T, e T) int {
+	for i, x := range s {
+		if x == e {
+			return i
+		}
+	}
+	return -1
+}
+
 func Put[T comparable](s []T, e ...T) []T {
 	r := make([]T, 0, len(s))
 	seen := make(map[T]bool)

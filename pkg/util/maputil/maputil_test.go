@@ -16,10 +16,13 @@
 package maputil
 
 import (
+	"bytes"
 	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
 func TestKeys(t *testing.T) {
@@ -48,6 +51,19 @@ func TestSortKeys(t *testing.T) {
 	t.Run("case-2", func(t *testing.T) {
 		m := map[int]int{2: 2, 1: 1}
 		assert.Equal(t, []int{1, 2}, SortKeys(m, sort.Ints))
+	})
+}
+
+func TestRandKeys(t *testing.T) {
+	t.Run("case-1", func(t *testing.T) {
+		r := bytes.NewReader([]byte{})
+		m := map[string]string{}
+		assert.Equal(t, []string{}, errutil.Must(RandKeys(m, r)))
+	})
+	t.Run("case-2", func(t *testing.T) {
+		r := bytes.NewReader([]byte{3, 2, 0, 1})
+		m := map[string]string{"a": "a", "b": "b", "c": "c"}
+		assert.Equal(t, []string{"b", "a", "c"}, errutil.Must(RandKeys(m, r)))
 	})
 }
 

@@ -52,6 +52,10 @@ func NewMedian(client rpc.RPC, address types.Address) *Median {
 	}
 }
 
+func (m *Median) Address() types.Address {
+	return m.address
+}
+
 func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 	const (
 		offset = 16
@@ -80,7 +84,7 @@ func (m *Median) Age(ctx context.Context) (time.Time, error) {
 		ctx,
 		types.Call{
 			To:    &m.address,
-			Input: errutil.Must(abiMedian["age"].EncodeArgs()),
+			Input: errutil.Must(abiMedian.Methods["age"].EncodeArgs()),
 		},
 		types.LatestBlockNumber,
 	)
@@ -95,14 +99,14 @@ func (m *Median) Wat(ctx context.Context) (string, error) {
 		ctx,
 		types.Call{
 			To:    &m.address,
-			Input: errutil.Must(abiMedian["wat"].EncodeArgs()),
+			Input: errutil.Must(abiMedian.Methods["wat"].EncodeArgs()),
 		},
 		types.LatestBlockNumber,
 	)
 	if err != nil {
 		return "", fmt.Errorf("median: wat query failed: %v", err)
 	}
-	return bytesToString(res), nil
+	return bytes32ToString(res), nil
 }
 
 func (m *Median) Bar(ctx context.Context) (int, error) {
@@ -110,7 +114,7 @@ func (m *Median) Bar(ctx context.Context) (int, error) {
 		ctx,
 		types.Call{
 			To:    &m.address,
-			Input: errutil.Must(abiMedian["bar"].EncodeArgs()),
+			Input: errutil.Must(abiMedian.Methods["bar"].EncodeArgs()),
 		},
 		types.LatestBlockNumber,
 	)
@@ -139,7 +143,7 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 		rSlice[i] = v.R
 		sSlice[i] = v.S
 	}
-	calldata, err := abiMedian["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
+	calldata, err := abiMedian.Methods["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
 	if err != nil {
 		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
 	}

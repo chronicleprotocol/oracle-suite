@@ -23,10 +23,10 @@ import (
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/relay/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )

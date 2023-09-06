@@ -55,3 +55,8 @@ func TestIntersect(t *testing.T) {
 	assert.Equal(t, []string{}, Intersect([]string{}, []string{"a", "b", "c"}))
 	assert.Equal(t, []string{}, Intersect([]string{}, []string{}))
 }
+
+func TestIndexOf(t *testing.T) {
+	assert.Equal(t, 1, IndexOf([]string{"a", "b", "c"}, "b"))
+	assert.Equal(t, -1, IndexOf([]string{"a", "b", "c"}, "d"))
+}

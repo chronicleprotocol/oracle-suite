@@ -29,12 +29,35 @@ message DataPointMessage {
   bytes signature = 3;
 }
 
+message MuSigMetaTickV1 {
+  message FeedTick {
+    bytes val = 1; // tick value (bn.DecFixedPoint)
+    int64 age = 2; // unix timestamp
+    bytes vrs = 3; // v, r, s combined into one byte array
+  }
+  message Optimistic {
+    bytes ecdsaSignature = 1; // v, r, s combined into one byte array
+    bytes signersBlob = 2; // signers blob
+  }
+  string wat = 1; // asset name
+  bytes val = 2; // median value (bn.DecFixedPoint)
+  int64 age = 3; // unix timestamp
+  optional Optimistic optimistic = 4; // optional data for optimistic poke
+  repeated FeedTick ticks = 5;
+}
+
+message MuSigMeta {
+  oneof msgMeta {
+    MuSigMetaTickV1 ticks = 1;
+  }
+}
+
 message MuSigInitializeMessage {
   bytes sessionID = 1;
   int64 startedAtTimestamp = 2;
   string msgType = 3;
   bytes msgBody = 4;
-  map<string, bytes> msgMeta = 5;
+  optional MuSigMeta msgMeta = 5;
   repeated bytes signers = 6;
 }
 
@@ -61,9 +84,9 @@ message MuSigSignatureMessage {
   int64 computedAtTimestamp = 2;
   string msgType = 3;
   bytes msgBody = 4;
-  map<string, bytes> msgMeta = 5;
-  bytes commitment = 6;
-  repeated bytes signers = 7;
+  optional MuSigMeta msgMeta = 5;
+  repeated bytes signers = 6;
+  bytes commitment = 7;
   bytes schnorrSignature = 8;
 }
 

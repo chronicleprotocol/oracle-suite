@@ -210,3 +210,22 @@ func TestScribe_Poke(t *testing.T) {
 	_, _, err := scribe.Poke(ctx, pokeData, schnorrData)
 	require.NoError(t, err)
 }
+
+func TestSignersBlob(t *testing.T) {
+	signers := []types.Address{
+		types.MustAddressFromHex("0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"),
+		types.MustAddressFromHex("0x0c4FC7D66b7b6c684488c1F218caA18D4082da18"),
+		types.MustAddressFromHex("0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9"),
+	}
+	feeds := []types.Address{
+		types.MustAddressFromHex("0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9"),
+		types.MustAddressFromHex("0x5C01f0F08E54B85f4CaB8C6a03c9425196fe66DD"),
+		types.MustAddressFromHex("0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"),
+		types.MustAddressFromHex("0x0c4FC7D66b7b6c684488c1F218caA18D4082da18"),
+	}
+	indices := []uint8{1, 2, 3, 4}
+
+	blob, err := SignersBlob(signers, feeds, indices)
+	require.NoError(t, err)
+	assert.Equal(t, []byte{0x04, 0x01, 0x03}, blob)
+}

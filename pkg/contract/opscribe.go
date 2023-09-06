@@ -47,7 +47,7 @@ func (s *OpScribe) OpPoke(
 	error,
 ) {
 
-	calldata, err := abiOpScribe["opPoke"].EncodeArgs(
+	calldata, err := abiOpScribe.Methods["opPoke"].EncodeArgs(
 		toPokeDataStruct(pokeData),
 		toSchnorrDataStruct(schnorrData),
 		toECDSADataStruct(ecdsaData),
