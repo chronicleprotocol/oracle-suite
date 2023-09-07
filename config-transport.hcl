@@ -42,9 +42,8 @@ transport {
 
       # Ethereum based address book. Enabled if CFG_WEBAPI_ETH_ADDR_BOOK is set to a contract address.
       dynamic "ethereum_address_book" {
-        for_each = env("CFG_WEBAPI_ETH_ADDR_BOOK", var.contract_map["${var.environment}-${var.chain_name}-TorAddressRegister"]) == "" ? [] : [
-          1
-        ]
+        for_each = env("CFG_WEBAPI_ETH_ADDR_BOOK", var.contract_map["${var.environment}-${var.chain_name}-TorAddressRegister"]) == ""
+        ? [] : [1]
         content {
           contract_addr   = env("CFG_WEBAPI_ETH_ADDR_BOOK", var.contract_map["${var.environment}-${var.chain_name}-TorAddressRegister"])
           ethereum_client = "default"

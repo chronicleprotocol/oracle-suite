@@ -23,31 +23,41 @@ function findAllConfigs() {
 
 	local i
 	for i in $(find "$_path" -name '*.json' | sort); do
-		jq -c 'select(.'"$_key"' | test("'"$_contract"'","ix"))' "$i"
+		jq -c 'select(.'"$_key"' // "" | test("'"$_contract"'","ix"))' "$i"
 	done
 }
 
 {
 	echo "variables {"
 
-	echo -n "  contracts = "
-	findAllConfigs "$1" '^Scribe(Optimistic)?$' \
-	| jq -c --argjson m '{"production":"prod","staging":"stage"}' '{
-		env: $m[.environment],
-		chain,
-		chain_id,
-		address,
-		IScribe: (.IScribe != null),
-		wat: .IScribe.wat,
-		IScribeOptimistic: (.IScribeOptimistic != null),
-		challenge_period:.IScribeOptimistic.opChallengePeriod,
-	} | del(..|nulls)' | jq -s '.'
-
-	echo -n "  contract_map = "
+	echo -n "contract_map = "
 	{
 	findAllConfigs "$1" '^(WatRegistry|Chainlog)$'
-	findAllConfigs "$1" '^TorAddressRegister_Feed_1$' 'name'
-	} | jq -c --argjson m '{"production":"prod","staging":"stage"}' '{($m[.environment]+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add'
+	findAllConfigs "$1" '^TorAddressRegister_Feeds_1$' 'name'
+	} | jq -c --argjson m '{"production":"prod","staging":"stage"}' '{($m[.environment]+"-"+.chain+"-"+.contract):.address}' \
+	| sort | jq -s 'add'
+
+	echo -n "contracts = "
+	{
+		findAllConfigs "$1" '^Scribe(Optimistic)?$' \
+		| jq -c --argjson m '{"production":"prod","staging":"stage"}' '{
+			env: $m[.environment],
+			chain,
+			chain_id,
+			address,
+			IScribe: (.IScribe != null),
+			wat: .IScribe.wat,
+			IScribeOptimistic: (.IScribeOptimistic != null),
+			challenge_period:.IScribeOptimistic.opChallengePeriod,
+		} | del(..|nulls)'
+
+		jq -c --argjson m '{"eth":"prod","arb1":"prod","oeth":"prod","gor":"stage","arb-goerli":"stage","ogor":"stage"}' 'to_entries[] | {chain: .key, value: .value|to_entries[]} | {
+			env: $m[.chain],
+			chain,
+			IMedian:true,
+			wat:.value.key,
+		} + .value.value | {env,chain,IMedian,wat,address:.oracle,poke:{expiration:.oracleExpiration,spread:.oracleSpread}}' "$1/medians.json"
+	} | grep -v 'MANA/USD' | sort | jq -s '.'
 
 	echo "}"
 } > config-contracts.hcl

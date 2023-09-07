@@ -53,6 +53,7 @@ var hclContext = &hcl.EvalContext{
 		"try":      tryfunc.TryFunc,
 		"contains": stdlib.ContainsFunc,
 		"keys":     stdlib.KeysFunc,
+		"distinct": stdlib.DistinctFunc,
 
 		// Custom functions:
 		"tobool":   funcs.MakeToFunc(cty.Bool),
