@@ -158,6 +158,9 @@ func TestFeed_Broadcast(t *testing.T) {
 				<-localTransport.Wait()
 			}()
 
+			// Wait for services to start.
+			time.Sleep(time.Millisecond * 100)
+
 			// Trigger a tick manually to get the first message.
 			ticker.Tick()
 
