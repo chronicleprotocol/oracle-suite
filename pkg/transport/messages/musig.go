@@ -85,7 +85,7 @@ type MuSigMetaFeedTick struct {
 func (m *MuSigMeta) toProtobuf() (*pb.MuSigMeta, error) {
 	var err error
 	meta := &pb.MuSigMeta{}
-	switch t := m.Meta.(type) {
+	switch t := m.Meta.(type) { //nolint:gocritic
 	case MuSigMetaTickV1:
 		tickV1 := &pb.MuSigMetaTickV1{
 			Wat: t.Wat,
@@ -125,7 +125,7 @@ func (m *MuSigMeta) toProtobuf() (*pb.MuSigMeta, error) {
 }
 
 func (m *MuSigMeta) fromProtobuf(msg *pb.MuSigMeta) error {
-	switch {
+	switch { //nolint:gocritic
 	case msg.GetTicks() != nil:
 		msg := msg.GetTicks()
 		val := &bn.DecFixedPointNumber{}
@@ -164,7 +164,6 @@ func (m *MuSigMeta) fromProtobuf(msg *pb.MuSigMeta) error {
 				ECDSASignature: vrs,
 				SignerIndexes:  optimistic.SignersIndexes,
 			})
-
 		}
 		m.Meta = tick
 	}
