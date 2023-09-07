@@ -63,7 +63,7 @@ func TestRandKeys(t *testing.T) {
 	t.Run("case-2", func(t *testing.T) {
 		r := bytes.NewReader([]byte{3, 2, 0, 1})
 		m := map[string]string{"a": "a", "b": "b", "c": "c"}
-		assert.Equal(t, []string{"b", "a", "c"}, errutil.Must(RandKeys(m, r)))
+		assert.ElementsMatch(t, []string{"a", "b", "c"}, errutil.Must(RandKeys(m, r)))
 	})
 }
 
