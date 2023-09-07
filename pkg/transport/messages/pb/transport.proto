@@ -20,30 +20,30 @@ message Price {
 
 message DataPointMessage {
   message Signature {
-    bytes signer = 1;
-    bytes signature = 2;
+    bytes signer = 1; // Signer address (types.Address)
+    bytes signature = 2; // V, R, S combined into one byte array (types.Signature).
   }
 
-  string model = 1;
-  bytes value = 2;
-  bytes signature = 3;
+  string model = 1; // Model name.
+  bytes value = 2; // Data point value.
+  bytes signature = 3; // Feed signature.
 }
 
 message MuSigMetaTickV1 {
   message FeedTick {
-    bytes val = 1; // tick value (bn.DecFixedPoint)
-    int64 age = 2; // unix timestamp
-    bytes vrs = 3; // v, r, s combined into one byte array
+    bytes val = 1; // Tick value (bn.DecFixedPoint).
+    int64 age = 2; // Unix timestamp.
+    bytes vrs = 3; // V, R, S combined into one byte array (types.Signature).
   }
   message Optimistic {
-    bytes ecdsaSignature = 1; // v, r, s combined into one byte array
-    bytes signersBlob = 2; // signers blob
+    bytes ecdsaSignature = 1; // V, R, S combined into one byte array (types.Signature).
+    bytes signersIndexes = 2; // Indexes of signers that participated in this MuSig signature.
   }
-  string wat = 1; // asset name
-  bytes val = 2; // median value (bn.DecFixedPoint)
-  int64 age = 3; // unix timestamp
-  optional Optimistic optimistic = 4; // optional data for optimistic poke
-  repeated FeedTick ticks = 5;
+  string wat = 1; // Asset name.
+  bytes val = 2; // Median value of all ticks (bn.DecFixedPoint).
+  int64 age = 3; // Oldest tick timestamp.
+  repeated Optimistic optimistic = 4; // Optional data required for optimistic poke.
+  repeated FeedTick ticks = 5; // Ticks used to calculate median along with feed signatures.
 }
 
 message MuSigMeta {

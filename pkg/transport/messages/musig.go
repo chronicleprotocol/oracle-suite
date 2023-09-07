@@ -40,10 +40,14 @@ const (
 	MuSigSignatureV1MessageName        = "musig_signature/v1"
 )
 
+type muSigMeta interface {
+	muSigMeta()
+}
+
 type MuSigMeta struct {
 	// Meta must be one of the following types:
 	// * MuSigMetaTickV1
-	Meta any
+	Meta muSigMeta
 }
 
 func (m *MuSigMeta) TickV1() *MuSigMetaTickV1 {
@@ -54,16 +58,22 @@ func (m *MuSigMeta) TickV1() *MuSigMetaTickV1 {
 }
 
 type MuSigMetaTickV1 struct {
+	// Optimistic is a slice because, theoretically, there could exist multiple
+	// ScribeOptimistic contracts for the same asset with different signer
+	// indexes, although this is unlikely.
+
 	Wat        string                  `json:"wat"`        // Asset name.
 	Val        *bn.DecFixedPointNumber `json:"val"`        // Median price.
 	Age        time.Time               `json:"age"`        // Oldest tick timestamp.
-	Optimistic *MuSigMetaOptimistic    `json:"optimistic"` // Optimistic signature.
+	Optimistic []MuSigMetaOptimistic   `json:"optimistic"` // Optimistic signatures.
 	FeedTicks  []MuSigMetaFeedTick     `json:"ticks"`      // All ticks used to calculate the median price.
 }
 
+func (m MuSigMetaTickV1) muSigMeta() {}
+
 type MuSigMetaOptimistic struct {
-	ECDSASignature types.Signature
-	SignersBlob    []byte
+	ECDSASignature types.Signature `json:"ecdsa_signature"`
+	SignerIndexes  []uint8         `json:"signer_indexes"`
 }
 
 type MuSigMetaFeedTick struct {
@@ -101,11 +111,11 @@ func (m *MuSigMeta) toProtobuf() (*pb.MuSigMeta, error) {
 				Vrs: tick.VRS.Bytes(),
 			})
 		}
-		if t.Optimistic != nil {
-			tickV1.Optimistic = &pb.MuSigMetaTickV1_Optimistic{
-				EcdsaSignature: t.Optimistic.ECDSASignature.Bytes(),
-				SignersBlob:    t.Optimistic.SignersBlob,
-			}
+		for _, optimistic := range t.Optimistic {
+			tickV1.Optimistic = append(tickV1.Optimistic, &pb.MuSigMetaTickV1_Optimistic{
+				EcdsaSignature: optimistic.ECDSASignature.Bytes(),
+				SignersIndexes: optimistic.SignerIndexes,
+			})
 		}
 		meta.MsgMeta = &pb.MuSigMeta_Ticks{
 			Ticks: tickV1,
@@ -130,7 +140,7 @@ func (m *MuSigMeta) fromProtobuf(msg *pb.MuSigMeta) error {
 			Age:       time.Unix(msg.Age, 0),
 			FeedTicks: nil,
 		}
-		for _, feedTick := range msg.GetTicks() {
+		for _, feedTick := range msg.Ticks {
 			val := &bn.DecFixedPointNumber{}
 			if err := val.UnmarshalBinary(feedTick.Val); err != nil {
 				return err
@@ -145,15 +155,16 @@ func (m *MuSigMeta) fromProtobuf(msg *pb.MuSigMeta) error {
 				VRS: vrs,
 			})
 		}
-		if msg.Optimistic != nil {
-			ecdsaSignature, err := types.SignatureFromBytes(msg.Optimistic.EcdsaSignature)
+		for _, optimistic := range msg.Optimistic {
+			vrs, err := types.SignatureFromBytes(optimistic.EcdsaSignature)
 			if err != nil {
 				return err
 			}
-			tick.Optimistic = &MuSigMetaOptimistic{
-				ECDSASignature: ecdsaSignature,
-				SignersBlob:    msg.Optimistic.SignersBlob,
-			}
+			tick.Optimistic = append(tick.Optimistic, MuSigMetaOptimistic{
+				ECDSASignature: vrs,
+				SignerIndexes:  optimistic.SignersIndexes,
+			})
+
 		}
 		m.Meta = tick
 	}
@@ -161,13 +172,13 @@ func (m *MuSigMeta) fromProtobuf(msg *pb.MuSigMeta) error {
 }
 
 type MuSigMessage struct {
-	// Type of the message that will be signed.
+	// Type of the message.
 	MsgType string `json:"msg_type"`
 
 	// Message body that will be signed.
 	MsgBody types.Hash `json:"msg_body"`
 
-	// Meta is a map of metadata that may be necessary to verify the message.
+	// Meta is a message-specific metadata.
 	MsgMeta MuSigMeta `json:"msg_meta"`
 
 	// Signers is a list of signers that will participate in the MuSig session.

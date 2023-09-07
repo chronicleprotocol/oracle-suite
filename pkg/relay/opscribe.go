@@ -92,8 +92,8 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 			continue
 		}
 
-		// Check if this signature provides data for optimistic poke.
-		if meta.Optimistic == nil {
+		// Signature is does not contain optimistic signatures.
+		if len(meta.Optimistic) == 0 {
 			continue
 		}
 
@@ -122,11 +122,6 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 				Error("Failed to generate signersBlob")
 		}
 
-		// Verify if signersBlob is same as provided in the message.
-		if !bytes.Equal(signersBlob, meta.Optimistic.SignersBlob) {
-			continue
-		}
-
 		// Print logs.
 		w.log.
 			WithFields(log.Fields{
@@ -145,40 +140,47 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
-			// Send *actual* transaction.
-			txHash, tx, err := w.contract.OpPoke(
-				ctx,
-				contract.PokeData{
-					Val: meta.Val,
-					Age: meta.Age,
-				},
-				contract.SchnorrData{
-					Signature:   s.SchnorrSignature,
-					Commitment:  s.Commitment,
-					SignersBlob: signersBlob,
-				},
-				meta.Optimistic.ECDSASignature,
-			)
-			if err != nil {
-				return err
-			}
+			for _, optimistic := range meta.Optimistic {
+				// Verify if signersBlob is same as provided in the message.
+				if !bytes.Equal(signersBlob, optimistic.SignerIndexes) {
+					continue
+				}
 
-			w.log.
-				WithFields(log.Fields{
-					"dataModel":              w.dataModel,
-					"txHash":                 txHash,
-					"txType":                 tx.Type,
-					"txFrom":                 tx.From,
-					"txTo":                   tx.To,
-					"txChainId":              tx.ChainID,
-					"txNonce":                tx.Nonce,
-					"txGasPrice":             tx.GasPrice,
-					"txGasLimit":             tx.GasLimit,
-					"txMaxFeePerGas":         tx.MaxFeePerGas,
-					"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
-					"txInput":                hexutil.BytesToHex(tx.Input),
-				}).
-				Info("Sent update to the ScribeOptimistic contract")
+				// Send *actual* transaction.
+				txHash, tx, err := w.contract.OpPoke(
+					ctx,
+					contract.PokeData{
+						Val: meta.Val,
+						Age: meta.Age,
+					},
+					contract.SchnorrData{
+						Signature:   s.SchnorrSignature,
+						Commitment:  s.Commitment,
+						SignersBlob: signersBlob,
+					},
+					optimistic.ECDSASignature,
+				)
+				if err != nil {
+					return err
+				}
+
+				w.log.
+					WithFields(log.Fields{
+						"dataModel":              w.dataModel,
+						"txHash":                 txHash,
+						"txType":                 tx.Type,
+						"txFrom":                 tx.From,
+						"txTo":                   tx.To,
+						"txChainId":              tx.ChainID,
+						"txNonce":                tx.Nonce,
+						"txGasPrice":             tx.GasPrice,
+						"txGasLimit":             tx.GasLimit,
+						"txMaxFeePerGas":         tx.MaxFeePerGas,
+						"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
+						"txInput":                hexutil.BytesToHex(tx.Input),
+					}).
+					Info("Sent update to the ScribeOptimistic contract")
+			}
 		}
 	}
 
