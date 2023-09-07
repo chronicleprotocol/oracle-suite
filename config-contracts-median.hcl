@@ -1,4 +1,6 @@
 variables {
+  #TODO: nest env key
+  #TODO: convert to what `contracts` look like to be filtered easily
   median_contracts = {
     "eth" : {
       "BTC/USD" : {

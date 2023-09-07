@@ -831,7 +831,7 @@ gofer {
   }
 
   dynamic "data_model" {
-    for_each = var.data_symbols
+    for_each = keys(var.median_contracts[var.chain_name])
     iterator = symbol
     labels   = [replace(symbol.value, "/", "")]
     content {

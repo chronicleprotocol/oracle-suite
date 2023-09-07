@@ -19,31 +19,36 @@ set -euo pipefail
 function findAllConfigs() {
 	local _path="$1"
 	local _contract="$2"
+	local _key="${3:-"contract"}"
 
 	local i
 	for i in $(find "$_path" -name '*.json' | sort); do
-		jq -c 'select(.contract | test("'"$_contract"'","ix"))' "$i"
+		jq -c 'select(.'"$_key"' | test("'"$_contract"'","ix"))' "$i"
 	done
-}
-
-function findAll() {
-	{
-		findAllConfigs "$1" 'Scribe(Optimistic)?'
-  } | jq -c --argjson m '{"production":"prod","staging":"stage"}' '{
-  	env: $m[.environment],
-  	chain,
-  	chain_id,
-  	contract,
-  	address,
-		wat: .IScribe.wat,
-		challenge_period:.IScribeOptimistic.opChallengePeriod,
-  } | del(..|nulls)'
 }
 
 {
 	echo "variables {"
+
 	echo -n "  contracts = "
-	findAll "$1" | jq -s '.'
+	findAllConfigs "$1" '^Scribe(Optimistic)?$' \
+	| jq -c --argjson m '{"production":"prod","staging":"stage"}' '{
+		env: $m[.environment],
+		chain,
+		chain_id,
+		address,
+		IScribe: (.IScribe != null),
+		wat: .IScribe.wat,
+		IScribeOptimistic: (.IScribeOptimistic != null),
+		challenge_period:.IScribeOptimistic.opChallengePeriod,
+	} | del(..|nulls)' | jq -s '.'
+
+	echo -n "  contract_map = "
+	{
+	findAllConfigs "$1" '^(WatRegistry|Chainlog)$'
+	findAllConfigs "$1" '^TorAddressRegister_Feed_1$' 'name'
+	} | jq -c --argjson m '{"production":"prod","staging":"stage"}' '{($m[.environment]+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add'
+
 	echo "}"
 } > config-contracts.hcl
 

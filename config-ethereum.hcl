@@ -1,5 +1,6 @@
 variables {
   chain_rpc_urls = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_CHAIN_RPC_URLS", env("CFG_RPC_URLS", "")))
+  chain_name     = env("CFG_CHAIN_NAME", "eth")
 
   # RPC URLs for specific blockchain clients. SOME apps are chain type aware.
   eth_rpc_urls = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_ETH_RPC_URLS", env("ETH_RPC_URL", "https://eth.public-rpc.com")))

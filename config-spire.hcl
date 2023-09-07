@@ -11,10 +11,11 @@ spire {
   rpc_agent_addr  = env("CFG_SPIRE_RPC_ADDR", "127.0.0.1:9100")
 
   # List of pairs that are collected by the spire node. Other pairs are ignored.
-  pairs = length(var.spire_keys) == 0 ? [
-    for s in var.data_symbols : replace(s, "/", "")
-  ] : var.spire_keys
+  pairs = concat(length(var.spire_keys) == 0 ? keys(var.median_contracts[var.chain_name]) : var.spire_keys, [
+    for p in (length(var.spire_keys) == 0 ? keys(var.median_contracts[var.chain_name]) : var.spire_keys) :
+    replace(p, "/", "")
+  ])
 
   # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-  feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
+  feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 }

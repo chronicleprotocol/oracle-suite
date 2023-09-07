@@ -1,14 +1,13 @@
 variables {
-  spectre_target_network = env("CFG_SPECTRE_TARGET_NETWORK", "")
-  spectre_pairs          = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SPECTRE_PAIRS", ""))
+  spectre_pairs = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SPECTRE_PAIRS", ""))
 }
 
 spectre {
   dynamic "median" {
     for_each = {
-      for p in length(var.spectre_pairs) == 0 ? var.data_symbols : var.spectre_pairs : p=>
-      var.median_contracts[var.spectre_target_network][p]
-      if contains(try(keys(var.median_contracts[var.spectre_target_network]), []), p)
+      for p in length(var.spectre_pairs) == 0 ? var.median_contracts[var.chain_name] : var.spectre_pairs : p=>
+      var.median_contracts[var.chain_name][p]
+      if contains(try(keys(var.median_contracts[var.chain_name]), []), p)
     }
     iterator = contract
     content {
@@ -19,7 +18,7 @@ spectre {
       contract_addr = contract.value.oracle
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = env("CFG_FEEDS", "") == "*" ? concat(var.feed_sets["prod"], var.feed_sets["stage"]) : try(var.feed_sets[env("CFG_FEEDS", "prod")], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
+      feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = replace(contract.key, "/", "")
@@ -38,8 +37,9 @@ spectre {
   dynamic "scribe" {
     for_each = [
       for v in var.contracts : v
-      if v.env == var.environment && v.chain == var.spectre_target_network
-      && try(v.wat != "", false)
+      if v.env == var.environment
+      && v.chain == var.chain_name
+      && try(v.IScribe, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
     ]
     iterator = contract
@@ -67,10 +67,11 @@ spectre {
   dynamic "optimistic_scribe" {
     for_each = [
       for v in var.contracts : v
-      if v.env == var.environment && v.chain == var.spectre_target_network
-      && try(v.wat != "", false)
+      if v.env == var.environment
+      && v.chain == var.chain_name
+      && try(v.IScribe, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
-      && v.contract == "ScribeOptimistic"
+      && try(v.IScribeOptimistic, false)
     ]
     iterator = contract
     content {

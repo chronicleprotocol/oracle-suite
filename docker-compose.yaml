@@ -44,8 +44,8 @@ services:
       <<: *base
 
       CFG_GHOST_INTERVAL: 10
-      CFG_GHOST_PAIRS: |-
-        ETH/USD
+      #      CFG_GHOST_PAIRS: |-
+      #        ETH/USD
 
       # ethereum RPC client
       CFG_ETH_RPC_URLS: ${RPCS}
@@ -54,6 +54,7 @@ services:
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
       CFG_CHAIN_ID: ${SEP_CHID}
+      CFG_CHAIN_NAME: "sep"
 
       # webapi
       CFG_WEBAPI_ENABLE: 1
@@ -72,10 +73,11 @@ services:
       <<: *base
 
       CFG_SPECTRE_INTERVAL: 10
-      CFG_SPECTRE_PAIRS: |-
-        ETH/USD
+      #      CFG_SPECTRE_PAIRS: |-
+      #        ETH/USD
 
       # default RPC client
+      CFG_CHAIN_NAME: "sep"
       CFG_CHAIN_GAS_FEE_MULTIPLIER: 1
       CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER: 1
       CFG_CHAIN_MAX_GAS_FEE: 0
@@ -129,6 +131,8 @@ services:
       ### local address book
       CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
+      CFG_CHAIN_NAME: "sep"
+
   ghost1:
     image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
     environment:
@@ -170,7 +174,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: gor
+      CFG_CHAIN_NAME: gor
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${ETH_RPCS}
@@ -181,7 +185,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: ogor
+      CFG_CHAIN_NAME: ogor
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${OPT_RPCS}
@@ -192,7 +196,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: arb-goerli
+      CFG_CHAIN_NAME: arb-goerli
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${ARB_RPCS}
@@ -203,7 +207,7 @@ services:
     environment:
       <<: *base_spectre
 
-      CFG_SPECTRE_TARGET_NETWORK: sep
+      CFG_CHAIN_NAME: sep
 
       # default RPC client
       CFG_CHAIN_RPC_URLS: ${SEP_RPCS}
