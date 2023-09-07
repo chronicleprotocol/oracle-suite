@@ -51,11 +51,11 @@ func (w *WatRegistry) Bar(ctx context.Context, wat string) (int, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("WatRegistry: bar query failed: %v", err)
+		return 0, fmt.Errorf("watRegistry: bar query failed: %v", err)
 	}
 	var bar uint8
 	if err := abiWatRegistry.Methods["bar"].DecodeValues(res, &bar); err != nil {
-		return 0, fmt.Errorf("WatRegistry: bar query failed: %v", err)
+		return 0, fmt.Errorf("watRegistry: bar query failed: %v", err)
 	}
 	return int(bar), nil
 }
@@ -70,11 +70,11 @@ func (w *WatRegistry) Feeds(ctx context.Context, wat string) ([]types.Address, e
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("WatRegistry: feeds query failed: %v", err)
+		return nil, fmt.Errorf("watRegistry: feeds query failed: %v", err)
 	}
 	var feeds []types.Address
 	if err := abiWatRegistry.Methods["feeds"].DecodeValues(res, &feeds); err != nil {
-		return nil, fmt.Errorf("WatRegistry: feeds query failed: %v", err)
+		return nil, fmt.Errorf("watRegistry: feeds query failed: %v", err)
 	}
 	return feeds, nil
 }

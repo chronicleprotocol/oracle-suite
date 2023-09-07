@@ -32,6 +32,7 @@ var (
 	abiScribe      *goethABI.Contract
 	abiOpScribe    *goethABI.Contract
 	abiWatRegistry *goethABI.Contract
+	abiChainlog    *goethABI.Contract
 )
 
 func init() {
@@ -70,6 +71,10 @@ func init() {
 	abiWatRegistry, _ = abi.ParseSignatures(
 		`bar(bytes32 wat)(uint8 bar)`,
 		`feeds(bytes32 wat)(address[] feeds)`,
+	)
+
+	abiChainlog, _ = abi.ParseSignatures(
+		`tryGet(bytes32 key)(bool, address)`,
 	)
 }
 
