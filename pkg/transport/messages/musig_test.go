@@ -45,10 +45,10 @@ func TestMuSigInitialize_MarshallBinary(t *testing.T) {
 							Wat: "TestAsset",
 							Val: bn.DecFixedPoint(100, 2),
 							Age: time.Unix(1630458972, 0),
-							Optimistic: &MuSigMetaOptimistic{
+							Optimistic: []MuSigMetaOptimistic{{
 								ECDSASignature: types.MustSignatureFromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"),
-								SignersBlob:    []byte{0, 1, 2},
-							},
+								SignerIndexes:  []byte{0, 1, 2},
+							}},
 							FeedTicks: []MuSigMetaFeedTick{
 								{
 									Val: bn.DecFixedPoint(100, 2),
@@ -144,10 +144,10 @@ func TestMuSigInitialize_UnmarshallBinary(t *testing.T) {
 								Wat: "TestAsset",
 								Val: bn.DecFixedPoint(100, 2),
 								Age: time.Unix(1630458972, 0),
-								Optimistic: &MuSigMetaOptimistic{
+								Optimistic: []MuSigMetaOptimistic{{
 									ECDSASignature: types.MustSignatureFromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"),
-									SignersBlob:    []byte{0, 1, 2},
-								},
+									SignerIndexes:  []byte{0, 1, 2},
+								}},
 								FeedTicks: []MuSigMetaFeedTick{
 									{
 										Val: bn.DecFixedPoint(100, 2),
