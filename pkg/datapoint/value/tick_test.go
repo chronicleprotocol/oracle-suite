@@ -1,7 +1,6 @@
 package value
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"testing"
@@ -154,81 +153,6 @@ func TestPair(t *testing.T) {
 
 				// Test Equal() method
 				assert.True(t, pair.Equal(Pair{Base: tt.expectedBase, Quote: tt.expectedQuote}))
-			}
-		})
-	}
-}
-
-func TestTick_Marshal(t *testing.T) {
-	testCases := []struct {
-		name                   string
-		dataPoint              Tick
-		expectedMarshalError   bool
-		marshalErrorContains   string
-		expectedUnmarshalError bool
-		UnmarshalErrorContains string
-	}{
-		{
-			name: "volume is not nil",
-			dataPoint: Tick{
-				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(1000),
-				Volume24h: bn.Float(100),
-			},
-			expectedMarshalError:   false,
-			expectedUnmarshalError: false,
-		},
-		{
-			name: "volume is nil",
-			dataPoint: Tick{
-				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(1000),
-				Volume24h: nil,
-			},
-			expectedMarshalError:   false,
-			expectedUnmarshalError: false,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Marshal in binary
-			bin, err := tc.dataPoint.MarshalBinary()
-			if tc.expectedMarshalError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.marshalErrorContains)
-			} else {
-				assert.NoError(t, err)
-				assert.Greater(t, len(bin), 0)
-			}
-
-			var newTick Tick
-			err = newTick.UnmarshalBinary(bin)
-			if tc.expectedUnmarshalError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.UnmarshalErrorContains)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, newTick.Print(), tc.dataPoint.Print())
-			}
-
-			// Marshal in json
-			bin, err = json.Marshal(tc.dataPoint)
-			if tc.expectedMarshalError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.marshalErrorContains)
-			} else {
-				assert.NoError(t, err)
-				assert.Greater(t, len(bin), 0)
-			}
-
-			var newTick2 Tick
-			err = json.Unmarshal(bin, &newTick2)
-			if tc.expectedUnmarshalError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.UnmarshalErrorContains)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, newTick2.Print(), tc.dataPoint.Print())
 			}
 		})
 	}

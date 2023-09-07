@@ -2,6 +2,10 @@ syntax = "proto3";
 
 option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb";
 
+//
+// Legacy price
+//
+
 message Price {
   // Price:
   string wat = 1; // asset name
@@ -18,16 +22,39 @@ message Price {
   string version = 9;
 }
 
-message DataPointMessage {
-  message Signature {
-    bytes signer = 1; // Signer address (types.Address)
-    bytes signature = 2; // V, R, S combined into one byte array (types.Signature).
-  }
+//
+// DataPoint
+//
 
-  string model = 1; // Model name.
-  bytes value = 2; // Data point value.
-  bytes signature = 3; // Feed signature.
+message DataPointValue {
+  oneof value {
+    bytes static = 1;
+    DataPointTickValue tick = 2;
+  }
 }
+
+message DataPointTickValue {
+  string pair = 1; // Pair name, e.g. "ETH/USD" or "ETHUSD" for legacy Median contract.
+  bytes price = 2; // Price value (bn.DecFixedPoint).
+  bytes volume24h = 3; // Volume in last 24 hours (bn.DecFixedPoint).
+}
+
+message DataPoint {
+  DataPointValue value = 1; // Data point value.
+  int64 timestamp = 2; // Timestamp of the data point.
+  repeated DataPoint subPoints = 3; // Sub points.
+  map<string, bytes> meta = 4; // Additional data.
+}
+
+message DataPointMessage {
+  string model = 1; // Model name.
+  DataPoint dataPoint = 2; // Data point value.
+  bytes ecdsaSignature = 3; // Feed signature.
+}
+
+//
+// MuSig
+//
 
 message MuSigMetaTickV1 {
   message FeedTick {
@@ -89,6 +116,10 @@ message MuSigSignatureMessage {
   bytes commitment = 7;
   bytes schnorrSignature = 8;
 }
+
+//
+// Greet
+//
 
 message Greet {
   bytes signature = 1;

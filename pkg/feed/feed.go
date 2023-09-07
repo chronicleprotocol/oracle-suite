@@ -146,9 +146,9 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 				Error("Unable to sign data point")
 		}
 		msg := &messages.DataPoint{
-			Model:     model,
-			Value:     point,
-			Signature: *sig,
+			Model:          model,
+			DataPoint:      point,
+			ECDSASignature: *sig,
 		}
 		if err := f.transport.Broadcast(messages.DataPointV1MessageName, msg); err != nil {
 			f.log.

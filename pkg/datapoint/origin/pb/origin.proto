@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin/pb";
-
-message Tick {
-  string pair = 1;
-  bytes price = 2;
-  bytes volume24h = 3;
-}

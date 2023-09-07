@@ -22,9 +22,7 @@ import (
 	"time"
 
 	"github.com/defiweb/go-eth/types"
-	"google.golang.org/protobuf/proto"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/pb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
@@ -176,65 +174,6 @@ func (p Point) Validate() error {
 	}
 	if p.Time.IsZero() {
 		return fmt.Errorf("time is not set")
-	}
-	return nil
-}
-
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (p Point) MarshalBinary() ([]byte, error) {
-	if err := p.Validate(); err != nil {
-		return nil, err
-	}
-	value, err := value.MarshalBinary(p.Value)
-	if err != nil {
-		return nil, err
-	}
-	subPoints := make([][]byte, len(p.SubPoints))
-	for i, t := range p.SubPoints {
-		subPoints[i], err = t.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-	}
-	meta := make(map[string][]byte)
-	for k, v := range p.Meta {
-		meta[k], err = json.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return proto.Marshal(&pb.DataPoint{
-		Value:     value,
-		Timestamp: p.Time.Unix(),
-		SubPoints: subPoints,
-		Meta:      meta,
-	})
-}
-
-func (p *Point) UnmarshalBinary(data []byte) error {
-	var pbDataPoint pb.DataPoint
-	if err := proto.Unmarshal(data, &pbDataPoint); err != nil {
-		return err
-	}
-	value, err := value.UnmarshalBinary(pbDataPoint.Value)
-	if err != nil {
-		return err
-	}
-	p.Value = value
-	p.Time = time.Unix(pbDataPoint.Timestamp, 0)
-	p.SubPoints = make([]Point, len(pbDataPoint.SubPoints))
-	for i, t := range pbDataPoint.SubPoints {
-		if err := p.SubPoints[i].UnmarshalBinary(t); err != nil {
-			return err
-		}
-	}
-	p.Meta = make(map[string]any)
-	for k, v := range pbDataPoint.Meta {
-		var value any
-		if err := json.Unmarshal(v, &value); err != nil {
-			return err
-		}
-		p.Meta[k] = value
 	}
 	return nil
 }

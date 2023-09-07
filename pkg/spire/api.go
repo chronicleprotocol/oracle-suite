@@ -88,9 +88,9 @@ func (n *API) PullPoints(arg *PullPricesArg, resp *PullDataPointsResp) error {
 			return err
 		}
 		point := &messages.DataPoint{
-			Model:     price.Model,
-			Value:     price.DataPoint,
-			Signature: price.Signature,
+			Model:          price.Model,
+			DataPoint:      price.DataPoint,
+			ECDSASignature: price.Signature,
 		}
 		dataPoints = []*messages.DataPoint{point}
 	case arg.FilterAssetPair != "":
@@ -100,9 +100,9 @@ func (n *API) PullPoints(arg *PullPricesArg, resp *PullDataPointsResp) error {
 		}
 		for _, p := range points {
 			point := &messages.DataPoint{
-				Model:     p.Model,
-				Value:     p.DataPoint,
-				Signature: p.Signature,
+				Model:          p.Model,
+				DataPoint:      p.DataPoint,
+				ECDSASignature: p.Signature,
 			}
 			dataPoints = append(dataPoints, point)
 		}
@@ -133,9 +133,9 @@ func (n *API) PullPoint(arg *PullPriceArg, resp *PullDataPointResp) error {
 	}
 
 	point := &messages.DataPoint{
-		Model:     price.Model,
-		Value:     price.DataPoint,
-		Signature: price.Signature,
+		Model:          price.Model,
+		DataPoint:      price.DataPoint,
+		ECDSASignature: price.Signature,
 	}
 	*resp = PullDataPointResp{DataPoint: point}
 

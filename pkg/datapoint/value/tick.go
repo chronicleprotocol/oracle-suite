@@ -20,9 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/protobuf/proto"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin/pb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
@@ -71,60 +68,6 @@ func (t Tick) Print() string {
 	return fmt.Sprintf("Pair=%s, Price=%s, Volume24h=%s", t.Pair, t.Price, t.Volume24h)
 }
 
-// MarshalBinary implements the Value interface.
-func (t Tick) MarshalBinary() ([]byte, error) {
-	var (
-		priceBytes     []byte
-		volume24HBytes []byte
-		err            error
-	)
-	if t.Price != nil {
-		priceBytes, err = t.Price.DecFixedPoint(TickPricePrecision).MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-	}
-	if t.Volume24h != nil {
-		volume24HBytes, err = t.Volume24h.DecFixedPoint(TickVolumePrecision).MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return proto.Marshal(&pb.Tick{
-		Pair:      t.Pair.String(),
-		Price:     priceBytes,
-		Volume24H: volume24HBytes,
-	})
-}
-
-// UnmarshalBinary implements the Value interface.
-func (t *Tick) UnmarshalBinary(bytes []byte) error {
-	pbTick := &pb.Tick{}
-	if err := proto.Unmarshal(bytes, pbTick); err != nil {
-		return err
-	}
-	pair, err := PairFromString(pbTick.Pair)
-	if err != nil {
-		return err
-	}
-	t.Pair = pair
-	if len(pbTick.Price) > 0 {
-		price := &bn.DecFixedPointNumber{}
-		if err := price.UnmarshalBinary(pbTick.Price); err != nil {
-			return err
-		}
-		t.Price = price.Float()
-	}
-	if len(pbTick.Volume24H) > 0 {
-		volume24h := &bn.DecFixedPointNumber{}
-		if err := volume24h.UnmarshalBinary(pbTick.Volume24H); err != nil {
-			return err
-		}
-		t.Volume24h = volume24h.Float()
-	}
-	return nil
-}
-
 // Validate returns an error if the tick is invalid.
 func (t Tick) Validate() error {
 	if t.Pair.Empty() {
@@ -158,7 +101,7 @@ func (t Tick) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Tick) UnmarshalJSON(data []byte) error {
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	if err := json.Unmarshal(data, &result); err != nil {
 		return err
 	}

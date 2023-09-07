@@ -29,10 +29,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	dataMocks "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/mocks"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
@@ -44,7 +44,7 @@ var (
 type mockSigner struct{}
 
 func (s mockSigner) Supports(_ context.Context, data datapoint.Point) bool {
-	_, ok := data.Value.(pointValue)
+	_, ok := data.Value.(value.StaticValue)
 	return ok
 }
 
@@ -59,28 +59,7 @@ func (s mockSigner) Recover(_ context.Context, _ string, _ datapoint.Point, sign
 	return &testAddress, nil
 }
 
-type pointValue struct {
-	value string
-}
-
-func (p pointValue) Print() string {
-	return p.value
-}
-
-func (p pointValue) MarshalBinary() (data []byte, err error) {
-	return []byte(p.value), nil
-}
-
-func (p *pointValue) UnmarshalBinary(data []byte) error {
-	p.value = string(data)
-	return nil
-}
-
 func TestFeed_Broadcast(t *testing.T) {
-	t.Skip("Test failures when run together with the rest, but not individually. Skipping for now.")
-	// Test type must be registered to be able to marshal/unmarshal it.
-	value.RegisterType(&pointValue{}, 0x80000000)
-
 	tests := []struct {
 		name             string
 		dataModels       []string
@@ -93,7 +72,7 @@ func TestFeed_Broadcast(t *testing.T) {
 			dataModels: []string{"AAABBB"},
 			mocks: func(p *dataMocks.Provider) {
 				point := datapoint.Point{
-					Value: pointValue{value: "foo"},
+					Value: value.StaticValue{Value: bn.Float(42)},
 					Time:  time.Unix(100, 0),
 				}
 				p.On("ModelNames", mock.Anything).Return(
@@ -111,9 +90,9 @@ func TestFeed_Broadcast(t *testing.T) {
 			asserts: func(t *testing.T, dataPoints []*messages.DataPoint) {
 				require.Len(t, dataPoints, 1)
 				assert.Equal(t, "AAABBB", dataPoints[0].Model)
-				assert.Equal(t, pointValue{value: "foo"}, dataPoints[0].Value.Value)
-				assert.Equal(t, time.Unix(100, 0), dataPoints[0].Value.Time)
-				assert.Equal(t, testSignature, dataPoints[0].Signature)
+				assert.Equal(t, "42", dataPoints[0].DataPoint.Value.Print())
+				assert.Equal(t, time.Unix(100, 0), dataPoints[0].DataPoint.Time)
+				assert.Equal(t, testSignature, dataPoints[0].ECDSASignature)
 			},
 			expectedMessages: 1,
 		},
@@ -122,7 +101,7 @@ func TestFeed_Broadcast(t *testing.T) {
 			dataModels: []string{"AAABBB", "CCCDDD"},
 			mocks: func(p *dataMocks.Provider) {
 				point := datapoint.Point{
-					Value: pointValue{value: "foo"},
+					Value: value.StaticValue{Value: bn.Float(42)},
 					Time:  time.Unix(100, 0),
 				}
 				p.On("ModelNames", mock.Anything).Return(
@@ -209,6 +188,9 @@ func TestFeed_Start(t *testing.T) {
 	defer func() {
 		<-localTransport.Wait()
 	}()
+
+	// Wait for the transport to start.
+	time.Sleep(time.Millisecond * 100)
 
 	// Create a new feed.
 	feed, err := New(Config{

@@ -15,22 +15,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-type stringValue string
-
-func (s stringValue) Print() string {
-	return string(s)
-}
-
-func (s stringValue) MarshalBinary() (data []byte, err error) {
-	return []byte(s), nil
-}
-
-func (s *stringValue) UnmarshalBinary(data []byte) error {
-	*s = stringValue(data)
-	return nil
-}
 
 type mockRecoverer struct{}
 
@@ -45,54 +31,49 @@ func (r *mockRecoverer) Recover(_ context.Context, _ string, p datapoint.Point, 
 var (
 	aaabbb1 = &messages.DataPoint{
 		Model: "AAABBB",
-		Value: datapoint.Point{
-			Value: stringValue("aaabbb_val1"),
+		DataPoint: datapoint.Point{
+			Value: value.StaticValue{Value: bn.Float(1)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": "0x1111111111111111111111111111111111111111",
 			},
 		},
-		Signature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
+		ECDSASignature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
 	}
 	aaabbb2 = &messages.DataPoint{
 		Model: "AAABBB",
-		Value: datapoint.Point{
-			Value: stringValue("aaabbb_val2"),
+		DataPoint: datapoint.Point{
+			Value: value.StaticValue{Value: bn.Float(2)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": "0x2222222222222222222222222222222222222222",
 			},
 		},
-		Signature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
+		ECDSASignature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
 	}
 	xxxyyy1 = &messages.DataPoint{
 		Model: "XXXYYY",
-		Value: datapoint.Point{
-			Value: stringValue("xxxyyy_val1"),
+		DataPoint: datapoint.Point{
+			Value: value.StaticValue{Value: bn.Float(3)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": "0x1111111111111111111111111111111111111111",
 			},
 		},
-		Signature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
+		ECDSASignature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
 	}
 	xxxyyy2 = &messages.DataPoint{
 		Model: "XXXYYY",
-		Value: datapoint.Point{
-			Value: stringValue("xxxyyy_val2"),
+		DataPoint: datapoint.Point{
+			Value: value.StaticValue{Value: bn.Float(4)},
 			Time:  time.Unix(1234567891, 0),
 			Meta: map[string]any{
 				"addr": "0x2222222222222222222222222222222222222222",
 			},
 		},
-		Signature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
+		ECDSASignature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
 	}
 )
-
-func TestMain(m *testing.M) {
-	value.RegisterType((*stringValue)(nil), 0x80000000)
-	m.Run()
-}
 
 func TestStore(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
@@ -135,8 +116,8 @@ func TestStore(t *testing.T) {
 	// Verify if the messages are stored correctly.
 	a, _ := store.Latest(context.Background(), "AAABBB")
 	b, _ := store.Latest(context.Background(), "XXXYYY")
-	assert.Equal(t, "aaabbb_val1", a[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].DataPoint.Value.Print())
-	assert.Equal(t, "aaabbb_val2", a[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].DataPoint.Value.Print())
-	assert.Equal(t, "xxxyyy_val1", b[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].DataPoint.Value.Print())
-	assert.Equal(t, "xxxyyy_val2", b[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].DataPoint.Value.Print())
+	assert.Equal(t, "1", a[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].DataPoint.Value.Print())
+	assert.Equal(t, "2", a[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].DataPoint.Value.Print())
+	assert.Equal(t, "3", b[types.MustAddressFromHex("0x1111111111111111111111111111111111111111")].DataPoint.Value.Print())
+	assert.Equal(t, "4", b[types.MustAddressFromHex("0x2222222222222222222222222222222222222222")].DataPoint.Value.Print())
 }

@@ -23,12 +23,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
@@ -42,14 +43,14 @@ var (
 	testAddress     = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
 	testPriceAAABBB = &messages.DataPoint{
 		Model: "AAA/BBB",
-		Value: datapoint.Point{
+		DataPoint: datapoint.Point{
 			Value: value.StaticValue{Value: bn.Float(10.0)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": testAddress.String(),
 			},
 		},
-		Signature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
+		ECDSASignature: types.MustSignatureFromBytes(bytes.Repeat([]byte{0x01}, 65)),
 	}
 	agent      *Agent
 	spire      *Client

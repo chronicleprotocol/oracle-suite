@@ -1,14 +1,13 @@
 package value
 
 import (
-	"math/big"
+	"encoding/json"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 // StaticNumberPrecision is a precision of static numbers.
-// Thw number is multiplied by this value before being marshaled.
-const StaticNumberPrecision = 1e18
+const StaticNumberPrecision = 18
 
 // StaticValue is a numeric value obtained from a static origin.
 type StaticValue struct {
@@ -25,13 +24,15 @@ func (s StaticValue) Print() string {
 	return s.Value.String()
 }
 
-// MarshalBinary implements the Value interface.
-func (s StaticValue) MarshalBinary() ([]byte, error) {
-	return s.Value.Mul(TickPricePrecision).BigInt().Bytes(), nil
+func (s StaticValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Value.String())
 }
 
-// UnmarshalBinary implements the Value interface.
-func (s *StaticValue) UnmarshalBinary(bytes []byte) error {
-	s.Value = bn.Float(new(big.Int).SetBytes(bytes)).Div(StaticNumberPrecision)
+func (s *StaticValue) UnmarshalJSON(bytes []byte) error {
+	var str string
+	if err := json.Unmarshal(bytes, &str); err != nil {
+		return err
+	}
+	s.Value = bn.Float(str)
 	return nil
 }
