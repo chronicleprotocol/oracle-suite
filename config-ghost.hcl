@@ -1,5 +1,5 @@
 variables {
-  ghost_pairs = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_GHOST_PAIRS", ""))
+  ghost_pairs = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SYMBOLS", env("CFG_GHOST_PAIRS", "")))
 }
 
 ghost {

@@ -43,10 +43,6 @@ services:
     environment: &base_ghost
       <<: *base
 
-      #CFG_GHOST_INTERVAL: 10
-      #      CFG_GHOST_PAIRS: |-
-      #        ETH/USD
-
       # ethereum RPC client
       CFG_ETH_RPC_URLS: ${RPCS}
       CFG_ETH_CHAIN_ID: ${CHID}
@@ -71,10 +67,6 @@ services:
     <<: *disabled
     environment: &base_spectre
       <<: *base
-
-      #CFG_SPECTRE_INTERVAL: 10
-      #      CFG_SPECTRE_PAIRS: |-
-      #        ETH/USD
 
       # default RPC client
       CFG_CHAIN_NAME: "sep"

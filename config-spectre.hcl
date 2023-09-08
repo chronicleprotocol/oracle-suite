@@ -1,5 +1,5 @@
 variables {
-  spectre_pairs = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SPECTRE_PAIRS", ""))
+  spectre_pairs = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_SYMBOLS", env("CFG_SPECTRE_PAIRS", "")))
 }
 
 spectre {
@@ -74,9 +74,8 @@ spectre {
       for v in var.contracts : v
       if v.env == var.environment
       && v.chain == var.chain_name
-      && try(v.IScribe, false)
+      && try(v.IScribe, false) && try(v.IScribeOptimistic, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
-      && try(v.IScribeOptimistic, false)
     ]
     iterator = contract
     content {
