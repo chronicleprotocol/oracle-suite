@@ -56,7 +56,7 @@ function findAllConfigs() {
 			chain,
 			IMedian:true,
 			wat:.value.key,
-		} + .value.value | {env,chain,IMedian,wat,address:.oracle,poke:{expiration:.oracleExpiration,spread:.oracleSpread}}' "$1/medians.json"
+		} + .value.value | {env,chain,IMedian,wat,address:.oracle,poke:{expiration:.oracleExpiration,spread:.oracleSpread,interval:60}}' "$1/medians.json"
 	} | grep -v 'MANA/USD' | sort | jq -s '.'
 
 	echo "}"

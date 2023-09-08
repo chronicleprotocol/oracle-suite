@@ -116,7 +116,6 @@ services:
       #- "data_point/v1"
       - "greet/v1"
       - "musig_signature/v1"
-      - "musig_optimistic_signature/v1"
     environment:
       <<: *base
 

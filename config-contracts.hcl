@@ -16,7 +16,8 @@ contracts = [
     "address": "0x490d05d7eF82816F47737c7d72D10f5C172e7772",
     "poke": {
       "expiration": 86400,
-      "spread": 1
+      "spread": 1,
+      "interval": 60
     }
   },
   {
@@ -27,7 +28,8 @@ contracts = [
     "address": "0xBBF1a875B13E4614645934faA3FEE59258320415",
     "poke": {
       "expiration": 86400,
-      "spread": 1
+      "spread": 1,
+      "interval": 60
     }
   },
   {
@@ -83,7 +85,8 @@ contracts = [
     "address": "0xe0F30cb149fAADC7247E953746Be9BbBB6B5751f",
     "poke": {
       "expiration": 86400,
-      "spread": 1
+      "spread": 1,
+      "interval": 60
     }
   },
   {
@@ -94,7 +97,8 @@ contracts = [
     "address": "0x81A679f98b63B3dDf2F17CB5619f4d6775b3c5ED",
     "poke": {
       "expiration": 86400,
-      "spread": 4
+      "spread": 4,
+      "interval": 60
     }
   },
   {
@@ -105,7 +109,8 @@ contracts = [
     "address": "0x64DE91F5A373Cd4c28de3600cB34C7C6cE410C85",
     "poke": {
       "expiration": 86400,
-      "spread": 1
+      "spread": 1,
+      "interval": 60
     }
   },
   {
@@ -116,7 +121,8 @@ contracts = [
     "address": "0x31BFA908637C29707e155Cfac3a50C9823bF8723",
     "poke": {
       "expiration": 86400,
-      "spread": 4
+      "spread": 4,
+      "interval": 60
     }
   },
   {
@@ -127,7 +133,8 @@ contracts = [
     "address": "0xa5d4a331125D7Ece7252699e2d3CB1711950fBc8",
     "poke": {
       "expiration": 86400,
-      "spread": 10
+      "spread": 10,
+      "interval": 60
     }
   },
   {
@@ -138,7 +145,8 @@ contracts = [
     "address": "0xbAd4212d73561B240f10C56F27e6D9608963f17b",
     "poke": {
       "expiration": 86400,
-      "spread": 4
+      "spread": 4,
+      "interval": 60
     }
   },
   {
@@ -149,7 +157,8 @@ contracts = [
     "address": "0xfe1e93840D286C83cF7401cB021B94b5bc1763d2",
     "poke": {
       "expiration": 86400,
-      "spread": 4
+      "spread": 4,
+      "interval": 60
     }
   },
   {
@@ -160,7 +169,8 @@ contracts = [
     "address": "0xdbbe5e9b1daa91430cf0772fcebe53f6c6f137df",
     "poke": {
       "expiration": 86400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -171,7 +181,8 @@ contracts = [
     "address": "0xf86360f0127f8a441cfca332c75992d1c692b3d1",
     "poke": {
       "expiration": 86400,
-      "spread": 4
+      "spread": 4,
+      "interval": 60
     }
   },
   {
@@ -182,7 +193,8 @@ contracts = [
     "address": "0x2F73b6567B866302e132273f67661fB89b5a66F2",
     "poke": {
       "expiration": 86400,
-      "spread": 2
+      "spread": 2,
+      "interval": 60
     }
   },
   {
@@ -193,7 +205,8 @@ contracts = [
     "address": "0x89AC26C0aFCB28EC55B6CD2F6b7DAD867Fa24639",
     "poke": {
       "expiration": 86400,
-      "spread": 4
+      "spread": 4,
+      "interval": 60
     }
   },
   {
@@ -204,7 +217,8 @@ contracts = [
     "address": "0xdc65E49016ced01FC5aBEbB5161206B0f8063672",
     "poke": {
       "expiration": 86400,
-      "spread": 1
+      "spread": 1,
+      "interval": 60
     }
   },
   {
@@ -215,7 +229,8 @@ contracts = [
     "address": "0x1aBBA7EA800f9023Fa4D1F8F840000bE7e3469a1",
     "poke": {
       "expiration": 86400,
-      "spread": 1
+      "spread": 1,
+      "interval": 60
     }
   },
   {
@@ -282,7 +297,8 @@ contracts = [
     "address": "0x490d05d7eF82816F47737c7d72D10f5C172e7772",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -293,7 +309,8 @@ contracts = [
     "address": "0xBBF1a875B13E4614645934faA3FEE59258320415",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -304,7 +321,8 @@ contracts = [
     "address": "0x586409bb88cF89BBAB0e106b0620241a0e4005c9",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -315,7 +333,8 @@ contracts = [
     "address": "0xaF495008d177a2E2AD95125b78ace62ef61Ed1f7",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -326,7 +345,8 @@ contracts = [
     "address": "0xD81834Aa83504F6614caE3592fb033e4b8130380",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -337,7 +357,8 @@ contracts = [
     "address": "0x0cd01b018C355a60B2Cc68A1e3d53853f05A7280",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -348,7 +369,8 @@ contracts = [
     "address": "0x0Aca91081B180Ad76a848788FC76A089fB5ADA72",
     "poke": {
       "expiration": 14400,
-      "spread": 10
+      "spread": 10,
+      "interval": 60
     }
   },
   {
@@ -359,7 +381,8 @@ contracts = [
     "address": "0xe4919256D404968566cbdc5E5415c769D5EeBcb0",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -370,7 +393,8 @@ contracts = [
     "address": "0x4b4e2A0b7a560290280F083c8b5174FB706D7926",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -381,7 +405,8 @@ contracts = [
     "address": "0x496C851B2A9567DfEeE0ACBf04365F3ba00Eb8dC",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -392,7 +417,8 @@ contracts = [
     "address": "0x7eEE7e44055B6ddB65c6C970B061EC03365FADB3",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -403,7 +429,8 @@ contracts = [
     "address": "0x9466e1ffA153a8BdBB5972a7217945eb2E28721f",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -414,7 +441,8 @@ contracts = [
     "address": "0x38D27Ba21E1B2995d0ff9C1C070c5c93dd07cB31",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -425,7 +453,8 @@ contracts = [
     "address": "0x1aBBA7EA800f9023Fa4D1F8F840000bE7e3469a1",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {
@@ -436,7 +465,8 @@ contracts = [
     "address": "0xBBF1a875B13E4614645934faA3FEE59258320415",
     "poke": {
       "expiration": 14400,
-      "spread": 3
+      "spread": 3,
+      "interval": 60
     }
   },
   {

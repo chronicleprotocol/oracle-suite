@@ -17,7 +17,7 @@ spectre {
       ethereum_client = "default"
 
       # Address of the Median contract.
-      contract_addr = contract.value.oracle
+      contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
       feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
@@ -26,13 +26,13 @@ spectre {
       data_model = replace(contract.value.wat, "/", "")
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.oracleSpread
+      spread = contract.value.poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.oracleExpiration
+      expiration = contract.value.poke.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = 60
+      interval = contract.value.poke.interval
     }
   }
 
