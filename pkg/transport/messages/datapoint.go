@@ -92,9 +92,9 @@ func dataPointToProtobuf(dp datapoint.Point) (*pb.DataPoint, error) {
 		return nil, err
 	}
 	msg.Timestamp = dp.Time.Unix()
-	msg.SubPoints = make([]*pb.DataPoint, len(dp.SubPoints))
 	// FIXME: Temporary disabled due to large messages size:
 	//
+	//	msg.SubPoints = make([]*pb.DataPoint, len(dp.SubPoints))
 	//	for i, subPoint := range dp.SubPoints {
 	//		msg.SubPoints[i], err = dataPointToProtobuf(subPoint)
 	//		if err != nil {
