@@ -147,7 +147,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		}
 		msg := &messages.DataPoint{
 			Model:          model,
-			DataPoint:      point,
+			Point:          point,
 			ECDSASignature: *sig,
 		}
 		if err := f.transport.Broadcast(messages.DataPointV1MessageName, msg); err != nil {

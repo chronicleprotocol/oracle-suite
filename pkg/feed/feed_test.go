@@ -90,8 +90,8 @@ func TestFeed_Broadcast(t *testing.T) {
 			asserts: func(t *testing.T, dataPoints []*messages.DataPoint) {
 				require.Len(t, dataPoints, 1)
 				assert.Equal(t, "AAABBB", dataPoints[0].Model)
-				assert.Equal(t, "42", dataPoints[0].DataPoint.Value.Print())
-				assert.Equal(t, time.Unix(100, 0), dataPoints[0].DataPoint.Time)
+				assert.Equal(t, "42", dataPoints[0].Point.Value.Print())
+				assert.Equal(t, time.Unix(100, 0), dataPoints[0].Point.Time)
 				assert.Equal(t, testSignature, dataPoints[0].ECDSASignature)
 			},
 			expectedMessages: 1,

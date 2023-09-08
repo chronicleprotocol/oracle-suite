@@ -30,8 +30,8 @@ const GreetV1MessageName = "greet/v1"
 
 type Greet struct {
 	Signature  types.Signature `json:"signature"`
-	PublicKeyX *big.Int        `json:"publicKeyX"`
-	PublicKeyY *big.Int        `json:"publicKeyY"`
+	PublicKeyX *big.Int        `json:"public_key_x"`
+	PublicKeyY *big.Int        `json:"public_key_y"`
 }
 
 // MarshallBinary implements the transport.Message interface.

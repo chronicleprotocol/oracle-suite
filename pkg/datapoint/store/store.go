@@ -152,19 +152,19 @@ func (p *Store) Latest(ctx context.Context, model string) (map[types.Address]Sto
 
 func (p *Store) collectDataPoint(point *messages.DataPoint) {
 	for _, recoverer := range p.recoverers {
-		if recoverer.Supports(p.ctx, point.DataPoint) {
-			from, err := recoverer.Recover(p.ctx, point.Model, point.DataPoint, point.ECDSASignature)
+		if recoverer.Supports(p.ctx, point.Point) {
+			from, err := recoverer.Recover(p.ctx, point.Model, point.Point, point.ECDSASignature)
 			if err != nil {
 				p.log.
 					WithError(err).
 					WithField("model", point.Model).
 					WithField("from", from).
-					WithFields(datapoint.PointLogFields(point.DataPoint)).
+					WithFields(datapoint.PointLogFields(point.Point)).
 					Error("Unable to recover address")
 			}
 			sdp := StoredDataPoint{
 				Model:     point.Model,
-				DataPoint: point.DataPoint,
+				DataPoint: point.Point,
 				From:      *from,
 				Signature: point.ECDSASignature,
 			}
@@ -183,7 +183,7 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 	}
 	p.log.
 		WithField("model", point.Model).
-		WithFields(datapoint.PointLogFields(point.DataPoint)).
+		WithFields(datapoint.PointLogFields(point.Point)).
 		Error("Unable to find recoverer for the data point")
 }
 

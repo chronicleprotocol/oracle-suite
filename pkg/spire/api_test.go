@@ -43,7 +43,7 @@ var (
 	testAddress     = types.MustAddressFromHex("0x2d800d93b065ce011af83f316cef9f0d005b0aa4")
 	testPriceAAABBB = &messages.DataPoint{
 		Model: "AAA/BBB",
-		DataPoint: datapoint.Point{
+		Point: datapoint.Point{
 			Value: value.StaticValue{Value: bn.Float(10.0)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{

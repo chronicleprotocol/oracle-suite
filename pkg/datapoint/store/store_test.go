@@ -31,7 +31,7 @@ func (r *mockRecoverer) Recover(_ context.Context, _ string, p datapoint.Point, 
 var (
 	aaabbb1 = &messages.DataPoint{
 		Model: "AAABBB",
-		DataPoint: datapoint.Point{
+		Point: datapoint.Point{
 			Value: value.StaticValue{Value: bn.Float(1)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
@@ -42,7 +42,7 @@ var (
 	}
 	aaabbb2 = &messages.DataPoint{
 		Model: "AAABBB",
-		DataPoint: datapoint.Point{
+		Point: datapoint.Point{
 			Value: value.StaticValue{Value: bn.Float(2)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
@@ -53,7 +53,7 @@ var (
 	}
 	xxxyyy1 = &messages.DataPoint{
 		Model: "XXXYYY",
-		DataPoint: datapoint.Point{
+		Point: datapoint.Point{
 			Value: value.StaticValue{Value: bn.Float(3)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
@@ -64,7 +64,7 @@ var (
 	}
 	xxxyyy2 = &messages.DataPoint{
 		Model: "XXXYYY",
-		DataPoint: datapoint.Point{
+		Point: datapoint.Point{
 			Value: value.StaticValue{Value: bn.Float(4)},
 			Time:  time.Unix(1234567891, 0),
 			Meta: map[string]any{

@@ -37,10 +37,10 @@ type DataPoint struct {
 	Model string `json:"model"`
 
 	// Value is a binary representation of the data point.
-	DataPoint datapoint.Point `json:"data_point"`
+	Point datapoint.Point `json:"point"`
 
 	// Signature is the feed signature of the data point.
-	ECDSASignature types.Signature `json:"signature"`
+	ECDSASignature types.Signature `json:"ecdsa_signature"`
 }
 
 func (d *DataPoint) Marshall() ([]byte, error) {
@@ -60,7 +60,7 @@ func (d *DataPoint) MarshallBinary() ([]byte, error) {
 	var err error
 	msg := &pb.DataPointMessage{}
 	msg.Model = d.Model
-	msg.DataPoint, err = dataPointToProtobuf(d.DataPoint)
+	msg.DataPoint, err = dataPointToProtobuf(d.Point)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (d *DataPoint) UnmarshallBinary(data []byte) error {
 		return err
 	}
 	d.Model = msg.Model
-	if d.DataPoint, err = dataPointFromProtobuf(msg.DataPoint); err != nil {
+	if d.Point, err = dataPointFromProtobuf(msg.DataPoint); err != nil {
 		return err
 	}
 	if d.ECDSASignature, err = types.SignatureFromBytes(msg.EcdsaSignature); err != nil {
@@ -238,7 +238,7 @@ func DataPointMessageLogFields(d DataPoint) log.Fields {
 		"point.model":     d.Model,
 		"point.signature": d.ECDSASignature.String(),
 	}
-	for k, v := range datapoint.PointLogFields(d.DataPoint) {
+	for k, v := range datapoint.PointLogFields(d.Point) {
 		f[k] = v
 	}
 	return f

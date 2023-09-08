@@ -183,12 +183,12 @@ func (p Point) MarshalJSON() ([]byte, error) {
 	meta := make(map[string]any)
 	meta["value"] = p.Value
 	meta["time"] = p.Time.In(time.UTC).Format(time.RFC3339Nano)
-	var ticks []any
+	var points []any
 	for _, t := range p.SubPoints {
-		ticks = append(ticks, t)
+		points = append(points, t)
 	}
-	if len(ticks) > 0 {
-		meta["ticks"] = ticks
+	if len(points) > 0 {
+		meta["sub_points"] = points
 	}
 	if err := p.Validate(); err != nil {
 		meta["error"] = err.Error()
@@ -207,9 +207,9 @@ func (p Point) MarshalTrace() ([]byte, error) {
 		typ := "data_point"
 		meta["value"] = point.Value
 		meta["time"] = point.Time.In(time.UTC).Format(time.RFC3339Nano)
-		var ticks []any
+		var points []any
 		for _, t := range point.SubPoints {
-			ticks = append(ticks, t)
+			points = append(points, t)
 		}
 		for k, v := range point.Meta {
 			if k == "type" {
@@ -221,7 +221,7 @@ func (p Point) MarshalTrace() ([]byte, error) {
 		return treerender.NodeData{
 			Name:      typ,
 			Params:    meta,
-			Ancestors: ticks,
+			Ancestors: points,
 			Error:     point.Validate(),
 		}
 	}, []any{p}, 0), nil

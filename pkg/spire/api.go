@@ -89,7 +89,7 @@ func (n *API) PullPoints(arg *PullPricesArg, resp *PullDataPointsResp) error {
 		}
 		point := &messages.DataPoint{
 			Model:          price.Model,
-			DataPoint:      price.DataPoint,
+			Point:          price.DataPoint,
 			ECDSASignature: price.Signature,
 		}
 		dataPoints = []*messages.DataPoint{point}
@@ -101,7 +101,7 @@ func (n *API) PullPoints(arg *PullPricesArg, resp *PullDataPointsResp) error {
 		for _, p := range points {
 			point := &messages.DataPoint{
 				Model:          p.Model,
-				DataPoint:      p.DataPoint,
+				Point:          p.DataPoint,
 				ECDSASignature: p.Signature,
 			}
 			dataPoints = append(dataPoints, point)
@@ -134,7 +134,7 @@ func (n *API) PullPoint(arg *PullPriceArg, resp *PullDataPointResp) error {
 
 	point := &messages.DataPoint{
 		Model:          price.Model,
-		DataPoint:      price.DataPoint,
+		Point:          price.DataPoint,
 		ECDSASignature: price.Signature,
 	}
 	*resp = PullDataPointResp{DataPoint: point}
