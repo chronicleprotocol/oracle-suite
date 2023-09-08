@@ -4,11 +4,13 @@ variables {
 
 spectre {
   dynamic "median" {
-    for_each = {
-      for p in length(var.spectre_pairs) == 0 ? var.median_contracts[var.chain_name] : var.spectre_pairs : p=>
-      var.median_contracts[var.chain_name][p]
-      if contains(try(keys(var.median_contracts[var.chain_name]), []), p)
-    }
+    for_each = [
+      for v in var.contracts : v
+      if v.env == var.environment
+      && v.chain == var.chain_name
+      && try(v.IMedian, false)
+      && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
+    ]
     iterator = contract
     content {
       # Ethereum client to use for interacting with the Median contract.
@@ -21,7 +23,7 @@ spectre {
       feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
-      data_model = replace(contract.key, "/", "")
+      data_model = replace(contract.value.wat, "/", "")
 
       # Spread in percent points above which the price is considered stale.
       spread = contract.value.oracleSpread
@@ -49,6 +51,9 @@ spectre {
 
       # Address of the Median contract.
       contract_addr = contract.value.address
+
+      # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
+      feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = contract.value.wat
@@ -80,6 +85,9 @@ spectre {
 
       # Address of the Median contract.
       contract_addr = contract.value.address
+
+      # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
+      feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_FEEDS", "")))
 
       # Name of the pair to fetch the price for.
       data_model = contract.value.wat

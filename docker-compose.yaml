@@ -4,18 +4,18 @@ services:
     image: hello-world
     profiles:
       - disabled
-  #    volumes:
-  #      - ./config.hcl:/usr/share/chronicle-suite/config.hcl
-  #      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
-  #      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
-  #      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
-  #      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
-  #      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
-  #      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
-  #      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
-  #      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
-  #      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
-  #      - ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
+    #volumes:
+    #- ./config.hcl:/usr/share/chronicle-suite/config.hcl
+    #      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
+    #      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
+    #      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
+    #      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
+    #      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
+    #      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
+    #      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
+    #      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
+    #      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
+    #- ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
   #    command:
   #      - run
   #      - -v
