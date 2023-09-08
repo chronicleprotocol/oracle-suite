@@ -30,8 +30,8 @@ import (
 )
 
 type spireDataPointMessage struct {
-	DataPoint spireDataPoint `json:"data_point"`
-	Model     string         `json:"model"`
+	Point spireDataPoint `json:"point"`
+	Model string         `json:"model"`
 }
 
 type spirePrice struct {
@@ -101,13 +101,13 @@ func Test_Ghost_ValidPrice(t *testing.T) {
 	ethusdPrice, err := parseSpireDataPointMessage(ethusdMessage)
 	require.NoError(t, err)
 
-	assert.Equal(t, "1", btcusdPrice.DataPoint.Value.Price)
-	assert.InDelta(t, time.Now().Unix(), btcusdPrice.DataPoint.Time.Unix(), 10)
-	assert.Equal(t, "BTC/USD", btcusdPrice.DataPoint.Value.Pair)
+	assert.Equal(t, "1", btcusdPrice.Point.Value.Price)
+	assert.InDelta(t, time.Now().Unix(), btcusdPrice.Point.Time.Unix(), 10)
+	assert.Equal(t, "BTC/USD", btcusdPrice.Point.Value.Pair)
 
-	assert.Equal(t, "1", ethusdPrice.DataPoint.Value.Price)
-	assert.InDelta(t, time.Now().Unix(), ethusdPrice.DataPoint.Time.Unix(), 10)
-	assert.Equal(t, "ETH/BTC", ethusdPrice.DataPoint.Value.Pair)
+	assert.Equal(t, "1", ethusdPrice.Point.Value.Price)
+	assert.InDelta(t, time.Now().Unix(), ethusdPrice.Point.Time.Unix(), 10)
+	assert.Equal(t, "ETH/BTC", ethusdPrice.Point.Value.Pair)
 }
 
 func Test_Ghost_InvalidPrice(t *testing.T) {
