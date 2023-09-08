@@ -59,13 +59,13 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.spread
+      spread = contract.value.poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.expiration
+      expiration = contract.value.poke.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].poke.interval
+      interval = contract.value.poke.interval
     }
   }
 
@@ -93,13 +93,13 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.spread
+      spread = contract.value.optimistic_poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.expiration
+      expiration = contract.value.optimistic_poke.expiration
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = var.contract_params["${contract.value.env}-${contract.value.chain}-${contract.value.address}"].optimistic_poke.interval
+      interval = contract.value.optimistic_poke.interval
     }
   }
 }

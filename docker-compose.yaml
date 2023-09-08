@@ -6,20 +6,20 @@ services:
       - disabled
     #volumes:
     #- ./config.hcl:/usr/share/chronicle-suite/config.hcl
-    #      - ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
-    #      - ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
-    #      - ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
-    #      - ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
-    #      - ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
-    #      - ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
-    #      - ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
-    #      - ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
-    #      - ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
+    #- ./config-contract-params.hcl:/usr/share/chronicle-suite/config-contract-params.hcl
+    #- ./config-contracts.hcl:/usr/share/chronicle-suite/config-contracts.hcl
+    #- ./config-contracts-median.hcl:/usr/share/chronicle-suite/config-contracts-median.hcl
+    #- ./config-defaults.hcl:/usr/share/chronicle-suite/config-defaults.hcl
+    #- ./config-ethereum.hcl:/usr/share/chronicle-suite/config-ethereum.hcl
+    #- ./config-ghost.hcl:/usr/share/chronicle-suite/config-ghost.hcl
+    #- ./config-gofer.hcl:/usr/share/chronicle-suite/config-gofer.hcl
+    #- ./config-spectre.hcl:/usr/share/chronicle-suite/config-spectre.hcl
+    #- ./config-spire.hcl:/usr/share/chronicle-suite/config-spire.hcl
     #- ./config-transport.hcl:/usr/share/chronicle-suite/config-transport.hcl
-  #    command:
-  #      - run
-  #      - -v
-  #      - debug
+    #command:
+    #- run
+    #- -v
+    #- debug
   _base:
     <<: *disabled
     environment: &base
@@ -43,7 +43,7 @@ services:
     environment: &base_ghost
       <<: *base
 
-      CFG_GHOST_INTERVAL: 10
+      #CFG_GHOST_INTERVAL: 10
       #      CFG_GHOST_PAIRS: |-
       #        ETH/USD
 
@@ -63,7 +63,7 @@ services:
       ## sending
       CFG_WEBAPI_SOCKS5_PROXY_ADDR: tor-proxy:9050
       ### on-chain address book
-      CFG_WEBAPI_ETH_ADDR_BOOK: "0x504Fdbc4a9386c2C48A5775a6967beB00dAa9E9a" # feeds + relays
+      #CFG_WEBAPI_ETH_ADDR_BOOK: "0x504Fdbc4a9386c2C48A5775a6967beB00dAa9E9a" # feeds + relays
       ### local address book
       CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
@@ -72,7 +72,7 @@ services:
     environment: &base_spectre
       <<: *base
 
-      CFG_SPECTRE_INTERVAL: 10
+      #CFG_SPECTRE_INTERVAL: 10
       #      CFG_SPECTRE_PAIRS: |-
       #        ETH/USD
 
