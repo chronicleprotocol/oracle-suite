@@ -6,8 +6,8 @@ variables {
 
   libp2p_enable     = tobool(env("CFG_LIBP2P_ENABLE", "1"))
   libp2p_bootstraps = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_LIBP2P_BOOTSTRAP_ADDRS", join(env("CFG_ITEM_SEPARATOR", ","), [
-    "/dns/spire-bootstrap1.chroniclelabs.io/tcp/8000/p2p/12D3KooWJgSBDkfdkoXNBBS91uaM1FRE4GowChEgr4SWDKEz75Rq",
-    "/dns/spire-bootstrap2.chroniclelabs.io/tcp/8000/p2p/12D3KooWD7eojGbXT1LuqUZLoewRuhNzCE2xQVPHXNhAEJpiThYj",
+    "/dns4/spire-bootstrap1.chroniclelabs.io/tcp/8000/p2p/12D3KooWFYkJ1SghY4KfAkZY9Exemqwnh4e4cmJPurrQ8iqy2wJG",
+    "/dns4/spire-bootstrap2.chroniclelabs.io/tcp/8000/p2p/12D3KooWD7eojGbXT1LuqUZLoewRuhNzCE2xQVPHXNhAEJpiThYj",
   ])))
   libp2p_peers             = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_LIBP2P_DIRECT_PEERS_ADDRS", ""))
   libp2p_bans              = explode(env("CFG_ITEM_SEPARATOR", ","), env("CFG_LIBP2P_BLOCKED_ADDRS", ""))
