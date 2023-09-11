@@ -13,15 +13,13 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package transport
+package messages
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
 func TestMessageMap_Keys(t *testing.T) {
@@ -98,7 +96,7 @@ func TestMessageMap_SelectByTopic(t *testing.T) {
 				"data_point/v1",
 			},
 			want: MessageMap{
-				"data_point/v1": (*messages.DataPoint)(nil),
+				"data_point/v1": (*DataPoint)(nil),
 			},
 		},
 		{

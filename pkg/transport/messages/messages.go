@@ -38,8 +38,8 @@ func (mm MessageMap) SelectByTopic(topics ...string) (MessageMap, error) {
 }
 
 var AllMessagesMap = MessageMap{
-	PriceV0MessageName:                 (*Price)(nil), //nolint:staticcheck
-	PriceV1MessageName:                 (*Price)(nil), //nolint:staticcheck
+	PriceV0MessageName:                 (*Price)(nil),
+	PriceV1MessageName:                 (*Price)(nil),
 	DataPointV1MessageName:             (*DataPoint)(nil),
 	GreetV1MessageName:                 (*Greet)(nil),
 	MuSigStartV1MessageName:            (*MuSigInitialize)(nil),

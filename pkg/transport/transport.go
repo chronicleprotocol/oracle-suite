@@ -73,8 +73,8 @@ type ReceivedMessage struct {
 }
 
 type AppInfo struct {
-	Name    string
-	Version string
+	Name    string `json:"-"`
+	Version string `json:"-"`
 }
 
 func (a *AppInfo) SetAppInfo(info AppInfo) {
