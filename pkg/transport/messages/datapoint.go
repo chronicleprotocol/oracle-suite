@@ -92,11 +92,15 @@ func dataPointToProtobuf(dp datapoint.Point, referenceDepth int) (*pb.DataPoint,
 	if msg.Value, err = dataPointValueToProtobuf(dp.Value); err != nil {
 		return nil, err
 	}
+	isReference := dp.Meta["type"] == "reference"
+	if isReference {
+		referenceDepth--
+	}
 	msg.Timestamp = dp.Time.Unix()
-	if !(dp.Meta["type"] == "reference" && referenceDepth <= 0) {
+	if !(isReference && referenceDepth <= 0) {
 		msg.SubPoints = make([]*pb.DataPoint, len(dp.SubPoints))
 		for i, subPoint := range dp.SubPoints {
-			msg.SubPoints[i], err = dataPointToProtobuf(subPoint, referenceDepth-1)
+			msg.SubPoints[i], err = dataPointToProtobuf(subPoint, referenceDepth)
 			if err != nil {
 				return nil, err
 			}
