@@ -31,6 +31,7 @@ import (
 )
 
 const DataPointV1MessageName = "data_point/v1"
+
 const maxSubPointReferenceDepth = 2
 
 type DataPoint struct {

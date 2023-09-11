@@ -458,9 +458,9 @@ type MuSigMetaTickV1 struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Wat        string                        `protobuf:"bytes,1,opt,name=wat,proto3" json:"wat,omitempty"`               // Asset name.
+	Wat        string                        `protobuf:"bytes,1,opt,name=wat,proto3" json:"wat,omitempty"`               // Asset name (e.g. "ETH/USD").
 	Val        []byte                        `protobuf:"bytes,2,opt,name=val,proto3" json:"val,omitempty"`               // Median value of all ticks (bn.DecFixedPoint).
-	Age        int64                         `protobuf:"varint,3,opt,name=age,proto3" json:"age,omitempty"`              // Oldest tick timestamp.
+	Age        int64                         `protobuf:"varint,3,opt,name=age,proto3" json:"age,omitempty"`              // Unix timestamp of the oldest tick.
 	Optimistic []*MuSigMetaTickV1_Optimistic `protobuf:"bytes,4,rep,name=optimistic,proto3" json:"optimistic,omitempty"` // Optional data required for optimistic poke.
 	Ticks      []*MuSigMetaTickV1_FeedTick   `protobuf:"bytes,5,rep,name=ticks,proto3" json:"ticks,omitempty"`           // Ticks used to calculate median along with feed signatures.
 }
@@ -981,7 +981,7 @@ type MuSigMetaTickV1_FeedTick struct {
 
 	Val []byte `protobuf:"bytes,1,opt,name=val,proto3" json:"val,omitempty"`  // Tick value (bn.DecFixedPoint).
 	Age int64  `protobuf:"varint,2,opt,name=age,proto3" json:"age,omitempty"` // Unix timestamp.
-	Vrs []byte `protobuf:"bytes,3,opt,name=vrs,proto3" json:"vrs,omitempty"`  // V, R, S combined into one byte array (types.Signature).
+	Vrs []byte `protobuf:"bytes,3,opt,name=vrs,proto3" json:"vrs,omitempty"`  // Feed signature (types.Signature).
 }
 
 func (x *MuSigMetaTickV1_FeedTick) Reset() {
@@ -1042,7 +1042,7 @@ type MuSigMetaTickV1_Optimistic struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EcdsaSignature []byte `protobuf:"bytes,1,opt,name=ecdsaSignature,proto3" json:"ecdsaSignature,omitempty"` // V, R, S combined into one byte array (types.Signature).
+	EcdsaSignature []byte `protobuf:"bytes,1,opt,name=ecdsaSignature,proto3" json:"ecdsaSignature,omitempty"` // Feed signature (types.Signature).
 	SignersIndexes []byte `protobuf:"bytes,2,opt,name=signersIndexes,proto3" json:"signersIndexes,omitempty"` // Indexes of signers that participated in this MuSig signature.
 }
 
