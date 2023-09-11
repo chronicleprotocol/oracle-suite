@@ -52,7 +52,7 @@ type ScribeContract interface {
 	Wat(ctx context.Context) (string, error)
 	Bar(ctx context.Context) (int, error)
 	Feeds(ctx context.Context) ([]types.Address, []uint8, error)
-	Read(ctx context.Context) (*bn.DecFixedPointNumber, time.Time, error)
+	Read(ctx context.Context) (contract.PokeData, error)
 	Poke(
 		ctx context.Context,
 		pokeData contract.PokeData,

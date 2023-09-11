@@ -46,10 +46,10 @@ func TestScribe_Read(t *testing.T) {
 			nil,
 		)
 
-	val, age, err := scribe.Read(ctx)
+	pokeData, err := scribe.Read(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "26064.535", val.String())
-	assert.Equal(t, int64(1692913991), age.Unix())
+	assert.Equal(t, "26064.535", pokeData.Val.String())
+	assert.Equal(t, int64(1692913991), pokeData.Age.Unix())
 }
 
 func TestScribe_Wat(t *testing.T) {

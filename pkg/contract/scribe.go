@@ -50,32 +50,8 @@ func (s *Scribe) Address() types.Address {
 	return s.address
 }
 
-func (s *Scribe) Read(ctx context.Context) (*bn.DecFixedPointNumber, time.Time, error) {
-	const (
-		storageSlot = 4
-		ageOffset   = 0
-		valOffset   = 16
-		ageLength   = 16
-		valLength   = 16
-	)
-	b, err := s.client.GetStorageAt(
-		ctx,
-		s.address,
-		types.MustHashFromBigInt(big.NewInt(storageSlot)),
-		types.LatestBlockNumber,
-	)
-	if err != nil {
-		return nil, time.Time{}, fmt.Errorf("scribe: read query failed: %v", err)
-	}
-	val := bn.DecFixedPointFromRawBigInt(
-		new(big.Int).SetBytes(b[valOffset:valOffset+valLength]),
-		ScribePricePrecision,
-	)
-	age := time.Unix(
-		new(big.Int).SetBytes(b[ageOffset:ageOffset+ageLength]).Int64(),
-		0,
-	)
-	return val, age, nil
+func (s *Scribe) Read(ctx context.Context) (PokeData, error) {
+	return s.readPokeData(ctx, pokeStorageSlot, types.LatestBlockNumber)
 }
 
 func (s *Scribe) Wat(ctx context.Context) (string, error) {
@@ -148,6 +124,36 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
 	}
 	return txHash, txCpy, nil
+}
+
+func (s *Scribe) readPokeData(ctx context.Context, storageSlot int, block types.BlockNumber) (PokeData, error) {
+	const (
+		ageOffset = 0
+		valOffset = 16
+		ageLength = 16
+		valLength = 16
+	)
+	b, err := s.client.GetStorageAt(
+		ctx,
+		s.address,
+		types.MustHashFromBigInt(big.NewInt(int64(storageSlot))),
+		block,
+	)
+	if err != nil {
+		return PokeData{}, err
+	}
+	val := bn.DecFixedPointFromRawBigInt(
+		new(big.Int).SetBytes(b[valOffset:valOffset+valLength]),
+		ScribePricePrecision,
+	)
+	age := time.Unix(
+		new(big.Int).SetBytes(b[ageOffset:ageOffset+ageLength]).Int64(),
+		0,
+	)
+	return PokeData{
+		Val: val,
+		Age: age,
+	}, nil
 }
 
 // SignersBlob helps to generate signersBlob for PokeData struct.

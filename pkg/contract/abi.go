@@ -25,6 +25,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
+const (
+	pokeStorageSlot   = 4
+	opPokeStorageSlot = 8
+)
+
 var (
 	abi = goethABI.Default
 
@@ -64,6 +69,7 @@ func init() {
 	abiOpScribe, _ = abi.ParseSignatures(
 		`wat()(bytes32 wat)`,
 		`bar()(uint8 bar)`,
+		`opChallengePeriod()(uint16 opChallengePeriod)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
 		`opPoke(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
 	)

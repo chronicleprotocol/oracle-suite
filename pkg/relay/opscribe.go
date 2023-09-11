@@ -67,7 +67,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 	}
 
 	// Current price and time of the last update.
-	val, age, err := w.contract.Read(ctx)
+	pokeData, err := w.contract.Read(ctx)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 		}
 
 		// If the signature is older than the current price, skip it.
-		if meta.Age.Before(age) {
+		if meta.Age.Before(pokeData.Age) {
 			continue
 		}
 
@@ -108,8 +108,8 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 		//   field.
 		// - Price differs from the current price by more than is specified in the
 		//   OracleSpread field.
-		spread := calculateSpread(val, meta.Val)
-		isExpired := time.Since(age) >= w.expiration
+		spread := calculateSpread(pokeData.Val, meta.Val)
+		isExpired := time.Since(pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 		// Generate signersBlob.
@@ -127,13 +127,13 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 			WithFields(log.Fields{
 				"dataModel":        w.dataModel,
 				"bar":              bar,
-				"age":              age,
-				"val":              val,
+				"age":              pokeData.Age,
+				"val":              pokeData.Val,
 				"expired":          isExpired,
 				"stale":            isStale,
 				"expiration":       w.expiration,
 				"spread":           w.spread,
-				"timeToExpiration": time.Since(age).String(),
+				"timeToExpiration": time.Since(pokeData.Age).String(),
 				"currentSpread":    spread,
 			}).
 			Info("Trying to update ScribeOptimistic contract")

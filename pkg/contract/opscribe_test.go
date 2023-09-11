@@ -23,10 +23,140 @@ import (
 
 	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
+
+func TestOpScribe_OpChallengePeriod(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+	mockClient.On(
+		"Call",
+		ctx,
+		types.Call{
+			To:    &scribe.address,
+			Input: hexutil.MustHexToBytes("0x646edb68"),
+		},
+		types.LatestBlockNumber,
+	).
+		Return(
+			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000012c"),
+			&types.Call{},
+			nil,
+		)
+
+	challengePeriod, err := scribe.OpChallengePeriod(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, time.Second*300, challengePeriod)
+}
+
+func TestOpScribe_ReadAt(t *testing.T) {
+	tests := []struct {
+		name        string
+		pokeSlot    string
+		opPokeSlot  string
+		readTime    int64
+		expectedVal string
+		expectedAge int64
+	}{
+		{
+			name:        "opPoke not finalized",
+			pokeSlot:    "0x00000000000000000000000064fa286c0000000000000058a76ad2daafcd2e00",
+			opPokeSlot:  "0x00000000000000000000000064fa36c40000000000000058b02c286109d9c580",
+			readTime:    1694119920,
+			expectedVal: "1635.377164875",
+			expectedAge: 1694115948,
+		},
+		{
+			name:        "opPoke finalized",
+			pokeSlot:    "0x00000000000000000000000064fa286c0000000000000058a76ad2daafcd2e00",
+			opPokeSlot:  "0x00000000000000000000000064fa36c40000000000000058b02c286109d9c580",
+			readTime:    1694119921,
+			expectedVal: "1636.008044333333333376",
+			expectedAge: 1694119620,
+		},
+		{
+			name:        "opPoke overridden",
+			pokeSlot:    "0x00000000000000000000000064fa37a10000000000000058a76ad2daafcd2e00",
+			opPokeSlot:  "0x00000000000000000000000064fa36c40000000000000058b02c286109d9c580",
+			readTime:    1694119921,
+			expectedVal: "1635.377164875",
+			expectedAge: 1694119841,
+		},
+		{
+			name:        "empty opPoke slot",
+			pokeSlot:    "0x00000000000000000000000064fa286c0000000000000058a76ad2daafcd2e00",
+			opPokeSlot:  "0x0000000000000000000000000000000000000000000000000000000000000000",
+			readTime:    1694119921,
+			expectedVal: "1635.377164875",
+			expectedAge: 1694115948,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			mockClient := new(mockRPC)
+			scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+			mockClient.On(
+				"BlockNumber",
+				ctx,
+			).
+				Return(
+					big.NewInt(42),
+					nil,
+				)
+
+			mockClient.On(
+				"Call",
+				ctx,
+				types.Call{
+					To:    &scribe.address,
+					Input: hexutil.MustHexToBytes("0x646edb68"),
+				},
+				types.BlockNumberFromUint64(42),
+			).
+				Return(
+					hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000012c"),
+					&types.Call{},
+					nil,
+				)
+
+			mockClient.On(
+				"GetStorageAt",
+				ctx,
+				scribe.address,
+				types.MustHashFromBigInt(big.NewInt(4)),
+				types.BlockNumberFromUint64(42),
+			).
+				Return(
+					types.MustHashFromHexPtr(tt.pokeSlot, types.PadNone),
+					nil,
+				)
+
+			mockClient.On(
+				"GetStorageAt",
+				ctx,
+				scribe.address,
+				types.MustHashFromBigInt(big.NewInt(8)),
+				types.BlockNumberFromUint64(42),
+			).
+				Return(
+					types.MustHashFromHexPtr(tt.opPokeSlot, types.PadNone),
+					nil,
+				)
+
+			pokeData, err := scribe.ReadAt(ctx, time.Unix(tt.readTime, 0))
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedVal, pokeData.Val.String())
+			assert.Equal(t, tt.expectedAge, pokeData.Age.Unix())
+		})
+	}
+}
 
 func TestOpScribe_OpPoke(t *testing.T) {
 	ctx := context.Background()

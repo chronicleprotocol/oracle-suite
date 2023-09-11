@@ -17,6 +17,7 @@ package contract
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	"github.com/defiweb/go-eth/hexutil"
@@ -30,6 +31,11 @@ import (
 type mockRPC struct {
 	rpc.Client
 	mock.Mock
+}
+
+func (m *mockRPC) BlockNumber(ctx context.Context) (*big.Int, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*big.Int), args.Error(1)
 }
 
 func (m *mockRPC) GetStorageAt(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
