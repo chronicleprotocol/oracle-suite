@@ -15,7 +15,53 @@
 
 package messages
 
-import "github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+import (
+	"sort"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
+)
+
+type MessageMap map[string]transport.Message
+
+// Keys returns a sorted list of keys.
+func (mm MessageMap) Keys() []string {
+	return maputil.SortKeys(mm, sort.Strings)
+}
+
+// SelectByTopic returns a new MessageMap with messages selected by topic.
+// Empty topic list will yield an empty map.
+func (mm MessageMap) SelectByTopic(topics ...string) (MessageMap, error) {
+	return maputil.Select(mm, topics)
+}
+
+var AllMessagesMap = MessageMap{
+	PriceV0MessageName:                 (*Price)(nil), //nolint:staticcheck
+	PriceV1MessageName:                 (*Price)(nil), //nolint:staticcheck
+	DataPointV1MessageName:             (*DataPoint)(nil),
+	GreetV1MessageName:                 (*Greet)(nil),
+	MuSigStartV1MessageName:            (*MuSigInitialize)(nil),
+	MuSigTerminateV1MessageName:        (*MuSigTerminate)(nil),
+	MuSigCommitmentV1MessageName:       (*MuSigCommitment)(nil),
+	MuSigPartialSignatureV1MessageName: (*MuSigPartialSignature)(nil),
+	MuSigSignatureV1MessageName:        (*MuSigSignature)(nil),
+}
+
+func appInfoToProtobuf(a transport.AppInfo) *pb.AppInfo {
+	return &pb.AppInfo{
+		Name:    a.Name,
+		Version: a.Version,
+	}
+}
+
+func appInfoFromProtobuf(a *pb.AppInfo) transport.AppInfo {
+	return transport.AppInfo{
+		Name:    a.Name,
+		Version: a.Version,
+	}
+}
 
 func decFixedPointToBytes(d *bn.DecFixedPointNumber) ([]byte, error) {
 	return d.MarshalBinary()

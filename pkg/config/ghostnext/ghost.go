@@ -65,7 +65,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 	if err != nil {
 		return nil, err
 	}
-	messageMap, err := pkgTransport.AllMessagesMap.SelectByTopic(
+	messageMap, err := messages.AllMessagesMap.SelectByTopic(
 		messages.DataPointV1MessageName,
 	)
 	if err != nil {

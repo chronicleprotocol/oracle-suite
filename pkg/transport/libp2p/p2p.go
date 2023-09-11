@@ -78,12 +78,14 @@ var defaultListenAddrs = []string{"/ip4/0.0.0.0/tcp/0"}
 // P2P is the wrapper for the Node that implements the transport.Transport
 // interface.
 type P2P struct {
-	id        peer.ID
-	node      *internal.Node
-	mode      Mode
-	topics    map[string]transport.Message
-	msgCh     map[string]chan transport.ReceivedMessage
-	msgFanOut map[string]*chanutil.FanOut[transport.ReceivedMessage]
+	id         peer.ID
+	node       *internal.Node
+	mode       Mode
+	topics     map[string]transport.Message
+	msgCh      map[string]chan transport.ReceivedMessage
+	msgFanOut  map[string]*chanutil.FanOut[transport.ReceivedMessage]
+	appName    string
+	appVersion string
 }
 
 // Config is the configuration for the P2P transport.
@@ -262,12 +264,14 @@ func New(cfg Config) (*P2P, error) {
 	}
 
 	return &P2P{
-		id:        id,
-		node:      n,
-		mode:      cfg.Mode,
-		topics:    cfg.Topics,
-		msgCh:     map[string]chan transport.ReceivedMessage{},
-		msgFanOut: map[string]*chanutil.FanOut[transport.ReceivedMessage]{},
+		id:         id,
+		node:       n,
+		mode:       cfg.Mode,
+		topics:     cfg.Topics,
+		msgCh:      map[string]chan transport.ReceivedMessage{},
+		msgFanOut:  map[string]*chanutil.FanOut[transport.ReceivedMessage]{},
+		appName:    cfg.AppName,
+		appVersion: cfg.AppVersion,
 	}, nil
 }
 
@@ -296,6 +300,12 @@ func (p *P2P) Wait() <-chan error {
 
 // Broadcast implements the transport.Transport interface.
 func (p *P2P) Broadcast(topic string, message transport.Message) error {
+	if appInfo, ok := message.(transport.WithAppInfo); ok {
+		appInfo.SetAppInfo(transport.AppInfo{
+			Name:    p.appName,
+			Version: p.appVersion,
+		})
+	}
 	sub, err := p.node.Subscription(topic)
 	if err != nil {
 		return fmt.Errorf("P2P transport error, unable to get subscription for %s topic: %w", topic, err)
@@ -325,7 +335,6 @@ func (p *P2P) subscribe(topic string) error {
 }
 
 func (p *P2P) messagesLoop(topic string, sub *internal.Subscription) {
-	ps := p.node.Peerstore()
 	for {
 		nodeMsg, ok := <-sub.Next()
 		if !ok {
@@ -333,6 +342,11 @@ func (p *P2P) messagesLoop(topic string, sub *internal.Subscription) {
 		}
 		id := nodeMsg.GetFrom()
 		if msg, ok := nodeMsg.ValidatorData.(transport.Message); ok {
+			userAgent := ""
+			if appInfo, ok := msg.(transport.WithAppInfo); ok {
+				userAgent = fmt.Sprintf("%s/%s", appInfo.GetAppInfo().Name, appInfo.GetAppInfo().Version)
+			}
+
 			p.msgCh[topic] <- transport.ReceivedMessage{
 				Message: msg,
 				Author:  ethkey.PeerIDToAddress(id).Bytes(),
@@ -345,7 +359,7 @@ func (p *P2P) messagesLoop(topic string, sub *internal.Subscription) {
 					PeerAddr:             ethkey.PeerIDToAddress(id).String(),
 					ReceivedFromPeerID:   nodeMsg.ReceivedFrom.String(),
 					ReceivedFromPeerAddr: ethkey.PeerIDToAddress(nodeMsg.ReceivedFrom).String(),
-					UserAgent:            internal.GetPeerUserAgent(ps, id),
+					UserAgent:            userAgent,
 				},
 			}
 		}

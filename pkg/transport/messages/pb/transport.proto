@@ -2,6 +2,11 @@ syntax = "proto3";
 
 option go_package = "github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb";
 
+message AppInfo {
+  string name = 1;
+  string version = 2;
+}
+
 //
 // Legacy price
 //
@@ -50,6 +55,8 @@ message DataPointMessage {
   string model = 1; // Model name that produced the data point.
   bytes ecdsaSignature = 3; // Feed signature (types.Signature).
   DataPoint dataPoint = 2; // Data point.
+
+  AppInfo appInfo = 1000; // Application info.
 }
 
 //
@@ -86,11 +93,15 @@ message MuSigInitializeMessage {
   bytes msgBody = 4;
   optional MuSigMeta msgMeta = 5;
   repeated bytes signers = 6;
+
+  AppInfo appInfo = 1000; // Application info.
 }
 
 message MuSigTerminateMessage {
   bytes sessionID = 1;
   string reason = 2;
+
+  AppInfo appInfo = 1000; // Application info.
 }
 
 message MuSigCommitmentMessage {
@@ -99,11 +110,15 @@ message MuSigCommitmentMessage {
   bytes pubKeyY = 3;
   bytes commitmentKeyX = 4;
   bytes commitmentKeyY = 5;
+
+  AppInfo appInfo = 1000; // Application info.
 }
 
 message MuSigPartialSignatureMessage {
   bytes sessionID = 1;
   bytes partialSignature = 2;
+
+  AppInfo appInfo = 1000; // Application info.
 }
 
 message MuSigSignatureMessage {
@@ -115,6 +130,8 @@ message MuSigSignatureMessage {
   repeated bytes signers = 6;
   bytes commitment = 7;
   bytes schnorrSignature = 8;
+
+  AppInfo appInfo = 1000; // Application info.
 }
 
 //
@@ -125,4 +142,6 @@ message Greet {
   bytes signature = 1;
   bytes pubKeyX = 2;
   bytes pubKeyY = 3;
+
+  AppInfo appInfo = 1000; // Application info.
 }

@@ -16,13 +16,41 @@
 package transport
 
 import (
-	"sort"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
+
+// Message is a message that can be sent over transport.
+type Message interface {
+	// MarshallBinary serializes the message into a byte slice.
+	MarshallBinary() ([]byte, error)
+
+	// UnmarshallBinary deserializes the message from a byte slice.
+	UnmarshallBinary([]byte) error
+}
+
+type WithAppInfo interface {
+	Message
+	SetAppInfo(info AppInfo)
+	GetAppInfo() AppInfo
+}
+
+// Service implements a mechanism for exchanging messages between Oracles.
+type Service interface {
+	supervisor.Service
+	Transport
+}
+
+type Transport interface {
+	// Broadcast sends a message with a given topic.
+	Broadcast(topic string, message Message) error
+
+	// Messages returns a channel for incoming messages. A new channel is
+	// created for each call, therefore this method should not be used in
+	// loops. In case of an error, an error will be returned in the
+	// ReceivedMessage structure.
+	Messages(topic string) <-chan ReceivedMessage
+}
 
 // ReceivedMessage contains a Message received from Transport.
 type ReceivedMessage struct {
@@ -44,30 +72,18 @@ type ReceivedMessage struct {
 	Meta Meta
 }
 
-// Message is a message that can be sent over transport.
-type Message interface {
-	// MarshallBinary serializes the message into a byte slice.
-	MarshallBinary() ([]byte, error)
-
-	// UnmarshallBinary deserializes the message from a byte slice.
-	UnmarshallBinary([]byte) error
+type AppInfo struct {
+	Name    string
+	Version string
 }
 
-// Service implements a mechanism for exchanging messages between Oracles.
-type Service interface {
-	supervisor.Service
-	Transport
+func (a *AppInfo) SetAppInfo(info AppInfo) {
+	a.Name = info.Name
+	a.Version = info.Version
 }
 
-type Transport interface {
-	// Broadcast sends a message with a given topic.
-	Broadcast(topic string, message Message) error
-
-	// Messages returns a channel for incoming messages. A new channel is
-	// created for each call, therefore this method should not be used in
-	// loops. In case of an error, an error will be returned in the
-	// ReceivedMessage structure.
-	Messages(topic string) <-chan ReceivedMessage
+func (a *AppInfo) GetAppInfo() AppInfo {
+	return *a
 }
 
 type Meta struct {
@@ -95,29 +111,4 @@ func ReceivedMessageFields(p ReceivedMessage) log.Fields {
 		"receivedFromPeerAddr": p.Meta.ReceivedFromPeerAddr,
 		"userAgent":            p.Meta.UserAgent,
 	}
-}
-
-type MessageMap map[string]Message
-
-// Keys returns a sorted list of keys.
-func (mm MessageMap) Keys() []string {
-	return maputil.SortKeys(mm, sort.Strings)
-}
-
-// SelectByTopic returns a new MessageMap with messages selected by topic.
-// Empty topic list will yield an empty map.
-func (mm MessageMap) SelectByTopic(topics ...string) (MessageMap, error) {
-	return maputil.Select(mm, topics)
-}
-
-var AllMessagesMap = MessageMap{
-	messages.PriceV0MessageName:                 (*messages.Price)(nil), //nolint:staticcheck
-	messages.PriceV1MessageName:                 (*messages.Price)(nil), //nolint:staticcheck
-	messages.DataPointV1MessageName:             (*messages.DataPoint)(nil),
-	messages.GreetV1MessageName:                 (*messages.Greet)(nil),
-	messages.MuSigStartV1MessageName:            (*messages.MuSigInitialize)(nil),
-	messages.MuSigTerminateV1MessageName:        (*messages.MuSigTerminate)(nil),
-	messages.MuSigCommitmentV1MessageName:       (*messages.MuSigCommitment)(nil),
-	messages.MuSigPartialSignatureV1MessageName: (*messages.MuSigPartialSignature)(nil),
-	messages.MuSigSignatureV1MessageName:        (*messages.MuSigSignature)(nil),
 }

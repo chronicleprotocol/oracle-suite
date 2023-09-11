@@ -198,7 +198,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 	if err != nil {
 		return nil, err
 	}
-	messageMap, err := pkgTransport.AllMessagesMap.SelectByTopic(
+	messageMap, err := messages.AllMessagesMap.SelectByTopic(
 		messages.DataPointV1MessageName,
 	)
 	if err != nil {
@@ -249,7 +249,7 @@ func (c *Config) StreamServices(baseLogger log.Logger, appName string, appVersio
 	if err != nil {
 		return nil, err
 	}
-	messageMap, err := pkgTransport.AllMessagesMap.SelectByTopic(topics...)
+	messageMap, err := messages.AllMessagesMap.SelectByTopic(topics...)
 	if err != nil {
 		return nil, err
 	}

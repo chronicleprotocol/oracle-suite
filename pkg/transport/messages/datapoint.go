@@ -27,6 +27,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 )
 
@@ -35,6 +36,8 @@ const DataPointV1MessageName = "data_point/v1"
 const maxSubPointReferenceDepth = 2
 
 type DataPoint struct {
+	transport.AppInfo
+
 	// Model is the name of the data model.
 	Model string `json:"model"`
 
@@ -67,6 +70,7 @@ func (d *DataPoint) MarshallBinary() ([]byte, error) {
 		return nil, err
 	}
 	msg.EcdsaSignature = d.ECDSASignature.Bytes()
+	msg.AppInfo = appInfoToProtobuf(d.AppInfo)
 	return proto.Marshal(msg)
 }
 
@@ -84,6 +88,7 @@ func (d *DataPoint) UnmarshallBinary(data []byte) error {
 	if d.ECDSASignature, err = types.SignatureFromBytes(msg.EcdsaSignature); err != nil {
 		return err
 	}
+	d.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
 

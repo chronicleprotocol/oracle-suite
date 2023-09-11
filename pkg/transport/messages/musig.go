@@ -22,6 +22,7 @@ import (
 
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 
@@ -185,6 +186,8 @@ type MuSigMessage struct {
 }
 
 type MuSigInitialize struct {
+	transport.AppInfo
+
 	*MuSigMessage
 
 	// SessionID is the unique ID of the MuSig session.
@@ -210,6 +213,7 @@ func (m *MuSigInitialize) MarshallBinary() ([]byte, error) {
 		MsgBody:            m.MsgBody.Bytes(),
 		MsgMeta:            meta,
 		Signers:            make([][]byte, len(m.Signers)),
+		AppInfo:            appInfoToProtobuf(m.AppInfo),
 	}
 	for i, signer := range m.Signers {
 		msg.Signers[i] = signer.Bytes()
@@ -247,10 +251,13 @@ func (m *MuSigInitialize) UnmarshallBinary(bytes []byte) (err error) {
 			return err
 		}
 	}
+	m.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
 
 type MuSigTerminate struct {
+	transport.AppInfo
+
 	// Unique SessionID of the MuSig session.
 	SessionID types.Hash `json:"session_id"`
 
@@ -263,6 +270,7 @@ func (m *MuSigTerminate) MarshallBinary() ([]byte, error) {
 	return proto.Marshal(&pb.MuSigTerminateMessage{
 		SessionID: m.SessionID.Bytes(),
 		Reason:    m.Reason,
+		AppInfo:   appInfoToProtobuf(m.AppInfo),
 	})
 }
 
@@ -277,10 +285,13 @@ func (m *MuSigTerminate) UnmarshallBinary(bytes []byte) error {
 	}
 	m.SessionID = types.MustHashFromBytes(msg.SessionID, types.PadLeft)
 	m.Reason = msg.Reason
+	m.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
 
 type MuSigCommitment struct {
+	transport.AppInfo
+
 	// Unique SessionID of the MuSig session.
 	SessionID types.Hash `json:"session_id"`
 
@@ -317,6 +328,7 @@ func (m *MuSigCommitment) MarshallBinary() ([]byte, error) {
 		PubKeyY:        pubKeyY,
 		CommitmentKeyX: comKeyX,
 		CommitmentKeyY: comKeyY,
+		AppInfo:        appInfoToProtobuf(m.AppInfo),
 	})
 }
 
@@ -337,10 +349,13 @@ func (m *MuSigCommitment) UnmarshallBinary(bytes []byte) error {
 	m.PublicKeyY = new(big.Int).SetBytes(msg.PubKeyY)
 	m.CommitmentKeyX = new(big.Int).SetBytes(msg.CommitmentKeyX)
 	m.CommitmentKeyY = new(big.Int).SetBytes(msg.CommitmentKeyY)
+	m.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
 
 type MuSigPartialSignature struct {
+	transport.AppInfo
+
 	// Unique SessionID of the MuSig session.
 	SessionID types.Hash `json:"session_id"`
 
@@ -357,6 +372,7 @@ func (m *MuSigPartialSignature) MarshallBinary() ([]byte, error) {
 	return proto.Marshal(&pb.MuSigPartialSignatureMessage{
 		SessionID:        m.SessionID.Bytes(),
 		PartialSignature: partialSignature,
+		AppInfo:          appInfoToProtobuf(m.AppInfo),
 	})
 }
 
@@ -374,10 +390,13 @@ func (m *MuSigPartialSignature) UnmarshallBinary(bytes []byte) error {
 	}
 	m.SessionID = types.MustHashFromBytes(msg.SessionID, types.PadLeft)
 	m.PartialSignature = new(big.Int).SetBytes(msg.PartialSignature)
+	m.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
 
 type MuSigSignature struct {
+	transport.AppInfo
+
 	*MuSigMessage
 
 	// Unique SessionID of the MuSig session.
@@ -411,6 +430,7 @@ func (m *MuSigSignature) toProtobuf() (*pb.MuSigSignatureMessage, error) {
 		Commitment:          m.Commitment.Bytes(),
 		Signers:             make([][]byte, len(m.Signers)),
 		SchnorrSignature:    m.SchnorrSignature.Bytes(),
+		AppInfo:             appInfoToProtobuf(m.AppInfo),
 	}
 	for i, signer := range m.Signers {
 		msg.Signers[i] = signer.Bytes()
@@ -446,6 +466,7 @@ func (m *MuSigSignature) fromProtobuf(msg *pb.MuSigSignatureMessage) error {
 		}
 	}
 	m.SchnorrSignature = new(big.Int).SetBytes(msg.SchnorrSignature)
+	m.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
 

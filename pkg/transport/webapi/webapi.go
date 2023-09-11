@@ -154,6 +154,8 @@ type WebAPI struct {
 	rand         io.Reader
 	maxClockSkew time.Duration
 	log          log.Logger
+	appName      string
+	appVersion   string
 
 	// Internal fields:
 	recover crypto.Recoverer
@@ -218,6 +220,10 @@ type Config struct {
 	// Logger is a custom logger instance. If not provided then null
 	// logger is used.
 	Logger log.Logger
+
+	// Application info:
+	AppName    string
+	AppVersion string
 }
 
 // New returns a new instance of WebAPI.
@@ -275,6 +281,8 @@ func New(cfg Config) (*WebAPI, error) {
 		maxClockSkew: cfg.MaxClockSkew,
 		rand:         cfg.Rand,
 		log:          logger,
+		appName:      cfg.AppName,
+		appVersion:   cfg.AppVersion,
 		recover:      crypto.ECRecoverer,
 	}
 	w.server.SetHandler(http.HandlerFunc(w.consumeHandler))
@@ -315,6 +323,12 @@ func (w *WebAPI) Wait() <-chan error {
 func (w *WebAPI) Broadcast(topic string, message transport.Message) error {
 	if w.signer == nil {
 		return fmt.Errorf("unable to broadcast messages: signer is not set")
+	}
+	if appInfo, ok := message.(transport.WithAppInfo); ok {
+		appInfo.SetAppInfo(transport.AppInfo{
+			Name:    w.appName,
+			Version: w.appVersion,
+		})
 	}
 	w.log.WithField("topic", topic).Debug("Broadcasting message")
 	bin, err := message.MarshallBinary()
@@ -625,10 +639,19 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 					Panic("Channel not initialized")
 			}
 
+			userAgent := ""
+			if appInfo, ok := msg.(transport.WithAppInfo); ok {
+				userAgent = fmt.Sprintf("%s/%s", appInfo.GetAppInfo().Name, appInfo.GetAppInfo().Version)
+			}
+
 			w.msgCh[topic] <- transport.ReceivedMessage{
 				Message: msg,
 				Author:  requestAuthor.Bytes(),
-				Meta:    transport.Meta{Transport: TransportName, Topic: topic},
+				Meta: transport.Meta{
+					Transport: TransportName,
+					Topic:     topic,
+					UserAgent: userAgent,
+				},
 			}
 		}
 	}

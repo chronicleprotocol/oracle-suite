@@ -21,6 +21,7 @@ import (
 
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
 
 	"google.golang.org/protobuf/proto"
@@ -29,6 +30,8 @@ import (
 const GreetV1MessageName = "greet/v1"
 
 type Greet struct {
+	transport.AppInfo
+
 	Signature  types.Signature `json:"signature"`
 	PublicKeyX *big.Int        `json:"public_key_x"`
 	PublicKeyY *big.Int        `json:"public_key_y"`
@@ -50,6 +53,7 @@ func (e *Greet) MarshallBinary() ([]byte, error) {
 		Signature: e.Signature.Bytes(),
 		PubKeyX:   pubKeyX,
 		PubKeyY:   pubKeyY,
+		AppInfo:   appInfoToProtobuf(e.AppInfo),
 	})
 }
 
@@ -68,5 +72,6 @@ func (e *Greet) UnmarshallBinary(data []byte) (err error) {
 	}
 	e.PublicKeyX = new(big.Int).SetBytes(msg.PubKeyX)
 	e.PublicKeyY = new(big.Int).SetBytes(msg.PubKeyY)
+	e.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
