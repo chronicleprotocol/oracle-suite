@@ -30,14 +30,18 @@ function findAllConfigs() {
 	done
 }
 
+_MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
+
 {
 	echo "variables {"
+
 	echo -n "contract_map = "
 	{
 		findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog)$'
 		findAllConfigs "$1/deployments" '^TorAddressRegister_Feeds_1$' 'name'
 	} | jq -c --argjson m '{"production":"prod","staging":"stage"}' \
 	'{($m[.environment]+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add'
+
 	echo -n "contracts = "
 	{
 		findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
@@ -56,5 +60,8 @@ function findAllConfigs() {
 		} + ($p[($m[.environment] + "-" + .chain + "-" + .address)] | del(.wat)) | del(..|nulls)'
 		jq -c 'select(.enabled==true) | del(.enabled)' "$1/deployments/medians.jsonl"
 	} | sort | jq -s '.'
+
+	echo "models = $_MODELS"
+
 	echo "}"
 } > config-contracts.hcl

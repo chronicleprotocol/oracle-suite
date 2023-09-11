@@ -21,5 +21,8 @@ ghost {
     && try(v.IMedian, false)
     # If CFG_GHOST_PAIRS is set to a list of asset symbols, only for those assets will the signatures be created
     && try(length(var.ghost_pairs) == 0 || contains(var.ghost_pairs, v.wat), false)
+  ], [
+    for v in var.models : v
+    if try(length(var.ghost_pairs) == 0 || contains(var.ghost_pairs, v), false)
   ]))
 }
