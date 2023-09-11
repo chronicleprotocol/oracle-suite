@@ -19,8 +19,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
@@ -145,6 +147,14 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 				WithFields(datapoint.PointLogFields(point)).
 				Error("Unable to sign data point")
 		}
+
+		// Add trace to data point.
+		// TODO: Move it to a separate struct and make it more generic.
+		trace := generateTrace(point)
+		if len(trace) > 0 {
+			point.Meta["trace"] = trace
+		}
+
 		msg := &messages.DataPoint{
 			Model:          model,
 			Point:          point,
@@ -217,4 +227,28 @@ func (f *Feed) contextCancelHandler() {
 	defer func() { close(f.waitCh) }()
 	defer f.log.Info("Stopped")
 	<-f.ctx.Done()
+}
+
+// generateTrace generates a trace for a data point.
+func generateTrace(dp datapoint.Point) map[string]string {
+	var recur func(dp datapoint.Point) []datapoint.Point
+	recur = func(dp datapoint.Point) []datapoint.Point {
+		var points []datapoint.Point
+		if dp.Meta["type"] == "origin" {
+			points = append(points, dp)
+		}
+		for _, subPoint := range dp.SubPoints {
+			points = append(points, recur(subPoint)...)
+		}
+		return points
+	}
+	trace := make(map[string]string)
+	for _, point := range recur(dp) {
+		tick, ok := point.Value.(value.Tick)
+		if !ok {
+			continue
+		}
+		trace[fmt.Sprintf("%s@%s", tick.Pair.String(), point.Meta["origin"])] = tick.Price.String()
+	}
+	return trace
 }

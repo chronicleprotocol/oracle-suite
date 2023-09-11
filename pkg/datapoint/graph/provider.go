@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
@@ -52,8 +51,6 @@ func (p Provider) DataPoint(ctx context.Context, model string) (datapoint.Point,
 	if p.updater != nil {
 		p.updater.Update(ctx, []Node{node})
 	}
-	point := node.DataPoint()
-	point.Meta["trace"] = generateTrace(point)
 	return node.DataPoint(), nil
 }
 
@@ -72,9 +69,7 @@ func (p Provider) DataPoints(ctx context.Context, models ...string) (map[string]
 	}
 	points := make(map[string]datapoint.Point, len(models))
 	for i, model := range models {
-		point := nodes[i].DataPoint()
-		point.Meta["trace"] = generateTrace(point)
-		points[model] = point
+		points[model] = nodes[i].DataPoint()
 	}
 	return points, nil
 }
@@ -115,27 +110,4 @@ func nodeToModel(n Node) datapoint.Model {
 		m.Meta = map[string]any{}
 	}
 	return m
-}
-
-func generateTrace(dp datapoint.Point) map[string]string {
-	var recur func(dp datapoint.Point) []datapoint.Point
-	recur = func(dp datapoint.Point) []datapoint.Point {
-		var points []datapoint.Point
-		if dp.Meta["type"] == "origin" {
-			points = append(points, dp)
-		}
-		for _, subPoint := range dp.SubPoints {
-			points = append(points, recur(subPoint)...)
-		}
-		return points
-	}
-	trace := make(map[string]string)
-	for _, point := range recur(dp) {
-		tick, ok := point.Value.(value.Tick)
-		if !ok {
-			continue
-		}
-		trace[fmt.Sprintf("%s@%s", tick.Pair.String(), point.Meta["origin"])] = tick.Price.String()
-	}
-	return trace
 }
