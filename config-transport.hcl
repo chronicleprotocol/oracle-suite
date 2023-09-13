@@ -20,14 +20,15 @@ transport {
   dynamic "libp2p" {
     for_each = var.libp2p_enable ? [1] : []
     content {
-      feeds              = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_FEEDS", "")))
-      priv_key_seed      = env("CFG_LIBP2P_PK_SEED", "")
-      listen_addrs       = var.libp2p_listens
-      bootstrap_addrs    = var.libp2p_bootstraps
-      direct_peers_addrs = var.libp2p_peers
-      blocked_addrs      = var.libp2p_bans
-      disable_discovery  = var.libp2p_disable_discovery
-      ethereum_key       = "default"
+      feeds                = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_FEEDS", "")))
+      feeds_filter_disable = tobool(env("CFG_LIBP2P_FEEDS_FILTER_DISABLE", "0"))
+      priv_key_seed        = env("CFG_LIBP2P_PK_SEED", "")
+      listen_addrs         = var.libp2p_listens
+      bootstrap_addrs      = var.libp2p_bootstraps
+      direct_peers_addrs   = var.libp2p_peers
+      blocked_addrs        = var.libp2p_bans
+      disable_discovery    = var.libp2p_disable_discovery
+      ethereum_key         = "default"
     }
   }
 
