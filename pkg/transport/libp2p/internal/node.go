@@ -126,6 +126,7 @@ func (n *Node) Start(ctx context.Context) error {
 	n.host, err = libp2p.New(append([]libp2p.Option{
 		libp2p.ForceReachabilityPublic(),
 		libp2p.EnableRelayService(),
+		libp2p.EnableHolePunching(),
 		libp2p.EnableNATService(),
 		libp2p.Peerstore(n.peerstore),
 		libp2p.ConnectionGater(n.connGaterSet),
