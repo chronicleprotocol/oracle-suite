@@ -651,6 +651,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 					Transport: TransportName,
 					Topic:     topic,
 					UserAgent: userAgent,
+					PeerAddr:  requestAuthor.String(),
 				},
 			}
 		}
