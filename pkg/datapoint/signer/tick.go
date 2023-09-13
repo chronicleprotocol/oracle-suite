@@ -92,7 +92,7 @@ func (t *TickRecoverer) Recover(
 func hashTick(model string, price *bn.DecFixedPointNumber, time time.Time) types.Hash {
 	// Price (val):
 	val := make([]byte, 32)
-	price.SetPrecision(contractPricePrecision).RawBigInt().FillBytes(val)
+	price.SetPrec(contractPricePrecision).RawBigInt().FillBytes(val)
 
 	// Time (age):
 	age := make([]byte, 32)

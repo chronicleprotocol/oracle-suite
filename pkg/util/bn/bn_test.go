@@ -37,7 +37,9 @@ func Test_countFractionalDigits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.num, func(t *testing.T) {
-			assert.Equal(t, tt.want, stringNumberDecimalPrecision(tt.num))
+			p, ok := stringNumberDecimalPrecision(tt.num)
+			assert.Equal(t, uint32(tt.want), p)
+			assert.True(t, ok)
 		})
 	}
 }

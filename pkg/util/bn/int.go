@@ -121,56 +121,41 @@ func (x *IntNumber) Sign() int {
 }
 
 // Add adds y to the number and returns the result.
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) Add(y any) *IntNumber {
-	return &IntNumber{x: new(big.Int).Add(x.x, Int(y).x)}
+func (x *IntNumber) Add(y *IntNumber) *IntNumber {
+	return &IntNumber{x: new(big.Int).Add(x.x, y.x)}
 }
 
 // Sub subtracts y from the number and returns the result.
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) Sub(y any) *IntNumber {
-	return &IntNumber{x: new(big.Int).Sub(x.x, Int(y).x)}
+func (x *IntNumber) Sub(y *IntNumber) *IntNumber {
+	return &IntNumber{x: new(big.Int).Sub(x.x, y.x)}
 }
 
 // Mul multiplies the number by y and returns the result.
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) Mul(y any) *IntNumber {
-	return &IntNumber{x: new(big.Int).Mul(x.x, Int(y).x)}
+func (x *IntNumber) Mul(y *IntNumber) *IntNumber {
+	return &IntNumber{x: new(big.Int).Mul(x.x, y.x)}
 }
 
 // Div divides the number by y and returns the result.
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) Div(y any) *IntNumber {
-	return &IntNumber{x: new(big.Int).Div(x.x, Int(y).x)}
+func (x *IntNumber) Div(y *IntNumber) *IntNumber {
+	return &IntNumber{x: new(big.Int).Div(x.x, y.x)}
 }
 
 // DivRoundUp divides the number by y and returns the result rounded up.
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) DivRoundUp(y any) *IntNumber {
-	bi := Int(y)
-	if new(big.Int).Rem(x.x, bi.x).Sign() > 0 {
-		return &IntNumber{x: new(big.Int).Add(new(big.Int).Div(x.x, bi.x), intOne)}
+func (x *IntNumber) DivRoundUp(y *IntNumber) *IntNumber {
+	if new(big.Int).Rem(x.x, y.x).Sign() > 0 {
+		return &IntNumber{x: new(big.Int).Add(new(big.Int).Div(x.x, y.x), intOne)}
 	}
-	return &IntNumber{x: new(big.Int).Div(x.x, bi.x)}
+	return &IntNumber{x: new(big.Int).Div(x.x, y.x)}
 }
 
 // Rem returns the remainder of the division of the number by y.
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) Rem(y any) *IntNumber {
-	return &IntNumber{x: new(big.Int).Rem(x.x, Int(y).x)}
+func (x *IntNumber) Rem(y *IntNumber) *IntNumber {
+	return &IntNumber{x: new(big.Int).Rem(x.x, y.x)}
 }
 
 // Pow returns the number raised to the power of y.
-//
-// The x argument can be any of the types accepted by Int.
-func (x *IntNumber) Pow(y any) *IntNumber {
-	return &IntNumber{x: new(big.Int).Exp(x.x, Int(y).x, nil)}
+func (x *IntNumber) Pow(y *IntNumber) *IntNumber {
+	return &IntNumber{x: new(big.Int).Exp(x.x, y.x, nil)}
 }
 
 // Sqrt returns the square root of the number.
@@ -183,10 +168,8 @@ func (x *IntNumber) Sqrt() *IntNumber {
 //	-1 if x <  0
 //	 0 if x == 0
 //	+1 if x >  0
-//
-// The y argument can be any of the types accepted by Int.
-func (x *IntNumber) Cmp(y any) int {
-	return x.x.Cmp(Int(y).x)
+func (x *IntNumber) Cmp(y *IntNumber) int {
+	return x.x.Cmp(y.x)
 }
 
 // Lsh returns the number shifted left by n bits.

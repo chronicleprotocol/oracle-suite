@@ -35,7 +35,7 @@ func calculateSpread(new, old *bn.DecFixedPointNumber) float64 {
 	if old.Sign() == 0 {
 		return math.Inf(1)
 	}
-	spread, _ := new.Sub(old).Div(old).Mul(bn.Float(100)).Abs().BigFloat().Float64()
+	spread, _ := new.Sub(old).Div(old).Mul(bn.DecFixedPoint(100, 0)).Abs().BigFloat().Float64()
 	return spread
 }
 

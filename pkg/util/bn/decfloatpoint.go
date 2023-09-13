@@ -16,7 +16,6 @@
 package bn
 
 import (
-	"math"
 	"math/big"
 )
 
@@ -72,7 +71,7 @@ func DecFloatPoint(x any) *DecFloatPointNumber {
 // DecFloatPointNumber represents a decimal floating-point number.
 //
 // Unlike the DecFixedPointNumber, the precision of the DecFloatPointNumber is
-// not fixed. The precision is dynamically adjusted to fit the number.
+// adjusted dynamically to fit the value.
 type DecFloatPointNumber struct {
 	x *DecFixedPointNumber
 }
@@ -107,32 +106,29 @@ func (x *DecFloatPointNumber) String() string {
 	return x.x.String()
 }
 
-// Text returns the string representation of the DecFloatPointNumber.
+// Text returns the string representation of the DecFixedPointNumber.
 // The format and prec arguments are the same as in big.Float.Text.
 //
 // For any format other than 'f' and prec of -1, the result may be rounded.
 func (x *DecFloatPointNumber) Text(format byte, prec int) string {
-	if format == 'f' && prec < 0 {
-		return x.x.String()
-	}
 	return x.x.Text(format, prec)
 }
 
-// Precision returns the precision of the DecFloatPointNumber.
+// Prec returns the precision of the DecFloatPointNumber.
 //
-// Precision is the number of decimal digits in the fractional part.
-func (x *DecFloatPointNumber) Precision() uint8 {
-	return x.x.Precision()
+// Prec is the number of decimal digits in the fractional part.
+func (x *DecFloatPointNumber) Prec() uint8 {
+	return x.x.Prec()
 }
 
-// SetPrecision returns a new DecFloatPointNumber with the given precision.
+// SetPrec returns a new DecFloatPointNumber with the given precision.
 //
-// Precision is the number of decimal digits in the fractional part.
-func (x *DecFloatPointNumber) SetPrecision(n uint8) *DecFloatPointNumber {
-	if n == x.x.prec {
+// Prec is the number of decimal digits in the fractional part.
+func (x *DecFloatPointNumber) SetPrec(n uint8) *DecFloatPointNumber {
+	if n == x.x.p {
 		return x
 	}
-	return &DecFloatPointNumber{x: x.x.SetPrecision(n)}
+	return &DecFloatPointNumber{x: x.x.SetPrec(n)}
 }
 
 // Sign returns:
@@ -145,67 +141,79 @@ func (x *DecFloatPointNumber) Sign() int {
 }
 
 // Add adds y to the number and returns the result.
-//
-// The y argument can be any of the types accepted by DecFloatPointNumber.
-//
-// The precision is adjusted to fit the result.
-func (x *DecFloatPointNumber) Add(y any) *DecFloatPointNumber {
-	f := DecFloatPoint(y)
-	p := x.x.prec
-	if f.x.prec > p {
-		p = f.x.prec
-	}
-	a := x.x.SetPrecision(p)
-	b := f.x.SetPrecision(p)
-	return (&DecFloatPointNumber{x: a.Add(b)}).setMinimumPrecision()
+func (x *DecFloatPointNumber) Add(y *DecFloatPointNumber) *DecFloatPointNumber {
+	p := max(x.x.p, y.x.p)
+	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), uint32(p))
+	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), uint32(p))
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: new(big.Int).Add(xi, yi), p: p}}
+	n.adjustPrec()
+	return n
 }
 
 // Sub subtracts y from the number and returns the result.
-//
-// The y argument can be any of the types accepted by DecFloatPointNumber.
-//
-// The precision is adjusted to fit the result.
-func (x *DecFloatPointNumber) Sub(y any) *DecFloatPointNumber {
-	f := DecFloatPoint(y)
-	p := x.x.prec
-	if f.x.prec > p {
-		p = f.x.prec
-	}
-	a := x.x.SetPrecision(p)
-	b := f.x.SetPrecision(p)
-	return (&DecFloatPointNumber{x: a.Sub(b)}).setMinimumPrecision()
+func (x *DecFloatPointNumber) Sub(y *DecFloatPointNumber) *DecFloatPointNumber {
+	p := max(x.x.p, y.x.p)
+	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), uint32(p))
+	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), uint32(p))
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: new(big.Int).Sub(xi, yi), p: p}}
+	n.adjustPrec()
+	return n
 }
 
 // Mul multiplies the number by y and returns the result.
-//
-// The y argument can be any of the types accepted by DecFloatPointNumber.
-//
-// The precision is adjusted to fit the result.
-func (x *DecFloatPointNumber) Mul(y any) *DecFloatPointNumber {
-	f := DecFloatPoint(y)
-	px := int(f.x.prec)
-	py := int(x.x.prec)
-	p := px + py
-	if p > math.MaxUint8 {
-		p = math.MaxUint8
-	}
-	a := x.x.SetPrecision(uint8(p))
-	b := f.x.SetPrecision(uint8(p))
-	return (&DecFloatPointNumber{x: a.Mul(b)}).setMinimumPrecision()
+func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
+	p := x.x.p + y.x.p
+	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), uint32(p))
+	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), uint32(p))
+	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), uint32(p)*2, uint32(p))
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: p}}
+	n.adjustPrec()
+	return n
 }
 
 // Div divides the number by y and returns the result.
 //
 // Division by zero panics.
 //
-// The y argument can be any of the types accepted by DecFloatPointNumber.
+// During division, the precision is increased by divPrevisionIncrease and then
+// lowered to the smallest possible that still fits the result.
+func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if y.x.Sign() == 0 {
+		panic("division by zero")
+	}
+	p := max(x.x.p, y.x.p)
+	wp := uint32(p + divPrevisionIncrease + divGuardDigits) // working precision
+	rp := uint32(p + divPrevisionIncrease)                  // result precision
+	if rp > MaxDecPointPrecision {
+		rp = MaxDecPointPrecision
+	}
+	n := x.DivPrec(y, wp)
+	n.x.x = bigIntSetPrec(n.x.x, uint32(n.x.p), rp)
+	n.x.p = uint8(rp)
+	n.adjustPrec()
+	return n
+}
+
+// DivPrec divides the number by y and returns the result.
 //
-// The precision is adjusted to fit the result.
-func (x *DecFloatPointNumber) Div(y any) *DecFloatPointNumber {
-	f := DecFloatPoint(y)
-	a := x.x.SetPrecision(math.MaxUint8)
-	b := f.x.SetPrecision(math.MaxUint8)
-	return (&DecFloatPointNumber{x: a.Div(b)}).setMinimumPrecision()
+// Division by zero panics.
+//
+// During division, the precision is set to prec and then lowered to the
+// smallest possible that still fits the result.
+func (x *DecFloatPointNumber) DivPrec(y *DecFloatPointNumber, prec uint32) *DecFloatPointNumber {
+	if y.x.Sign() == 0 {
+		panic("division by zero")
+	}
+	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), prec)
+	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), prec)
+	z := new(big.Int).Quo(new(big.Int).Mul(xi, pow10(prec)), yi)
+	p := uint8(MaxDecPointPrecision)
+	if prec < MaxDecPointPrecision {
+		p = uint8(prec)
+	}
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: p}}
+	n.adjustPrec()
+	return n
 }
 
 // Cmp compares the number to y and returns:
@@ -213,9 +221,7 @@ func (x *DecFloatPointNumber) Div(y any) *DecFloatPointNumber {
 //	-1 if x <  0
 //	 0 if x == 0
 //	+1 if x >  0
-//
-// The y argument can be any of the types accepted by DecFloatPointNumber.
-func (x *DecFloatPointNumber) Cmp(y any) int {
+func (x *DecFloatPointNumber) Cmp(y *DecFloatPointNumber) int {
 	return x.x.Cmp(DecFloatPoint(y).x)
 }
 
@@ -232,17 +238,24 @@ func (x *DecFloatPointNumber) Neg() *DecFloatPointNumber {
 // Inv returns the inverse value of the number of x.
 //
 // If x is zero, Inv panics.
+//
+// During inversion, the precision is increased by divPrevisionIncrease and
+// then lowered to the smallest possible that still fits the result.
 func (x *DecFloatPointNumber) Inv() *DecFloatPointNumber {
 	if x.x.Sign() == 0 {
 		panic("division by zero")
 	}
-	i := x.Float().Inv()
-	p := stringNumberDecimalPrecision(i.Text('f', -1))
-	if p > math.MaxUint8 {
-		p = math.MaxUint8
+	wp := uint32(x.x.p) + divPrevisionIncrease // working precision
+	rp := wp                                   // result precision
+	if rp > MaxDecPointPrecision {
+		rp = MaxDecPointPrecision
 	}
-	i = i.Mul(pow10(p))
-	return &DecFloatPointNumber{x: &DecFixedPointNumber{x: i.BigInt(), prec: uint8(p)}}
+	z := bigIntSetPrec(x.x.x, uint32(x.x.p), wp)
+	z = new(big.Int).Quo(pow10(wp*2), z)
+	z = bigIntSetPrec(z, wp, rp)
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: uint8(wp)}}
+	n.adjustPrec()
+	return n
 }
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
@@ -256,25 +269,33 @@ func (x *DecFloatPointNumber) UnmarshalBinary(data []byte) error {
 	return x.x.UnmarshalBinary(data)
 }
 
-// setMinimumPrecision sets the precision to the lowest possible precision
-// required to represent the number.
-func (x *DecFloatPointNumber) setMinimumPrecision() *DecFloatPointNumber {
-	str := x.x.x.String()
-	tz := 0
-	for i := len(str) - 1; i >= 0; i-- {
-		if str[i] == '0' {
-			tz++
-		} else {
+// adjustPrec sets the precision to the lowest possible value that still fits
+// the number.
+func (x *DecFloatPointNumber) adjustPrec() {
+	if x.x.Sign() == 0 {
+		x.x.x = intZero
+		x.x.p = 0
+		return
+	}
+	s := x.x.x.String()
+	z := uint8(0)
+	for i := len(s) - 1; ; i-- {
+		if i < 0 {
+			z = x.x.p // zero number
 			break
 		}
+		if z >= x.x.p {
+			break // all decimals are zeros
+		}
+		if s[i] != '0' {
+			break
+		}
+		z++
 	}
-	prec := int(x.x.prec) - tz
-	if prec < 0 {
-		prec = 0
+	p := x.x.p - z
+	if x.x.p == p {
+		return
 	}
-	if prec > math.MaxUint8 {
-		prec = math.MaxUint8
-	}
-	x.x = x.x.SetPrecision(uint8(prec))
-	return x
+	x.x.x = bigIntSetPrec(x.x.x, uint32(x.x.p), uint32(p))
+	x.x.p = p
 }

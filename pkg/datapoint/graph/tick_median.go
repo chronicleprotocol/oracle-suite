@@ -137,7 +137,7 @@ func median(xs []*bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 		m := count / 2
 		x1 := xs[m-1]
 		x2 := xs[m]
-		return x1.Add(x2).Div(bn.Float(2))
+		return x1.Add(x2).Div(bn.DecFixedPoint(2, 0))
 	}
 	return xs[(count-1)/2]
 }

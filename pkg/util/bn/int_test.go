@@ -50,22 +50,22 @@ func TestInt(t *testing.T) {
 		},
 		{
 			name:     "DecFixedPointNumber",
-			input:    DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			input:    DecFixedPointNumber{x: big.NewInt(4250), p: 2},
 			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
 			name:     "*DecFixedPointNumber",
-			input:    &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			input:    &DecFixedPointNumber{x: big.NewInt(4250), p: 2},
 			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
 			name:     "DecFixedPointNumber",
-			input:    DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			input:    DecFixedPointNumber{x: big.NewInt(4250), p: 2},
 			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
 			name:     "*DecFixedPointNumber",
-			input:    &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			input:    &DecFixedPointNumber{x: big.NewInt(4250), p: 2},
 			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
@@ -161,43 +161,43 @@ func TestIntNumber_Sign(t *testing.T) {
 
 func TestIntNumber_Add(t *testing.T) {
 	i := Int(123)
-	res := i.Add(456)
+	res := i.Add(Int(456))
 	assert.Equal(t, Int(579), res)
 }
 
 func TestIntNumber_Sub(t *testing.T) {
 	i := Int(123)
-	res := i.Sub(23)
+	res := i.Sub(Int(23))
 	assert.Equal(t, Int(100), res)
 }
 
 func TestIntNumber_Mul(t *testing.T) {
 	i := Int(123)
-	res := i.Mul(3)
+	res := i.Mul(Int(3))
 	assert.Equal(t, Int(369), res)
 }
 
 func TestIntNumber_Div(t *testing.T) {
 	i := Int(123)
-	res := i.Div(3)
+	res := i.Div(Int(3))
 	assert.Equal(t, Int(41), res)
 }
 
 func TestIntNumber_DivRoundUp(t *testing.T) {
 	i := Int(123)
-	res := i.DivRoundUp(50)
+	res := i.DivRoundUp(Int(50))
 	assert.Equal(t, Int(3), res)
 }
 
 func TestIntNumber_Rem(t *testing.T) {
 	i := Int(123)
-	res := i.Rem(50)
+	res := i.Rem(Int(50))
 	assert.Equal(t, Int(23), res)
 }
 
 func TestIntNumber_Pow(t *testing.T) {
 	i := Int(2)
-	res := i.Pow(3)
+	res := i.Pow(Int(3))
 	assert.Equal(t, Int(8), res)
 }
 

@@ -133,31 +133,23 @@ func (x *FloatNumber) Sign() int {
 }
 
 // Add adds y to the number and returns the result.
-//
-// The y argument can be any of the types accepted by Float.
-func (x *FloatNumber) Add(y any) *FloatNumber {
-	return &FloatNumber{x: new(big.Float).Add(x.x, Float(y).x)}
+func (x *FloatNumber) Add(y *FloatNumber) *FloatNumber {
+	return &FloatNumber{x: new(big.Float).Add(x.x, y.x)}
 }
 
 // Sub subtracts y from the number and returns the result.
-//
-// The y argument can be any of the types accepted by Float.
-func (x *FloatNumber) Sub(y any) *FloatNumber {
-	return &FloatNumber{x: new(big.Float).Sub(x.x, Float(y).x)}
+func (x *FloatNumber) Sub(y *FloatNumber) *FloatNumber {
+	return &FloatNumber{x: new(big.Float).Sub(x.x, y.x)}
 }
 
 // Mul multiplies the number by y and returns the result.
-//
-// The y argument can be any of the types accepted by Float.
-func (x *FloatNumber) Mul(y any) *FloatNumber {
-	return &FloatNumber{x: new(big.Float).Mul(x.x, Float(y).x)}
+func (x *FloatNumber) Mul(y *FloatNumber) *FloatNumber {
+	return &FloatNumber{x: new(big.Float).Mul(x.x, y.x)}
 }
 
 // Div divides the number by y and returns the result.
-//
-// The y argument can be any of the types accepted by Float.
-func (x *FloatNumber) Div(y any) *FloatNumber {
-	return &FloatNumber{x: new(big.Float).Quo(x.x, Float(y).x)}
+func (x *FloatNumber) Div(y *FloatNumber) *FloatNumber {
+	return &FloatNumber{x: new(big.Float).Quo(x.x, y.x)}
 }
 
 // Sqrt returns the square root of the number.
@@ -170,10 +162,8 @@ func (x *FloatNumber) Sqrt() *FloatNumber {
 //	-1 if x <  0
 //	 0 if x == 0
 //	+1 if x >  0
-//
-// The y argument can be any of the types accepted by Float.
-func (x *FloatNumber) Cmp(y any) int {
-	return x.x.Cmp(Float(y).x)
+func (x *FloatNumber) Cmp(y *FloatNumber) int {
+	return x.x.Cmp(y.x)
 }
 
 // Abs returns the absolute number of x.
