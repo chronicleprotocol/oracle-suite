@@ -39,17 +39,15 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 	{
 		findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog)$'
 		findAllConfigs "$1/deployments" '^TorAddressRegister_Feeds_1$' 'name'
-	} | jq -c --argjson m '{"production":"prod","staging":"stage"}' \
-	'{($m[.environment]+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add'
+	} | jq -c '{(.environment+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add'
 
 	echo -n "contracts = "
 	{
 		findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
 		| jq -c \
-		--argjson m '{"production":"prod","staging":"stage"}' \
 		--argjson p "$(jq -c '.' "$1/relays/params.json")" \
 		'{
-			env: $m[.environment],
+			env: .environment,
 			chain,
 			chain_id:.chainId,
 			IScribe: (.IScribe != null),
@@ -57,7 +55,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 			IScribeOptimistic: (.IScribeOptimistic != null),
 			address,
 			challenge_period:.IScribeOptimistic.opChallengePeriod,
-		} + ($p[($m[.environment] + "-" + .chain + "-" + .address)] | del(.wat)) | del(..|nulls)'
+		} + ($p[(.environment + "-" + .chain + "-" + .address)] | del(.wat)) | del(..|nulls)'
 		jq -c 'select(.enabled==true) | del(.enabled)' "$1/deployments/medians.jsonl"
 	} | sort | jq -s '.'
 
