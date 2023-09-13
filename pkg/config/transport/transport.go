@@ -32,6 +32,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -42,6 +43,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/webapi"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
+
+const LoggerTag = "CONFIG_LIBP2P"
 
 type Dependencies struct {
 	Keys     ethereum.KeyRegistry
@@ -370,6 +373,9 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 	var messagePrivKey crypto.PrivKey
 	if key != nil {
 		messagePrivKey = ethkey.NewPrivKey(key)
+		if !sliceutil.Contains(c.LibP2P.Feeds, key.Address()) {
+			c.LibP2P.Feeds = append(c.LibP2P.Feeds, key.Address())
+		}
 	}
 
 	if !c.LibP2P.DisableFeedFilter {
@@ -386,6 +392,18 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 			WithField("feeds", c.LibP2P.Feeds).
 			Warn("Feeds filter is disabled, the list of feeds will be ignored")
 		c.LibP2P.Feeds = nil
+	}
+
+	logger := d.Logger.WithField("tag", LoggerTag)
+	for _, addr := range c.LibP2P.Feeds {
+		logger.
+			WithField("address", addr.String()).
+			Info("Feed")
+	}
+	for _, addr := range c.LibP2P.BootstrapAddrs {
+		logger.
+			WithField("address", addr).
+			Info("Bootstrap")
 	}
 
 	// Configure LibP2P transport:
