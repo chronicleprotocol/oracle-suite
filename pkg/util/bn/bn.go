@@ -27,7 +27,7 @@ var (
 	intZero   = big.NewInt(0)
 	intOne    = big.NewInt(1)
 	intTen    = big.NewInt(10)
-	floatHalf = big.NewFloat(0.5)
+	floatHalf = big.NewFloat(0.5) //nolint:gomnd
 	floatOne  = big.NewFloat(1)
 )
 
