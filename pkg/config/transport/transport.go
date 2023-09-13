@@ -79,6 +79,8 @@ type libP2PConfig struct {
 	// to the node.
 	Feeds []types.Address `hcl:"feeds"`
 
+	DisableFeedFilter bool `hcl:"feeds_filter_disable,optional"`
+
 	// ListenAddrs is the list of listening addresses for libp2p node encoded
 	// using the multiaddress format.
 	ListenAddrs []string `hcl:"listen_addrs"`
@@ -368,6 +370,22 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 	var messagePrivKey crypto.PrivKey
 	if key != nil {
 		messagePrivKey = ethkey.NewPrivKey(key)
+	}
+
+	if !c.LibP2P.DisableFeedFilter {
+		if len(c.LibP2P.Feeds) == 0 {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   "At least one feed must be configured",
+				Subject:  c.LibP2P.Content.Attributes["feeds"].Range.Ptr(),
+			}
+		}
+	} else if len(c.LibP2P.Feeds) != 0 {
+		d.Logger.
+			WithField("feeds", c.LibP2P.Feeds).
+			Warn("Feeds filter is disabled, the list of feeds will be ignored")
+		c.LibP2P.Feeds = nil
 	}
 
 	// Configure LibP2P transport:

@@ -522,6 +522,7 @@ func readAccountPassphrase(path string) (string, error) {
 	}
 	return strings.TrimSuffix(string(passphrase), "\n"), nil
 }
+
 func readAccountKey(path string, passphrase string, address types.Address) (*wallet.PrivateKey, error) {
 	key, err := wallet.NewKeyFromDirectory(path, passphrase, address)
 	if err == nil {
