@@ -187,6 +187,9 @@ func Discovery(bootstrapAddrs []multiaddr.Multiaddr) Options {
 			return err
 		}
 
+		// When discovery is enabled we also want that node to serve as a relay - and only then.
+		n.hostOpts = append(n.hostOpts, libp2p.EnableAutoRelayWithStaticRelays(addrs))
+
 		n.AddNodeEventHandler(sets.NodeEventHandlerFunc(func(event interface{}) {
 			switch event.(type) {
 			case sets.NodeHostStartedEvent:
