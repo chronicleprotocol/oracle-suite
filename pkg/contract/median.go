@@ -134,8 +134,8 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 	rSlice := make([]*big.Int, len(vals))
 	sSlice := make([]*big.Int, len(vals))
 	for i, v := range vals {
-		if v.Val.Precision() != MedianPricePrecision {
-			return nil, nil, fmt.Errorf("median: poke failed: invalid precision: %d", v.Val.Precision())
+		if v.Val.Prec() != MedianPricePrecision {
+			return nil, nil, fmt.Errorf("median: poke failed: invalid precision: %d", v.Val.Prec())
 		}
 		valSlice[i] = v.Val.RawBigInt()
 		ageSlice[i] = uint64(v.Age.Unix())
