@@ -16,7 +16,7 @@ transport {
         env("CFG_ITEM_SEPARATOR", "\n"),
         env("CFG_LIBP2P_BOOTSTRAP_ADDRS", join(
           env("CFG_ITEM_SEPARATOR", "\n"),
-          try(var.bootstraps[var.environment], [])
+          try(var.libp2p_bootstraps[var.environment], [])
         ))
       )
       direct_peers_addrs = explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_LIBP2P_DIRECT_PEERS_ADDRS", ""))
@@ -52,7 +52,7 @@ transport {
           env("CFG_ITEM_SEPARATOR", "\n"),
           env("CFG_WEBAPI_STATIC_ADDR_BOOK", join(
             env("CFG_ITEM_SEPARATOR", "\n"),
-            try(var.tor_books[var.environment], [])
+            try(var.static_address_books[var.environment], [])
           ))
         )) == 0 ? [] : [1]
         content {
@@ -60,7 +60,7 @@ transport {
             env("CFG_ITEM_SEPARATOR", "\n"),
             env("CFG_WEBAPI_STATIC_ADDR_BOOK", join(
               env("CFG_ITEM_SEPARATOR", "\n"),
-              try(var.tor_books[var.environment], [])
+              try(var.static_address_books[var.environment], [])
             ))
           )
         }

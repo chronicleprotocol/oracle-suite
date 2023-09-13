@@ -42,18 +42,23 @@ variables {
     ]
   }
 
-  tor_books = {
-    "prod" : []
-    "stage" : [
+  static_address_books = {
+    "prod" : [
       "66thskfs35yclgmvmp3z47vaewo62vedzdwoboygm7bn5s7m7paa6cqd.onion:8888",
+    ]
+    "stage" : [
+      "cqsdvjamh6vh5bmavgv6hdb5rrhjqgqtqzy6cfgbmzqhpxfrppblupqd.onion:8888",
     ]
   }
 
-  bootstraps = {
+  libp2p_bootstraps = {
     "prod" : [
       "/dns/spire-bootstrap1.chroniclelabs.io/tcp/8000/p2p/12D3KooWFYkJ1SghY4KfAkZY9Exemqwnh4e4cmJPurrQ8iqy2wJG",
       "/dns/spire-bootstrap2.chroniclelabs.io/tcp/8000/p2p/12D3KooWD7eojGbXT1LuqUZLoewRuhNzCE2xQVPHXNhAEJpiThYj",
     ]
-    "stage" : []
+    "stage" : [
+      "/dns/spire-bootstrap1.staging.chroniclelabs.io/tcp/8000/p2p/12D3KooWHoSyTgntm77sXShoeX9uNkqKNMhHxKtskaHqnA54SrSG",
+      "/ip4/178.128.141.30/tcp/8000/p2p/12D3KooWLaMPReGaxFc6Z7BKWTxZRbxt3ievW8Np7fpA6y774W9T",
+    ]
   }
 }
