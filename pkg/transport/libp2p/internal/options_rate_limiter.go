@@ -135,7 +135,7 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 						"receivedFromPeerID":   msg.ReceivedFrom.String(),
 						"receivedFromPeerAddr": ethkey.PeerIDToAddress(msg.ReceivedFrom).String(),
 					}).
-					Debug("The message has been rejected, rate limit for relay exceeded")
+					Warn("The message has been rejected, rate limit for relay exceeded")
 				return pubsub.ValidationReject
 			}
 			if !msgRL.allow(msg.GetFrom(), len(msg.Data)) {
@@ -147,7 +147,7 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 						"receivedFromPeerID":   msg.ReceivedFrom.String(),
 						"receivedFromPeerAddr": ethkey.PeerIDToAddress(msg.ReceivedFrom).String(),
 					}).
-					Debug("The message has been rejected, rate limit for message author exceeded")
+					Warn("The message has been rejected, rate limit for message author exceeded")
 				return pubsub.ValidationReject
 			}
 			return pubsub.ValidationAccept

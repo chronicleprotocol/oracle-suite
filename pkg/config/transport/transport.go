@@ -268,14 +268,16 @@ func (c *Config) configureWebAPI(d Dependencies) (transport.Service, error) {
 				return dialer.Dial(network, address)
 			},
 		}
-		l.WithField("address", c).
-			WithField("address", c.WebAPI.Socks5ProxyAddr).
+		l.WithField("address", c.WebAPI.Socks5ProxyAddr).
 			Info("SOCKS5 proxy")
 	}
 
 	// Configure address book:
 	var addressBooks []webapi.AddressBook
 	if c.WebAPI.EthereumAddressBook != nil {
+		l.WithField("address", c.WebAPI.EthereumAddressBook.ContractAddr).
+			Info("Ethereum address book")
+
 		rpcClient := d.Clients[c.WebAPI.EthereumAddressBook.EthereumClient]
 		if rpcClient == nil {
 			return nil, &hcl.Diagnostic{

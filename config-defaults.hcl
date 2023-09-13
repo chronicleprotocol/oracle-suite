@@ -41,4 +41,19 @@ variables {
       "0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4",
     ]
   }
+
+  tor_books = {
+    "prod" : []
+    "stage" : [
+      "66thskfs35yclgmvmp3z47vaewo62vedzdwoboygm7bn5s7m7paa6cqd.onion:8888",
+    ]
+  }
+
+  bootstraps = {
+    "prod" : [
+      "/dns/spire-bootstrap1.chroniclelabs.io/tcp/8000/p2p/12D3KooWFYkJ1SghY4KfAkZY9Exemqwnh4e4cmJPurrQ8iqy2wJG",
+      "/dns/spire-bootstrap2.chroniclelabs.io/tcp/8000/p2p/12D3KooWD7eojGbXT1LuqUZLoewRuhNzCE2xQVPHXNhAEJpiThYj",
+    ]
+    "stage" : []
+  }
 }
