@@ -21,23 +21,25 @@ func Test_Gofer_BTCUSD(t *testing.T) {
 	require.NoError(t, s.Reset(ctx))
 
 	err := infestor.NewMocksBuilder().
+		Debug().
+		Add(origin.NewExchange("binance").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("bitstamp").WithSymbol("BTC/USD").WithPrice(1)).
-		Add(origin.NewExchange("binance_us").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("coinbase").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("gemini").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("kraken").WithSymbol("BTC/USD").WithPrice(1)).
 		Deploy(*s)
 	require.NoError(t, err)
 
-	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "--norpc", "price", "BTC/USD")
+	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "price", "BTC/USD", "--format", "json")
 	require.NoError(t, err)
 
-	p, err := parseGoferPrice(out)
+	priceMap, err := parseGoferPrice(out)
 	require.NoError(t, err)
+	p := priceMap["BTC/USD"]
 
-	assert.Equal(t, "aggregator", p.Type)
-	assert.Equal(t, float64(1), p.Price)
-	assert.Greater(t, len(p.Prices), 0)
+	assert.Equal(t, "reference", p.Meta["type"])
+	assert.Equal(t, float64(1), p.Value.Price)
+	assert.Greater(t, len(p.SubPoints), 0)
 }
 
 func Test_Gofer_BTCUSD_4Correct1Zero(t *testing.T) {
@@ -50,22 +52,23 @@ func Test_Gofer_BTCUSD_4Correct1Zero(t *testing.T) {
 
 	err = infestor.NewMocksBuilder().
 		Add(origin.NewExchange("bitstamp").WithSymbol("BTC/USD").WithPrice(1)).
-		Add(origin.NewExchange("binance_us").WithSymbol("BTC/USD").WithPrice(1)).
+		Add(origin.NewExchange("binance").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("coinbase").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("gemini").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("kraken").WithSymbol("BTC/USD").WithPrice(0)).
 		Deploy(*s)
 	require.NoError(t, err)
 
-	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "--norpc", "price", "BTC/USD")
+	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "price", "BTC/USD", "--format", "json")
 	require.NoError(t, err)
 
-	p, err := parseGoferPrice(out)
+	priceMap, err := parseGoferPrice(out)
 	require.NoError(t, err)
+	p := priceMap["BTC/USD"]
 
-	assert.Equal(t, "aggregator", p.Type)
-	assert.Equal(t, float64(1), p.Price)
-	assert.Greater(t, len(p.Prices), 0)
+	assert.Equal(t, "reference", p.Meta["type"])
+	assert.Equal(t, float64(1), p.Value.Price)
+	assert.Greater(t, len(p.SubPoints), 0)
 }
 
 func Test_Gofer_BTCUSD_4Correct1Invalid(t *testing.T) {
@@ -77,22 +80,23 @@ func Test_Gofer_BTCUSD_4Correct1Invalid(t *testing.T) {
 
 	err := infestor.NewMocksBuilder().
 		Add(origin.NewExchange("bitstamp").WithSymbol("BTC/USD").WithPrice(1)).
-		Add(origin.NewExchange("binance_us").WithSymbol("BTC/USD").WithPrice(1)).
+		Add(origin.NewExchange("binance").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("coinbase").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("gemini").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("kraken").WithSymbol("BTC/USD").WithStatusCode(http.StatusNotFound)).
 		Deploy(*s)
 	require.NoError(t, err)
 
-	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "--norpc", "price", "BTC/USD")
+	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "price", "BTC/USD", "--format", "json")
 	require.NoError(t, err)
 
-	p, err := parseGoferPrice(out)
+	priceMap, err := parseGoferPrice(out)
 	require.NoError(t, err)
+	p := priceMap["BTC/USD"]
 
-	assert.Equal(t, "aggregator", p.Type)
-	assert.Equal(t, float64(1), p.Price)
-	assert.Greater(t, len(p.Prices), 0)
+	assert.Equal(t, "reference", p.Meta["type"])
+	assert.Equal(t, float64(1), p.Value.Price)
+	assert.Greater(t, len(p.SubPoints), 0)
 }
 
 func Test_Gofer_BTCUSD_3Correct2Invalid(t *testing.T) {
@@ -105,22 +109,23 @@ func Test_Gofer_BTCUSD_3Correct2Invalid(t *testing.T) {
 	err := infestor.NewMocksBuilder().
 		Reset().
 		Add(origin.NewExchange("bitstamp").WithSymbol("BTC/USD").WithPrice(1)).
-		Add(origin.NewExchange("binance_us").WithSymbol("BTC/USD").WithPrice(1)).
+		Add(origin.NewExchange("binance").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("coinbase").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("gemini").WithSymbol("BTC/USD").WithStatusCode(http.StatusNotFound)).
 		Add(origin.NewExchange("kraken").WithSymbol("BTC/USD").WithStatusCode(http.StatusNotFound)).
 		Deploy(*s)
 	require.NoError(t, err)
 
-	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "--norpc", "price", "BTC/USD")
+	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "price", "BTC/USD", "--format", "json")
 	require.NoError(t, err)
 
-	p, err := parseGoferPrice(out)
+	priceMap, err := parseGoferPrice(out)
 	require.NoError(t, err)
+	p := priceMap["BTC/USD"]
 
-	assert.Equal(t, "aggregator", p.Type)
-	assert.Equal(t, float64(1), p.Price)
-	assert.Greater(t, len(p.Prices), 0)
+	assert.Equal(t, "reference", p.Meta["type"])
+	assert.Equal(t, float64(1), p.Value.Price)
+	assert.Greater(t, len(p.SubPoints), 0)
 }
 
 func Test_Gofer_BTCUSD_2Correct3Invalid(t *testing.T) {
@@ -132,19 +137,20 @@ func Test_Gofer_BTCUSD_2Correct3Invalid(t *testing.T) {
 
 	err := infestor.NewMocksBuilder().
 		Add(origin.NewExchange("bitstamp").WithSymbol("BTC/USD").WithPrice(1)).
-		Add(origin.NewExchange("binance_us").WithSymbol("BTC/USD").WithPrice(1)).
+		Add(origin.NewExchange("binance").WithSymbol("BTC/USD").WithPrice(1)).
 		Add(origin.NewExchange("coinbase").WithSymbol("BTC/USD").WithStatusCode(http.StatusNotFound)).
 		Add(origin.NewExchange("gemini").WithSymbol("BTC/USD").WithStatusCode(http.StatusNotFound)).
 		Add(origin.NewExchange("kraken").WithSymbol("BTC/USD").WithStatusCode(http.StatusNotFound)).
 		Deploy(*s)
 	require.NoError(t, err)
 
-	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "--norpc", "price", "BTC/USD")
-	require.Error(t, err)
-
-	p, err := parseGoferPrice(out)
+	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "price", "BTC/USD", "--format", "json")
 	require.NoError(t, err)
 
-	assert.Equal(t, "aggregator", p.Type)
-	assert.NotEmpty(t, p.Error)
+	priceMap, err := parseGoferPrice(out)
+	require.NoError(t, err)
+	p := priceMap["BTC/USD"]
+
+	assert.Equal(t, "reference", p.Meta["type"])
+	assert.NotEmpty(t, p.Error) // todo
 }

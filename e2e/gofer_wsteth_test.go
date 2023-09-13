@@ -2,8 +2,11 @@ package e2e
 
 import (
 	"context"
+	"math/big"
 	"testing"
 	"time"
+
+	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/infestor"
 	"github.com/chronicleprotocol/infestor/origin"
@@ -19,15 +22,21 @@ func Test_Gofer_WSTETH(t *testing.T) {
 	s := smocker.NewAPI("http://127.0.0.1:8081")
 	require.NoError(t, s.Reset(ctx))
 
+	const blockNumber int = 100
+	stEthPerToken := 0.9
+
+	WSTETH2ETH := stEthPerToken
 	err := infestor.NewMocksBuilder().
-		Add(origin.NewExchange("wsteth").WithSymbol("WSTETH/ETH").WithPrice(1)).
-		Add(origin.NewExchange("balancerV2").WithSymbol("STETH/ETH").
-			WithCustom("match", "32296969ef14eb0c6d29669c550d4a044913023").
-			WithCustom("response", "0000000000000000000000000000000000000000000000000000000000f1adbd00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000dde952b2b374c17")).
-		Add(origin.NewExchange("curve").WithSymbol("STETH/ETH").
-			WithCustom("match", "dc24316b9ae028f1497c275eb9192a3ea0f67022").
-			WithCustom("response", "0000000000000000000000000000000000000000000000000000000000f1adba00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000ddde23599edb5d5")).
-		Add(origin.NewExchange("ethrpc")).
+		Add(origin.NewExchange("wsteth").
+			WithSymbol("WSTETH/STETH").
+			WithFunctionData("stEthPerToken", []origin.FunctionData{
+				{
+					Address: types.MustAddressFromHex("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"), // WSTETH/STETH
+					Args:    []any{},
+					Return:  []any{big.NewInt(int64(stEthPerToken * 1e18))},
+				},
+			}).
+			WithCustom("blockNumber", blockNumber)).
 		Deploy(*s)
 	require.NoError(t, err)
 
@@ -40,13 +49,14 @@ func Test_Gofer_WSTETH(t *testing.T) {
 	}
 	require.NoError(t, s.AddMocks(ctx, mocks))
 
-	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "--norpc", "price", "WSTETH/ETH")
+	out, err := execCommand(ctx, "..", nil, "./gofer", "-c", "./e2e/testdata/config/gofer.hcl", "-v", "debug", "price", "WSTETH/STETH", "--format", "json")
 	require.NoError(t, err)
 
-	p, err := parseGoferPrice(out)
+	priceMap, err := parseGoferPrice(out)
 	require.NoError(t, err)
+	p := priceMap["WSTETH/STETH"]
 
-	assert.Equal(t, "aggregator", p.Type)
-	assert.Equal(t, float64(1.0697381612529844), p.Price)
-	assert.Greater(t, len(p.Prices), 0)
+	assert.Equal(t, "reference", p.Meta["type"])
+	assert.Equal(t, WSTETH2ETH, p.Value.Price)
+	assert.Greater(t, len(p.SubPoints), 0)
 }
