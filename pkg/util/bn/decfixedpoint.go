@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package bn
 
 import (
@@ -6,7 +21,21 @@ import (
 	"strings"
 )
 
-// DecFixedPoint returns the DecFixedPoint DecFixedPointNumber of x.
+// DecFixedPoint returns the DecFixedPointNumber representation of x.
+//
+// The argument x can be one of the following types:
+// - IntNumber
+// - FloatNumber
+// - DecFixedPointNumber
+// - DecFloatPointNumber
+// - big.Int
+// - big.Float
+// - int, int8, int16, int32, int64
+// - uint, uint8, uint16, uint32, uint64
+// - float32, float64
+// - string - a string accepted by big.Float.SetString, otherwise it returns nil
+//
+// If the input value is not one of the supported types, nil is returned.
 func DecFixedPoint(x any, n uint8) *DecFixedPointNumber {
 	switch x := x.(type) {
 	case IntNumber:
@@ -21,6 +50,10 @@ func DecFixedPoint(x any, n uint8) *DecFixedPointNumber {
 		return x.SetPrecision(n)
 	case *DecFixedPointNumber:
 		return x.SetPrecision(n)
+	case DecFloatPointNumber:
+		return convertDecFloatPointToDecFixedPoint(&x, n)
+	case *DecFloatPointNumber:
+		return convertDecFloatPointToDecFixedPoint(x, n)
 	case *big.Int:
 		return convertBigIntToDecFixedPoint(x, n)
 	case *big.Float:
@@ -38,78 +71,70 @@ func DecFixedPoint(x any, n uint8) *DecFixedPointNumber {
 }
 
 // DecFixedPointFromRawBigInt returns the DecFixedPointNumber of x assuming it
-// is already scaled by 10^n.
+// is already scaled by 10^prec.
 func DecFixedPointFromRawBigInt(x *big.Int, n uint8) *DecFixedPointNumber {
-	return &DecFixedPointNumber{n: n, x: x}
+	return &DecFixedPointNumber{prec: n, x: x}
 }
 
-// DecFixedPointNumber represents a fixed-point decimal number with precision.
-// Internally, the number is stored as a *big.Int, scaled by 10^n.
+// DecFixedPointNumber represents a fixed-point decimal number with fixed
+// precision.
+//
+// Internally, the number is stored as a *big.Int, scaled by 10^prec.
 type DecFixedPointNumber struct {
-	n uint8
-	x *big.Int
+	x    *big.Int
+	prec uint8
 }
 
 // Int returns the Int representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) Int() *IntNumber {
-	return &IntNumber{x: new(big.Int).Div(d.x, decFixedPointScale(d.n))}
+func (x *DecFixedPointNumber) Int() *IntNumber {
+	return convertDecFixedPointToInt(x)
 }
 
 // Float returns the Float representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) Float() *FloatNumber {
-	return &FloatNumber{x: d.BigFloat()}
+func (x *DecFixedPointNumber) Float() *FloatNumber {
+	return convertDecFixedPointToFloat(x)
+}
+
+// DecFloatPoint returns the DecFloatPointNumber representation of the
+// DecFixedPointNumber.
+func (x *DecFixedPointNumber) DecFloatPoint() *DecFloatPointNumber {
+	return convertDecFixedPointToDecFloatPoint(x)
 }
 
 // BigInt returns the *big.Int representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) BigInt() *big.Int {
-	i, _ := d.BigFloat().Int(nil)
-	return i
+func (x *DecFixedPointNumber) BigInt() *big.Int {
+	return bigFloatToBigInt(x.BigFloat())
 }
 
-// RawBigInt returns the *big.Int representation of the number without scaling.
-func (d *DecFixedPointNumber) RawBigInt() *big.Int {
-	return d.x
+// RawBigInt returns the internal *big.Int representation of the
+// DecFixedPointNumber without scaling.
+func (x *DecFixedPointNumber) RawBigInt() *big.Int {
+	return x.x
 }
 
 // BigFloat returns the *big.Float representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) BigFloat() *big.Float {
-	return new(big.Float).Quo(new(big.Float).SetInt(d.x), new(big.Float).SetInt(decFixedPointScale(d.n)))
-}
-
-// Float64 returns the float64 representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) Float64() float64 {
-	f64, _ := d.BigFloat().Float64()
-	return f64
-}
-
-// Int64 returns the int64 representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) Int64() int64 {
-	return d.BigInt().Int64()
-}
-
-// Uint64 returns the uint64 representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) Uint64() uint64 {
-	return d.BigInt().Uint64()
+func (x *DecFixedPointNumber) BigFloat() *big.Float {
+	return new(big.Float).Quo(new(big.Float).SetInt(x.x), new(big.Float).SetInt(pow10(x.prec)))
 }
 
 // String returns the 10-base string representation of the DecFixedPointNumber.
-func (d *DecFixedPointNumber) String() string {
-	n := d.x.String()
-	if d.n == 0 {
+func (x *DecFixedPointNumber) String() string {
+	n := x.x.String()
+	if x.prec == 0 {
 		return n
 	}
 	s := strings.Builder{}
-	if d.x.Sign() < 0 {
+	if x.x.Sign() < 0 {
 		s.WriteString("-")
 		n = n[1:]
 	}
-	if len(n) <= int(d.n) {
+	if len(n) <= int(x.prec) {
 		s.WriteString("0.")
-		s.WriteString(strings.Repeat("0", int(d.n)-len(n)))
+		s.WriteString(strings.Repeat("0", int(x.prec)-len(n)))
 		s.WriteString(strings.TrimRight(n, "0")) // remove trailing zeros
 	} else {
-		intPart := n[:len(n)-int(d.n)]
-		fractPart := strings.TrimRight(n[len(n)-int(d.n):], "0") // remove trailing zeros
+		intPart := n[:len(n)-int(x.prec)]
+		fractPart := strings.TrimRight(n[len(n)-int(x.prec):], "0") // remove trailing zeros
 		s.WriteString(intPart)
 		if len(fractPart) > 0 {
 			s.WriteString(".")
@@ -121,111 +146,145 @@ func (d *DecFixedPointNumber) String() string {
 
 // Text returns the string representation of the DecFixedPointNumber.
 // The format and prec arguments are the same as in big.Float.Text.
-func (d *DecFixedPointNumber) Text(format byte, prec int) string {
-	return d.BigFloat().Text(format, prec)
+//
+// For any format other than 'f' and prec of -1, the result may be rounded.
+func (x *DecFixedPointNumber) Text(format byte, prec int) string {
+	if format == 'f' && prec < 0 {
+		return x.String()
+	}
+	return x.BigFloat().Text(format, prec)
 }
 
-func (d *DecFixedPointNumber) Precision() uint8 {
-	return d.n
+// Precision returns the precision of the DecFixedPointNumber.
+//
+// Precision is the number of decimal digits in the fractional part.
+func (x *DecFixedPointNumber) Precision() uint8 {
+	return x.prec
 }
 
-func (d *DecFixedPointNumber) SetPrecision(n uint8) *DecFixedPointNumber {
-	if d.n == n {
-		return d
+// SetPrecision returns a new DecFixedPointNumber with the given precision.
+//
+// Precision is the number of decimal digits in the fractional part.
+func (x *DecFixedPointNumber) SetPrecision(prec uint8) *DecFixedPointNumber {
+	if x.prec == prec {
+		return x
 	}
-	if d.x.Sign() == 0 {
-		return &DecFixedPointNumber{n: n, x: big.NewInt(0)}
+	if x.x.Sign() == 0 {
+		return &DecFixedPointNumber{prec: prec, x: intZero}
 	}
-	if d.n < n {
+	if x.prec < prec {
 		return &DecFixedPointNumber{
-			n: n,
-			x: new(big.Int).Mul(d.x, new(big.Int).Exp(intTen, big.NewInt(int64(n-d.n)), nil)),
+			prec: prec,
+			x:    new(big.Int).Mul(x.x, new(big.Int).Exp(intTen, big.NewInt(int64(prec-x.prec)), nil)),
 		}
 	}
 	return &DecFixedPointNumber{
-		n: n,
-		x: new(big.Int).Div(d.x, new(big.Int).Exp(intTen, big.NewInt(int64(d.n-n)), nil)),
+		prec: prec,
+		x:    new(big.Int).Quo(x.x, new(big.Int).Exp(intTen, big.NewInt(int64(x.prec-prec)), nil)),
 	}
 }
 
 // Sign returns:
 //
-//	-1 if i <  0
-//	 0 if i == 0
-//	+1 if i >  0
-func (d *DecFixedPointNumber) Sign() int {
-	return d.x.Sign()
-}
-
-// Add adds x to the number and returns the result.
+//	-1 if x <  0
+//	 0 if x == 0
+//	+1 if x >  0
 //
-// The x argument can be any of the types accepted by DecFixedPointNumber.
-func (d *DecFixedPointNumber) Add(x any) *DecFixedPointNumber {
-	return &DecFixedPointNumber{x: new(big.Int).Add(d.x, DecFixedPoint(x, d.n).x), n: d.n}
+// The y argument can be any of the types accepted by DecFloatPointNumber.
+func (x *DecFixedPointNumber) Sign() int {
+	return x.x.Sign()
 }
 
-// Sub subtracts x from the number and returns the result.
+// Add adds y to the number and returns the result.
 //
-// The x argument can be any of the types accepted by DecFixedPointNumber.
-func (d *DecFixedPointNumber) Sub(x any) *DecFixedPointNumber {
-	return &DecFixedPointNumber{x: new(big.Int).Sub(d.x, DecFixedPoint(x, d.n).x), n: d.n}
-}
-
-// Mul multiplies the number by x and returns the result.
+// The y argument can be any of the types accepted by DecFixedPointNumber.
 //
-// The x argument can be any of the types accepted by DecFixedPointNumber.
-func (d *DecFixedPointNumber) Mul(x any) *DecFixedPointNumber {
-	f := DecFixedPoint(x, d.n)
-	return (&DecFixedPointNumber{x: new(big.Int).Mul(d.x, f.x), n: d.n + f.n}).SetPrecision(d.n)
+// Before addition, y is converted to the precision of x.
+func (x *DecFixedPointNumber) Add(y any) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Add(x.x, DecFixedPoint(y, x.prec).x), prec: x.prec}
 }
 
-// Div divides the number by x and returns the result.
+// Sub subtracts y from the number and returns the result.
+//
+// The y argument can be any of the types accepted by DecFixedPointNumber.
+//
+// Before subtraction, y is converted to the precision of x.
+func (x *DecFixedPointNumber) Sub(y any) *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Sub(x.x, DecFixedPoint(y, x.prec).x), prec: x.prec}
+}
+
+// Mul multiplies the number by y and returns the result.
+//
+// The y argument can be any of the types accepted by DecFixedPointNumber.
+//
+// Before multiplication, y is converted to the precision of x.
+func (x *DecFixedPointNumber) Mul(y any) *DecFixedPointNumber {
+	f := DecFixedPoint(y, x.prec)
+	p := int64(x.prec) + int64(f.prec)
+	z := new(big.Int).Mul(x.x, f.x)
+	z = new(big.Int).Quo(z, new(big.Int).Exp(intTen, big.NewInt(p-int64(x.prec)), nil))
+	return &DecFixedPointNumber{x: z, prec: x.prec}
+}
+
+// Div divides the number by y and returns the result.
 //
 // Division by zero panics.
 //
-// The x argument can be any of the types accepted by DecFixedPointNumber.
-func (d *DecFixedPointNumber) Div(x any) *DecFixedPointNumber {
-	f := DecFixedPoint(x, d.n)
+// The y argument can be any of the types accepted by DecFixedPointNumber.
+//
+// Before division, y is converted to the precision of x.
+func (x *DecFixedPointNumber) Div(y any) *DecFixedPointNumber {
+	f := DecFixedPoint(y, x.prec)
 	if f.x.Sign() == 0 {
 		panic("division by zero")
 	}
-	return &DecFixedPointNumber{x: new(big.Int).Div(new(big.Int).Mul(d.x, decFixedPointScale(d.n)), f.x), n: d.n}
+	return &DecFixedPointNumber{x: new(big.Int).Quo(new(big.Int).Mul(x.x, pow10(x.prec)), f.x), prec: x.prec}
 }
 
-// Cmp compares the number to x and returns:
+// Cmp compares x and y and returns:
 //
-//	-1 if i <  x
-//	 0 if i == x
-//	+1 if i >  x
+//	-1 if x <  y
+//	 0 if x == y
+//	+1 if x >  y
 //
-// The x argument can be any of the types accepted by DecFixedPointNumber.
-func (d *DecFixedPointNumber) Cmp(x any) int {
-	return d.x.Cmp(DecFixedPoint(x, d.n).x)
+// The y argument can be any of the types accepted by DecFixedPointNumber.
+func (x *DecFixedPointNumber) Cmp(y any) int {
+	return x.x.Cmp(DecFixedPoint(y, x.prec).x)
 }
 
-// Abs returns the absolute number.
-func (d *DecFixedPointNumber) Abs() *DecFixedPointNumber {
-	return &DecFixedPointNumber{x: new(big.Int).Abs(d.x), n: d.n}
+// Abs returns the absolute number of x.
+func (x *DecFixedPointNumber) Abs() *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Abs(x.x), prec: x.prec}
 }
 
-// Neg returns the negative number.
-func (d *DecFixedPointNumber) Neg() *DecFixedPointNumber {
-	return &DecFixedPointNumber{x: new(big.Int).Neg(d.x), n: d.n}
+// Neg returns the negative number of x.
+func (x *DecFixedPointNumber) Neg() *DecFixedPointNumber {
+	return &DecFixedPointNumber{x: new(big.Int).Neg(x.x), prec: x.prec}
+}
+
+// Inv returns the inverse value of the number of x.
+//
+// If x is zero, Inv panics.
+func (x *DecFixedPointNumber) Inv() *DecFixedPointNumber {
+	if x.x.Sign() == 0 {
+		panic("division by zero")
+	}
+	return &DecFixedPointNumber{x: new(big.Int).Quo(pow10(x.prec*2), x.x), prec: x.prec}
 }
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (d *DecFixedPointNumber) MarshalBinary() (data []byte, err error) {
+func (x *DecFixedPointNumber) MarshalBinary() (data []byte, err error) {
 	// Note, that changes in this function may break backward compatibility.
 
-	b := make([]byte, 2+(d.x.BitLen()+7)/8)
+	b := make([]byte, 2+(x.x.BitLen()+7)/8)
 	b[0] = 0 // version, reserved for future use
-	b[1] = d.n
-	d.x.FillBytes(b[2:])
+	b[1] = x.prec
+	x.x.FillBytes(b[2:])
 	return b, nil
 }
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
-func (d *DecFixedPointNumber) UnmarshalBinary(data []byte) error {
+func (x *DecFixedPointNumber) UnmarshalBinary(data []byte) error {
 	// Note, that changes in this function may break backward compatibility.
 
 	if len(data) < 2 {
@@ -234,7 +293,7 @@ func (d *DecFixedPointNumber) UnmarshalBinary(data []byte) error {
 	if data[0] != 0 {
 		return errors.New("DecFixedPointNumber.UnmarshalBinary: invalid data format")
 	}
-	d.n = data[1]
-	d.x = new(big.Int).SetBytes(data[2:])
+	x.prec = data[1]
+	x.x = new(big.Int).SetBytes(data[2:])
 	return nil
 }

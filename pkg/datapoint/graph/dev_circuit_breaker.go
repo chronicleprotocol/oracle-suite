@@ -124,15 +124,15 @@ func (n *DevCircuitBreakerNode) DataPoint() datapoint.Point {
 	meta := n.Meta()
 
 	// Calculate deviation.
-	deviation := bn.Float(1.0).Sub(refValue.Number().Div(valueValue.Number())).Abs().Float64()
+	deviation := bn.Float(1.0).Sub(refValue.Number().Div(valueValue.Number())).Abs().BigFloat()
 	meta["deviation"] = deviation
-	meta["threshold"] = thresholdValue.Number().Float64()
+	meta["threshold"] = thresholdValue.Number().BigFloat()
 
 	// Return tick, if deviation is greater than threshold, add error.
 	point := valuePoint
 	point.SubPoints = []datapoint.Point{n.valueNode.DataPoint(), n.referenceNode.DataPoint()}
 	point.Meta = meta
-	if deviation > thresholdValue.Number().Float64() {
+	if deviation.Cmp(thresholdValue.Number().BigFloat()) > 0 {
 		point.Error = fmt.Errorf("deviation %f is greater than threshold %s", deviation, thresholdValue.Number())
 	}
 	return point

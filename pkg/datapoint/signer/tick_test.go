@@ -56,11 +56,7 @@ func TestTick_Sign(t *testing.T) {
 	k.On("SignMessage", hexutil.MustHexToBytes(priceHash)).Return(expSig, nil).Once()
 
 	retSig, err := s.Sign(context.Background(), "AAABBB", datapoint.Point{
-		Value: value.Tick{
-			Pair:      value.Pair{Base: "AAA", Quote: "BBB"},
-			Price:     bn.Float(42),
-			Volume24h: bn.Float(0),
-		},
+		Value:     value.NewTick(value.Pair{Base: "AAA", Quote: "BBB"}, 42, 0),
 		Time:      time.Unix(1605371361, 0),
 		SubPoints: nil,
 		Meta:      nil,
@@ -80,11 +76,7 @@ func TestTick_Recover(t *testing.T) {
 	r.On("RecoverMessage", hexutil.MustHexToBytes(priceHash), *msgSig).Return(expAddr, nil).Once()
 
 	retAddr, err := s.Recover(context.Background(), "AAABBB", datapoint.Point{
-		Value: value.Tick{
-			Pair:      value.Pair{Base: "AAA", Quote: "BBB"},
-			Price:     bn.Float(42),
-			Volume24h: bn.Float(0),
-		},
+		Value:     value.NewTick(value.Pair{Base: "AAA", Quote: "BBB"}, 42, 0),
 		Time:      time.Unix(1605371361, 0),
 		SubPoints: nil,
 		Meta:      nil,
@@ -96,5 +88,5 @@ func TestTick_Recover(t *testing.T) {
 }
 
 func TestHashTick(t *testing.T) {
-	assert.Equal(t, priceHash, hashTick("AAABBB", bn.Float(42), time.Unix(1605371361, 0)).String())
+	assert.Equal(t, priceHash, hashTick("AAABBB", bn.DecFixedPoint(42, value.TickPricePrecision), time.Unix(1605371361, 0)).String())
 }

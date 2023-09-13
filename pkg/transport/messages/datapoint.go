@@ -167,7 +167,7 @@ func dataPointValueToProtobuf(val value.Value) (*pb.DataPointValue, error) {
 	case value.StaticValue:
 		var static []byte
 		if typ.Value != nil {
-			static, err = decFixedPointToBytes(typ.Value.DecFixedPoint(value.StaticNumberPrecision))
+			static, err = decFloatPointToBytes(typ.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -181,13 +181,13 @@ func dataPointValueToProtobuf(val value.Value) (*pb.DataPointValue, error) {
 			volume24H []byte
 		)
 		if typ.Price != nil {
-			price, err = decFixedPointToBytes(typ.Price.DecFixedPoint(value.TickPricePrecision))
+			price, err = decFixedPointToBytes(typ.Price)
 			if err != nil {
 				return nil, err
 			}
 		}
 		if typ.Volume24h != nil {
-			volume24H, err = decFixedPointToBytes(typ.Volume24h.DecFixedPoint(value.TickVolumePrecision))
+			volume24H, err = decFixedPointToBytes(typ.Volume24h)
 			if err != nil {
 				return nil, err
 			}
@@ -211,11 +211,11 @@ func dataPointValueFromProtobuf(msg *pb.DataPointValue) (value.Value, error) {
 	case *pb.DataPointValue_Static:
 		val := value.StaticValue{}
 		if typ.Static != nil {
-			static, err := bytesToDecFixedPoint(typ.Static)
+			static, err := bytesToDecFloatPoint(typ.Static)
 			if err != nil {
 				return nil, err
 			}
-			val.Value = static.Float()
+			val.Value = static
 		}
 		return val, nil
 	case *pb.DataPointValue_Tick:
@@ -230,14 +230,14 @@ func dataPointValueFromProtobuf(msg *pb.DataPointValue) (value.Value, error) {
 			if err != nil {
 				return nil, err
 			}
-			val.Price = price.Float()
+			val.Price = price
 		}
 		if typ.Tick.Volume24H != nil {
 			volume24H, err := bytesToDecFixedPoint(typ.Tick.Volume24H)
 			if err != nil {
 				return nil, err
 			}
-			val.Volume24h = volume24H.Float()
+			val.Volume24h = volume24H
 		}
 		return val, nil
 	}

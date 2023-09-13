@@ -13,6 +13,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type DSRSuite struct {
@@ -117,7 +118,7 @@ func (suite *DSRSuite) TestSuccessResponse() {
 	pair := value.Pair{Base: "DSR", Quote: "RATE"}
 	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1.03, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1.03).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 

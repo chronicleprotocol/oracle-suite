@@ -16,7 +16,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 func TestNewGenericJQ(t *testing.T) {
@@ -69,12 +68,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "2023-05-02T12:34:56Z"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 		},
@@ -84,11 +79,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "2023-05-02T12:34:56Z"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:  value.Pair{Base: "BTC", Quote: "USD"},
-						Price: bn.Float(1000),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, nil),
+					Time:  time.Now(),
 				},
 			},
 			skipTimeAssert: true,
@@ -99,11 +91,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `[{"price": "1000"}]`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:  value.Pair{Base: "BTC", Quote: "USD"},
-						Price: bn.Float(1000),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, nil),
+					Time:  time.Now(),
 				},
 			},
 			skipTimeAssert: true,
@@ -114,9 +103,7 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `[{"price": "1000"}, {"price": "2000"}]`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair: value.Pair{Base: "BTC", Quote: "USD"},
-					},
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, nil, nil),
 					Time:  time.Now(),
 					Error: fmt.Errorf("multiple results from JQ query"),
 				},
@@ -129,11 +116,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `[{"price": "1000", "symbol": "BTCUSD"}, {"price": "2000", "symbol": "ETHUSD"}]`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:  value.Pair{Base: "BTC", Quote: "USD"},
-						Price: bn.Float(1000),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, nil),
+					Time:  time.Now(),
 				},
 			},
 			skipTimeAssert: true,
@@ -144,11 +128,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `[{"price": "1000", "symbol": "btcusd"}, {"price": "2000", "symbol": "ethusd"}]`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:  value.Pair{Base: "BTC", Quote: "USD"},
-						Price: bn.Float(1000),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, nil),
+					Time:  time.Now(),
 				},
 			},
 			skipTimeAssert: true,
@@ -183,12 +164,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "2023-05-02T12:34:56Z"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 		},
@@ -198,12 +175,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "2023-05-02T12:34:56.123456789Z"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 123456789, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 123456789, time.UTC),
 				},
 			},
 		},
@@ -213,12 +186,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "Tue, 02 May 2023 12:34:56 UTC"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 		},
@@ -228,12 +197,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "Tue, 02 May 2023 12:34:56 +0000"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.FixedZone("+0000", 0)),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.FixedZone("+0000", 0)),
 				},
 			},
 		},
@@ -243,12 +208,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "02 May 23 12:34 UTC"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 0, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 0, 0, time.UTC),
 				},
 			},
 		},
@@ -258,12 +219,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "02 May 23 12:34 +0000"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 0, 0, time.FixedZone("+0000", 0)),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 0, 0, time.FixedZone("+0000", 0)),
 				},
 			},
 		},
@@ -273,12 +230,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "Tuesday, 02-May-23 12:34:56 UTC"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 		},
@@ -288,12 +241,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "Tue May  2 12:34:56 2023"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 		},
@@ -303,12 +252,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "Tue May  2 12:34:56 UTC 2023"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 		},
@@ -318,12 +263,8 @@ func TestGenericJQ_FetchDataPoints(t *testing.T) {
 			responseBody: `{"price": "1000", "volume": "100", "time": "Tue May 02 12:34:56 +0000 2023"}`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.FixedZone("+0000", 0)),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.FixedZone("+0000", 0)),
 				},
 			},
 		},

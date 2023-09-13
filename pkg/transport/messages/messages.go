@@ -63,6 +63,18 @@ func appInfoFromProtobuf(a *pb.AppInfo) transport.AppInfo {
 	}
 }
 
+func decFloatPointToBytes(d *bn.DecFloatPointNumber) ([]byte, error) {
+	return d.MarshalBinary()
+}
+
+func bytesToDecFloatPoint(b []byte) (*bn.DecFloatPointNumber, error) {
+	d := new(bn.DecFloatPointNumber)
+	if err := d.UnmarshalBinary(b); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
 func decFixedPointToBytes(d *bn.DecFixedPointNumber) ([]byte, error) {
 	return d.MarshalBinary()
 }

@@ -2,7 +2,6 @@ package value
 
 import (
 	"fmt"
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,16 +20,16 @@ func TestTick_Validate(t *testing.T) {
 			name: "valid tick",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(1000),
-				Volume24h: bn.Float(100),
+				Price:     bn.DecFixedPoint(1000, TickPricePrecision),
+				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
 			},
 			expectError: false,
 		},
 		{
 			name: "pair is not set",
 			dataPoint: Tick{
-				Price:     bn.Float(1000),
-				Volume24h: bn.Float(100),
+				Price:     bn.DecFixedPoint(1000, TickPricePrecision),
+				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
 			},
 			expectError:   true,
 			errorContains: "pair is not set",
@@ -39,7 +38,7 @@ func TestTick_Validate(t *testing.T) {
 			name: "price is nil",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Volume24h: bn.Float(100),
+				Volume24h: bn.DecFixedPoint(100, TickPricePrecision),
 			},
 			expectError:   true,
 			errorContains: "price is nil",
@@ -48,8 +47,8 @@ func TestTick_Validate(t *testing.T) {
 			name: "price is zero",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(0),
-				Volume24h: bn.Float(100),
+				Price:     bn.DecFixedPoint(0, TickPricePrecision),
+				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
 			},
 			expectError:   true,
 			errorContains: "price is zero or negative",
@@ -58,28 +57,18 @@ func TestTick_Validate(t *testing.T) {
 			name: "price is negative",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(-1000),
-				Volume24h: bn.Float(100),
+				Price:     bn.DecFixedPoint(-1000, TickPricePrecision),
+				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
 			},
 			expectError:   true,
 			errorContains: "price is zero or negative",
 		},
 		{
-			name: "price is infinite",
-			dataPoint: Tick{
-				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(math.Inf(1)),
-				Volume24h: bn.Float(100),
-			},
-			expectError:   true,
-			errorContains: "price is infinite",
-		},
-		{
 			name: "volume is negative",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.Float(1000),
-				Volume24h: bn.Float(-100),
+				Price:     bn.DecFixedPoint(1000, TickPricePrecision),
+				Volume24h: bn.DecFixedPoint(-100, TickVolumePrecision),
 			},
 			expectError:   true,
 			errorContains: "volume is negative",

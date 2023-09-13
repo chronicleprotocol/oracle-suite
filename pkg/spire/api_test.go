@@ -44,7 +44,7 @@ var (
 	testPriceAAABBB = &messages.DataPoint{
 		Model: "AAA/BBB",
 		Point: datapoint.Point{
-			Value: value.StaticValue{Value: bn.Float(10.0)},
+			Value: value.StaticValue{Value: bn.DecFloatPoint(10.0)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": testAddress.String(),

@@ -13,6 +13,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type BalancerV2Suite struct {
@@ -126,14 +127,14 @@ func (suite *BalancerV2Suite) TestSuccessResponse() {
 	pair := value.Pair{Base: "STETH", Quote: "WETH"}
 	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(0.97, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(0.97).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 
 	// Inverted pair
 	pair = value.Pair{Base: "WETH", Quote: "STETH"}
 	points, err = suite.origin.FetchDataPoints(context.Background(), []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1/0.97, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1/0.97).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 
@@ -215,14 +216,14 @@ func (suite *BalancerV2Suite) TestSuccessResponseWithRef() {
 	pair := value.Pair{Base: "RETH", Quote: "WETH"}
 	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(0.485, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(0.485).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 
 	// Inverted pair
 	pair = value.Pair{Base: "WETH", Quote: "RETH"}
 	points, err = suite.origin.FetchDataPoints(context.Background(), []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1/0.485, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1/0.485).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 

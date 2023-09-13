@@ -6,22 +6,25 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-// StaticNumberPrecision is a precision of static numbers.
-const StaticNumberPrecision = 18
-
 // StaticValue is a numeric value obtained from a static origin.
 type StaticValue struct {
-	Value *bn.FloatNumber
+	Value *bn.DecFloatPointNumber
 }
 
 // Number implements the NumericValue interface.
 func (s StaticValue) Number() *bn.FloatNumber {
-	return s.Value
+	if s.Value == nil {
+		return nil
+	}
+	return s.Value.Float()
 }
 
 // Print implements the Value interface.
 func (s StaticValue) Print() string {
-	return s.Value.String()
+	if s.Value == nil {
+		return "<nil>"
+	}
+	return s.Value.Text('g', 10)
 }
 
 func (s StaticValue) MarshalJSON() ([]byte, error) {
@@ -33,6 +36,6 @@ func (s *StaticValue) UnmarshalJSON(bytes []byte) error {
 	if err := json.Unmarshal(bytes, &str); err != nil {
 		return err
 	}
-	s.Value = bn.Float(str)
+	s.Value = bn.DecFloatPoint(str)
 	return nil
 }

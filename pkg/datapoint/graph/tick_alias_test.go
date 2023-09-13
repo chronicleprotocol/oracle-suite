@@ -15,19 +15,15 @@ import (
 func TestTickAliasNode_DataPoint(t *testing.T) {
 	mockNode := new(mockNode)
 	mockNode.On("DataPoint").Return(datapoint.Point{
-		Value: value.Tick{
-			Pair:      value.Pair{Base: "BTC", Quote: "USDC"},
-			Price:     bn.Float(20000),
-			Volume24h: bn.Float(2),
-		},
+		Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USDC"}, 20000, 2),
 	})
 	node := NewTickAliasNode(value.Pair{Base: "BTC", Quote: "USD"})
 	require.NoError(t, node.AddNodes(mockNode))
 	tick := node.DataPoint().Value.(value.Tick)
 	assert.Equal(t, "BTC", tick.Pair.Base)
 	assert.Equal(t, "USD", tick.Pair.Quote)
-	assert.Equal(t, bn.Float(20000).Float64(), tick.Price.Float64())
-	assert.Equal(t, bn.Float(2).Float64(), tick.Volume24h.Float64())
+	assert.Equal(t, bn.DecFloatPoint(20000).String(), tick.Price.String())
+	assert.Equal(t, bn.DecFloatPoint(2).String(), tick.Volume24h.String())
 }
 
 func TestTickAliasNode_AddNodes(t *testing.T) {

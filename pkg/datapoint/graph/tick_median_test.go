@@ -19,99 +19,67 @@ func TestTickMedianNode(t *testing.T) {
 		name          string
 		points        []datapoint.Point
 		minValues     int
-		expectedValue *bn.FloatNumber
+		expectedValue *bn.DecFloatPointNumber
 		wantErr       bool
 	}{
 		{
 			name: "one value",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(1),
-						Volume24h: bn.Float(1),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 1),
+					Time:  time.Now(),
 				},
 			},
 			minValues:     1,
-			expectedValue: bn.Float(1),
+			expectedValue: bn.DecFloatPoint(1),
 			wantErr:       false,
 		},
 		{
 			name: "two values",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(1),
-						Volume24h: bn.Float(1),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 1),
+					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(2),
-						Volume24h: bn.Float(2),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 2, 2),
+					Time:  time.Now(),
 				},
 			},
 			minValues:     2,
-			expectedValue: bn.Float(1.5),
+			expectedValue: bn.DecFloatPoint(1.5),
 			wantErr:       false,
 		},
 		{
 			name: "three values",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(1),
-						Volume24h: bn.Float(1),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 1),
+					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(2),
-						Volume24h: bn.Float(2),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 2, 2),
+					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(3),
-						Volume24h: bn.Float(3),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 3, 3),
+					Time:  time.Now(),
 				},
 			},
 			minValues:     3,
-			expectedValue: bn.Float(2),
+			expectedValue: bn.DecFloatPoint(2),
 			wantErr:       false,
 		},
 		{
 			name: "not enough values",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(1),
-						Volume24h: bn.Float(1),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 1),
+					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(2),
-						Volume24h: bn.Float(2),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 2, 2),
+					Time:  time.Now(),
 				},
 				{
 					Time:  time.Now(),
@@ -125,20 +93,12 @@ func TestTickMedianNode(t *testing.T) {
 			name: "different pairs",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "A", Quote: "B"},
-						Price:     bn.Float(1),
-						Volume24h: bn.Float(1),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 1),
+					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "B", Quote: "A"},
-						Price:     bn.Float(2),
-						Volume24h: bn.Float(2),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "B", Quote: "A"}, 2, 2),
+					Time:  time.Now(),
 				},
 			},
 			minValues: 2,
@@ -161,7 +121,9 @@ func TestTickMedianNode(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, point.Validate())
 			} else {
-				assert.Equal(t, tt.expectedValue.Float64(), point.Value.(value.NumericValue).Number().Float64())
+				expValue, _ := tt.expectedValue.BigFloat().Float64()
+				value, _ := point.Value.(value.NumericValue).Number().BigFloat().Float64()
+				assert.Equal(t, expValue, value)
 				require.NoError(t, point.Validate())
 			}
 		})

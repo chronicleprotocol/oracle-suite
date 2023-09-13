@@ -23,7 +23,7 @@ func NewStatic() *Static {
 func (s *Static) FetchDataPoints(_ context.Context, query []any) (map[any]datapoint.Point, error) {
 	points := make(map[any]datapoint.Point, len(query))
 	for _, q := range query {
-		f := bn.Float(q)
+		f := bn.DecFloatPoint(q)
 		if f == nil {
 			return nil, fmt.Errorf("invalid query: %T", q)
 		}

@@ -9,8 +9,6 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 func TestTickIndirectNode(t *testing.T) {
@@ -25,15 +23,15 @@ func TestTickIndirectNode(t *testing.T) {
 			name: "three nodes",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "A", Quote: "B"}, Price: bn.Float(1)},
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 0),
 					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "B", Quote: "C"}, Price: bn.Float(2)},
+					Value: value.NewTick(value.Pair{Base: "B", Quote: "C"}, 2, 0),
 					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "C", Quote: "D"}, Price: bn.Float(3)},
+					Value: value.NewTick(value.Pair{Base: "C", Quote: "D"}, 3, 0),
 					Time:  time.Now(),
 				},
 			},
@@ -45,11 +43,11 @@ func TestTickIndirectNode(t *testing.T) {
 			name: "A/B->B/C",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "A", Quote: "B"}, Price: bn.Float(1)},
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 0),
 					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "B", Quote: "C"}, Price: bn.Float(2)},
+					Value: value.NewTick(value.Pair{Base: "B", Quote: "C"}, 2, 0),
 					Time:  time.Now(),
 				},
 			},
@@ -61,11 +59,11 @@ func TestTickIndirectNode(t *testing.T) {
 			name: "B/A->B/C",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "B", Quote: "A"}, Price: bn.Float(1)},
+					Value: value.NewTick(value.Pair{Base: "B", Quote: "A"}, 1, 0),
 					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "B", Quote: "C"}, Price: bn.Float(2)},
+					Value: value.NewTick(value.Pair{Base: "B", Quote: "C"}, 2, 0),
 					Time:  time.Now(),
 				},
 			},
@@ -77,11 +75,11 @@ func TestTickIndirectNode(t *testing.T) {
 			name: "A/B->C/B",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "A", Quote: "B"}, Price: bn.Float(1)},
+					Value: value.NewTick(value.Pair{Base: "A", Quote: "B"}, 1, 0),
 					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "C", Quote: "B"}, Price: bn.Float(2)},
+					Value: value.NewTick(value.Pair{Base: "C", Quote: "B"}, 2, 0),
 					Time:  time.Now(),
 				},
 			},
@@ -93,11 +91,11 @@ func TestTickIndirectNode(t *testing.T) {
 			name: "B/A->C/B",
 			points: []datapoint.Point{
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "B", Quote: "A"}, Price: bn.Float(1)},
+					Value: value.NewTick(value.Pair{Base: "B", Quote: "A"}, 1, 0),
 					Time:  time.Now(),
 				},
 				{
-					Value: value.Tick{Pair: value.Pair{Base: "C", Quote: "B"}, Price: bn.Float(2)},
+					Value: value.NewTick(value.Pair{Base: "C", Quote: "B"}, 2, 0),
 					Time:  time.Now(),
 				},
 			},
@@ -119,7 +117,8 @@ func TestTickIndirectNode(t *testing.T) {
 
 			// Test
 			point := node.DataPoint()
-			assert.Equal(t, tt.expectedPrice, point.Value.(value.NumericValue).Number().Float64())
+			price, _ := point.Value.(value.NumericValue).Number().BigFloat().Float64()
+			assert.Equal(t, tt.expectedPrice, price)
 			if tt.wantErr {
 				assert.Error(t, point.Validate())
 			} else {

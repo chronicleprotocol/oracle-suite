@@ -1,6 +1,22 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package bn
 
 import (
+	"math"
 	"math/big"
 	"testing"
 
@@ -18,55 +34,86 @@ func TestDecFixedPoint(t *testing.T) {
 			name:     "IntNumber",
 			input:    IntNumber{big.NewInt(42)},
 			prec:     0,
-			expected: &DecFixedPointNumber{x: big.NewInt(42), n: 0},
+			expected: &DecFixedPointNumber{x: big.NewInt(42), prec: 0},
 		},
 		{
-			name:     "pointer to IntNumber",
+			name:     "*IntNumber",
 			input:    &IntNumber{big.NewInt(42)},
 			prec:     0,
-			expected: &DecFixedPointNumber{x: big.NewInt(42), n: 0},
+			expected: &DecFixedPointNumber{x: big.NewInt(42), prec: 0},
 		},
 		{
 			name:     "FloatNumber",
 			input:    FloatNumber{big.NewFloat(42.5)},
 			prec:     2,
-			expected: &DecFixedPointNumber{x: big.NewInt(4250), n: 2},
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
 		},
 		{
-			name:     "pointer to FloatNumber",
+			name:     "*FloatNumber",
 			input:    &FloatNumber{big.NewFloat(42.5)},
 			prec:     2,
-			expected: &DecFixedPointNumber{x: big.NewInt(4250), n: 2},
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+		},
+		{
+			name:     "DecFixedPointNumber",
+			input:    DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			prec:     2,
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+		},
+		{
+			name:     "*DecFixedPointNumber",
+			input:    &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			prec:     2,
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+		},
+		{
+			name:     "DecFloatPointNumber",
+			input:    DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2}},
+			prec:     2,
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+		},
+		{
+			name:     "*DecFloatPointNumber",
+			input:    &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2}},
+			prec:     2,
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
 		},
 		{
 			name:     "big.Int",
 			input:    big.NewInt(42),
 			prec:     0,
-			expected: &DecFixedPointNumber{x: big.NewInt(42), n: 0},
+			expected: &DecFixedPointNumber{x: big.NewInt(42), prec: 0},
 		},
 		{
 			name:     "big.Float",
 			input:    big.NewFloat(42.5),
 			prec:     2,
-			expected: &DecFixedPointNumber{x: big.NewInt(4250), n: 2},
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
 		},
 		{
 			name:     "int",
 			input:    int(42),
 			prec:     0,
-			expected: &DecFixedPointNumber{x: big.NewInt(42), n: 0},
+			expected: &DecFixedPointNumber{x: big.NewInt(42), prec: 0},
 		},
 		{
 			name:     "float64",
 			input:    float64(42.5),
 			prec:     2,
-			expected: &DecFixedPointNumber{x: big.NewInt(4250), n: 2},
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
 		},
 		{
 			name:     "string",
 			input:    "42.5",
 			prec:     2,
-			expected: &DecFixedPointNumber{x: big.NewInt(4250), n: 2},
+			expected: &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+		},
+
+		{
+			name:     "big.Float",
+			input:    big.NewFloat(1.03),
+			prec:     2,
+			expected: &DecFixedPointNumber{x: big.NewInt(103), prec: 2},
 		},
 	}
 
@@ -91,47 +138,47 @@ func TestDecFixedPointNumber_String(t *testing.T) {
 	}{
 		{
 			name:     "zero precision",
-			n:        &DecFixedPointNumber{x: big.NewInt(10625), n: 0}, // 10625
+			n:        &DecFixedPointNumber{x: big.NewInt(10625), prec: 0}, // 10625
 			expected: "10625",
 		},
 		{
 			name:     "two digits precision",
-			n:        &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
+			n:        &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
 			expected: "106.25",
 		},
 		{
 			name:     "ten digits precision",
-			n:        &DecFixedPointNumber{x: big.NewInt(10625), n: 10}, // 0.0000010625
+			n:        &DecFixedPointNumber{x: big.NewInt(10625), prec: 10}, // 0.0000010625
 			expected: "0.0000010625",
 		},
 		{
 			name:     "zero precision negative",
-			n:        &DecFixedPointNumber{x: big.NewInt(-10625), n: 0}, // -10625
+			n:        &DecFixedPointNumber{x: big.NewInt(-10625), prec: 0}, // -10625
 			expected: "-10625",
 		},
 		{
 			name:     "two digits precision negative",
-			n:        &DecFixedPointNumber{x: big.NewInt(-10625), n: 2}, // -106.25
+			n:        &DecFixedPointNumber{x: big.NewInt(-10625), prec: 2}, // -106.25
 			expected: "-106.25",
 		},
 		{
 			name:     "ten digits precision negative",
-			n:        &DecFixedPointNumber{x: big.NewInt(-10625), n: 10}, // -0.0000010625
+			n:        &DecFixedPointNumber{x: big.NewInt(-10625), prec: 10}, // -0.0000010625
 			expected: "-0.0000010625",
 		},
 		{
 			name:     "remove trailing zeros",
-			n:        &DecFixedPointNumber{x: big.NewInt(1062500), n: 4}, // 106.2500
+			n:        &DecFixedPointNumber{x: big.NewInt(1062500), prec: 4}, // 106.2500
 			expected: "106.25",
 		},
 		{
 			name:     "remove trailing zeros (no fractional part)",
-			n:        &DecFixedPointNumber{x: big.NewInt(1060000), n: 4}, // 106
+			n:        &DecFixedPointNumber{x: big.NewInt(1060000), prec: 4}, // 106
 			expected: "106",
 		},
 		{
 			name:     "remove trailing zeros (no integer part)",
-			n:        &DecFixedPointNumber{x: big.NewInt(1062500), n: 10}, // 0.00010625
+			n:        &DecFixedPointNumber{x: big.NewInt(1062500), prec: 10}, // 0.00010625
 			expected: "0.00010625",
 		},
 	}
@@ -152,21 +199,39 @@ func TestDecFixedPointNumber_Add(t *testing.T) {
 	}{
 		{
 			name:     "same precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(1050), n: 2}, // 10.50
-			n2:       &DecFixedPointNumber{x: big.NewInt(225), n: 2},  // 2.25
-			expected: "12.75",
+			n1:       &DecFixedPointNumber{x: big.NewInt(1050), prec: 2}, // 10.50
+			n2:       &DecFixedPointNumber{x: big.NewInt(225), prec: 2},  // 2.25
+			expected: "12.75",                                            // 10.50 + 2.25 = 12.75
 		},
 		{
 			name:     "first higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10500), n: 3}, // 10.500
-			n2:       &DecFixedPointNumber{x: big.NewInt(225), n: 2},   // 2.25
-			expected: "12.75",
+			n1:       &DecFixedPointNumber{x: big.NewInt(10500), prec: 3}, // 10.500
+			n2:       &DecFixedPointNumber{x: big.NewInt(225), prec: 2},   // 2.25
+			expected: "12.75",                                             // 10.500 + 2.25 = 12.75
 		},
 		{
 			name:     "second higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(1050), n: 2}, // 10.50
-			n2:       &DecFixedPointNumber{x: big.NewInt(2250), n: 3}, // 2.250
-			expected: "12.75",
+			n1:       &DecFixedPointNumber{x: big.NewInt(1050), prec: 2}, // 10.50
+			n2:       &DecFixedPointNumber{x: big.NewInt(2250), prec: 3}, // 2.250
+			expected: "12.75",                                            // 10.50 + 2.250 = 12.75
+		},
+		{
+			name:     "maximum precision",
+			n1:       DecFixedPoint(10.50, math.MaxUint8), // 10.50
+			n2:       DecFixedPoint(2.25, math.MaxUint8),  // 2.25
+			expected: "12.75",                             // 10.50 + 2.25 = 12.75
+		},
+		{
+			name:     "zero and maximum precision",
+			n1:       DecFixedPoint(10.50, 0),            // 11.00
+			n2:       DecFixedPoint(2.25, math.MaxUint8), // 2.25
+			expected: "13",                               // 11.00 + 2.25 = 13.25 -> 13
+		},
+		{
+			name:     "maximum and zero precision",
+			n1:       DecFixedPoint(10.50, math.MaxUint8), // 10.50
+			n2:       DecFixedPoint(2.25, 0),              // 2.00
+			expected: "12.5",                              // 10.50 + 2.00 = 12.5
 		},
 	}
 
@@ -187,21 +252,39 @@ func TestDecFixedPointNumber_Sub(t *testing.T) {
 	}{
 		{
 			name:     "same precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(1050), n: 2}, // 10.50
-			n2:       &DecFixedPointNumber{x: big.NewInt(225), n: 2},  // 2.25
-			expected: "8.25",
+			n1:       &DecFixedPointNumber{x: big.NewInt(1050), prec: 2}, // 10.50
+			n2:       &DecFixedPointNumber{x: big.NewInt(225), prec: 2},  // 2.25
+			expected: "8.25",                                             // 10.50 - 2.25 = 8.25
 		},
 		{
 			name:     "first higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10500), n: 3}, // 10.500
-			n2:       &DecFixedPointNumber{x: big.NewInt(225), n: 2},   // 2.25
-			expected: "8.25",
+			n1:       &DecFixedPointNumber{x: big.NewInt(10500), prec: 3}, // 10.500
+			n2:       &DecFixedPointNumber{x: big.NewInt(225), prec: 2},   // 2.25
+			expected: "8.25",                                              // 10.500 - 2.25 = 8.25
 		},
 		{
 			name:     "second higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(1050), n: 2}, // 10.50
-			n2:       &DecFixedPointNumber{x: big.NewInt(2250), n: 3}, // 2.250
-			expected: "8.25",
+			n1:       &DecFixedPointNumber{x: big.NewInt(1050), prec: 2}, // 10.50
+			n2:       &DecFixedPointNumber{x: big.NewInt(2250), prec: 3}, // 2.250
+			expected: "8.25",                                             // 10.50 - 2.250 = 8.25
+		},
+		{
+			name:     "maximum precision",
+			n1:       DecFixedPoint(10.50, math.MaxUint8), // 10.50
+			n2:       DecFixedPoint(2.25, math.MaxUint8),  // 2.25
+			expected: "8.25",                              // 10.50 - 2.25 = 8.25
+		},
+		{
+			name:     "zero and maximum precision",
+			n1:       DecFixedPoint(10.50, 0),            // 11.00
+			n2:       DecFixedPoint(2.25, math.MaxUint8), // 2.25
+			expected: "9",                                // 11.00 - 2.25 = 8.75 -> 9
+		},
+		{
+			name:     "maximum and zero precision",
+			n1:       DecFixedPoint(10.50, math.MaxUint8), // 10.50
+			n2:       DecFixedPoint(2.25, 0),              // 2.00
+			expected: "8.5",                               // 10.50 - 2.00 = 8.50
 		},
 	}
 
@@ -222,21 +305,39 @@ func TestDecFixedPointNumber_Mul(t *testing.T) {
 	}{
 		{
 			name:     "same precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(1050), n: 2}, // 10.50
-			n2:       &DecFixedPointNumber{x: big.NewInt(225), n: 2},  // 2.25
-			expected: "23.62",
+			n1:       &DecFixedPointNumber{x: big.NewInt(1050), prec: 2}, // 10.50
+			n2:       &DecFixedPointNumber{x: big.NewInt(225), prec: 2},  // 2.25
+			expected: "23.62",                                            // 10.50 * 2.25 = 23.625 -> 23.62
 		},
 		{
 			name:     "first higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10500), n: 3}, // 10.500
-			n2:       &DecFixedPointNumber{x: big.NewInt(225), n: 2},   // 2.25
-			expected: "23.625",
+			n1:       &DecFixedPointNumber{x: big.NewInt(10500), prec: 3}, // 10.500
+			n2:       &DecFixedPointNumber{x: big.NewInt(225), prec: 2},   // 2.25
+			expected: "23.625",                                            // 10.500 * 2.25 = 23.625
 		},
 		{
 			name:     "second higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(1050), n: 2}, // 10.50
-			n2:       &DecFixedPointNumber{x: big.NewInt(2250), n: 3}, // 2.250
-			expected: "23.62",
+			n1:       &DecFixedPointNumber{x: big.NewInt(1050), prec: 2}, // 10.50
+			n2:       &DecFixedPointNumber{x: big.NewInt(2250), prec: 3}, // 2.250
+			expected: "23.62",                                            // 10.50 * 2.250 = 23.625 -> 23.62
+		},
+		{
+			name:     "maximum precision",
+			n1:       DecFixedPoint("10.5", math.MaxUint8), // 10.50
+			n2:       DecFixedPoint("2.25", math.MaxUint8), // 2.25
+			expected: "23.625",                             // 10.50 * 2.25 = 23.625
+		},
+		{
+			name:     "zero and maximum precision",
+			n1:       DecFixedPoint("10.5", 0),             // 11.00
+			n2:       DecFixedPoint("2.25", math.MaxUint8), // 2.00
+			expected: "22",                                 // 11.00 * 2.00 = 22.00
+		},
+		{
+			name:     "maximum and zero precision",
+			n1:       DecFixedPoint("10.5", math.MaxUint8), // 10.50
+			n2:       DecFixedPoint("2.25", 0),             // 2.00
+			expected: "21",                                 // 10.50 * 2.00 = 21.00
 		},
 	}
 
@@ -257,21 +358,39 @@ func TestDecFixedPointNumber_Div(t *testing.T) {
 	}{
 		{
 			name:     "same precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(425), n: 2},   // 4.25
+			n1:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(425), prec: 2},   // 4.25
 			expected: "25",
 		},
 		{
 			name:     "first higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(106250), n: 3}, // 106.250
-			n2:       &DecFixedPointNumber{x: big.NewInt(425), n: 2},    // 4.25
+			n1:       &DecFixedPointNumber{x: big.NewInt(106250), prec: 3}, // 106.250
+			n2:       &DecFixedPointNumber{x: big.NewInt(425), prec: 2},    // 4.25
 			expected: "25",
 		},
 		{
 			name:     "second higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(4250), n: 3},  // 4.250
+			n1:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(4250), prec: 3},  // 4.250
 			expected: "25",
+		},
+		{
+			name:     "maximum precision",
+			n1:       DecFixedPoint("106.25", math.MaxUint8), // 106.25
+			n2:       DecFixedPoint("4.25", math.MaxUint8),   // 4.25
+			expected: "25",
+		},
+		{
+			name:     "zero and maximum precision",
+			n1:       DecFixedPoint("106.25", 0),           // 106.00
+			n2:       DecFixedPoint("4.25", math.MaxUint8), // 4.00 (precision of first number is 0)
+			expected: "26",                                 // 106.00 / 4.00 = 26.50 -> 26
+		},
+		{
+			name:     "maximum and zero precision",
+			n1:       DecFixedPoint("106.25", math.MaxUint8), // 106.25
+			n2:       DecFixedPoint("4.25", 0),               // 4.00
+			expected: "26.5625",                              // 106.25 / 4.00 = 26.5625
 		},
 	}
 
@@ -292,32 +411,32 @@ func TestDecFixedPointNumber_Cmp(t *testing.T) {
 	}{
 		{
 			name:     "same precision equal",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
+			n1:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
 			expected: 0,
 		},
 		{
 			name:     "same precision less than",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(20625), n: 2}, // 206.25
+			n1:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(20625), prec: 2}, // 206.25
 			expected: -1,
 		},
 		{
 			name:     "same precision greater than",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2}, // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(625), n: 2},   // 6.25
+			n1:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}, // 106.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(625), prec: 2},   // 6.25
 			expected: 1,
 		},
 		{
 			name:     "first higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(106250), n: 3}, // 106.250
-			n2:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2},  // 106.25
+			n1:       &DecFixedPointNumber{x: big.NewInt(106250), prec: 3}, // 106.250
+			n2:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2},  // 106.25
 			expected: 0,
 		},
 		{
 			name:     "second higher precision",
-			n1:       &DecFixedPointNumber{x: big.NewInt(10625), n: 2},  // 106.25
-			n2:       &DecFixedPointNumber{x: big.NewInt(106250), n: 3}, // 106.250
+			n1:       &DecFixedPointNumber{x: big.NewInt(10625), prec: 2},  // 106.25
+			n2:       &DecFixedPointNumber{x: big.NewInt(106250), prec: 3}, // 106.250
 			expected: 0,
 		},
 	}
@@ -331,25 +450,51 @@ func TestDecFixedPointNumber_Cmp(t *testing.T) {
 }
 
 func TestDecFixedPointNumber_Abs(t *testing.T) {
-	number := &DecFixedPointNumber{x: big.NewInt(-10625), n: 2} // -106.25
+	number := &DecFixedPointNumber{x: big.NewInt(-10625), prec: 2} // -106.25
 
-	expectedAbs := &DecFixedPointNumber{x: big.NewInt(10625), n: 2} // 106.25
+	expectedAbs := &DecFixedPointNumber{x: big.NewInt(10625), prec: 2} // 106.25
 	resultAbs := number.Abs()
 	assert.Equal(t, expectedAbs.x, resultAbs.x)
-	assert.Equal(t, expectedAbs.n, resultAbs.n)
+	assert.Equal(t, expectedAbs.prec, resultAbs.prec)
 }
 
 func TestDecFixedPointNumber_Neg(t *testing.T) {
-	number := &DecFixedPointNumber{x: big.NewInt(10625), n: 2} // 106.25
+	number := &DecFixedPointNumber{x: big.NewInt(10625), prec: 2} // 106.25
 
-	expectedNeg := &DecFixedPointNumber{x: big.NewInt(-10625), n: 2} // -106.25
+	expectedNeg := &DecFixedPointNumber{x: big.NewInt(-10625), prec: 2} // -106.25
 	resultNeg := number.Neg()
 	assert.Equal(t, expectedNeg.x, resultNeg.x)
-	assert.Equal(t, expectedNeg.n, resultNeg.n)
+	assert.Equal(t, expectedNeg.prec, resultNeg.prec)
+}
+
+func TestDecFixedPointNumber_Inv(t *testing.T) {
+	tests := []struct {
+		name     string
+		number   *DecFixedPointNumber
+		expected string
+	}{
+		{
+			name:     "0-digits",
+			number:   &DecFixedPointNumber{x: big.NewInt(106), prec: 0},
+			expected: "0",
+		},
+		{
+			name:     "6-digits",
+			number:   &DecFixedPointNumber{x: big.NewInt(106250000), prec: 6},
+			expected: "0.009411",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.number.Inv()
+			assert.Equal(t, tt.expected, result.String())
+		})
+	}
 }
 
 func TestDecFixedPointNumber_MarshalBinary(t *testing.T) {
-	number := &DecFixedPointNumber{x: big.NewInt(10625), n: 2} // 106.25
+	number := &DecFixedPointNumber{x: big.NewInt(10625), prec: 2} // 106.25
 
 	data, err := number.MarshalBinary()
 	assert.NoError(t, err)
@@ -365,6 +510,6 @@ func TestDecFixedPointNumber_UnmarshalBinary(t *testing.T) {
 	err := number.UnmarshalBinary(data)
 	assert.NoError(t, err)
 
-	expectedNumber := &DecFixedPointNumber{x: big.NewInt(10625), n: 2}
+	expectedNumber := &DecFixedPointNumber{x: big.NewInt(10625), prec: 2}
 	assert.Equal(t, expectedNumber, number)
 }

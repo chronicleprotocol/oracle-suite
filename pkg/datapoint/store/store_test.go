@@ -32,7 +32,7 @@ var (
 	aaabbb1 = &messages.DataPoint{
 		Model: "AAABBB",
 		Point: datapoint.Point{
-			Value: value.StaticValue{Value: bn.Float(1)},
+			Value: value.StaticValue{Value: bn.DecFloatPoint(1)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": "0x1111111111111111111111111111111111111111",
@@ -43,7 +43,7 @@ var (
 	aaabbb2 = &messages.DataPoint{
 		Model: "AAABBB",
 		Point: datapoint.Point{
-			Value: value.StaticValue{Value: bn.Float(2)},
+			Value: value.StaticValue{Value: bn.DecFloatPoint(2)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": "0x2222222222222222222222222222222222222222",
@@ -54,7 +54,7 @@ var (
 	xxxyyy1 = &messages.DataPoint{
 		Model: "XXXYYY",
 		Point: datapoint.Point{
-			Value: value.StaticValue{Value: bn.Float(3)},
+			Value: value.StaticValue{Value: bn.DecFloatPoint(3)},
 			Time:  time.Unix(1234567890, 0),
 			Meta: map[string]any{
 				"addr": "0x1111111111111111111111111111111111111111",
@@ -65,7 +65,7 @@ var (
 	xxxyyy2 = &messages.DataPoint{
 		Model: "XXXYYY",
 		Point: datapoint.Point{
-			Value: value.StaticValue{Value: bn.Float(4)},
+			Value: value.StaticValue{Value: bn.DecFloatPoint(4)},
 			Time:  time.Unix(1234567891, 0),
 			Meta: map[string]any{
 				"addr": "0x2222222222222222222222222222222222222222",

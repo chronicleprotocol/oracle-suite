@@ -13,6 +13,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type CurveSuite struct {
@@ -151,7 +152,7 @@ func (suite *CurveSuite) TestSuccessResponse() {
 	pair := value.Pair{Base: "ETH", Quote: "STETH"}
 	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(0.97, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(0.97).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 
 	// pool['coins'](0), pool['coins'](1)
@@ -169,7 +170,7 @@ func (suite *CurveSuite) TestSuccessResponse() {
 	pair = value.Pair{Base: "STETH", Quote: "ETH"}
 	points, err = suite.origin.FetchDataPoints(context.Background(), []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1/0.97, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1/0.97).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 

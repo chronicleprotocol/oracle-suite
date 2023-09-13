@@ -13,6 +13,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type UniswapV2Suite struct {
@@ -163,14 +164,14 @@ func (suite *UniswapV2Suite) TestSuccessResponse() {
 	points, err := suite.origin.FetchDataPoints(context.Background(), []any{pair})
 	suite.Require().NoError(err)
 	const expectedPrice = (200/100.0 + 210/90.0 + 220/80.0) / 3
-	suite.Equal(expectedPrice, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(expectedPrice).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 
 	pair = value.Pair{Base: "WETH", Quote: "STETH"}
 	points, err = suite.origin.FetchDataPoints(context.Background(), []any{pair})
 	suite.Require().NoError(err)
 	const expectedInvertPrice = (100/200.0 + 90/210.0 + 80/220.0) / 3
-	suite.Equal(expectedInvertPrice, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(expectedInvertPrice).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 

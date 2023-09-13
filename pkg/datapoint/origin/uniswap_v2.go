@@ -24,14 +24,13 @@ import (
 
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
-	"golang.org/x/exp/maps"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
 const UniswapV2LoggerTag = "UNISWAPV2_ORIGIN"
@@ -165,7 +164,7 @@ func (u *UniswapV2) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 			}
 			tokensMap[address] = struct{}{}
 		}
-		tokenDetails, err = u.erc20.GetSymbolAndDecimals(ctx, maps.Keys(tokensMap))
+		tokenDetails, err = u.erc20.GetSymbolAndDecimals(ctx, maputil.SortKeys(tokensMap, sortAddresses))
 		if err != nil {
 			return nil, fmt.Errorf("failed getting symbol & decimals for tokens of pool: %w", err)
 		}
@@ -250,11 +249,7 @@ func (u *UniswapV2) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		}
 		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(u.blocks))))
 
-		tick := value.Tick{
-			Pair:      pair,
-			Price:     bn.Float(avgPrice),
-			Volume24h: nil,
-		}
+		tick := value.NewTick(pair, avgPrice, nil)
 		points[pair] = datapoint.Point{
 			Value: tick,
 			Time:  time.Now(),
@@ -262,4 +257,10 @@ func (u *UniswapV2) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 	}
 
 	return points, nil
+}
+
+func sortAddresses(addrs []types.Address) {
+	sort.Slice(addrs, func(i, j int) bool {
+		return addrs[i].String() < addrs[j].String()
+	})
 }

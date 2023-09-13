@@ -13,6 +13,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type RocketPoolSuite struct {
@@ -116,13 +117,13 @@ func (suite *RocketPoolSuite) TestSuccessResponse() {
 	pair := value.Pair{Base: "RETH", Quote: "ETH"}
 	point, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(0.97, point[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(0.97).String(), point[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(point[pair].Time.Unix(), int64(0))
 
 	pair = value.Pair{Base: "ETH", Quote: "RETH"}
 	point, err = suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1/0.97, point[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1/0.97).String(), point[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(point[pair].Time.Unix(), int64(0))
 }
 

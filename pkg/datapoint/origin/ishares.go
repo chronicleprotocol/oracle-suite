@@ -29,7 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/webscraper"
 )
 
@@ -112,7 +111,7 @@ func (g *IShares) handle(_ context.Context, pairs []value.Pair, body io.Reader) 
 					ntxt := strings.ReplaceAll(txt, "USD ", "")
 
 					if price, e := strconv.ParseFloat(ntxt, 64); e == nil {
-						tick := value.Tick{Pair: pair, Price: bn.Float(price)}
+						tick := value.NewTick(pair, price, 0)
 						points[pair] = datapoint.Point{
 							Value: tick,
 							Time:  time.Now(),

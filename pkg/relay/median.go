@@ -214,7 +214,7 @@ func (w *medianWorker) getDataPoints(ctx context.Context, after time.Time, quoru
 func dataPointsToPrices(dataPoints []datapoint.Point) []*bn.DecFixedPointNumber {
 	prices := make([]*bn.DecFixedPointNumber, len(dataPoints))
 	for i, dp := range dataPoints {
-		prices[i] = dp.Value.(value.Tick).Price.DecFixedPoint(contract.MedianPricePrecision)
+		prices[i] = dp.Value.(value.Tick).Price.SetPrecision(contract.MedianPricePrecision)
 	}
 	return prices
 }

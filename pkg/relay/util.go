@@ -35,7 +35,8 @@ func calculateSpread(new, old *bn.DecFixedPointNumber) float64 {
 	if old.Sign() == 0 {
 		return math.Inf(1)
 	}
-	return new.Sub(old).Div(old).Mul(bn.Float(100)).Abs().Float64()
+	spread, _ := new.Sub(old).Div(old).Mul(bn.Float(100)).Abs().BigFloat().Float64()
+	return spread
 }
 
 // randomInts generates a slice of integers from 0 to n (exclusive), shuffled

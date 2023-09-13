@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package bn
 
 import (
@@ -15,13 +30,43 @@ func TestInt(t *testing.T) {
 	}{
 		{
 			name:     "IntNumber",
-			input:    Int(big.NewInt(42)),
+			input:    IntNumber{big.NewInt(42)},
+			expected: &IntNumber{x: big.NewInt(42)},
+		},
+		{
+			name:     "*IntNumber",
+			input:    &IntNumber{big.NewInt(42)},
 			expected: &IntNumber{x: big.NewInt(42)},
 		},
 		{
 			name:     "FloatNumber",
-			input:    Float(big.NewFloat(42.5)),
-			expected: &IntNumber{x: big.NewInt(42)},
+			input:    &FloatNumber{x: big.NewFloat(42.5)},
+			expected: &IntNumber{x: big.NewInt(43)},
+		},
+		{
+			name:     "*FloatNumber",
+			input:    &FloatNumber{x: big.NewFloat(42.5)},
+			expected: &IntNumber{x: big.NewInt(43)},
+		},
+		{
+			name:     "DecFixedPointNumber",
+			input:    DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			expected: &IntNumber{x: big.NewInt(43)},
+		},
+		{
+			name:     "*DecFixedPointNumber",
+			input:    &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			expected: &IntNumber{x: big.NewInt(43)},
+		},
+		{
+			name:     "DecFixedPointNumber",
+			input:    DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			expected: &IntNumber{x: big.NewInt(43)},
+		},
+		{
+			name:     "*DecFixedPointNumber",
+			input:    &DecFixedPointNumber{x: big.NewInt(4250), prec: 2},
+			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
 			name:     "big.Int",
@@ -31,7 +76,7 @@ func TestInt(t *testing.T) {
 		{
 			name:     "big.Float",
 			input:    big.NewFloat(42.5),
-			expected: &IntNumber{x: big.NewInt(42)},
+			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
 			name:     "int",
@@ -39,9 +84,9 @@ func TestInt(t *testing.T) {
 			expected: &IntNumber{x: big.NewInt(42)},
 		},
 		{
-			name:     "float64",
+			name:     "float",
 			input:    42.5,
-			expected: &IntNumber{x: big.NewInt(42)},
+			expected: &IntNumber{x: big.NewInt(43)},
 		},
 		{
 			name:     "string",
@@ -94,16 +139,6 @@ func TestIntNumber_BigInt(t *testing.T) {
 	bi := i.BigInt()
 	assert.IsType(t, (*big.Int)(nil), bi)
 	assert.Equal(t, big.NewInt(123), bi)
-}
-
-func TestIntNumber_Int64(t *testing.T) {
-	i := Int(123)
-	assert.Equal(t, int64(123), i.Int64())
-}
-
-func TestIntNumber_Uint64(t *testing.T) {
-	i := Int(uint64(123))
-	assert.Equal(t, uint64(123), i.Uint64())
 }
 
 func TestIntNumber_BigFloat(t *testing.T) {

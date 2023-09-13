@@ -14,7 +14,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 func TestIShares_FetchDataPoints(t *testing.T) {
@@ -43,11 +42,8 @@ USD 5.43
 </li></body></html>`,
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "IBTA", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:  value.Pair{Base: "IBTA", Quote: "USD"},
-						Price: bn.Float(5.43),
-					},
-					Time: time.Now(),
+					Value: value.NewTick(value.Pair{Base: "IBTA", Quote: "USD"}, 5.43, 0),
+					Time:  time.Now(),
 				},
 			},
 			skipTimeAssert: true,

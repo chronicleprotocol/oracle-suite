@@ -232,9 +232,9 @@ func (g *TickGenericJQ) handle(
 			for k, v := range v {
 				switch k {
 				case "price":
-					tick.Price = bn.Float(v)
+					tick.Price = bn.DecFixedPoint(v, value.TickPricePrecision)
 				case "volume":
-					tick.Volume24h = bn.Float(v)
+					tick.Volume24h = bn.DecFixedPoint(v, value.TickVolumePrecision)
 				case "time":
 					if tm, ok := anyToTime(v); ok {
 						point.Time = tm
@@ -244,7 +244,7 @@ func (g *TickGenericJQ) handle(
 				}
 			}
 		case int, int32, int64, uint, uint32, uint64, float32, float64:
-			tick.Price = bn.Float(v)
+			tick.Price = bn.DecFixedPoint(v, value.TickPricePrecision)
 		}
 		point.Value = tick
 		points[pair] = point

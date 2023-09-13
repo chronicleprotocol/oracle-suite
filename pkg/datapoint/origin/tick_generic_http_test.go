@@ -14,8 +14,6 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 func TestGenericHTTP_FetchDataPoints(t *testing.T) {
@@ -34,24 +32,16 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 					return map[any]datapoint.Point{
 						value.Pair{Base: "BTC", Quote: "USD"}: {
-							Value: value.Tick{
-								Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-								Price:     bn.Float(1000),
-								Volume24h: bn.Float(100),
-							},
-							Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+							Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+							Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 						},
 					}, nil
 				},
 			},
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 			expectedURLs: []string{"/?base=BTC&quote=USD"},
@@ -64,40 +54,24 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 				Callback: func(ctx context.Context, pairs []value.Pair, body io.Reader) (map[any]datapoint.Point, error) {
 					return map[any]datapoint.Point{
 						value.Pair{Base: "BTC", Quote: "USD"}: {
-							Value: value.Tick{
-								Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-								Price:     bn.Float(1000),
-								Volume24h: bn.Float(100),
-							},
-							Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+							Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+							Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 						},
 						value.Pair{Base: "ETH", Quote: "USD"}: {
-							Value: value.Tick{
-								Pair:      value.Pair{Base: "ETH", Quote: "USD"},
-								Price:     bn.Float(2000),
-								Volume24h: bn.Float(200),
-							},
-							Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+							Value: value.NewTick(value.Pair{Base: "ETH", Quote: "USD"}, 2000, 200),
+							Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 						},
 					}, nil
 				},
 			},
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 				value.Pair{Base: "ETH", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "ETH", Quote: "USD"},
-						Price:     bn.Float(2000),
-						Volume24h: bn.Float(200),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "ETH", Quote: "USD"}, 2000, 200),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 			expectedURLs: []string{"/dataPoints"},
@@ -115,23 +89,15 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 					case "BTC/USD":
 						return map[any]datapoint.Point{
 							value.Pair{Base: "BTC", Quote: "USD"}: {
-								Value: value.Tick{
-									Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-									Price:     bn.Float(1000),
-									Volume24h: bn.Float(100),
-								},
-								Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+								Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+								Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 							},
 						}, nil
 					case "ETH/USD":
 						return map[any]datapoint.Point{
 							value.Pair{Base: "ETH", Quote: "USD"}: {
-								Value: value.Tick{
-									Pair:      value.Pair{Base: "ETC", Quote: "USD"},
-									Price:     bn.Float(2000),
-									Volume24h: bn.Float(200),
-								},
-								Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+								Value: value.NewTick(value.Pair{Base: "ETH", Quote: "USD"}, 2000, 200),
+								Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 							},
 						}, nil
 					}
@@ -140,20 +106,12 @@ func TestGenericHTTP_FetchDataPoints(t *testing.T) {
 			},
 			expectedResult: map[any]datapoint.Point{
 				value.Pair{Base: "BTC", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-						Price:     bn.Float(1000),
-						Volume24h: bn.Float(100),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 1000, 100),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 				value.Pair{Base: "ETH", Quote: "USD"}: {
-					Value: value.Tick{
-						Pair:      value.Pair{Base: "ETC", Quote: "USD"},
-						Price:     bn.Float(2000),
-						Volume24h: bn.Float(200),
-					},
-					Time: time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
+					Value: value.NewTick(value.Pair{Base: "ETH", Quote: "USD"}, 2000, 200),
+					Time:  time.Date(2023, 5, 2, 12, 34, 56, 0, time.UTC),
 				},
 			},
 			expectedURLs: []string{"/?base=BTC&quote=USD", "/?base=ETH&quote=USD"},

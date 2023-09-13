@@ -205,7 +205,7 @@ func (p Point) MarshalTrace() ([]byte, error) {
 		meta := make(map[string]any)
 		point := node.(Point)
 		typ := "data_point"
-		meta["value"] = point.Value
+		meta["value"] = point.Value.Print()
 		meta["time"] = point.Time.In(time.UTC).Format(time.RFC3339Nano)
 		var points []any
 		for _, t := range point.SubPoints {

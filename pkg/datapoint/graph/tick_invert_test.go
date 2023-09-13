@@ -15,19 +15,15 @@ import (
 func TestTickInvertNode_DataPoint(t *testing.T) {
 	mockNode := new(mockNode)
 	mockNode.On("DataPoint").Return(datapoint.Point{
-		Value: value.Tick{
-			Pair:      value.Pair{Base: "BTC", Quote: "USD"},
-			Price:     bn.Float(20000),
-			Volume24h: bn.Float(2),
-		},
+		Value: value.NewTick(value.Pair{Base: "BTC", Quote: "USD"}, 20000, 2),
 	})
 	node := NewTickInvertNode()
 	require.NoError(t, node.AddNodes(mockNode))
 	tick := node.DataPoint().Value.(value.Tick)
 	assert.Equal(t, "USD", tick.Pair.Base)
 	assert.Equal(t, "BTC", tick.Pair.Quote)
-	assert.Equal(t, bn.Float(0.00005).Float64(), tick.Price.Float64())
-	assert.Equal(t, bn.Float(40000).Float64(), tick.Volume24h.Float64())
+	assert.Equal(t, bn.DecFloatPoint(0.00005).String(), tick.Price.String())
+	assert.Equal(t, bn.DecFloatPoint(40000).String(), tick.Volume24h.String())
 }
 
 func TestTickInvertNode_AddNodes(t *testing.T) {

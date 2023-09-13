@@ -13,6 +13,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	ethereumMocks "github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type SDAISuite struct {
@@ -116,13 +117,13 @@ func (suite *SDAISuite) TestSuccessResponse() {
 	pair := value.Pair{Base: "SDAI", Quote: "DAI"}
 	points, err := suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1.03, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1.03).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 
 	pair = value.Pair{Base: "DAI", Quote: "SDAI"}
 	points, err = suite.origin.FetchDataPoints(ctx, []any{pair})
 	suite.Require().NoError(err)
-	suite.Equal(1/1.03, points[pair].Value.(value.Tick).Price.Float64())
+	suite.Equal(bn.Float(1/1.03).String(), points[pair].Value.(value.Tick).Price.Float().String())
 	suite.Greater(points[pair].Time.Unix(), int64(0))
 }
 

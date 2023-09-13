@@ -72,7 +72,7 @@ func TestFeed_Broadcast(t *testing.T) {
 			dataModels: []string{"AAABBB"},
 			mocks: func(p *dataMocks.Provider) {
 				point := datapoint.Point{
-					Value: value.StaticValue{Value: bn.Float(42)},
+					Value: value.StaticValue{Value: bn.DecFloatPoint(42)},
 					Time:  time.Unix(100, 0),
 				}
 				p.On("ModelNames", mock.Anything).Return(
@@ -101,7 +101,7 @@ func TestFeed_Broadcast(t *testing.T) {
 			dataModels: []string{"AAABBB", "CCCDDD"},
 			mocks: func(p *dataMocks.Provider) {
 				point := datapoint.Point{
-					Value: value.StaticValue{Value: bn.Float(42)},
+					Value: value.StaticValue{Value: bn.DecFloatPoint(42)},
 					Time:  time.Unix(100, 0),
 				}
 				p.On("ModelNames", mock.Anything).Return(

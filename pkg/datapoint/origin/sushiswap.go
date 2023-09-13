@@ -31,7 +31,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 const SushiswapLoggerTag = "SUSHISWAP_ORIGIN"
@@ -248,11 +247,7 @@ func (s *Sushiswap) FetchDataPoints(ctx context.Context, query []any) (map[any]d
 		}
 		avgPrice := new(big.Float).Quo(totals[i], new(big.Float).SetUint64(uint64(len(s.blocks))))
 
-		tick := value.Tick{
-			Pair:      pair,
-			Price:     bn.Float(avgPrice),
-			Volume24h: nil,
-		}
+		tick := value.NewTick(pair, avgPrice, nil)
 		points[pair] = datapoint.Point{
 			Value: tick,
 			Time:  time.Now(),
