@@ -162,11 +162,11 @@ func (x *DecFloatPointNumber) Sub(y *DecFloatPointNumber) *DecFloatPointNumber {
 
 // Mul multiplies the number by y and returns the result.
 func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
-	p := x.x.p + y.x.p
-	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), uint32(p))
-	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), uint32(p))
-	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), uint32(p)*2, uint32(p))
-	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: p}}
+	p := uint32(x.x.p) + uint32(y.x.p)
+	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), p)
+	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), p)
+	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), uint32(p)*2, p)
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: uint8(p)}}
 	n.adjustPrec()
 	return n
 }
@@ -175,15 +175,15 @@ func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
 //
 // Division by zero panics.
 //
-// During division, the precision is increased by divPrevisionIncrease and then
+// During division, the precision is increased by divPrecisionIncrease and then
 // lowered to the smallest possible that still fits the result.
 func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	if y.x.Sign() == 0 {
 		panic("division by zero")
 	}
 	p := max(x.x.p, y.x.p)
-	wp := uint32(p + divPrevisionIncrease + divGuardDigits) // working precision
-	rp := uint32(p + divPrevisionIncrease)                  // result precision
+	wp := uint32(p + divPrecisionIncrease + divGuardDigits) // working precision
+	rp := uint32(p + divPrecisionIncrease)                  // result precision
 	if rp > MaxDecPointPrecision {
 		rp = MaxDecPointPrecision
 	}
@@ -239,21 +239,21 @@ func (x *DecFloatPointNumber) Neg() *DecFloatPointNumber {
 //
 // If x is zero, Inv panics.
 //
-// During inversion, the precision is increased by divPrevisionIncrease and
+// During inversion, the precision is increased by divPrecisionIncrease and
 // then lowered to the smallest possible that still fits the result.
 func (x *DecFloatPointNumber) Inv() *DecFloatPointNumber {
 	if x.x.Sign() == 0 {
 		panic("division by zero")
 	}
-	wp := uint32(x.x.p) + divPrevisionIncrease // working precision
-	rp := wp                                   // result precision
+	wp := uint32(x.x.p) + divPrecisionIncrease + divGuardDigits // working precision
+	rp := uint32(x.x.p) + divPrecisionIncrease                  // result precision
 	if rp > MaxDecPointPrecision {
 		rp = MaxDecPointPrecision
 	}
 	z := bigIntSetPrec(x.x.x, uint32(x.x.p), wp)
 	z = new(big.Int).Quo(pow10(wp*2), z)
 	z = bigIntSetPrec(z, wp, rp)
-	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: uint8(wp)}}
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: uint8(rp)}}
 	n.adjustPrec()
 	return n
 }

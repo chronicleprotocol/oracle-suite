@@ -30,9 +30,9 @@ const (
 	// when dividing two DecFixedPointNumber / DecFloatPointNumber.
 	divGuardDigits = 2
 
-	// divPrevisionIncrease is the number of decimal digits to increase when
+	// divPrecisionIncrease is the number of decimal digits to increase when
 	// dividing two DecFloatPointNumber.
-	divPrevisionIncrease = 16
+	divPrecisionIncrease = 16
 )
 
 var (
@@ -48,10 +48,7 @@ func convertIntToDecFloatPoint(x *IntNumber) *DecFloatPointNumber {
 }
 
 func convertFloatToDecFloatPoint(x *FloatNumber) *DecFloatPointNumber {
-	p, ok := floatDecimalPrecision(x)
-	if !ok {
-		return nil
-	}
+	p := floatDecPrec(x)
 	if p > MaxDecPointPrecision {
 		p = MaxDecPointPrecision
 	}
@@ -70,10 +67,7 @@ func convertBigFloatToDecFloatPoint(x *big.Float) *DecFloatPointNumber {
 	if x == nil || x.IsInf() {
 		return nil
 	}
-	p, ok := bigFloatDecimalPrecision(x)
-	if !ok {
-		return nil
-	}
+	p := bigFloatDecPrec(x)
 	if p > MaxDecPointPrecision {
 		p = MaxDecPointPrecision
 	}
@@ -92,10 +86,7 @@ func convertFloat64ToDecFloatPoint(x float64) *DecFloatPointNumber {
 	if math.IsInf(x, 0) || math.IsNaN(x) {
 		return nil
 	}
-	p, ok := float64DecimalPrecision(x)
-	if !ok {
-		return nil
-	}
+	p := float64DecPrec(x)
 	if p > MaxDecPointPrecision {
 		p = MaxDecPointPrecision
 	}
@@ -107,7 +98,7 @@ func convertFloat64ToDecFloatPoint(x float64) *DecFloatPointNumber {
 }
 
 func convertStringToDecFloatPoint(x string) *DecFloatPointNumber {
-	p, ok := stringNumberDecimalPrecision(x)
+	p, ok := stringNumberDecPrec(x)
 	if !ok {
 		return nil
 	}
@@ -291,33 +282,33 @@ func anyToFloat64(x any) float64 {
 	return 0
 }
 
-func floatDecimalPrecision(x *FloatNumber) (uint32, bool) {
-	return stringNumberDecimalPrecision(x.Text('f', -1))
+func floatDecPrec(x *FloatNumber) uint32 {
+	return bigFloatDecPrec(x.BigFloat())
 }
 
-func bigFloatDecimalPrecision(x *big.Float) (uint32, bool) {
-	return stringNumberDecimalPrecision(x.Text('f', -1))
+func bigFloatDecPrec(x *big.Float) uint32 {
+	s := x.Text('f', -1)
+	if len(s) == 0 {
+		return 0
+	}
+	d := strings.Index(s, ".")
+	if d == -1 {
+		return 0
+	}
+	z := len(s) - 1
+	for z >= d && s[z] == '0' {
+		z--
+	}
+	return uint32(z - d)
 }
 
-func float64DecimalPrecision(x float64) (uint32, bool) {
-	return stringNumberDecimalPrecision(big.NewFloat(x).Text('f', -1))
+func float64DecPrec(x float64) uint32 {
+	return bigFloatDecPrec(big.NewFloat(x))
 }
 
-func stringNumberDecimalPrecision(x string) (uint32, bool) {
+func stringNumberDecPrec(x string) (uint32, bool) {
 	if f, ok := new(big.Float).SetString(x); ok {
-		s := f.Text('f', -1)
-		if len(s) == 0 {
-			return 0, true
-		}
-		d := strings.Index(s, ".")
-		if d == -1 {
-			return 0, true
-		}
-		z := len(s) - 1
-		for z >= d && s[z] == '0' {
-			z--
-		}
-		return uint32(z - d), true
+		return bigFloatDecPrec(f), true
 	}
 	if _, ok := new(big.Int).SetString(x, 0); ok {
 		return 0, true

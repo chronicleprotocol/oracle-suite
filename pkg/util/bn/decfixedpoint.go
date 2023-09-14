@@ -196,9 +196,6 @@ func (x *DecFixedPointNumber) Sign() int {
 // Before the addition, the precision of x and y is increased to the larger of
 // the two precisions. The precision of the result is set back to the precision
 // of x.
-//
-// The result may be rounded if the precision of x is smaller than the sum of
-// the precisions of x and y.
 func (x *DecFixedPointNumber) Add(y *DecFixedPointNumber) *DecFixedPointNumber {
 	p := max(x.p, y.p)
 	xi := bigIntSetPrec(x.x, uint32(x.p), uint32(p))
@@ -226,10 +223,10 @@ func (x *DecFixedPointNumber) Sub(y *DecFixedPointNumber) *DecFixedPointNumber {
 // sum of the precisions of x and y. The precision of the result is set back to
 // the precision of x.
 func (x *DecFixedPointNumber) Mul(y *DecFixedPointNumber) *DecFixedPointNumber {
-	p := x.p + y.p
-	xi := bigIntSetPrec(x.x, uint32(x.p), uint32(p))
-	yi := bigIntSetPrec(y.x, uint32(y.p), uint32(p))
-	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), uint32(p)*2, uint32(x.p))
+	p := uint32(x.p) + uint32(y.p)
+	xi := bigIntSetPrec(x.x, uint32(x.p), p)
+	yi := bigIntSetPrec(y.x, uint32(y.p), p)
+	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), p*2, uint32(x.p))
 	return &DecFixedPointNumber{x: z, p: x.p}
 }
 
@@ -288,7 +285,7 @@ func (x *DecFixedPointNumber) Inv() *DecFixedPointNumber {
 	if x.x.Sign() == 0 {
 		panic("division by zero")
 	}
-	return &DecFixedPointNumber{x: bigIntDivRound(pow10(x.p*2), x.x), p: x.p}
+	return &DecFixedPointNumber{x: bigIntDivRound(pow10(uint32(x.p)*2), x.x), p: x.p}
 }
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.

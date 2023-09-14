@@ -17,6 +17,7 @@ package bn
 
 import (
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -493,6 +494,11 @@ func TestDecFixedPointNumber_Inv(t *testing.T) {
 			name:     "6-digits",
 			number:   &DecFixedPointNumber{x: big.NewInt(106250000), p: 6},
 			expected: "0.009412",
+		},
+		{
+			name:     "large precision",
+			number:   &DecFixedPointNumber{x: new(big.Int).Add(pow10(255), big.NewInt(1)), p: 255},
+			expected: "0." + strings.Repeat("9", 255),
 		},
 	}
 

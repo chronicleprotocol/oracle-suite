@@ -17,6 +17,7 @@ package bn
 
 import (
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -347,8 +348,14 @@ func TestDecFloatPointNumber_Inv(t *testing.T) {
 		{
 			name:         "106.25",
 			number:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 2}},
-			expectedNum:  "0.009411764705882352",
+			expectedNum:  "0.009411764705882353",
 			expectedPrec: 18,
+		},
+		{
+			name:         "large precision",
+			number:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: new(big.Int).Add(pow10(255), big.NewInt(1)), p: 255}},
+			expectedNum:  "0." + strings.Repeat("9", 255),
+			expectedPrec: 255,
 		},
 	}
 
