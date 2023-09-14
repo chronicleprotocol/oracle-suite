@@ -22,6 +22,7 @@ import (
 
 	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -55,7 +56,9 @@ func (m *mockRPC) SendTransaction(ctx context.Context, tx types.Transaction) (*t
 
 func TestSimulateTransaction(t *testing.T) {
 	ctx := context.Background()
-	contract, _ := abi.ParseSignatures()
+	contract, _ := abi.ParseSignatures(
+		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
+	)
 
 	// Mocked transaction for the test
 	tx := types.Transaction{
@@ -130,6 +133,28 @@ func TestSimulateTransaction(t *testing.T) {
 		err := simulateTransaction(ctx, mockClient, contract, tx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "panic")
+	})
+
+	t.Run("custom error", func(t *testing.T) {
+		mockClient := new(mockRPC)
+		mockClient.On(
+			"Call",
+			ctx,
+			tx.Call,
+			types.LatestBlockNumber,
+		).Return(
+			[]byte{},
+			&types.Call{},
+			&transport.RPCError{
+				Code:    0,
+				Message: "",
+				Data:    "0x76f4b8780000000000000000000000000000000000000000000000000000000064e7d147000000000000000000000000000000000000000000000000000000006503235c",
+			},
+		)
+
+		err := simulateTransaction(ctx, mockClient, contract, tx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "StaleMessage")
 	})
 }
 

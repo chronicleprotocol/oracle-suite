@@ -20,7 +20,9 @@ import (
 	"context"
 
 	goethABI "github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
 )
 
@@ -29,12 +31,19 @@ import (
 func simulateTransaction(ctx context.Context, rpc rpc.RPC, c *goethABI.Contract, tx types.Transaction) error {
 	res, _, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
 	if err != nil {
+		if rpcErr, ok := err.(*transport.RPCError); ok {
+			hexData, ok := rpcErr.Data.(string)
+			if !ok {
+				return err
+			}
+			data, _ := hexutil.HexToBytes(hexData)
+			if err := c.ToError(data); err != nil {
+				return err
+			}
+		}
 		return err
 	}
-	if err := c.ToError(res); err != nil {
-		return err
-	}
-	return nil
+	return c.ToError(res)
 }
 
 // stringToBytes32 converts a Go string to bytes32.
