@@ -50,6 +50,7 @@ func TestNode_MessagePropagation(t *testing.T) {
 		PeerPrivKey(peers[0].PrivKey),
 		ListenAddrs(peers[0].ListenAddrs),
 		DirectPeers(peers[1].PeerAddrs),
+		ExternalAddr(multiaddr.StringCast("/ip4/10.0.0.1/tcp/5555")),
 	)
 	require.NoError(t, err)
 	require.NoError(t, n0.Start(ctx))
@@ -87,20 +88,20 @@ func TestNode_MessagePropagation(t *testing.T) {
 			len(n2.PubSub().ListPeers("test")) > 0
 	})
 
-	s1, err := n0.Subscription("test")
+	s0, err := n0.Subscription("test")
 	require.NoError(t, err)
-	s2, err := n1.Subscription("test")
+	s1, err := n1.Subscription("test")
 	require.NoError(t, err)
-	s3, err := n2.Subscription("test")
+	s2, err := n2.Subscription("test")
 	require.NoError(t, err)
 
-	err = s1.Publish([]byte("makerdao"))
+	err = s0.Publish([]byte("makerdao"))
 	assert.NoError(t, err)
 
 	// Message should be received on both nodes:
+	waitForMessage(t, s0.Next(), []byte("makerdao"))
 	waitForMessage(t, s1.Next(), []byte("makerdao"))
 	waitForMessage(t, s2.Next(), []byte("makerdao"))
-	waitForMessage(t, s3.Next(), []byte("makerdao"))
 }
 
 // message is the simplest implementation of the transport.Message interface.

@@ -128,6 +128,8 @@ func (n *Node) Start(ctx context.Context) error {
 		libp2p.EnableRelayService(),
 		libp2p.EnableHolePunching(),
 		libp2p.EnableNATService(),
+		libp2p.NATPortMap(),
+		libp2p.EnableRelay(),
 		libp2p.Peerstore(n.peerstore),
 		libp2p.ConnectionGater(n.connGaterSet),
 		libp2p.ConnectionManager(n.connmgr),

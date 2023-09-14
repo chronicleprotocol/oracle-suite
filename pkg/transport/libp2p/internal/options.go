@@ -50,6 +50,17 @@ func ListenAddrs(addrs []multiaddr.Multiaddr) Options {
 	}
 }
 
+// ExternalAddr configures node to advertise the given addresses.
+func ExternalAddr(addr multiaddr.Multiaddr) Options {
+	return func(n *Node) error {
+		if addr != nil {
+			addressFactory := func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr { return append(addrs, addr) }
+			n.hostOpts = append(n.hostOpts, libp2p.AddrsFactory(addressFactory))
+		}
+		return nil
+	}
+}
+
 // PeerPrivKey configures node to use given key as its identity.
 func PeerPrivKey(sk crypto.PrivKey) Options {
 	return func(n *Node) error {

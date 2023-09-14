@@ -88,6 +88,7 @@ type P2P struct {
 }
 
 // Config is the configuration for the P2P transport.
+// TODO: This Config should not be responsible for parsing multiAddresses.
 type Config struct {
 	// Mode describes in what mode the node should operate.
 	Mode Mode
@@ -108,6 +109,9 @@ type Config struct {
 	// ListenAddrs is a list of multiaddresses on which this node will be
 	// listening on. If empty, the localhost, and a random port will be used.
 	ListenAddrs []string
+
+	// ExternalAddr is a multiaddress of the node that will be advertised to peers.
+	ExternalAddr multiaddr.Multiaddr
 
 	// BootstrapAddrs is a list multiaddresses of initial peers to connect to.
 	// This option is ignored when discovery is disabled.
@@ -200,6 +204,9 @@ func New(cfg Config) (*P2P, error) {
 			5*time.Minute,
 		),
 		internal.Monitor(),
+	}
+	if cfg.ExternalAddr != nil {
+		opts = append(opts, internal.ExternalAddr(cfg.ExternalAddr))
 	}
 	if cfg.PeerPrivKey != nil {
 		opts = append(opts, internal.PeerPrivKey(cfg.PeerPrivKey))

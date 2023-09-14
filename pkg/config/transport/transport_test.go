@@ -53,6 +53,7 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, []string{"/ip4/0.0.0.0/tcp/9000"}, cfg.LibP2P.BlockedAddrs)
 				assert.Equal(t, true, cfg.LibP2P.DisableDiscovery)
 				assert.Equal(t, "key", cfg.LibP2P.EthereumKey)
+				assert.Equal(t, "10.1.2.3", cfg.LibP2P.ExternalIP.String())
 
 				// WebAPI
 				assert.Equal(t, "0x3456789012345678901234567890123456789012", cfg.WebAPI.Feeds[0].String())

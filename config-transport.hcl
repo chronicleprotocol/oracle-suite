@@ -23,6 +23,7 @@ transport {
       blocked_addrs      = explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_LIBP2P_BLOCKED_ADDRS", ""))
       disable_discovery  = tobool(env("CFG_LIBP2P_DISABLE_DISCOVERY", "0"))
       ethereum_key       = "default"
+      external_ip        = env("CFG_LIBP2P_EXTERNAL_IP", "")
     }
   }
 
