@@ -88,5 +88,5 @@ func TestTick_Recover(t *testing.T) {
 }
 
 func TestHashTick(t *testing.T) {
-	assert.Equal(t, priceHash, hashTick("AAABBB", bn.DecFixedPoint(42, value.TickPricePrecision), time.Unix(1605371361, 0)).String())
+	assert.Equal(t, priceHash, hashTick("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0)).String())
 }

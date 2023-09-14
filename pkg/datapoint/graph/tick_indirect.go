@@ -93,7 +93,7 @@ func crossRate(points []datapoint.Point) (datapoint.Point, error) {
 		bt := bp.Value.(value.Tick)
 		var (
 			pair  value.Pair
-			price *bn.DecFixedPointNumber
+			price *bn.DecFloatPointNumber
 		)
 		switch {
 		case at.Pair.Quote == bt.Pair.Quote: // A/C, B/C
@@ -102,7 +102,7 @@ func crossRate(points []datapoint.Point) (datapoint.Point, error) {
 			if bt.Price.Sign() > 0 {
 				price = at.Price.Div(bt.Price)
 			} else {
-				price = bn.DecFixedPoint(0, at.Price.Prec())
+				price = bn.DecFloatPoint(0)
 			}
 		case at.Pair.Base == bt.Pair.Base: // C/A, C/B
 			pair.Base = at.Pair.Quote
@@ -110,7 +110,7 @@ func crossRate(points []datapoint.Point) (datapoint.Point, error) {
 			if at.Price.Sign() > 0 {
 				price = bt.Price.Div(at.Price)
 			} else {
-				price = bn.DecFixedPoint(0, at.Price.Prec())
+				price = bn.DecFloatPoint(0)
 			}
 		case at.Pair.Quote == bt.Pair.Base: // A/C, C/B
 			pair.Base = at.Pair.Base
@@ -122,7 +122,7 @@ func crossRate(points []datapoint.Point) (datapoint.Point, error) {
 			if at.Price.Sign() > 0 && bt.Price.Sign() > 0 {
 				price = bt.Price.Inv().Div(at.Price)
 			} else {
-				price = bn.DecFixedPoint(0, at.Price.Prec())
+				price = bn.DecFloatPoint(0)
 			}
 		default:
 			return ap, fmt.Errorf("unable to calculate cross rate for %s and %s", at.Pair, bt.Pair)

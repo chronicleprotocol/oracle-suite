@@ -181,13 +181,13 @@ func dataPointValueToProtobuf(val value.Value) (*pb.DataPointValue, error) {
 			volume24H []byte
 		)
 		if typ.Price != nil {
-			price, err = decFixedPointToBytes(typ.Price)
+			price, err = decFloatPointToBytes(typ.Price)
 			if err != nil {
 				return nil, err
 			}
 		}
 		if typ.Volume24h != nil {
-			volume24H, err = decFixedPointToBytes(typ.Volume24h)
+			volume24H, err = decFloatPointToBytes(typ.Volume24h)
 			if err != nil {
 				return nil, err
 			}
@@ -226,14 +226,14 @@ func dataPointValueFromProtobuf(msg *pb.DataPointValue) (value.Value, error) {
 		}
 		val.Pair = pair
 		if typ.Tick.Price != nil {
-			price, err := bytesToDecFixedPoint(typ.Tick.Price)
+			price, err := bytesToDecFloatPoint(typ.Tick.Price)
 			if err != nil {
 				return nil, err
 			}
 			val.Price = price
 		}
 		if typ.Tick.Volume24H != nil {
-			volume24H, err := bytesToDecFixedPoint(typ.Tick.Volume24H)
+			volume24H, err := bytesToDecFloatPoint(typ.Tick.Volume24H)
 			if err != nil {
 				return nil, err
 			}

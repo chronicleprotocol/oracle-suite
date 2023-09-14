@@ -58,11 +58,11 @@ func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cob
 			if !ok {
 				return fmt.Errorf("services are not gofer.Services")
 			}
-			ticks, err := s.DataProvider.DataPoints(ctx, getModelsNames(ctx, s.DataProvider, args)...)
+			points, err := s.DataProvider.DataPoints(ctx, getModelsNames(ctx, s.DataProvider, args)...)
 			if err != nil {
 				return err
 			}
-			marshaled, err := marshalDataPoints(ticks, format.String())
+			marshaled, err := marshalDataPoints(points, format.String())
 			if err != nil {
 				return err
 			}

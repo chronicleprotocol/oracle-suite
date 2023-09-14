@@ -20,16 +20,16 @@ func TestTick_Validate(t *testing.T) {
 			name: "valid tick",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.DecFixedPoint(1000, TickPricePrecision),
-				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
+				Price:     bn.DecFloatPoint(1000),
+				Volume24h: bn.DecFloatPoint(100),
 			},
 			expectError: false,
 		},
 		{
 			name: "pair is not set",
 			dataPoint: Tick{
-				Price:     bn.DecFixedPoint(1000, TickPricePrecision),
-				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
+				Price:     bn.DecFloatPoint(1000),
+				Volume24h: bn.DecFloatPoint(100),
 			},
 			expectError:   true,
 			errorContains: "pair is not set",
@@ -38,7 +38,7 @@ func TestTick_Validate(t *testing.T) {
 			name: "price is nil",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Volume24h: bn.DecFixedPoint(100, TickPricePrecision),
+				Volume24h: bn.DecFloatPoint(100),
 			},
 			expectError:   true,
 			errorContains: "price is nil",
@@ -47,8 +47,8 @@ func TestTick_Validate(t *testing.T) {
 			name: "price is zero",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.DecFixedPoint(0, TickPricePrecision),
-				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
+				Price:     bn.DecFloatPoint(0),
+				Volume24h: bn.DecFloatPoint(100),
 			},
 			expectError:   true,
 			errorContains: "price is zero or negative",
@@ -57,8 +57,8 @@ func TestTick_Validate(t *testing.T) {
 			name: "price is negative",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.DecFixedPoint(-1000, TickPricePrecision),
-				Volume24h: bn.DecFixedPoint(100, TickVolumePrecision),
+				Price:     bn.DecFloatPoint(-1000),
+				Volume24h: bn.DecFloatPoint(100),
 			},
 			expectError:   true,
 			errorContains: "price is zero or negative",
@@ -67,8 +67,8 @@ func TestTick_Validate(t *testing.T) {
 			name: "volume is negative",
 			dataPoint: Tick{
 				Pair:      Pair{Base: "BTC", Quote: "USD"},
-				Price:     bn.DecFixedPoint(1000, TickPricePrecision),
-				Volume24h: bn.DecFixedPoint(-100, TickVolumePrecision),
+				Price:     bn.DecFloatPoint(1000),
+				Volume24h: bn.DecFloatPoint(-100),
 			},
 			expectError:   true,
 			errorContains: "volume is negative",

@@ -19,10 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
@@ -44,6 +42,7 @@ type Feed struct {
 	dataProvider datapoint.Provider
 	dataModels   []string
 	signers      []datapoint.Signer
+	hooks        []Hook
 	transport    transport.Service
 	interval     *timeutil.Ticker
 }
@@ -62,6 +61,10 @@ type Config struct {
 	// skipped.
 	Signers []datapoint.Signer
 
+	// Hooks is a list of hooks that will be called before broadcasting
+	// data points.
+	Hooks []Hook
+
 	// Transport is an implementation of transport used to send data points to
 	// the network.
 	Transport transport.Service
@@ -72,6 +75,11 @@ type Config struct {
 	// Logger is a current logger interface used by the Feed.
 	// If nil, null logger will be used.
 	Logger log.Logger
+}
+
+type Hook interface {
+	BeforeSign(ctx context.Context, dp *datapoint.Point) error
+	BeforeBroadcast(ctx context.Context, dp *datapoint.Point) error
 }
 
 // New creates a new instance of the Feed.
@@ -100,6 +108,7 @@ func New(cfg Config) (*Feed, error) {
 		dataProvider: cfg.DataProvider,
 		dataModels:   cfg.DataModels,
 		signers:      cfg.Signers,
+		hooks:        cfg.Hooks,
 		transport:    cfg.Transport,
 		interval:     cfg.Interval,
 	}
@@ -140,6 +149,19 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 			continue
 		}
 		found = true
+
+		// BeforeSign hook.
+		for _, hook := range f.hooks {
+			if err := hook.BeforeSign(f.ctx, &point); err != nil {
+				f.log.
+					WithError(err).
+					WithFields(datapoint.PointLogFields(point)).
+					Error("BeforeBroadcast hook failed")
+				return
+			}
+		}
+
+		// Sign data point.
 		sig, err := signer.Sign(f.ctx, model, point)
 		if err != nil {
 			f.log.
@@ -148,13 +170,18 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 				Error("Unable to sign data point")
 		}
 
-		// Add trace to data point.
-		// TODO: Move it to a separate struct and make it more generic.
-		trace := generateTrace(point)
-		if len(trace) > 0 {
-			point.Meta["trace"] = trace
+		// BeforeBroadcast hook.
+		for _, hook := range f.hooks {
+			if err := hook.BeforeBroadcast(f.ctx, &point); err != nil {
+				f.log.
+					WithError(err).
+					WithFields(datapoint.PointLogFields(point)).
+					Error("BeforeBroadcast hook failed")
+				return
+			}
 		}
 
+		// Broadcast data point.
 		msg := &messages.DataPoint{
 			Model:          model,
 			Point:          point,
@@ -227,28 +254,4 @@ func (f *Feed) contextCancelHandler() {
 	defer func() { close(f.waitCh) }()
 	defer f.log.Info("Stopped")
 	<-f.ctx.Done()
-}
-
-// generateTrace generates a trace for a data point.
-func generateTrace(dp datapoint.Point) map[string]string {
-	var recur func(dp datapoint.Point) []datapoint.Point
-	recur = func(dp datapoint.Point) []datapoint.Point {
-		var points []datapoint.Point
-		if dp.Meta["type"] == "origin" {
-			points = append(points, dp)
-		}
-		for _, subPoint := range dp.SubPoints {
-			points = append(points, recur(subPoint)...)
-		}
-		return points
-	}
-	trace := make(map[string]string)
-	for _, point := range recur(dp) {
-		tick, ok := point.Value.(value.Tick)
-		if !ok || point.Meta == nil || tick.Price == nil {
-			continue
-		}
-		trace[fmt.Sprintf("%s@%s", tick.Pair.String(), point.Meta["origin"])] = tick.Price.String()
-	}
-	return trace
 }

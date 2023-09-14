@@ -32,6 +32,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
+const (
+	tickPriceBroadcastPrecision  = 18
+	tickVolumeBroadcastPrecision = 18
+)
+
 type Config struct {
 	// EthereumKey is the name of the Ethereum key to use for signing prices.
 	EthereumKey string `hcl:"ethereum_key"`
@@ -77,13 +82,18 @@ func (c *Config) ConfigureFeed(d Dependencies) (*feed.Feed, error) {
 			Subject:  c.Content.Attributes["ethereum_key"].Range.Ptr(),
 		}
 	}
+	hooks := []feed.Hook{
+		feed.NewTickPrecisionHook(tickPriceBroadcastPrecision, tickVolumeBroadcastPrecision),
+		feed.NewTickTraceHook(),
+	}
 	cfg := feed.Config{
 		DataModels:   c.DataModels,
 		DataProvider: d.DataProvider,
 		Signers:      []datapoint.Signer{signer.NewTickSigner(ethereumKey)},
+		Hooks:        hooks,
 		Transport:    d.Transport,
-		Logger:       d.Logger,
 		Interval:     timeutil.NewTicker(time.Second * time.Duration(c.Interval)),
+		Logger:       d.Logger,
 	}
 	feedService, err := feed.New(cfg)
 	if err != nil {

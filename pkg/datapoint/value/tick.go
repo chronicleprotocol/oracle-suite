@@ -23,19 +23,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-// TickPricePrecision specified number of decimal places for tick prices
-// during marshaling.
-const TickPricePrecision = 18
-
-// TickVolumePrecision specified number of decimal places for tick volumes
-// during marshaling.
-const TickVolumePrecision = 18
-
 func NewTick(pair Pair, price, volume any) Tick {
 	return Tick{
 		Pair:      pair,
-		Price:     bn.DecFixedPoint(price, TickPricePrecision),
-		Volume24h: bn.DecFixedPoint(volume, TickVolumePrecision),
+		Price:     bn.DecFloatPoint(price),
+		Volume24h: bn.DecFloatPoint(volume),
 	}
 }
 
@@ -57,13 +49,13 @@ type Tick struct {
 	// a last trade price, an average of bid and ask prices, etc.
 	//
 	// Price is always non-nil if there is no error.
-	Price *bn.DecFixedPointNumber
+	Price *bn.DecFloatPointNumber
 
 	// Volume24h is a 24h volume for the given asset pair presented in the
 	// base currency.
 	//
 	// May be nil if the provider does not provide volume.
-	Volume24h *bn.DecFixedPointNumber
+	Volume24h *bn.DecFloatPointNumber
 }
 
 // Number implements the NumericValue interface.
@@ -132,8 +124,8 @@ func (t *Tick) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	t.Pair = pair
-	t.Price = bn.DecFixedPoint(result["price"].(string), TickPricePrecision)
-	t.Volume24h = bn.DecFixedPoint(result["volume24h"].(string), TickVolumePrecision)
+	t.Price = bn.DecFloatPoint(result["price"].(string))
+	t.Volume24h = bn.DecFloatPoint(result["volume24h"].(string))
 	return nil
 }
 

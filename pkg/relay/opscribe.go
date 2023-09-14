@@ -108,7 +108,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 		//   field.
 		// - Price differs from the current price by more than is specified in the
 		//   OracleSpread field.
-		spread := calculateSpread(pokeData.Val, meta.Val)
+		spread := calculateSpread(pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
 

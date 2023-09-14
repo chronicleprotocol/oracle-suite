@@ -89,10 +89,10 @@ func (t *TickRecoverer) Recover(
 }
 
 // hashTick is an equivalent of keccak256(abi.encodePacked(val, age, wat))) in Solidity.
-func hashTick(model string, price *bn.DecFixedPointNumber, time time.Time) types.Hash {
+func hashTick(model string, price *bn.DecFloatPointNumber, time time.Time) types.Hash {
 	// Price (val):
 	val := make([]byte, 32)
-	price.SetPrec(contractPricePrecision).RawBigInt().FillBytes(val)
+	price.DecFixedPoint(contractPricePrecision).RawBigInt().FillBytes(val)
 
 	// Time (age):
 	age := make([]byte, 32)

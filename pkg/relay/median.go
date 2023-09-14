@@ -88,7 +88,7 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 
 	prices := dataPointsToPrices(dataPoints)
 	median := calculateMedian(prices)
-	spread := calculateSpread(median, val)
+	spread := calculateSpread(median, val.DecFloatPoint())
 
 	// Check if price on the Median contract needs to be updated.
 	// The price needs to be updated if:
@@ -120,7 +120,7 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 		vals := make([]contract.MedianVal, len(prices))
 		for i := range dataPoints {
 			vals[i] = contract.MedianVal{
-				Val: prices[i],
+				Val: prices[i].DecFixedPoint(contract.MedianPricePrecision),
 				Age: dataPoints[i].Time,
 				V:   uint8(signatures[i].V.Uint64()),
 				R:   signatures[i].R,
@@ -211,19 +211,19 @@ func (w *medianWorker) getDataPoints(ctx context.Context, after time.Time, quoru
 }
 
 // dataPointsToPrices extracts prices from data points.
-func dataPointsToPrices(dataPoints []datapoint.Point) []*bn.DecFixedPointNumber {
-	prices := make([]*bn.DecFixedPointNumber, len(dataPoints))
+func dataPointsToPrices(dataPoints []datapoint.Point) []*bn.DecFloatPointNumber {
+	prices := make([]*bn.DecFloatPointNumber, len(dataPoints))
 	for i, dp := range dataPoints {
-		prices[i] = dp.Value.(value.Tick).Price.SetPrec(contract.MedianPricePrecision)
+		prices[i] = dp.Value.(value.Tick).Price
 	}
 	return prices
 }
 
 // calculateMedian calculates the median price.
-func calculateMedian(prices []*bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
+func calculateMedian(prices []*bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	count := len(prices)
 	if count == 0 {
-		return bn.DecFixedPoint(0, contract.MedianPricePrecision)
+		return bn.DecFloatPoint(0)
 	}
 	sort.Slice(prices, func(i, j int) bool {
 		return prices[i].Cmp(prices[j]) < 0
@@ -232,7 +232,7 @@ func calculateMedian(prices []*bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 		m := count / 2
 		a := prices[m-1]
 		b := prices[m]
-		return a.Add(b).Div(bn.DecFixedPoint(2, 0))
+		return a.Add(b).Div(bn.DecFloatPoint(0))
 	}
 	return prices[(count-1)/2]
 }
