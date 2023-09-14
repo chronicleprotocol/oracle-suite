@@ -28,8 +28,8 @@ import (
 
 func TestNewTickPrecisionHook(t *testing.T) {
 	hook := NewTickPrecisionHook(2, 3)
-	assert.Equal(t, uint8(2), hook.pricePrec)
-	assert.Equal(t, uint8(3), hook.volumePrec)
+	assert.Equal(t, uint8(2), hook.maxPricePrec)
+	assert.Equal(t, uint8(3), hook.maxVolumePrec)
 }
 
 func TestTickPrecisionHook_BeforeSign(t *testing.T) {

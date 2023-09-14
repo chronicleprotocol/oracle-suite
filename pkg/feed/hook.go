@@ -23,25 +23,33 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
 
-// TickPrecisionHook is a hook that adjusts the precision of price and volume
-// values in data points that hold a value.Tick.
+// TickPrecisionHook is a hook that limits the precision of the price and volume
+// of a tick.
+//
+// This is done for two reasons:
+//   - To decrease the size of the tick, which is broadcast to all oracles.
+//   - To mitigate the risk of rounding errors that might occur during
+//     generating a hash for signature verification if the precision is too
+//     high. This isn't a concern as long as signatures are verified using the
+//     same library that calculated the hash. However, discrepancies may arise
+//     if a different library is used.
 type TickPrecisionHook struct {
-	pricePrec  uint8
-	volumePrec uint8
+	maxPricePrec  uint8
+	maxVolumePrec uint8
 }
 
 // NewTickPrecisionHook creates a new TickPrecisionHook with the specified
 // price and volume precisions.
-func NewTickPrecisionHook(pricePrec, volumePrec uint8) *TickPrecisionHook {
+func NewTickPrecisionHook(maxPricePrec, maxVolumePrec uint8) *TickPrecisionHook {
 	return &TickPrecisionHook{
-		pricePrec:  pricePrec,
-		volumePrec: volumePrec,
+		maxPricePrec:  maxPricePrec,
+		maxVolumePrec: maxVolumePrec,
 	}
 }
 
 // BeforeSign implements the Hook interface.
 func (t *TickPrecisionHook) BeforeSign(_ context.Context, dp *datapoint.Point) error {
-	*dp = adjustPrec(*dp, t.pricePrec, t.volumePrec)
+	*dp = adjustPrec(*dp, t.maxPricePrec, t.maxVolumePrec)
 	return nil
 }
 
@@ -50,10 +58,10 @@ func adjustPrec(dp datapoint.Point, pricePrec, volumePrec uint8) datapoint.Point
 	if !ok {
 		return dp
 	}
-	if tick.Price != nil {
+	if tick.Price != nil && tick.Price.Prec() > pricePrec {
 		tick.Price = tick.Price.SetPrec(pricePrec)
 	}
-	if tick.Volume24h != nil {
+	if tick.Volume24h != nil && tick.Volume24h.Prec() > volumePrec {
 		tick.Volume24h = tick.Volume24h.SetPrec(volumePrec)
 	}
 	dp.Value = tick
@@ -68,8 +76,12 @@ func (t *TickPrecisionHook) BeforeBroadcast(_ context.Context, _ *datapoint.Poin
 	return nil
 }
 
-// TickTraceHook is a hook that adds a trace meta field that holds the price of
+// TickTraceHook is a hook that adds a trace meta field, which stores the price of
 // the tick at each origin.
+//
+// The trace field is a map that associates each pair and origin with a price.
+// This allows to easily verify by others that the broadcasted tick is accurately
+// calculated by the feed.
 type TickTraceHook struct{}
 
 // NewTickTraceHook creates a new TickTraceHook instance.
@@ -92,7 +104,7 @@ func (t *TickTraceHook) BeforeBroadcast(_ context.Context, dp *datapoint.Point) 
 }
 
 func buildTraceMap(dp datapoint.Point) map[string]string {
-	trace := make(map[string]string)
+	// Find all origin data points.
 	var recur func(dp datapoint.Point) []datapoint.Point
 	recur = func(dp datapoint.Point) []datapoint.Point {
 		var points []datapoint.Point
@@ -105,12 +117,18 @@ func buildTraceMap(dp datapoint.Point) map[string]string {
 		return points
 	}
 
+	// Build trace map.
+	// Format: map[<pair>@<origin>] = <price>
+	trace := make(map[string]string)
 	for _, point := range recur(dp) {
 		tick, ok := point.Value.(value.Tick)
 		if !ok || point.Meta == nil || tick.Price == nil {
 			continue
 		}
-		trace[fmt.Sprintf("%s@%s", tick.Pair.String(), point.Meta["origin"])] = tick.Price.String()
+		if tick.Validate() == nil {
+			trace[fmt.Sprintf("%s@%s", tick.Pair.String(), point.Meta["origin"])] = tick.Price.String()
+		}
 	}
+
 	return trace
 }

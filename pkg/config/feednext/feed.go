@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	tickPriceBroadcastPrecision  = 18
-	tickVolumeBroadcastPrecision = 18
+	tickPriceBroadcastMaxPrecision  = 18
+	tickVolumeBroadcastMaxPrecision = 18
 )
 
 type Config struct {
@@ -83,7 +83,7 @@ func (c *Config) ConfigureFeed(d Dependencies) (*feed.Feed, error) {
 		}
 	}
 	hooks := []feed.Hook{
-		feed.NewTickPrecisionHook(tickPriceBroadcastPrecision, tickVolumeBroadcastPrecision),
+		feed.NewTickPrecisionHook(tickPriceBroadcastMaxPrecision, tickVolumeBroadcastMaxPrecision),
 		feed.NewTickTraceHook(),
 	}
 	cfg := feed.Config{
