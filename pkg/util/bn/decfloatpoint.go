@@ -165,7 +165,7 @@ func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
 	p := uint32(x.x.p) + uint32(y.x.p)
 	xi := bigIntSetPrec(x.x.x, uint32(x.x.p), p)
 	yi := bigIntSetPrec(y.x.x, uint32(y.x.p), p)
-	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), uint32(p)*2, p)
+	z := bigIntSetPrec(new(big.Int).Mul(xi, yi), p*2, p)
 	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: uint8(p)}}
 	n.adjustPrec()
 	return n
