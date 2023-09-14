@@ -111,60 +111,71 @@ func TestDecFloatPoint(t *testing.T) {
 
 func TestDecFloatPointNumber_String(t *testing.T) {
 	tests := []struct {
-		name     string
-		n        *DecFloatPointNumber
-		expected string
+		name         string
+		n            *DecFloatPointNumber
+		expectedNum  string
+		expectedPrec uint8
 	}{
 		{
-			name:     "zero precision",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 0}}, // 10625
-			expected: "10625",
+			name:         "zero precision",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 0}}, // 10625
+			expectedNum:  "10625",
+			expectedPrec: 0,
 		},
 		{
-			name:     "two digits precision",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 2}}, // 106.25
-			expected: "106.25",
+			name:         "two digits precision",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 2}}, // 106.25
+			expectedNum:  "106.25",
+			expectedPrec: 2,
 		},
 		{
-			name:     "ten digits precision",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 10}}, // 0.0000010625
-			expected: "0.0000010625",
+			name:         "ten digits precision",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 10}}, // 0.0000010625
+			expectedNum:  "0.0000010625",
+			expectedPrec: 10,
 		},
 		{
-			name:     "zero precision negative",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(-10625), p: 0}}, // -10625
-			expected: "-10625",
+			name:         "zero precision negative",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(-10625), p: 0}}, // -10625
+			expectedNum:  "-10625",
+			expectedPrec: 0,
 		},
 		{
-			name:     "two digits precision negative",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(-10625), p: 2}}, // -106.25
-			expected: "-106.25",
+			name:         "two digits precision negative",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(-10625), p: 2}}, // -106.25
+			expectedNum:  "-106.25",
+			expectedPrec: 2,
 		},
 		{
-			name:     "ten digits precision negative",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(-10625), p: 10}}, // -0.0000010625
-			expected: "-0.0000010625",
+			name:         "ten digits precision negative",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(-10625), p: 10}}, // -0.0000010625
+			expectedNum:  "-0.0000010625",
+			expectedPrec: 10,
 		},
 		{
-			name:     "remove trailing zeros",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1062500), p: 4}}, // 106.2500
-			expected: "106.25",
+			name:         "remove trailing zeros",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1062500), p: 4}}, // 106.2500
+			expectedNum:  "106.25",
+			expectedPrec: 4,
 		},
 		{
-			name:     "remove trailing zeros (no fractional part)",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1060000), p: 4}}, // 1062500
-			expected: "106",
+			name:         "remove trailing zeros (no fractional part)",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1060000), p: 4}}, // 1062500
+			expectedNum:  "106",
+			expectedPrec: 4,
 		},
 		{
-			name:     "remove trailing zeros (no integer part)",
-			n:        &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1062500), p: 10}}, // 0.1062500
-			expected: "0.00010625",
+			name:         "remove trailing zeros (no integer part)",
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1062500), p: 10}}, // 0.1062500
+			expectedNum:  "0.00010625",
+			expectedPrec: 10,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.n.String())
+			assert.Equal(t, tt.expectedNum, tt.n.String())
+			assert.Equal(t, tt.expectedPrec, tt.n.Prec())
 		})
 	}
 }
@@ -174,29 +185,36 @@ func TestDecFloatPointNumber_Add(t *testing.T) {
 		name         string
 		n1           *DecFloatPointNumber
 		n2           *DecFloatPointNumber
-		expectedPrec uint8
 		expectedNum  string
+		expectedPrec uint8
 	}{
 		{
 			name:         "same precision",
 			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10500), p: 3}}, // 10.50
 			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}},  // 2.25
-			expectedPrec: 2,
 			expectedNum:  "12.75",
+			expectedPrec: 2,
 		},
 		{
 			name:         "first higher precision",
 			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10500), p: 3}}, // 10.500
 			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},   // 2.25
-			expectedPrec: 2,
 			expectedNum:  "12.75",
+			expectedPrec: 2,
 		},
 		{
 			name:         "second higher precision",
 			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
 			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
-			expectedPrec: 2,
 			expectedNum:  "12.75",
+			expectedPrec: 2,
+		},
+		{
+			name:         "large precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			expectedNum:  "2",
+			expectedPrec: 0,
 		},
 	}
 
@@ -211,76 +229,101 @@ func TestDecFloatPointNumber_Add(t *testing.T) {
 
 func TestDecFloatPointNumber_Sub(t *testing.T) {
 	tests := []struct {
-		name     string
-		n1       *DecFloatPointNumber
-		n2       *DecFloatPointNumber
-		expected string
+		name         string
+		n1           *DecFloatPointNumber
+		n2           *DecFloatPointNumber
+		expectedNum  string
+		expectedPrec uint8
 	}{
 		{
-			name:     "same precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},  // 2.25
-			expected: "8.25",
+			name:         "same precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},  // 2.25
+			expectedNum:  "8.25",
+			expectedPrec: 2,
 		},
 		{
-			name:     "first higher precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10500), p: 3}}, // 10.500
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},   // 2.25
-			expected: "8.25",
+			name:         "first higher precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10500), p: 3}}, // 10.500
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},   // 2.25
+			expectedNum:  "8.25",
+			expectedPrec: 2,
 		},
 		{
-			name:     "second higher precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
-			expected: "8.25",
+			name:         "second higher precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
+			expectedNum:  "8.25",
+			expectedPrec: 2,
+		},
+		{
+			name:         "large precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			expectedNum:  "0",
+			expectedPrec: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.n1.Sub(tt.n2)
-			assert.Equal(t, tt.expected, result.String())
+			assert.Equal(t, tt.expectedNum, result.String())
+			assert.Equal(t, tt.expectedPrec, result.Prec())
 		})
 	}
 }
 
 func TestDecFloatPointNumber_Mul(t *testing.T) {
 	tests := []struct {
-		name     string
-		n1       *DecFloatPointNumber
-		n2       *DecFloatPointNumber
-		expected string
+		name         string
+		n1           *DecFloatPointNumber
+		n2           *DecFloatPointNumber
+		expectedNum  string
+		expectedPrec uint8
 	}{
 		{
-			name:     "same precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},  // 2.25
-			expected: "23.625",
+			name:         "same precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},  // 2.25
+			expectedNum:  "23.625",
+			expectedPrec: 3,
 		},
 		{
-			name:     "first higher precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10500), p: 3}}, // 10.500
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},   // 2.25
-			expected: "23.625",
+			name:         "first higher precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10500), p: 3}}, // 10.500
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(225), p: 2}},   // 2.25
+			expectedNum:  "23.625",
+			expectedPrec: 3,
 		},
 		{
-			name:     "second higher precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
-			expected: "23.625",
+			name:         "second higher precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
+			expectedNum:  "23.625",
+			expectedPrec: 3,
 		},
 		{
-			name:     "second higher precision",
-			n1:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
-			n2:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
-			expected: "23.625",
+			name:         "second higher precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(1050), p: 2}}, // 10.50
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(2250), p: 3}}, // 2.250
+			expectedNum:  "23.625",
+			expectedPrec: 3,
+		},
+		{
+			name:         "large precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			expectedNum:  "1",
+			expectedPrec: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.n1.Mul(tt.n2)
-			assert.Equal(t, tt.expected, result.String())
+			assert.Equal(t, tt.expectedNum, result.String())
+			assert.Equal(t, tt.expectedPrec, result.Prec())
 		})
 	}
 }
@@ -321,6 +364,13 @@ func TestDecFloatPointNumber_Div(t *testing.T) {
 			expectedNum:  "0.66666666666666667",                                                  // 1.0 / 1.5 = 0.66666666666666667
 			expectedPrec: 17,
 		},
+		{
+			name:         "large precision",
+			n1:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			n2:           &DecFloatPointNumber{x: &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision}},
+			expectedNum:  "1",
+			expectedPrec: 0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -335,25 +385,25 @@ func TestDecFloatPointNumber_Div(t *testing.T) {
 func TestDecFloatPointNumber_Inv(t *testing.T) {
 	tests := []struct {
 		name         string
-		number       *DecFloatPointNumber
+		n            *DecFloatPointNumber
 		expectedNum  string
 		expectedPrec uint8
 	}{
 		{
 			name:         "106",
-			number:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(106), p: 0}},
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(106), p: 0}},
 			expectedNum:  "0.0094339622641509",
 			expectedPrec: 16,
 		},
 		{
 			name:         "106.25",
-			number:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 2}},
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: big.NewInt(10625), p: 2}},
 			expectedNum:  "0.009411764705882353",
 			expectedPrec: 18,
 		},
 		{
 			name:         "large precision",
-			number:       &DecFloatPointNumber{x: &DecFixedPointNumber{x: new(big.Int).Add(pow10(255), big.NewInt(1)), p: 255}},
+			n:            &DecFloatPointNumber{x: &DecFixedPointNumber{x: new(big.Int).Add(pow10(MaxDecPointPrecision), big.NewInt(1)), p: MaxDecPointPrecision}},
 			expectedNum:  "0." + strings.Repeat("9", 255),
 			expectedPrec: 255,
 		},
@@ -361,7 +411,7 @@ func TestDecFloatPointNumber_Inv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.number.Inv()
+			result := tt.n.Inv()
 			assert.Equal(t, tt.expectedNum, result.String())
 			assert.Equal(t, tt.expectedPrec, result.Prec())
 		})

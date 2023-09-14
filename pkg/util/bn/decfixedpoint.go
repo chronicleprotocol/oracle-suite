@@ -235,12 +235,12 @@ func (x *DecFixedPointNumber) Mul(y *DecFixedPointNumber) *DecFixedPointNumber {
 // Division by zero panics.
 //
 // Before the division, the precision of x and y is increased to the precision
-// of the larger of the two values plus divGuardDigits. The precision of the
+// of the larger of the two values plus decGuardDigits. The precision of the
 // result is set back to the precision of x.
 //
 // To use a different precision, use DivPrec.
 func (x *DecFixedPointNumber) Div(y *DecFixedPointNumber) *DecFixedPointNumber {
-	return x.DivPrec(y, uint32(max(x.p, y.p))+divGuardDigits)
+	return x.DivPrec(y, uint32(max(x.p, y.p))+decGuardDigits)
 }
 
 // DivPrec divides the number by y and returns the result.

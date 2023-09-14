@@ -26,9 +26,9 @@ import (
 const MaxDecPointPrecision = math.MaxUint8
 
 const (
-	// divGuardDigits is the number of decimal digits to use as guard digits
-	// when dividing two DecFixedPointNumber / DecFloatPointNumber.
-	divGuardDigits = 2
+	// decGuardDigits is the number of decimal digits to use as guard digits
+	// when performing arithmetic operations that may result in rounding.
+	decGuardDigits = 2
 
 	// divPrecisionIncrease is the number of decimal digits to increase when
 	// dividing two DecFloatPointNumber.

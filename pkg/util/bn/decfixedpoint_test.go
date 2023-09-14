@@ -181,6 +181,11 @@ func TestDecFixedPointNumber_String(t *testing.T) {
 			n:        &DecFixedPointNumber{x: big.NewInt(1062500), p: 10}, // 0.00010625
 			expected: "0.00010625",
 		},
+		{
+			name:     "large precision",
+			n:        &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			expected: "1",
+		},
 	}
 
 	for _, tt := range tests {
@@ -232,6 +237,12 @@ func TestDecFixedPointNumber_Add(t *testing.T) {
 			n1:       DecFixedPoint(10.50, MaxDecPointPrecision), // 10.50
 			n2:       DecFixedPoint(2.25, 0),                     // 2.00
 			expected: "12.5",                                     // 10.50 + 2.00 = 12.5
+		},
+		{
+			name:     "large precision",
+			n1:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			n2:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			expected: "2",
 		},
 	}
 
@@ -286,6 +297,12 @@ func TestDecFixedPointNumber_Sub(t *testing.T) {
 			n2:       DecFixedPoint(2.25, 0),                     // 2.00
 			expected: "8.5",                                      // 10.50 - 2.00 = 8.50
 		},
+		{
+			name:     "large precision",
+			n1:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			n2:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			expected: "0",
+		},
 	}
 
 	for _, tt := range tests {
@@ -338,6 +355,12 @@ func TestDecFixedPointNumber_Mul(t *testing.T) {
 			n1:       DecFixedPoint("10.5", MaxDecPointPrecision), // 10.50
 			n2:       DecFixedPoint("2.25", 0),                    // 2.00
 			expected: "21",                                        // 10.50 * 2.00 = 21.00
+		},
+		{
+			name:     "large precision",
+			n1:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			n2:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			expected: "1",
 		},
 	}
 
@@ -404,6 +427,12 @@ func TestDecFixedPointNumber_Div(t *testing.T) {
 			n2:       DecFixedPoint("1.5", 1), // 1.5
 			expected: "0.7",                   // 1.0 / 1.5 = 0.66 -> 0.7
 		},
+		{
+			name:     "large precision",
+			n1:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			n2:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			expected: "1",
+		},
 	}
 
 	for _, tt := range tests {
@@ -451,6 +480,12 @@ func TestDecFixedPointNumber_Cmp(t *testing.T) {
 			n2:       &DecFixedPointNumber{x: big.NewInt(106250), p: 3}, // 106.250
 			expected: 0,
 		},
+		{
+			name:     "large precision",
+			n1:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			n2:       &DecFixedPointNumber{x: pow10(MaxDecPointPrecision), p: MaxDecPointPrecision},
+			expected: 0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -482,29 +517,29 @@ func TestDecFixedPointNumber_Neg(t *testing.T) {
 func TestDecFixedPointNumber_Inv(t *testing.T) {
 	tests := []struct {
 		name     string
-		number   *DecFixedPointNumber
+		n        *DecFixedPointNumber
 		expected string
 	}{
 		{
 			name:     "0-digits",
-			number:   &DecFixedPointNumber{x: big.NewInt(106), p: 0},
+			n:        &DecFixedPointNumber{x: big.NewInt(106), p: 0},
 			expected: "0",
 		},
 		{
 			name:     "6-digits",
-			number:   &DecFixedPointNumber{x: big.NewInt(106250000), p: 6},
+			n:        &DecFixedPointNumber{x: big.NewInt(106250000), p: 6},
 			expected: "0.009412",
 		},
 		{
 			name:     "large precision",
-			number:   &DecFixedPointNumber{x: new(big.Int).Add(pow10(255), big.NewInt(1)), p: 255},
+			n:        &DecFixedPointNumber{x: new(big.Int).Add(pow10(MaxDecPointPrecision), big.NewInt(1)), p: MaxDecPointPrecision},
 			expected: "0." + strings.Repeat("9", 255),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.number.Inv()
+			result := tt.n.Inv()
 			assert.Equal(t, tt.expected, result.String())
 		})
 	}
