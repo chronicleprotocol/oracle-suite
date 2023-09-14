@@ -55,6 +55,7 @@ func (m *mockRPC) SendTransaction(ctx context.Context, tx types.Transaction) (*t
 
 func TestSimulateTransaction(t *testing.T) {
 	ctx := context.Background()
+	contract, _ := abi.ParseSignatures()
 
 	// Mocked transaction for the test
 	tx := types.Transaction{
@@ -91,7 +92,7 @@ func TestSimulateTransaction(t *testing.T) {
 			nil,
 		)
 
-		err := simulateTransaction(ctx, mockClient, tx)
+		err := simulateTransaction(ctx, mockClient, contract, tx)
 		require.NoError(t, err)
 	})
 
@@ -108,9 +109,9 @@ func TestSimulateTransaction(t *testing.T) {
 			nil,
 		)
 
-		err := simulateTransaction(ctx, mockClient, tx)
+		err := simulateTransaction(ctx, mockClient, contract, tx)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "transaction reverted")
+		assert.Contains(t, err.Error(), "revert")
 	})
 
 	t.Run("panicked transaction", func(t *testing.T) {
@@ -126,9 +127,9 @@ func TestSimulateTransaction(t *testing.T) {
 			nil,
 		)
 
-		err := simulateTransaction(ctx, mockClient, tx)
+		err := simulateTransaction(ctx, mockClient, contract, tx)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "transaction panicked")
+		assert.Contains(t, err.Error(), "panic")
 	})
 }
 

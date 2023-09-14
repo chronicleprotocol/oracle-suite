@@ -109,7 +109,7 @@ func (s *OpScribe) OpPoke(
 	tx := (&types.Transaction{}).
 		SetTo(s.address).
 		SetInput(calldata)
-	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
+	if err := simulateTransaction(ctx, s.client, abiOpScribe, *tx); err != nil {
 		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %v", err)
 	}
 	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)

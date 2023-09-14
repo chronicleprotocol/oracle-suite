@@ -116,7 +116,7 @@ func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData Schnor
 	tx := (&types.Transaction{}).
 		SetTo(s.address).
 		SetInput(calldata)
-	if err := simulateTransaction(ctx, s.client, *tx); err != nil {
+	if err := simulateTransaction(ctx, s.client, abiScribe, *tx); err != nil {
 		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
 	}
 	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)

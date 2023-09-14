@@ -150,7 +150,7 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 	tx := (&types.Transaction{}).
 		SetTo(m.address).
 		SetInput(calldata)
-	if err := simulateTransaction(ctx, m.client, *tx); err != nil {
+	if err := simulateTransaction(ctx, m.client, abiMedian, *tx); err != nil {
 		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
 	}
 	txHash, txCpy, err := m.client.SendTransaction(ctx, *tx)

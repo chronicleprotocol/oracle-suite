@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	abi = goethABI.Default
+	abi = goethABI.NewABI()
 
 	abiMedian      *goethABI.Contract
 	abiScribe      *goethABI.Contract
@@ -60,6 +60,13 @@ func init() {
 	)
 
 	abiScribe, _ = abi.ParseSignatures(
+		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
+		`error FutureMessage(uint32 givenAge, uint32 currentTimestamp)`,
+		`error BarNotReached(uint8 numberSigners, uint8 bar)`,
+		`error SignerNotFeed(address signer)`,
+		`error SignersNotOrdered()`,
+		`error SchnorrSignatureInvalid()`,
+
 		`wat()(bytes32 wat)`,
 		`bar()(uint8 bar)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
@@ -67,6 +74,16 @@ func init() {
 	)
 
 	abiOpScribe, _ = abi.ParseSignatures(
+		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
+		`error FutureMessage(uint32 givenAge, uint32 currentTimestamp)`,
+		`error BarNotReached(uint8 numberSigners, uint8 bar)`,
+		`error SignerNotFeed(address signer)`,
+		`error SignersNotOrdered()`,
+		`error SchnorrSignatureInvalid()`,
+		`error InChallengePeriod()`,
+		`error NoOpPokeToChallenge()`,
+		`error SchnorrDataMismatch(uint160 gotHash, uint160 wantHash)`,
+
 		`wat()(bytes32 wat)`,
 		`bar()(uint8 bar)`,
 		`opChallengePeriod()(uint16 opChallengePeriod)`,
