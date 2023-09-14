@@ -36,10 +36,6 @@ func NewTick(pair Pair, price, volume any) Tick {
 //
 // Before using this data, you should check if it is valid by calling
 // Tick.Validate() method.
-//
-// During marshaling, the price and volume are converted to fixed-point
-// numbers with the precision specified by TickPricePrecision and
-// TickVolumePrecision constants.
 type Tick struct {
 	// Pair is an asset pair for which this price is calculated.
 	Pair Pair
