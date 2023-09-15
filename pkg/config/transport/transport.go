@@ -21,6 +21,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -89,8 +90,8 @@ type libP2PConfig struct {
 	// using the multiaddress format.
 	ListenAddrs []string `hcl:"listen_addrs"`
 
-	// ExternalIP is the external IP address of the node. It will be added to the local address list
-	ExternalIP net.IP `hcl:"external_ip,optional"`
+	// ExternalAddr is the external IP address of the node. It will be added to the local address list
+	ExternalAddr string `hcl:"external_addr,optional"`
 
 	// PrivKeySeed is the random hex-encoded 32 bytes. It is used to generate
 	// a unique identity on the libp2p network. The value may be empty to
@@ -230,10 +231,15 @@ func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, er
 		return nil, err
 	}
 	var extAddr multiaddr.Multiaddr
-	if c.LibP2P.ExternalIP != nil {
-		extAddr, err = multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/0", c.LibP2P.ExternalIP.String()))
+	if c.LibP2P.ExternalAddr != "" {
+		extAddr, err = parseAddr(c.LibP2P.ExternalAddr, c.LibP2P.ListenAddrs)
 		if err != nil {
-			return nil, fmt.Errorf("P2P transport error: unable to parse externalAddr: %w", err)
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Validation error",
+				Detail:   fmt.Sprintf("Could not determine external address from %s", c.LibP2P.ExternalAddr),
+				Subject:  c.LibP2P.Content.Attributes["external_addr"].Range.Ptr(),
+			}
 		}
 	}
 	cfg := libp2p.Config{
@@ -421,30 +427,19 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 	}
 
 	var extAddr multiaddr.Multiaddr
-	if c.LibP2P.ExternalIP != nil {
-		for _, addr := range c.LibP2P.ListenAddrs {
-			if addr == fmt.Sprintf("/ip4/%s/tcp/0", c.LibP2P.ExternalIP.String()) {
-				return nil, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Validation error",
-					Detail:   fmt.Sprintf("External IP address %q is already configured as a listen address", c.LibP2P.ExternalIP.String()),
-					Subject:  c.LibP2P.Content.Attributes["external_ip"].Range.Ptr(),
-				}
-			}
-		}
-		port, err := maGet(c.LibP2P.ListenAddrs[0], multiaddr.P_TCP)
+	if c.LibP2P.ExternalAddr != "" {
+		extAddr, err = parseAddr(c.LibP2P.ExternalAddr, c.LibP2P.ListenAddrs)
 		if err != nil {
 			return nil, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Validation error",
-				Detail:   fmt.Sprintf("Could not determine tcp port from %s", c.LibP2P.ExternalIP.String()),
-				Subject:  c.LibP2P.Content.Attributes["external_ip"].Range.Ptr(),
+				Detail:   fmt.Sprintf("Could not determine external address from %s", c.LibP2P.ExternalAddr),
+				Subject:  c.LibP2P.Content.Attributes["external_addr"].Range.Ptr(),
 			}
 		}
-		extAddr, err = multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", c.LibP2P.ExternalIP.String(), port))
-		if err != nil {
-			return nil, fmt.Errorf("P2P transport error: unable to parse externalAddr: %w", err)
-		}
+		logger.
+			WithField("address", extAddr).
+			Info("External Ingress")
 	}
 
 	// Configure LibP2P transport:
@@ -477,17 +472,35 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 	return recoverer.New(libP2PTransport, d.Logger), nil
 }
 
-func maGet(a string, p int) (string, error) {
-	m, err := multiaddr.NewMultiaddr(a)
-	if err != nil {
-		return "", err
+// parseAddr creates an external listening address
+// TODO: this would be a good place to ensure that the external does not have a tcp component or use it instead the original one
+// TODO: or use it instead the original one
+func parseAddr(addr string, addrs []string) (multiaddr.Multiaddr, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("no listen addresses configured")
 	}
-	v, err := m.ValueForProtocol(p)
+
+	listen, err := multiaddr.NewMultiaddr(addrs[0])
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return v, nil
+
+	external, err := multiaddr.NewMultiaddr(addr)
+	if err != nil {
+		var ip net.IP
+		if err := ip.UnmarshalText([]byte(addr)); err != nil {
+			return nil, fmt.Errorf("could not create IP from %s: %w", addr, err)
+		}
+		external, err = multiaddr.NewComponent("ip4", ip.String())
+		if err != nil {
+			return nil, fmt.Errorf("could not create addr from %s: %w", ip, err)
+		}
+	}
+
+	_, port := multiaddr.SplitLast(listen)
+	return external.Encapsulate(port), nil
 }
+
 func (c *Config) generatePrivKey() (crypto.PrivKey, error) {
 	seedReader := rand.Reader
 	if len(c.LibP2P.PrivKeySeed) != 0 {
