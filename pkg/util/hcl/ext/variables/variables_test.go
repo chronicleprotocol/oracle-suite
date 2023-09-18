@@ -107,6 +107,12 @@ func TestVariables(t *testing.T) {
 				}),
 			},
 		},
+		{
+			filename: "./testdata/conditional-expression.hcl",
+			expectedVars: map[string]cty.Value{
+				"conditional_var": cty.StringVal("true_branch"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
