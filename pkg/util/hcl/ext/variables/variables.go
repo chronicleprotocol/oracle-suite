@@ -117,8 +117,13 @@ func (r *variableResolver) resolveAll(ctx *hcl.EvalContext) hcl.Diagnostics {
 	return nil
 }
 
-// resolveSingle resolves a single variable.
+// resolveSingle ensures that the value of the variable at the given path is
+// already resolved.
 func (r *variableResolver) resolveSingle(ctx *hcl.EvalContext, path []cty.Value) (diags hcl.Diagnostics) {
+	// If current variable is referenced by another variable, it may happen
+	// that it will reference an element of a list or a map that is already
+	// resolved at higher level. For this reason, we use the closest method
+	// to find that map/list.
 	_, variable := r.variables.closest(path)
 
 	// Before resolving the variable, try to optimize variable.
@@ -133,7 +138,8 @@ func (r *variableResolver) resolveSingle(ctx *hcl.EvalContext, path []cty.Value)
 		return nil
 	}
 
-	// If is not already resolved but is being visited, then we have a circular reference.
+	// If is not already resolved but is being visited, then we have a circular
+	// reference.
 	if variable.visited {
 		return hcl.Diagnostics{{
 			Severity:    hcl.DiagError,
