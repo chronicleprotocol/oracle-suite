@@ -92,6 +92,17 @@ func (r *variableResolver) add(ctx *hcl.EvalContext, path []cty.Value, expr hcl.
 	return r.traverse(ctx, path, expr, func(ctx *hcl.EvalContext, path []cty.Value, expr hcl.Expression) (bool, hcl.Diagnostics) {
 		v := r.variables.path(path)
 		v.expression = expr
+		switch exprTyp := expr.(type) {
+		case exprMap:
+			v.size = len(exprTyp.ExprMap())
+		case exprList:
+			v.size = len(exprTyp.ExprList())
+		default:
+			v.size = -1
+		}
+		// There is no need to traverse further if the expression does not
+		// contain any self-references. Such expressions can be evaluated
+		// immediately.
 		return r.hasSelfReference(v), nil
 	})
 }
@@ -109,6 +120,13 @@ func (r *variableResolver) resolveAll(ctx *hcl.EvalContext) hcl.Diagnostics {
 // resolveSingle resolves a single variable.
 func (r *variableResolver) resolveSingle(ctx *hcl.EvalContext, path []cty.Value) (diags hcl.Diagnostics) {
 	_, variable := r.variables.closest(path)
+
+	// Before resolving the variable, try to optimize variable.
+	// If successful, then we can skip traversing the expression.
+	optDiags := variable.optimize(ctx)
+	if diags = diags.Extend(optDiags); diags.HasErrors() {
+		return diags
+	}
 
 	// Skip if already resolved.
 	if variable.resolved != nil {
@@ -326,6 +344,10 @@ type variables struct {
 	// resolution process.
 	visited bool
 
+	// size is the number of elements in this variable, -1 if the variable
+	// is not a map or a list.
+	size int
+
 	// variables contained in this variable (if the expression is a map or a list).
 	variables []kv
 }
@@ -367,6 +389,39 @@ func (t *variables) closest(path []cty.Value) (int, *variables) {
 		}
 	}
 	return len(path), t
+}
+
+// optimize sets the resolved value if all sub variables are already resolved.
+func (t *variables) optimize(cty *hcl.EvalContext) hcl.Diagnostics {
+	if t.resolved != nil {
+		return nil
+	}
+	if t.expression == nil && t.resolved == nil && len(t.variables) == 0 {
+		return nil
+	}
+	for _, v := range t.variables {
+		if diags := v.value.optimize(cty); diags.HasErrors() {
+			return diags
+		}
+	}
+	if t.size != len(t.variables) {
+		return nil
+	}
+	resolved := true
+	for _, v := range t.variables {
+		if v.value.resolved == nil {
+			resolved = false
+		}
+	}
+	if resolved {
+		value, diags := t.toValue(cty)
+		if diags.HasErrors() {
+			return diags
+		}
+		t.resolved = &value
+		t.variables = nil
+	}
+	return nil
 }
 
 // toValue converts the variables to a cty value.
