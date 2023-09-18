@@ -1,5 +1,7 @@
 variables {
-  environment = env("CFG_ENVIRONMENT", "prod")
+  environment    = env("CFG_ENVIRONMENT", "prod")
+  item_separator = env("CFG_ITEM_SEPARATOR", "\n")
+  feeds          = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(var.item_separator, env("CFG_FEEDS", "")))
 
   # Default sets of Feeds to use for the app.
   # CFG_FEEDS environment variable can control which set to use.

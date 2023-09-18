@@ -1,5 +1,5 @@
 variables {
-  spire_keys = explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_SYMBOLS", env("CFG_SPIRE_KEYS", "")))
+  spire_keys = explode(var.item_separator, env("CFG_SYMBOLS", env("CFG_SPIRE_KEYS", "")))
 }
 
 spire {
@@ -30,5 +30,5 @@ spire {
   ]))
 
   # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-  feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_FEEDS", "")))
+  feeds = var.feeds
 }
