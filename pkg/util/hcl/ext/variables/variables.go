@@ -131,9 +131,6 @@ func (r *variableResolver) resolveSingle(ctx *hcl.EvalContext, path []cty.Value)
 	// If the variable does not have any self reference, then we can simply
 	// evaluate the expression.
 	if !r.hasSelfReference(variable) {
-		if variable.expression == nil {
-			panic(fmt.Sprintf("variabl has no expression"))
-		}
 		value, valDiags := variable.expression.Value(ctx)
 		if diags := diags.Extend(valDiags); diags.HasErrors() {
 			return diags
