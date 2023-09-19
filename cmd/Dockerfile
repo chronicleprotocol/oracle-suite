@@ -2,8 +2,12 @@ FROM golang:1.20-alpine as builder
 RUN apk --no-cache add git gcc libc-dev linux-headers
 
 WORKDIR /app
-COPY . .
-RUN go mod vendor && mkdir -p dist
+
+COPY go.mod go.sum version.go ./
+RUN go mod download -x && mkdir -p ./dist
+
+COPY cmd ./cmd
+COPY pkg ./pkg
 
 ARG APP_VERSION="0.0.0-dev.0"
 ARG APP_NAME

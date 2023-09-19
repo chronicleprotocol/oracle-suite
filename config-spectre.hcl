@@ -1,5 +1,5 @@
 variables {
-  spectre_pairs = explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_SYMBOLS", env("CFG_SPECTRE_PAIRS", "")))
+  spectre_pairs = explode(var.item_separator, env("CFG_SYMBOLS", env("CFG_SPECTRE_PAIRS", "")))
 }
 
 spectre {
@@ -20,7 +20,7 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_FEEDS", "")))
+      feeds = var.feeds
 
       # Name of the pair to fetch the price for.
       data_model = replace(contract.value.wat, "/", "")
@@ -53,7 +53,7 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_FEEDS", "")))
+      feeds = var.feeds
 
       # Name of the pair to fetch the price for.
       data_model = contract.value.wat
@@ -86,7 +86,7 @@ spectre {
       contract_addr = contract.value.address
 
       # List of feeds that are allowed to be storing messages in storage. Other feeds are ignored.
-      feeds = try(var.feed_sets[env("CFG_FEEDS", var.environment)], explode(env("CFG_ITEM_SEPARATOR", "\n"), env("CFG_FEEDS", "")))
+      feeds = var.feeds
 
       # Name of the pair to fetch the price for.
       data_model = contract.value.wat

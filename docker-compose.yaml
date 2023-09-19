@@ -62,6 +62,7 @@ services:
       ### local address book
       CFG_WEBAPI_STATIC_ADDR_BOOK: ""
 
+      CFG_LIBP2P_EXTERNAL_ADDR: "/dns/www.example.com"
   _base_spectre:
     <<: *disabled
     environment: &base_spectre

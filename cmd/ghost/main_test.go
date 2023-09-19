@@ -16,6 +16,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,6 +35,7 @@ func TestConfig_Ghost_Run(t *testing.T) {
 		args     []string
 		config   supervisor.Config
 		services supervisor.Service
+		envVars  map[string]string
 		wantErr  bool
 	}{
 		{
@@ -41,10 +43,18 @@ func TestConfig_Ghost_Run(t *testing.T) {
 			args:     []string{"--config", "../../config.hcl"},
 			config:   &ghost.Config{},
 			services: &ghost.Services{},
+			envVars: map[string]string{
+				"CFG_LIBP2P_EXTERNAL_ADDR": "1.2.3.4",
+			},
 		},
 	}
 
 	for _, tt := range tests {
+		os.Clearenv()
+		for k, v := range tt.envVars {
+			require.NoError(t, os.Setenv(k, v))
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
 			var ff = cmd.FilesFlags{}
 			require.NoError(t, ff.FlagSet().Parse(tt.args))

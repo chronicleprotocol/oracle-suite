@@ -7,7 +7,7 @@ libp2p {
   blocked_addrs      = ["/ip4/0.0.0.0/tcp/9000"]
   disable_discovery  = true
   ethereum_key       = "key"
-  external_ip        = "10.1.2.3"
+  external_addr      = "/dns/eee.example.com"
 }
 
 webapi {
