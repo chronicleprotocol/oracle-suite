@@ -93,7 +93,11 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 						fmt.Println(string(jsonMsg))
 						continue
 					}
-					jsonMsg, err := json.Marshal(handleMessage(msg))
+					normalizedMessage := handleMessage(msg)
+					if normalizedMessage == nil {
+						continue
+					}
+					jsonMsg, err := json.Marshal(normalizedMessage)
 					if err != nil {
 						l.Logger().WithError(err).Error("Failed to marshal message")
 						continue

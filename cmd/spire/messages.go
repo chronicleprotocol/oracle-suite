@@ -25,11 +25,21 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/maputil"
 )
 
-// This file contains functions for normalizing messages received over the
-// transport layer into a common format. This is done to make sure, that
-// messages provided by `spire stream` are always in the same format,
-// regardless of internal changes in oracle-suite.
+// This file contains functions that normalize messages received through the
+// transport layer, converting them into a standardized format. The
+// normalization process is crucial for maintaining consistency in the message
+// structure output by the `spire stream`, regardless of any internal changes
+// in the oracle-suite over time. This approach allows for smoother
+// integrations and updates.
 
+// Message types supported by the `spire stream` command.
+//
+// Please note that although there are similarities, these types are distinct
+// from the ones defined in the transport layer.
+//
+// The "type" field in each message delineates the specific type and version of
+// that message. Meanwhile, the "meta.topic" field identifies the topic under
+// which the message was received, providing context for the message's origin.
 const (
 	priceMessageType                 = "price/v1"
 	muSigInitializeMessageType       = "musig_initialize/v1"
