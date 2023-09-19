@@ -22,38 +22,17 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/defiweb/go-eth/types"
 	"github.com/spf13/cobra"
 
 	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-type structFull struct {
-	Data any            `json:"data"`
-	Meta transport.Meta `json:"meta"`
-}
-type priceData struct {
-	Wat string `json:"wat"`
-	Val string `json:"val"`
-	Age int64  `json:"age"`
-}
-type structSimplePrice struct {
-	Data    priceData       `json:"data"`
-	Sig     types.Signature `json:"signature"`
-	Meta    map[string]any  `json:"meta"`
-	Type    string          `json:"type"`
-	Version string          `json:"version"`
-}
-
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
-	var format string
-
+	var raw bool
 	cc := &cobra.Command{
 		Use:   "stream [TOPIC...]",
 		Args:  cobra.MinimumNArgs(0),
@@ -92,105 +71,49 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 					WithField("name", s).
 					Info("Subscribed to topic")
 			}
+			type mm struct {
+				Data any            `json:"data"`
+				Meta transport.Meta `json:"meta"`
+			}
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
 				case msg := <-sink.Chan():
-					switch format {
-					case "full":
-						m := structFull{
+					if raw {
+						m := mm{
 							Meta: msg.Meta,
 							Data: msg.Message,
 						}
 						jsonMsg, err := json.Marshal(m)
 						if err != nil {
-							return err
+							l.Logger().WithError(err).Error("Failed to marshal message")
+							continue
 						}
 						fmt.Println(string(jsonMsg))
-					case "raw", "data", "message":
-						jsonMsg, err := json.Marshal(msg.Message)
-						if err != nil {
-							return err
-						}
-						fmt.Println(string(jsonMsg))
-					case "simple":
-						switch mm := msg.Message.(type) {
-						case *messages.Price:
-							m := structSimplePrice{
-								Data: priceData{
-									Wat: mm.Price.Wat,
-									Val: mm.Price.Val.String(),
-									Age: mm.Price.Age.Unix(),
-								},
-								Meta: remapMeta(msg.Meta, map[string]any{
-									"trace":      mm.Trace,
-									"user_agent": "omnia/" + mm.Version,
-								}),
-								Sig:     mm.Price.Sig,
-								Type:    "price",
-								Version: "1.0",
-							}
-							jsonMsg, err := json.Marshal(m)
-							if err != nil {
-								return err
-							}
-							fmt.Println(string(jsonMsg))
-						case *messages.DataPoint:
-							m := structSimplePrice{
-								Data: priceData{
-									Wat: mm.Model,
-									Val: mm.Point.Value.(value.Tick).Price.DecFixedPoint(contract.ScribePricePrecision).RawBigInt().String(),
-									Age: mm.Point.Time.Unix(),
-								},
-								Meta: remapMeta(msg.Meta, map[string]any{
-									"model": mm.Point.Value.(value.Tick).Pair.String(),
-									"trace": mm.Point.Meta["trace"],
-								}),
-								Sig:     mm.ECDSASignature,
-								Type:    "price",
-								Version: "1.1",
-							}
-							jsonMsg, err := json.Marshal(m)
-							if err != nil {
-								return err
-							}
-							fmt.Println(string(jsonMsg))
-						default:
-							m := structFull{
-								Meta: msg.Meta,
-								Data: msg.Message,
-							}
-							jsonMsg, err := json.Marshal(m)
-							if err != nil {
-								return err
-							}
-							fmt.Println(string(jsonMsg))
-						}
-					default:
-						return fmt.Errorf("unknown format: %s", format)
+						continue
 					}
+					jsonMsg, err := json.Marshal(handleMessage(msg))
+					if err != nil {
+						l.Logger().WithError(err).Error("Failed to marshal message")
+						continue
+					}
+					fmt.Println(string(jsonMsg))
 				}
 			}
 		},
 	}
-	cc.AddCommand(NewStreamPricesCmd(c, f, l), NewTopicsCmd())
-	cc.Flags().StringVarP(&format, "output", "o", "full", "output format")
+	cc.AddCommand(
+		NewStreamPricesCmd(c, f, l),
+		NewTopicsCmd(),
+	)
+	cc.Flags().BoolVar(
+		&raw,
+		"raw",
+		false,
+		"show raw messages",
+	)
 	return cc
-}
-
-func remapMeta(meta transport.Meta, m map[string]any) map[string]any {
-	m["transport"] = meta.Transport
-	m["topic"] = meta.Topic
-	m["message_id"] = meta.MessageID
-	m["peer_id"] = meta.PeerID
-	m["peer_addr"] = meta.PeerAddr
-	m["received_from_peer_id"] = meta.ReceivedFromPeerID
-	m["received_from_peer_addr"] = meta.ReceivedFromPeerAddr
-	if meta.UserAgent != "" {
-		m["user_agent"] = meta.UserAgent
-	}
-	return m
 }
 
 func NewTopicsCmd() *cobra.Command {
@@ -244,13 +167,19 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) 
 				case msg := <-msgCh:
 					jsonMsg, err := json.Marshal(msg.Message)
 					if err != nil {
-						return err
+						l.Logger().WithError(err).Error("Failed to marshal message")
+						continue
 					}
 					fmt.Println(string(jsonMsg))
 				}
 			}
 		},
 	}
-	cc.Flags().BoolVar(&legacy, "legacy", false, "legacy mode")
+	cc.Flags().BoolVar(
+		&legacy,
+		"legacy",
+		false,
+		"legacy mode",
+	)
 	return cc
 }
