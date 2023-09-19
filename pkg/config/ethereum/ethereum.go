@@ -471,6 +471,7 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 }
 
 func (c *ConfigClient) transport(logger log.Logger) (transport.Transport, error) {
+	var err error
 	rpcURLs := make([]string, len(c.RPCURLs))
 	for i, u := range c.RPCURLs {
 		rpcURLs[i] = u.String()
@@ -494,9 +495,24 @@ func (c *ConfigClient) transport(logger log.Logger) (transport.Transport, error)
 			Subject:  c.Range.Ptr(),
 		}
 	}
-	rpcTransport, err := transport.NewHTTP(transport.HTTPOptions{
+	var rpcTransport transport.Transport
+	rpcTransport, err = transport.NewHTTP(transport.HTTPOptions{
 		URL:        fmt.Sprintf("http://%s", splitterVirtualHost),
 		HTTPClient: &http.Client{Transport: splitter},
+	})
+	if err != nil {
+		return nil, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Runtime error",
+			Detail:   fmt.Sprintf("Failed to create the Ethereum RPC transport: %v", err),
+			Subject:  c.Range.Ptr(),
+		}
+	}
+	rpcTransport, err = transport.NewRetry(transport.RetryOptions{
+		Transport:   rpcTransport,
+		RetryFunc:   transport.RetryOnAnyError,
+		BackoffFunc: transport.LinearBackoff(time.Second),
+		MaxRetries:  3,
 	})
 	if err != nil {
 		return nil, &hcl.Diagnostic{
