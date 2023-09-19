@@ -32,54 +32,61 @@ import (
 // in the oracle-suite over time. This approach allows for smoother
 // integrations and updates.
 
-// Message types supported by the `spire stream` command.
-//
-// Please note that although there are similarities, these types are distinct
-// from the ones defined in the transport layer.
-//
-// The "type" field in each message delineates the specific type and version of
-// that message. Meanwhile, the "meta.topic" field identifies the topic under
-// which the message was received, providing context for the message's origin.
 const (
-	priceMessageType                 = "price/v1"
-	muSigInitializeMessageType       = "musig_initialize/v1"
-	muSigCommitmentMessageType       = "musig_commitment/v1"
-	muSigPartialSignatureMessageType = "musig_partial_signature/v1"
-	muSigSignatureMessageType        = "musig_signature/v1"
-	muSigTerminateMessageType        = "musig_terminate/v1"
-	greetMessageType                 = "greet/v1"
+	priceMessageType = "price"
+	greetMessageType = "greet"
 )
 
-func handleMessage(msg transport.ReceivedMessage) map[string]any {
-	var (
-		typ  string
-		data map[string]any
-	)
+type streamType struct {
+	Type       string           `json:"type,omitempty"`
+	Version    string           `json:"version,omitempty"`
+	Data       any              `json:"data,omitempty"`
+	Signer     string           `json:"signer,omitempty"`
+	Signature  string           `json:"signature,omitempty"`
+	Signatures []map[string]any `json:"signatures,omitempty"`
+	Meta       map[string]any   `json:"meta,omitempty"`
+}
+
+var removeEmptyFields = func(v any) bool {
+	if v == nil {
+		return false
+	}
+	if s, ok := v.(string); ok {
+		return s != ""
+	}
+	return true
+}
+
+func handleMessage(msg transport.ReceivedMessage) streamType {
+	var v streamType
+
 	switch msgType := msg.Message.(type) {
 	case *messages.Price:
-		typ, data = handleLegacyPriceMessage(msgType)
+		v = handleLegacyPriceMessage(msgType)
 	case *messages.DataPoint:
 		switch msgType.Point.Value.(type) { //nolint:gocritic
 		case value.Tick:
-			typ, data = handleTickDataPointMessage(msgType)
+			v = handleTickDataPointMessage(msgType)
 		}
 	case *messages.MuSigInitialize:
-		typ, data = handleMuSigInitializeMessage(msgType)
+		v = handleMuSigInitializeMessage(msgType)
 	case *messages.MuSigCommitment:
-		typ, data = handleMuSigCommitmentMessage(msgType)
+		v = handleMuSigCommitmentMessage(msgType)
 	case *messages.MuSigPartialSignature:
-		typ, data = handleMuSigPartialSignatureMessage(msgType)
+		v = handleMuSigPartialSignatureMessage(msgType)
 	case *messages.MuSigSignature:
-		typ, data = handleMuSigSignatureMessage(msgType)
+		v = handleMuSigSignatureMessage(msgType)
 	case *messages.MuSigTerminate:
-		typ, data = handleMuSigTerminateMessage(msgType)
+		v = handleMuSigTerminateMessage(msgType)
 	case *messages.Greet:
-		typ, data = handleGreetMessage(msgType)
+		v = handleGreetMessage(msgType)
+	default:
+		v = streamType{
+			Data: msg.Message,
+		}
 	}
-	if data == nil {
-		return nil
-	}
-	meta := map[string]any{
+
+	v.Meta = maputil.Merge(v.Meta, maputil.Filter(map[string]any{
 		"transport":               msg.Meta.Transport,
 		"user_agent":              msg.Meta.UserAgent,
 		"topic":                   msg.Meta.Topic,
@@ -88,119 +95,174 @@ func handleMessage(msg transport.ReceivedMessage) map[string]any {
 		"peer_addr":               msg.Meta.PeerAddr,
 		"received_from_peer_id":   msg.Meta.ReceivedFromPeerID,
 		"received_from_peer_addr": msg.Meta.ReceivedFromPeerAddr,
+	}, removeEmptyFields))
+
+	if (v.Signature != "" || len(v.Signatures) > 0) && v.Signer == "" {
+		v.Signer = msg.Meta.PeerAddr
 	}
-	return map[string]any{
-		"type": typ,
-		"data": data,
-		"meta": meta,
+
+	return v
+}
+
+func handleLegacyPriceMessage(msg *messages.Price) streamType {
+	return streamType{
+		Type:    priceMessageType,
+		Version: "1.0",
+		Data: map[string]any{
+			"wat": msg.Price.Wat,
+			"val": msg.Price.Val.String(),
+			"age": msg.Price.Age.Unix(),
+		},
+		Meta: map[string]any{
+			"trace":      msg.Trace,
+			"user_agent": "omnia/" + msg.Version,
+		},
+		Signature: msg.Price.Sig.String(),
 	}
 }
 
-func handleLegacyPriceMessage(msg *messages.Price) (string, map[string]any) {
-	return priceMessageType, map[string]any{
-		"wat":   msg.Price.Wat,
-		"val":   msg.Price.Val.String(),
-		"age":   msg.Price.Age.Unix(),
-		"vrs":   msg.Price.Sig.String(),
-		"trace": msg.Trace,
-	}
-}
-
-func handleTickDataPointMessage(msg *messages.DataPoint) (string, map[string]any) {
+func handleTickDataPointMessage(msg *messages.DataPoint) streamType {
 	tick := msg.Point.Value.(value.Tick)
-	return priceMessageType, map[string]any{
-		"wat":   msg.Model,
-		"val":   tick.Price.DecFixedPoint(contract.MedianPricePrecision).String(),
-		"age":   msg.Point.Time.Unix(),
-		"vrs":   msg.ECDSASignature.String(),
-		"trace": msg.Point.Meta["trace"],
+	return streamType{
+		Type:    priceMessageType,
+		Version: "1.1",
+		Data: map[string]any{
+			"wat": msg.Model,
+			"val": tick.Price.DecFixedPoint(contract.MedianPricePrecision).RawBigInt().String(),
+			"age": msg.Point.Time.Unix(),
+		},
+		Meta: map[string]any{
+			"trace": msg.Point.Meta["trace"],
+		},
+		Signature: msg.ECDSASignature.String(),
 	}
 }
 
-func handleMuSigInitializeMessage(msg *messages.MuSigInitialize) (string, map[string]any) {
-	return muSigInitializeMessageType, maputil.Merge(map[string]any{
+func handleMuSigSignatureMessage(msg *messages.MuSigSignature) streamType {
+	msm := handleMuSigMessage(msg.MuSigMessage)
+
+	msm.Type = priceMessageType // from the front-end perspective, this is a price message
+	msm.Version = "2.0"         // this indicates that the message is signed with Schnorr
+	msm.Meta = maputil.Merge(map[string]any{
+		"session_id":  msg.SessionID.String(),
+		"computed_at": msg.ComputedAt.Unix(),
+		"commitment":  msg.Commitment.String(),
+	}, maputil.Filter(msm.Meta, removeEmptyFields))
+	msm.Signature = hexutil.BigIntToHex(msg.SchnorrSignature)
+
+	return msm
+}
+
+func handleMuSigInitializeMessage(msg *messages.MuSigInitialize) streamType {
+	msm := handleMuSigMessage(msg.MuSigMessage)
+
+	msm.Type = "musig_initialize"
+	msm.Version = "0.1"
+	msm.Meta = maputil.Merge(map[string]any{
 		"session_id": msg.SessionID.String(),
 		"started_at": msg.StartedAt.Unix(),
-	}, handleMuSigMessage(msg.MuSigMessage))
+	}, maputil.Filter(msm.Meta, removeEmptyFields))
+
+	return msm
 }
 
-func handleMuSigCommitmentMessage(msg *messages.MuSigCommitment) (string, map[string]any) {
-	return muSigCommitmentMessageType, map[string]any{
-		"session_id":       msg.SessionID.String(),
-		"commitment_key_x": hexutil.BigIntToHex(msg.CommitmentKeyX),
-		"commitment_key_y": hexutil.BigIntToHex(msg.CommitmentKeyY),
-		"public_key_x":     hexutil.BigIntToHex(msg.PublicKeyX),
-		"public_key_y":     hexutil.BigIntToHex(msg.PublicKeyY),
+func handleMuSigCommitmentMessage(msg *messages.MuSigCommitment) streamType {
+	return streamType{
+		Type:    "musig_commitment",
+		Version: "0.1", // this means that the message is a WIP
+		Data: map[string]any{
+			"commitment_key_x": hexutil.BigIntToHex(msg.CommitmentKeyX),
+			"commitment_key_y": hexutil.BigIntToHex(msg.CommitmentKeyY),
+			"public_key_x":     hexutil.BigIntToHex(msg.PublicKeyX),
+			"public_key_y":     hexutil.BigIntToHex(msg.PublicKeyY),
+		},
+		Meta: map[string]any{
+			"session_id": msg.SessionID.String(),
+		},
 	}
 }
 
-func handleMuSigPartialSignatureMessage(msg *messages.MuSigPartialSignature) (string, map[string]any) {
-	return muSigPartialSignatureMessageType, map[string]any{
-		"session_id":        msg.SessionID.String(),
-		"partial_signature": hexutil.BigIntToHex(msg.PartialSignature),
+func handleMuSigPartialSignatureMessage(msg *messages.MuSigPartialSignature) streamType {
+	return streamType{
+		Type:    "musig_partial_signature",
+		Version: "0.1", // this means that the message is a WIP
+		Meta: map[string]any{
+			"session_id": msg.SessionID.String(),
+		},
+		Signature: hexutil.BigIntToHex(msg.PartialSignature),
 	}
 }
 
-func handleMuSigSignatureMessage(msg *messages.MuSigSignature) (string, map[string]any) {
-	return muSigSignatureMessageType, maputil.Merge(map[string]any{
-		"session_id":        msg.SessionID.String(),
-		"computed_at":       msg.ComputedAt.Unix(),
-		"commitment":        msg.Commitment.String(),
-		"schnorr_signature": hexutil.BigIntToHex(msg.SchnorrSignature),
-	}, handleMuSigMessage(msg.MuSigMessage))
-}
-
-func handleMuSigTerminateMessage(msg *messages.MuSigTerminate) (string, map[string]any) {
-	return muSigTerminateMessageType, map[string]any{
-		"session_id": msg.SessionID.String(),
-		"reason":     msg.Reason,
+func handleMuSigTerminateMessage(msg *messages.MuSigTerminate) streamType {
+	return streamType{
+		Type:    "musig_terminate",
+		Version: "0.1", // this means that the message is a WIP
+		Meta: map[string]any{
+			"session_id": msg.SessionID.String(),
+			"reason":     msg.Reason,
+		},
 	}
 }
 
-func handleGreetMessage(msg *messages.Greet) (string, map[string]any) {
-	return greetMessageType, map[string]any{
-		"ecdsa_signature": msg.Signature.String(),
-		"public_key_x":    hexutil.BigIntToHex(msg.PublicKeyX),
-		"public_key_y":    hexutil.BigIntToHex(msg.PublicKeyY),
+func handleGreetMessage(msg *messages.Greet) streamType {
+	return streamType{
+		Type:    greetMessageType,
+		Version: "0.1", // this means that the message is a WIP
+		Data: map[string]any{
+			"public_key_x": hexutil.BigIntToHex(msg.PublicKeyX),
+			"public_key_y": hexutil.BigIntToHex(msg.PublicKeyY),
+			"web_url":      msg.WebURL,
+			"greet":        msg.Signature.String(),
+		},
 	}
 }
 
-func handleMuSigMessage(msg *messages.MuSigMessage) map[string]any {
-	meta := map[string]any{}
+func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
+	data := map[string]any{}
+	meta := map[string]any{
+		"type": msg.MsgType,
+		"body": msg.MsgBody.String(),
+	}
+	var signatures []map[string]any
+	var ticks []map[string]any
+
 	switch { //nolint:gocritic
 	case msg.MsgMeta.TickV1() != nil:
 		msgTickMeta := msg.MsgMeta.TickV1()
-		var tickMeta []map[string]any
-		var optimisticTickMeta []map[string]any
+
 		for _, tick := range msgTickMeta.FeedTicks {
-			tickMeta = append(tickMeta, map[string]any{
-				"val": tick.Val.SetPrec(contract.MedianPricePrecision).String(),
+			ticks = append(ticks, map[string]any{
+				"val": tick.Val.SetPrec(contract.ScribePricePrecision).RawBigInt().String(),
 				"age": tick.Age.Unix(),
-				"vrs": tick.VRS.String(),
+				"sig": tick.VRS.String(),
 			})
 		}
+
 		for _, optimistic := range msgTickMeta.Optimistic {
-			optimisticTickMeta = append(optimisticTickMeta, map[string]any{
-				"ecdsa_signature": optimistic.ECDSASignature.String(),
-				"signers_blob":    hexutil.BytesToHex(optimistic.SignerIndexes),
+			signatures = append(signatures, map[string]any{
+				"type":         "optimistic",
+				"signature":    optimistic.ECDSASignature.String(),
+				"signers_blob": hexutil.BytesToHex(optimistic.SignerIndexes),
 			})
 		}
-		meta = map[string]any{
-			"wat":        msgTickMeta.Wat,
-			"val":        msgTickMeta.Val.SetPrec(contract.MedianPricePrecision).String(),
-			"age":        msgTickMeta.Age.Unix(),
-			"feed_ticks": tickMeta,
-			"optimistic": optimisticTickMeta,
+
+		data = map[string]any{
+			"wat": msgTickMeta.Wat,
+			"val": msgTickMeta.Val.SetPrec(contract.ScribePricePrecision).RawBigInt().String(),
+			"age": msgTickMeta.Age.Unix(),
 		}
 	}
-	var singers []string
+
+	var signers []string
 	for _, signer := range msg.Signers {
-		singers = append(singers, signer.String())
+		signers = append(signers, signer.String())
 	}
-	return map[string]any{
-		"msg_type": msg.MsgType,
-		"msg_body": msg.MsgBody.String(),
-		"msg_meta": meta,
-		"signers":  singers,
+	meta["signers"] = signers
+	meta["trace"] = ticks
+
+	return streamType{
+		Data:       data,
+		Meta:       meta,
+		Signatures: signatures,
 	}
 }

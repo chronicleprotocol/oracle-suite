@@ -93,11 +93,7 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 						fmt.Println(string(jsonMsg))
 						continue
 					}
-					normalizedMessage := handleMessage(msg)
-					if normalizedMessage == nil {
-						continue
-					}
-					jsonMsg, err := json.Marshal(normalizedMessage)
+					jsonMsg, err := json.Marshal(handleMessage(msg))
 					if err != nil {
 						l.Logger().WithError(err).Error("Failed to marshal message")
 						continue
@@ -117,6 +113,8 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 		false,
 		"show raw messages",
 	)
+	var format string
+	cc.Flags().StringVarP(&format, "output", "o", "", "(here for backward compatibility)")
 	return cc
 }
 

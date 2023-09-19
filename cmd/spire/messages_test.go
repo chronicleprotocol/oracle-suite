@@ -45,30 +45,32 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(priceMessageType),
+			Meta:    createMeta(messages.PriceV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-			"type": "price/v1",
+			"type": "price",
+			"version": "1.0",
 			"data": {
 				"wat": "ETH/USD",
 				"val": "3000",
-				"age": 1234567890,
-				"vrs": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-				"trace": {
-					"DAI/USD@exchange": "1.00001"
-				}
+				"age": 1234567890
 			},
+			"signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"meta": {
-				"transport": "libp2p",
-				"user_agent": "spire/v0.0.0",
-				"topic": "price/v1",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_id": "peer1",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 				"received_from_peer_id": "peer2",
-				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789",
+				"topic": "price/v1",
+				"trace": {
+					"DAI/USD@exchange": "1.00001"
+				},
+				"transport": "libp2p",
+				"user_agent": "spire/v0.0.0"
 			}
 		}`
 		resultJSON, err := json.Marshal(result)
@@ -93,30 +95,32 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(priceMessageType),
+			Meta:    createMeta(messages.DataPointV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-			"type": "price/v1",
+			"type": "price",
+			"version": "1.1",
 			"data": {
 				"wat": "ETH/USD",
-				"val": "3000",
-				"age": 1234567890,
-				"vrs": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-				"trace": {
-					"DAI/USD@exchange": "1.00001"
-				}
+				"val": "3000000000000000000000",
+				"age": 1234567890
 			},
+			"signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"meta": {
 				"transport": "libp2p",
 				"user_agent": "spire/v0.0.0",
-				"topic": "price/v1",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_id": "peer1",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 				"received_from_peer_id": "peer2",
-				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789",
+				"topic": "data_point/v1",
+				"trace": {
+					"DAI/USD@exchange": "1.00001"
+				}
 			}
 		}`
 		resultJSON, err := json.Marshal(result)
@@ -132,48 +136,43 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(muSigInitializeMessageType),
+			Meta:    createMeta(messages.MuSigStartV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-			"type": "musig_initialize/v1",
+			"type": "musig_initialize",
+			"version": "0.1",
 			"data": {
+				"age": 1234567890,
+				"val": "3000000000000000000000",
+				"wat": "ETH/USD"
+			},
+			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+			"signatures": [{
+				"type": "optimistic",
+				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+				"signers_blob":"0x123456"
+			}],
+			"meta": {
+				"body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"type": "musig_initialize",
+				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+				"peer_id": "peer1",
+				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789",
+				"received_from_peer_id": "peer2",
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"started_at": 1234567890,
-				"msg_type": "musig_initialize/v1",
-				"msg_body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				"msg_meta": {
-					"wat": "ETH/USD",
-					"val": "3000",
-					"age": 1234567890,
-					"feed_ticks": [
-						{
-							"val": "3000",
-							"age": 1234567890,
-							"vrs": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"
-						}
-					],
-					"optimistic": [
-						{
-							"ecdsa_signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-							"signers_blob": "0x123456"
-						}
-					]
-				},
-				"signers": [
-					"0x1234567890abcdef1234567890abcdef12345678"
-				]
-			},
-			"meta": {
-				"transport": "libp2p",
-				"user_agent": "spire/v0.0.0",
 				"topic": "musig_initialize/v1",
-				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				"peer_id": "peer1",
-				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
-				"received_from_peer_id": "peer2",
-				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+				"signers": ["0x1234567890abcdef1234567890abcdef12345678"],
+				"trace": [{
+					"age": 1234567890,
+					"sig": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+					"val": "3000000000000000000000"
+				}],
+				"transport": "libp2p",
+				"user_agent": "spire/v0.0.0"
 			}
 		}`
 		resultJSON, err := json.Marshal(result)
@@ -191,30 +190,31 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(muSigCommitmentMessageType),
+			Meta:    createMeta(messages.MuSigCommitmentV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-		"type": "musig_commitment/v1",
-		"data": {
-			"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			"commitment_key_x": "0x499602d2",
-			"commitment_key_y": "0x499602d3",
-			"public_key_x": "0x499602d4",
-			"public_key_y": "0x499602d5"
-		},
-		"meta": {
-			"transport": "libp2p",
-			"user_agent": "spire/v0.0.0",
-			"topic": "musig_commitment/v1",
-			"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			"peer_id": "peer1",
-			"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
-			"received_from_peer_id": "peer2",
-			"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
-		}
-	}`
+			"type": "musig_commitment",
+			"version": "0.1",
+			"data": {
+				"commitment_key_x": "0x499602d2",
+				"commitment_key_y": "0x499602d3",
+				"public_key_x": "0x499602d4",
+				"public_key_y": "0x499602d5"
+			},
+			"meta": {
+				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"transport": "libp2p",
+				"user_agent": "spire/v0.0.0",
+				"topic": "musig_commitment/v1",
+				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"peer_id": "peer1",
+				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+				"received_from_peer_id": "peer2",
+				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+			}
+		}`
 		resultJSON, err := json.Marshal(result)
 		assert.Nil(t, err)
 		assert.JSONEq(t, expectedJSON, string(resultJSON))
@@ -227,27 +227,27 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(muSigPartialSignatureMessageType),
+			Meta:    createMeta(messages.MuSigPartialSignatureV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-		"type": "musig_partial_signature/v1",
-		"data": {
-			"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			"partial_signature": "0x499602d2"
-		},
-		"meta": {
-			"transport": "libp2p",
-			"user_agent": "spire/v0.0.0",
-			"topic": "musig_partial_signature/v1",
-			"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			"peer_id": "peer1",
-			"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
-			"received_from_peer_id": "peer2",
-			"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
-		}
-	}`
+			"type": "musig_partial_signature",
+			"version": "0.1",
+			"signature": "0x499602d2",
+			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+			"meta": {
+				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"transport": "libp2p",
+				"user_agent": "spire/v0.0.0",
+				"topic": "musig_partial_signature/v1",
+				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"peer_id": "peer1",
+				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+				"received_from_peer_id": "peer2",
+				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+ 			}
+		}`
 		resultJSON, err := json.Marshal(result)
 		assert.Nil(t, err)
 		assert.JSONEq(t, expectedJSON, string(resultJSON))
@@ -263,50 +263,45 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(muSigSignatureMessageType),
+			Meta:    createMeta(messages.MuSigSignatureV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-			"type": "musig_signature/v1",
+			"type": "price",
+			"version": "2.0",
 			"data": {
-				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				"computed_at": 1234567890,
-				"commitment": "0x1234567890abcdef1234567890abcdef12345678",
-				"schnorr_signature": "0x499602d2",
-				"msg_type": "musig_initialize/v1",
-				"msg_body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				"msg_meta": {
-					"wat": "ETH/USD",
-					"val": "3000",
-					"age": 1234567890,
-					"feed_ticks": [
-						{
-							"val": "3000",
-							"age": 1234567890,
-							"vrs": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"
-						}
-					],
-					"optimistic": [
-						{
-							"ecdsa_signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-							"signers_blob": "0x123456"
-						}
-					]
-				},
-				"signers": [
-					"0x1234567890abcdef1234567890abcdef12345678"
-				]
+				"age": 1234567890,
+				"val": "3000000000000000000000",
+				"wat": "ETH/USD"
 			},
+			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+			"signature": "0x499602d2",
+			"signatures": [{
+				"type": "optimistic",
+				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+				"signers_blob":"0x123456"
+			}],
 			"meta": {
-				"transport": "libp2p",
-				"user_agent": "spire/v0.0.0",
-				"topic": "musig_signature/v1",
+				"body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"type": "musig_initialize",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				"peer_id": "peer1",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+				"peer_id": "peer1",
+				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789",
 				"received_from_peer_id": "peer2",
-				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				"commitment": "0x1234567890abcdef1234567890abcdef12345678",
+				"computed_at": 1234567890,
+				"topic": "musig_signature/v1",
+				"signers": ["0x1234567890abcdef1234567890abcdef12345678"],
+				"trace": [{
+					"age": 1234567890,
+					"sig": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+					"val": "3000000000000000000000"
+				}],
+				"transport": "libp2p",
+				"user_agent": "spire/v0.0.0"
 			}
 		}`
 		resultJSON, err := json.Marshal(result)
@@ -321,17 +316,15 @@ func TestHandleMessage(t *testing.T) {
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(muSigTerminateMessageType),
+			Meta:    createMeta(messages.MuSigTerminateV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-		"type": "musig_terminate/v1",
-		"data": {
-			"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			"reason": "termination reason"
-		},
+		"type": "musig_terminate",
+		"version": "0.1",
 		"meta": {
+			"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			"transport": "libp2p",
 			"user_agent": "spire/v0.0.0",
 			"topic": "musig_terminate/v1",
@@ -339,7 +332,8 @@ func TestHandleMessage(t *testing.T) {
 			"peer_id": "peer1",
 			"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"received_from_peer_id": "peer2",
-			"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789"
+			"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789",
+			"reason": "termination reason"
 		}
 	}`
 		resultJSON, err := json.Marshal(result)
@@ -352,19 +346,22 @@ func TestHandleMessage(t *testing.T) {
 			Signature:  types.MustSignatureFromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"),
 			PublicKeyX: big.NewInt(1234567892),
 			PublicKeyY: big.NewInt(1234567893),
+			WebURL:     "example.com",
 		}
 		receivedMessage := transport.ReceivedMessage{
 			Message: msg,
-			Meta:    createMeta(greetMessageType),
+			Meta:    createMeta(messages.GreetV1MessageName),
 		}
 		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
-			"type": "greet/v1",
+			"type": "greet",
+			"version": "0.1",
 			"data": {
-				"ecdsa_signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+				"greet": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
 				"public_key_x": "0x499602d4",
-				"public_key_y": "0x499602d5"
+				"public_key_y": "0x499602d5",
+				"web_url":"example.com"
 			},
 			"meta": {
 				"transport": "libp2p",
@@ -385,7 +382,7 @@ func TestHandleMessage(t *testing.T) {
 
 func createMuSigMessage() *messages.MuSigMessage {
 	return &messages.MuSigMessage{
-		MsgType: muSigInitializeMessageType,
+		MsgType: "musig_initialize",
 		MsgBody: types.MustHashFromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", types.PadNone),
 		MsgMeta: messages.MuSigMeta{
 			Meta: messages.MuSigMetaTickV1{
