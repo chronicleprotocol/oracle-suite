@@ -81,6 +81,12 @@ func TestSimulateTransaction(t *testing.T) {
 			"4e487b71" +
 			"7265766572740000000000000000000000000000000000000000000000000000",
 	)
+	customErrorData := hexutil.MustHexToBytes(
+		"0x" +
+			"76f4b878" +
+			"0000000000000000000000000000000000000000000000000000000064e7d147" +
+			"000000000000000000000000000000000000000000000000000000006503235c",
+	)
 
 	t.Run("successful transaction", func(t *testing.T) {
 		mockClient := new(mockRPC)
@@ -107,9 +113,13 @@ func TestSimulateTransaction(t *testing.T) {
 			tx.Call,
 			types.LatestBlockNumber,
 		).Return(
-			revertData,
+			[]byte{},
 			&types.Call{},
-			nil,
+			&transport.RPCError{
+				Code:    3,
+				Message: "",
+				Data:    revertData,
+			},
 		)
 
 		err := simulateTransaction(ctx, mockClient, contract, tx)
@@ -125,9 +135,13 @@ func TestSimulateTransaction(t *testing.T) {
 			tx.Call,
 			types.LatestBlockNumber,
 		).Return(
-			panicData,
+			[]byte{},
 			&types.Call{},
-			nil,
+			&transport.RPCError{
+				Code:    3,
+				Message: "",
+				Data:    panicData,
+			},
 		)
 
 		err := simulateTransaction(ctx, mockClient, contract, tx)
@@ -146,9 +160,9 @@ func TestSimulateTransaction(t *testing.T) {
 			[]byte{},
 			&types.Call{},
 			&transport.RPCError{
-				Code:    0,
+				Code:    3,
 				Message: "",
-				Data:    "0x76f4b8780000000000000000000000000000000000000000000000000000000064e7d147000000000000000000000000000000000000000000000000000000006503235c",
+				Data:    customErrorData,
 			},
 		)
 

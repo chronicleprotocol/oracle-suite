@@ -18,9 +18,9 @@ package contract
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	goethABI "github.com/defiweb/go-eth/abi"
-	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
@@ -29,21 +29,21 @@ import (
 // simulateTransaction simulates a transaction by calling the contract method
 // and checking for revert or panic.
 func simulateTransaction(ctx context.Context, rpc rpc.RPC, c *goethABI.Contract, tx types.Transaction) error {
-	res, _, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
+	_, _, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
 	if err != nil {
-		if rpcErr, ok := err.(*transport.RPCError); ok {
-			hexData, ok := rpcErr.Data.(string)
+		var rpcErr *transport.RPCError
+		if errors.As(err, &rpcErr) {
+			data, ok := rpcErr.Data.([]byte)
 			if !ok {
 				return err
 			}
-			data, _ := hexutil.HexToBytes(hexData)
 			if err := c.ToError(data); err != nil {
 				return err
 			}
 		}
 		return err
 	}
-	return c.ToError(res)
+	return nil
 }
 
 // stringToBytes32 converts a Go string to bytes32.

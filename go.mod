@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/defiweb/go-anymapper v0.3.0
-	github.com/defiweb/go-eth v0.4.4
+	github.com/defiweb/go-eth v0.4.5
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/hashicorp/hcl/v2 v2.18.0
 	github.com/itchyny/gojq v0.12.12
@@ -29,7 +29,6 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
