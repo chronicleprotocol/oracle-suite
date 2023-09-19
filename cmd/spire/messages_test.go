@@ -47,8 +47,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(priceMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 			"type": "price/v1",
@@ -96,8 +95,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(priceMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 			"type": "price/v1",
@@ -136,8 +134,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(muSigInitializeMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 			"type": "musig_initialize/v1",
@@ -196,8 +193,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(muSigCommitmentMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 		"type": "musig_commitment/v1",
@@ -233,8 +229,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(muSigPartialSignatureMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 		"type": "musig_partial_signature/v1",
@@ -270,8 +265,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(muSigSignatureMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 			"type": "musig_signature/v1",
@@ -329,8 +323,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(muSigTerminateMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 		"type": "musig_terminate/v1",
@@ -364,8 +357,7 @@ func TestHandleMessage(t *testing.T) {
 			Message: msg,
 			Meta:    createMeta(greetMessageType),
 		}
-		result, err := handleMessage(receivedMessage)
-		assert.Nil(t, err)
+		result := handleMessage(receivedMessage)
 
 		expectedJSON := `{
 			"type": "greet/v1",
