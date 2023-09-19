@@ -142,6 +142,7 @@ message Greet {
   bytes signature = 1;
   bytes pubKeyX = 2;
   bytes pubKeyY = 3;
+  string webURL = 4;
 
   AppInfo appInfo = 1000; // Application info.
 }

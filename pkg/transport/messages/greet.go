@@ -23,10 +23,10 @@ import (
 	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages/pb"
-
-	"google.golang.org/protobuf/proto"
 )
 
 const GreetV1MessageName = "greet/v1"
@@ -37,6 +37,7 @@ type Greet struct {
 	Signature  types.Signature
 	PublicKeyX *big.Int
 	PublicKeyY *big.Int
+	WebURL     string
 }
 
 func (e Greet) MarshalJSON() ([]byte, error) {
@@ -44,6 +45,7 @@ func (e Greet) MarshalJSON() ([]byte, error) {
 		"signature":    e.Signature.String(),
 		"public_key_x": hexutil.BigIntToHex(e.PublicKeyX),
 		"public_key_y": hexutil.BigIntToHex(e.PublicKeyY),
+		"web_url":      e.WebURL,
 	})
 }
 
@@ -63,6 +65,7 @@ func (e Greet) MarshallBinary() ([]byte, error) {
 		Signature: e.Signature.Bytes(),
 		PubKeyX:   pubKeyX,
 		PubKeyY:   pubKeyY,
+		WebURL:    e.WebURL,
 		AppInfo:   appInfoToProtobuf(e.AppInfo),
 	})
 }
@@ -82,6 +85,7 @@ func (e *Greet) UnmarshallBinary(data []byte) (err error) {
 	}
 	e.PublicKeyX = new(big.Int).SetBytes(msg.PubKeyX)
 	e.PublicKeyY = new(big.Int).SetBytes(msg.PubKeyY)
+	e.WebURL = msg.WebURL
 	e.AppInfo = appInfoFromProtobuf(msg.AppInfo)
 	return nil
 }
