@@ -155,6 +155,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 			if err := hook.BeforeSign(f.ctx, &point); err != nil {
 				f.log.
 					WithError(err).
+					WithField("model", model).
 					WithFields(datapoint.PointLogFields(point)).
 					Error("BeforeBroadcast hook failed")
 				return
@@ -166,6 +167,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 		if err != nil {
 			f.log.
 				WithError(err).
+				WithField("model", model).
 				WithFields(datapoint.PointLogFields(point)).
 				Error("Unable to sign data point")
 		}
@@ -175,6 +177,7 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 			if err := hook.BeforeBroadcast(f.ctx, &point); err != nil {
 				f.log.
 					WithError(err).
+					WithField("model", model).
 					WithFields(datapoint.PointLogFields(point)).
 					Error("BeforeBroadcast hook failed")
 				return
@@ -213,16 +216,15 @@ func (f *Feed) broadcasterRoutine() {
 			return
 		case <-f.interval.TickCh():
 			// Fetch data points from the data provider.
-			points, err := f.dataProvider.DataPoints(
-				f.ctx,
-				sliceutil.Intersect(
-					f.dataProvider.ModelNames(f.ctx),
-					f.dataModels,
-				)...,
+			models := sliceutil.Intersect(
+				f.dataProvider.ModelNames(f.ctx),
+				f.dataModels,
 			)
+			points, err := f.dataProvider.DataPoints(f.ctx, models...)
 			if err != nil {
 				f.log.
 					WithError(err).
+					WithField("models", models).
 					Error("Unable to update data points")
 				continue
 			}
@@ -234,12 +236,14 @@ func (f *Feed) broadcasterRoutine() {
 						trace, _ := json.Marshal(point)
 						f.log.
 							WithError(err).
+							WithField("model", model).
 							WithFields(datapoint.PointLogFields(point)).
 							WithField("trace", string(trace)).
 							Debug("Invalid data point trace")
 					}
 					f.log.
 						WithError(err).
+						WithField("model", model).
 						WithFields(datapoint.PointLogFields(point)).
 						Error("Unable to broadcast data point, data point is invalid")
 					continue
