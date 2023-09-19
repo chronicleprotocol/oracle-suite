@@ -9,9 +9,13 @@ import (
 	"github.com/zclconf/go-cty/cty/convert"
 )
 
-// Constants representing block and object names.
 const (
-	varBlockName  = "variables"
+	// varBlockName is the name of the custom block type that allows the
+	// definition of custom variables.
+	varBlockName = "variables"
+
+	// varObjectName is the name of the object that is used to reference
+	// variables within the "variables" block.
 	varObjectName = "var"
 )
 
@@ -151,53 +155,21 @@ func (r *variableResolver) resolveAll(ctx *hcl.EvalContext) hcl.Diagnostics {
 	return nil
 }
 
-// toValue returns resolved variables as a single cty.Value.
-func (r *variableResolver) toValue(ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
-	return r.variables.toValue(ctx)
-}
-
 // resolveSingle ensures that the value of the variable at the specified path
 // has been resolved.
 func (r *variableResolver) resolveSingle(ctx *hcl.EvalContext, path []cty.Value) (diags hcl.Diagnostics) {
 	// If current variable is referenced by another variable, it may happen
 	// that it will reference an element of a list or a map that is already
-	// resolved at higher level. For this reason, we use the closest method
-	// to find that map/list.
+	// resolved. For this reason, we use the closest that returns the variable
+	// that shares the longest common prefix with the specified path.
 	_, variable := r.variables.closest(path)
 
-	// Optimize the variable if possible
-	if !handleDiagnostics(&diags, r.optimizeVariable(ctx, variable), !diags.HasErrors()) {
-		return diags
-	}
-
-	// Check if the variable is already resolved or has a circular reference
-	if !handleDiagnostics(&diags, r.checkVariableStatus(ctx, variable), !diags.HasErrors()) {
-		return diags
-	}
-
-	// Resolve the variable if it does not have any self-reference
-	if !r.hasSelfReference(variable) {
-		if !handleDiagnostics(&diags, r.resolveVariableWithoutSelfReference(ctx, variable), !diags.HasErrors()) {
-			return diags
-		}
-	}
-
-	// Resolve the variable with self-reference
-	return r.resolveVariableWithSelfReference(ctx, path, variable)
-}
-
-// optimizeVariable tries to optimize the variable before resolving it.
-func (r *variableResolver) optimizeVariable(ctx *hcl.EvalContext, variable *variables) (diags hcl.Diagnostics) {
-	optDiags := variable.optimize(ctx)
-	return diags.Extend(optDiags)
-}
-
-// checkVariableStatus checks if the variable is already resolved or has a
-// circular reference.
-func (r *variableResolver) checkVariableStatus(ctx *hcl.EvalContext, variable *variables) (diags hcl.Diagnostics) {
+	// Skip if the variable is already resolved.
 	if variable.resolved != nil {
 		return nil
 	}
+
+	// Check for circular reference.
 	if variable.visited {
 		return hcl.Diagnostics{{
 			Severity:    hcl.DiagError,
@@ -209,12 +181,24 @@ func (r *variableResolver) checkVariableStatus(ctx *hcl.EvalContext, variable *v
 		}}
 	}
 	variable.visited = true
-	return nil
+
+	// Optimize the variable if possible.
+	if !handleDiagnostics(&diags, r.optimizeVariable(ctx, variable), !diags.HasErrors()) {
+		return diags
+	}
+
+	// Resolve the variable if it does not have any self-references.
+	if !r.hasSelfReference(variable) {
+		return diags.Extend(r.resolveWithoutSelfReference(ctx, variable))
+	}
+
+	// Resolve the variable with self-references.
+	return r.resolveWithSelfReference(ctx, path, variable)
 }
 
-// resolveVariableWithoutSelfReference resolves the variable if it does not
-// have any self-reference.
-func (r *variableResolver) resolveVariableWithoutSelfReference(ctx *hcl.EvalContext, variable *variables) (diags hcl.Diagnostics) {
+// resolveWithoutSelfReference resolves the variable if it does not have any
+// self-reference.
+func (r *variableResolver) resolveWithoutSelfReference(ctx *hcl.EvalContext, variable *variables) (diags hcl.Diagnostics) {
 	value, valDiags := variable.expression.Value(ctx)
 	if diags := diags.Extend(valDiags); diags.HasErrors() {
 		return diags
@@ -223,9 +207,8 @@ func (r *variableResolver) resolveVariableWithoutSelfReference(ctx *hcl.EvalCont
 	return nil
 }
 
-// resolveVariableWithSelfReference resolves the variable if it has
-// self-reference.
-func (r *variableResolver) resolveVariableWithSelfReference(ctx *hcl.EvalContext, path []cty.Value, variable *variables) (diags hcl.Diagnostics) {
+// resolveWithSelfReference resolves the variable if it has self-reference.
+func (r *variableResolver) resolveWithSelfReference(ctx *hcl.EvalContext, path []cty.Value, variable *variables) (diags hcl.Diagnostics) {
 	return r.traverse(ctx, path, variable.expression, func(ctx *hcl.EvalContext, path []cty.Value, expr hcl.Expression) (bool, hcl.Diagnostics) {
 		switch expr.(type) {
 		case exprMap, exprList:
@@ -235,7 +218,7 @@ func (r *variableResolver) resolveVariableWithSelfReference(ctx *hcl.EvalContext
 			varRefs := variable.expression.Variables()
 			varRefPaths := make([][]cty.Value, 0, len(varRefs))
 			for _, varRef := range varRefs {
-				if varRef.RootName() != varObjectName {
+				if varRef.RootName() != r.rootName {
 					continue
 				}
 				var path []cty.Value
@@ -325,7 +308,7 @@ func (r *variableResolver) traverse(
 			if len(kv.Key.Variables()) > 0 {
 				diags = diags.Append(&hcl.Diagnostic{
 					Severity:    hcl.DiagError,
-					Summary:     "Variables inside map keys are not supported",
+					Summary:     "Variable contains a map key with a variable inside",
 					Detail:      "Variable contains a map key with a variable inside.",
 					Subject:     kv.Value.Range().Ptr(),
 					Expression:  kv.Value,
@@ -379,6 +362,20 @@ func (r *variableResolver) hasSelfReference(v *variables) bool {
 		}
 	}
 	return false
+}
+
+// optimizeVariable tries to optimize map and list variables by resolving
+// it to a single cty.Value.
+func (r *variableResolver) optimizeVariable(ctx *hcl.EvalContext, variable *variables) (diags hcl.Diagnostics) {
+	optDiags := variable.optimize(ctx)
+	return diags.Extend(optDiags)
+}
+
+// toValue returns resolved variables as a single cty.Value.
+//
+// Variable must be resolved before calling this method.
+func (r *variableResolver) toValue(ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) {
+	return r.variables.toValue(ctx)
 }
 
 type exprMap interface {
@@ -453,7 +450,7 @@ func (t *variables) closest(path []cty.Value) (int, *variables) {
 // optimize attempts to optimize the variable by setting its resolved value
 // if it is a map or a list and all of its children are already resolved.
 func (t *variables) optimize(ctx *hcl.EvalContext) hcl.Diagnostics {
-	// If the variable is already resolved, return nil.
+	// If the variable is already resolved, skip it.
 	if t.resolved != nil {
 		return nil
 	}
