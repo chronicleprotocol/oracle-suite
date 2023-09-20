@@ -146,8 +146,11 @@ func handleMuSigSignatureMessage(msg *messages.MuSigSignature) streamType {
 	msm.Meta = maputil.Merge(map[string]any{
 		"session_id":  msg.SessionID.String(),
 		"computed_at": msg.ComputedAt.Unix(),
-		"commitment":  msg.Commitment.String(),
 	}, maputil.Filter(msm.Meta, removeEmptyFields))
+
+	msm.Data = maputil.Merge(msm.Data.(map[string]any), map[string]any{
+		"commitment": msg.Commitment.String(),
+	})
 	msm.Signature = hexutil.BigIntToHex(msg.SchnorrSignature)
 
 	return msm
@@ -221,7 +224,6 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 	data := map[string]any{}
 	meta := map[string]any{
 		"type": msg.MsgType,
-		"body": msg.MsgBody.String(),
 	}
 	var signatures []map[string]any
 	var ticks []map[string]any
@@ -247,9 +249,10 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 		}
 
 		data = map[string]any{
-			"wat": msgTickMeta.Wat,
-			"val": msgTickMeta.Val.SetPrec(contract.ScribePricePrecision).RawBigInt().String(),
-			"age": msgTickMeta.Age.Unix(),
+			"body": msg.MsgBody.String(),
+			"wat":  msgTickMeta.Wat,
+			"val":  msgTickMeta.Val.SetPrec(contract.ScribePricePrecision).RawBigInt().String(),
+			"age":  msgTickMeta.Age.Unix(),
 		}
 	}
 

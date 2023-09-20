@@ -144,6 +144,7 @@ func TestHandleMessage(t *testing.T) {
 			"type": "musig_initialize",
 			"version": "0.1",
 			"data": {
+				"body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"age": 1234567890,
 				"val": "3000000000000000000000",
 				"wat": "ETH/USD"
@@ -155,7 +156,6 @@ func TestHandleMessage(t *testing.T) {
 				"signers_blob":"0x123456"
 			}],
 			"meta": {
-				"body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"type": "musig_initialize",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -271,9 +271,11 @@ func TestHandleMessage(t *testing.T) {
 			"type": "price",
 			"version": "2.0",
 			"data": {
+				"body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"age": 1234567890,
 				"val": "3000000000000000000000",
-				"wat": "ETH/USD"
+				"wat": "ETH/USD",
+				"commitment": "0x1234567890abcdef1234567890abcdef12345678"
 			},
 			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"signature": "0x499602d2",
@@ -283,7 +285,6 @@ func TestHandleMessage(t *testing.T) {
 				"signers_blob":"0x123456"
 			}],
 			"meta": {
-				"body": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"type": "musig_initialize",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -291,7 +292,6 @@ func TestHandleMessage(t *testing.T) {
 				"received_from_peer_addr": "0x234567890abcdef1234567890abcdef123456789",
 				"received_from_peer_id": "peer2",
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-				"commitment": "0x1234567890abcdef1234567890abcdef12345678",
 				"computed_at": 1234567890,
 				"topic": "musig_signature/v1",
 				"signers": ["0x1234567890abcdef1234567890abcdef12345678"],
