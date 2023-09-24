@@ -1,28 +1,20 @@
 name: Publish Go Binaries
+
 on:
   workflow_call:
     inputs:
-      application:
-        description: 'Application Name'
-        type: string
+      snapshot:
+        description: 'Application Snapshot'
+        type: boolean
+        default: false
         required: true
-
   workflow_dispatch:
     inputs:
-      version:
-        description: 'New Version (no `v` prefix)'
-        type: string
-        required: false
-        default: ''
-      application:
-        description: 'Application Name (lowercase)'
-        type: choice
+      snapshot:
+        description: 'Application Snapshot'
+        type: boolean
+        default: false
         required: true
-        options:
-          - gofer
-          - spire
-          - ghost
-          - spectre
 
 jobs:
   go_releaser:
@@ -44,6 +36,6 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean -f .github/.goreleaser.yml
+          args: release --clean -f .github/.goreleaser.yml ${{ inputs.snapshot && '--snapshot' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

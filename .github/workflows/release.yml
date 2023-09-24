@@ -17,3 +17,6 @@ jobs:
           - spectre
     with:
       application: ${{ matrix.application }}
+
+  releases:
+    uses: ./.github/workflows/go.yml
