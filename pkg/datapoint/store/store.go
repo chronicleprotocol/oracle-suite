@@ -17,15 +17,19 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 const LoggerTag = "DATA_POINT_STORE"
@@ -198,12 +202,15 @@ func (p *Store) shouldCollect(model string) bool {
 
 func (p *Store) dataPointCollectorRoutine() {
 	dataPointCh := p.transport.Messages(messages.DataPointV1MessageName)
+	priceCh := p.transport.Messages(messages.PriceV0MessageName)
 	for {
 		select {
 		case <-p.ctx.Done():
 			return
 		case msg := <-dataPointCh:
 			p.handlePointMessage(msg)
+		case msg := <-priceCh:
+			p.handleLegacyPriceMessage(msg)
 		}
 	}
 }
@@ -237,4 +244,102 @@ func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
 		return
 	}
 	p.collectDataPoint(point)
+}
+
+// handleLegacyPriceMessage handles legacy price messages and converts them to
+// data points. This is temporary solution until the price messages are
+// completely removed.
+//
+// TODO: Remove this method when the price messages are removed.
+func (p *Store) handleLegacyPriceMessage(msg transport.ReceivedMessage) {
+	if msg.Error != nil {
+		p.log.
+			WithError(msg.Error).
+			Error("Unable to receive message")
+		return
+	}
+	price, ok := msg.Message.(*messages.Price)
+	trace := make(map[string]string)
+	_ = json.Unmarshal(price.Trace, &trace)
+	point := &messages.DataPoint{
+		Model: price.Price.Wat,
+		Point: datapoint.Point{
+			Value: value.Tick{
+				Pair:  findPairForLegacyPrice(price.Price.Wat),
+				Price: bn.DecFixedPointFromRawBigInt(price.Price.Val, contract.MedianPricePrecision).DecFloatPoint(),
+			},
+			Time:      price.Price.Age,
+			SubPoints: nil,
+			Meta: map[string]any{
+				"legacy": true,
+				"trace":  trace,
+			},
+		},
+		ECDSASignature: price.Price.Sig,
+	}
+	if !ok {
+		p.log.
+			WithFields(transport.ReceivedMessageFields(msg)).
+			Error("Unexpected value returned from the transport layer")
+		return
+	}
+	if !p.shouldCollect(point.Model) {
+		p.log.
+			WithFields(transport.ReceivedMessageFields(msg)).
+			WithField("model", point.Model).
+			Warn("Data point rejected, model is not supported")
+		return
+	}
+	p.collectDataPoint(point)
+}
+
+func findPairForLegacyPrice(model string) value.Pair {
+	if pair, ok := legacyPricePairs[model]; ok {
+		return pair
+	}
+	// It is ok to return unknown pair here, because this value is currently
+	// not used anywhere. Also, this should never happen because none of the
+	// feeds broadcast prices other than the ones in the legacyPricePairs map.
+	return value.Pair{Base: "UNKNOWN", Quote: "UNKNOWN"}
+}
+
+var legacyPricePairs = map[string]value.Pair{
+	"AAVEUSD":   {Base: "AAVE", Quote: "USD"},
+	"ARBUSD":    {Base: "ARB", Quote: "USD"},
+	"AVAXUSD":   {Base: "AVAX", Quote: "USD"},
+	"BNBUSD":    {Base: "BNB", Quote: "USD"},
+	"BTCUSD":    {Base: "BTC", Quote: "USD"},
+	"CRVUSD":    {Base: "CRV", Quote: "USD"},
+	"DAIUSD":    {Base: "DAI", Quote: "USD"},
+	"DSRRATE":   {Base: "DSR", Quote: "RATE"},
+	"ETHBTC":    {Base: "ETH", Quote: "BTC"},
+	"ETHUSD":    {Base: "ETH", Quote: "USD"},
+	"FRAXUSD":   {Base: "FRAX", Quote: "USD"},
+	"GNOUSD":    {Base: "GNO", Quote: "USD"},
+	"IBTAUSD":   {Base: "IBTA", Quote: "USD"},
+	"LDOUSD":    {Base: "LDO", Quote: "USD"},
+	"LINKUSD":   {Base: "LINK", Quote: "USD"},
+	"MATICUSD":  {Base: "MATIC", Quote: "USD"},
+	"MKRETH":    {Base: "MKR", Quote: "ETH"},
+	"MKRUSD":    {Base: "MKR", Quote: "USD"},
+	"OPUSD":     {Base: "OP", Quote: "USD"},
+	"RETHETH":   {Base: "RETH", Quote: "ETH"},
+	"RETHUSD":   {Base: "RETH", Quote: "USD"},
+	"SDAIDAI":   {Base: "SDAI", Quote: "DAI"},
+	"SDAIETH":   {Base: "SDAI", Quote: "ETH"},
+	"SDAIMATIC": {Base: "SDAI", Quote: "MATIC"},
+	"SDAIUSD":   {Base: "SDAI", Quote: "USD"},
+	"SNXUSD":    {Base: "SNX", Quote: "USD"},
+	"SOLUSD":    {Base: "SOL", Quote: "USD"},
+	"STETHETH":  {Base: "STETH", Quote: "ETH"},
+	"STETHUSD":  {Base: "STETH", Quote: "USD"},
+	"UNIUSD":    {Base: "UNI", Quote: "USD"},
+	"USDCUSD":   {Base: "USDC", Quote: "USD"},
+	"USDTUSD":   {Base: "USDT", Quote: "USD"},
+	"WBTCUSD":   {Base: "WBTC", Quote: "USD"},
+	"WSTETHETH": {Base: "WSTETH", Quote: "ETH"},
+	"WSTETHUSD": {Base: "WSTETH", Quote: "USD"},
+	"XTZUSD":    {Base: "XTZ", Quote: "USD"},
+	"YFIUSD":    {Base: "YFI", Quote: "USD"},
+	"MANAUSD":   {Base: "MANA", Quote: "USD"},
 }

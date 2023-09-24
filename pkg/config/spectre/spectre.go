@@ -99,6 +99,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 		return nil, err
 	}
 	messageMap, err := messages.AllMessagesMap.SelectByTopic(
+		messages.PriceV0MessageName, //nolint:staticcheck
 		messages.DataPointV1MessageName,
 		messages.MuSigStartV1MessageName,
 		messages.MuSigTerminateV1MessageName,
