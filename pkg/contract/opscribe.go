@@ -144,16 +144,17 @@ func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumbe
 // OpScribe.opPoke method.
 //
 // The message structure is defined as:
-// H(wat ‖ val ‖ age ‖ signature ‖ commitment ‖ signersBlob)
+// H(tag ‖ H(wat ‖ val ‖ age ‖ signature ‖ commitment ‖ signersBlob))
 //
 // Where:
+// - tag is the message prefix (EIP-191)
 // - wat: an asset name
 // - val: a price value
 // - age: a time when the price was observed
 // - signature: a Schnorr signature
 // - commitment: a Schnorr commitment
 // - signersBlob: a byte slice with signers indexes obtained from a contract
-func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) []byte {
+func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) types.Hash {
 	// Asset name (wat):
 	bytes32Wat := make([]byte, 32)
 	copy(bytes32Wat, wat)
@@ -182,5 +183,5 @@ func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData Sch
 	copy(data[84:104], bytes20Commitment)
 	copy(data[104:], signersBlob)
 
-	return crypto.Keccak256(data).Bytes()
+	return crypto.Keccak256(crypto.AddMessagePrefix(crypto.Keccak256(data).Bytes()))
 }

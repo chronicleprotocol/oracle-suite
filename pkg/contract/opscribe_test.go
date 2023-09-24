@@ -257,5 +257,5 @@ func Test_ConstructOpPokeMessage(t *testing.T) {
 	signersBlob, _ := SignersBlob(signers, feeds, indices)
 
 	message := ConstructScribeOpPokeMessage(wat, pokeData, schnorrData, signersBlob)
-	assert.Equal(t, "0x94512e7eba2a3dce4c1cd026cc963ded9ede9a45874772cf72290cc219e55cc2", hexutil.BytesToHex(message))
+	assert.Equal(t, "0xda2ae89839f58895197e2f0a392c442b13e35bbe35932c3cff526fcd3a8a0fcd", message.String())
 }

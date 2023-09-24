@@ -218,7 +218,7 @@ func Test_ConstructPokeMessage(t *testing.T) {
 	}
 
 	message := ConstructScribePokeMessage("ETH/USD", pokeData)
-	assert.Equal(t, "0x7129b8369e85254c8a31583fd1e3e94f179b4bf12f74933a0599732ddbaf8ebc", hexutil.BytesToHex(message))
+	assert.Equal(t, "0xd469eb1a48223875f0cc0275c64d90077f23cd70dcf2b3d474e5ac3335cb6274", message.String())
 }
 
 func TestSignersBlob(t *testing.T) {

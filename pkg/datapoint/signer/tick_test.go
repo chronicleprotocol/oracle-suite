@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +31,7 @@ import (
 )
 
 // Hash for the AAABBB asset pair, with the price set to 42 and the age to 1605371361:
-var priceHash = "0xc678b27c20ef30b95452d8d61f8f3916899717692d8a01c595971035b25a00ff"
+var priceHash = "0x5e7aa8f6514c872b2020a7f63c72a382e813dc0624a2fb3c28367fee763be154"
 
 func TestTick_Supports(t *testing.T) {
 	t.Run("supported data point", func(t *testing.T) {
@@ -52,7 +51,7 @@ func TestTick_Sign(t *testing.T) {
 	s := NewTickSigner(k)
 
 	expSig := types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65))
-	k.On("SignMessage", hexutil.MustHexToBytes(priceHash)).Return(expSig, nil).Once()
+	k.On("SignHash", types.MustHashFromHex(priceHash, types.PadNone)).Return(expSig, nil).Once()
 
 	retSig, err := s.Sign(context.Background(), "AAABBB", datapoint.Point{
 		Value:     value.NewTick(value.Pair{Base: "AAA", Quote: "BBB"}, 42, 0),
@@ -72,7 +71,7 @@ func TestTick_Recover(t *testing.T) {
 
 	msgSig := types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65))
 	expAddr := types.MustAddressFromHexPtr("0x1234567890123456789012345678901234567890")
-	r.On("RecoverMessage", hexutil.MustHexToBytes(priceHash), *msgSig).Return(expAddr, nil).Once()
+	r.On("RecoverHash", types.MustHashFromHex(priceHash, types.PadNone), *msgSig).Return(expAddr, nil).Once()
 
 	retAddr, err := s.Recover(context.Background(), "AAABBB", datapoint.Point{
 		Value:     value.NewTick(value.Pair{Base: "AAA", Quote: "BBB"}, 42, 0),

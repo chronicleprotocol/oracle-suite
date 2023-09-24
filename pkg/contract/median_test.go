@@ -30,7 +30,7 @@ import (
 )
 
 // Hash for the AAABBB asset pair, with the price set to 42 and the age to 1605371361:
-var priceHash = "0xc678b27c20ef30b95452d8d61f8f3916899717692d8a01c595971035b25a00ff"
+var priceHash = "0x5e7aa8f6514c872b2020a7f63c72a382e813dc0624a2fb3c28367fee763be154"
 
 func TestMedian_Val(t *testing.T) {
 	ctx := context.Background()
@@ -215,6 +215,6 @@ func Test_ConstructMedianPokeMessage(t *testing.T) {
 	assert.Equal(
 		t,
 		priceHash,
-		hexutil.BytesToHex(ConstructMedianPokeMessage("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0))),
+		ConstructMedianPokeMessage("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0)).String(),
 	)
 }

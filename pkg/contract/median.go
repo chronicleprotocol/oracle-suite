@@ -166,13 +166,14 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 // Median.poke method.
 //
 // The message structure is defined as:
-// H(val ‖ age ‖ wat
+// H(tag ‖ H(val ‖ age ‖ wat)
 //
 // Where:
+// - tag:
 // - val: a price value
 // - age: a time when the price was observed
 // - wat: an asset name
-func ConstructMedianPokeMessage(wat string, val *bn.DecFloatPointNumber, age time.Time) []byte {
+func ConstructMedianPokeMessage(wat string, val *bn.DecFloatPointNumber, age time.Time) types.Hash {
 	// Price (val):
 	uint256Val := make([]byte, 32)
 	val.DecFixedPoint(MedianPricePrecision).RawBigInt().FillBytes(uint256Val)
@@ -186,10 +187,10 @@ func ConstructMedianPokeMessage(wat string, val *bn.DecFloatPointNumber, age tim
 	copy(bytes32Wat, wat)
 
 	// Hash:
-	hash := make([]byte, 96)
-	copy(hash[0:32], uint256Val)
-	copy(hash[32:64], uint256Age)
-	copy(hash[64:96], bytes32Wat)
+	data := make([]byte, 96)
+	copy(data[0:32], uint256Val)
+	copy(data[32:64], uint256Age)
+	copy(data[64:96], bytes32Wat)
 
-	return crypto.Keccak256(hash).Bytes()
+	return crypto.Keccak256(crypto.AddMessagePrefix(crypto.Keccak256(data).Bytes()))
 }
