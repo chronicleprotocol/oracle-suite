@@ -259,6 +259,12 @@ func (p *Store) handleLegacyPriceMessage(msg transport.ReceivedMessage) {
 		return
 	}
 	price, ok := msg.Message.(*messages.Price)
+	if !ok {
+		p.log.
+			WithFields(transport.ReceivedMessageFields(msg)).
+			Error("Unexpected value returned from the transport layer")
+		return
+	}
 	trace := make(map[string]string)
 	_ = json.Unmarshal(price.Trace, &trace)
 	point := &messages.DataPoint{
@@ -276,12 +282,6 @@ func (p *Store) handleLegacyPriceMessage(msg transport.ReceivedMessage) {
 			},
 		},
 		ECDSASignature: price.Price.Sig,
-	}
-	if !ok {
-		p.log.
-			WithFields(transport.ReceivedMessageFields(msg)).
-			Error("Unexpected value returned from the transport layer")
-		return
 	}
 	if !p.shouldCollect(point.Model) {
 		p.log.
