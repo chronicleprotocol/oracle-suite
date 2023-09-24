@@ -225,3 +225,37 @@ func TestOpScribe_OpPoke(t *testing.T) {
 	_, _, err := scribe.OpPoke(ctx, pokeData, schnorrData, ecdsaData)
 	require.NoError(t, err)
 }
+
+func Test_ConstructOpPokeMessage(t *testing.T) {
+	wat := "ETH/USD"
+
+	// Poke data.
+	pokeData := PokeData{
+		Val: bn.DecFixedPointFromRawBigInt(bn.Int("1645737751800000004480").BigInt(), ScribePricePrecision),
+		Age: time.Unix(1693259253, 0),
+	}
+
+	// Schnorr data.
+	schnorrData := SchnorrData{
+		Signature:  new(big.Int).SetBytes(hexutil.MustHexToBytes("0xc33523e7517d76ec1260f1a3a9a93808eb2af13986dc89910703916a527a6eba")),
+		Commitment: types.MustAddressFromHex("0x139593f8afdd87d1695afa5f839788206f0a09e6"),
+	}
+
+	// SignersBlob.
+	signers := []types.Address{
+		types.MustAddressFromHex("0x0c4FC7D66b7b6c684488c1F218caA18D4082da18"),
+		types.MustAddressFromHex("0x5C01f0F08E54B85f4CaB8C6a03c9425196fe66DD"),
+		types.MustAddressFromHex("0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9"),
+	}
+	feeds := []types.Address{
+		types.MustAddressFromHex("0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9"),
+		types.MustAddressFromHex("0x5C01f0F08E54B85f4CaB8C6a03c9425196fe66DD"),
+		types.MustAddressFromHex("0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"),
+		types.MustAddressFromHex("0x0c4FC7D66b7b6c684488c1F218caA18D4082da18"),
+	}
+	indices := []uint8{1, 2, 3, 4}
+	signersBlob, _ := SignersBlob(signers, feeds, indices)
+
+	message := ConstructScribeOpPokeMessage(wat, pokeData, schnorrData, signersBlob)
+	assert.Equal(t, "0x94512e7eba2a3dce4c1cd026cc963ded9ede9a45874772cf72290cc219e55cc2", hexutil.BytesToHex(message))
+}

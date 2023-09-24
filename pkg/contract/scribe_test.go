@@ -211,6 +211,16 @@ func TestScribe_Poke(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_ConstructPokeMessage(t *testing.T) {
+	pokeData := PokeData{
+		Val: bn.DecFixedPointFromRawBigInt(bn.Int("1649381927392550000000").BigInt(), ScribePricePrecision),
+		Age: time.Unix(1693248989, 0),
+	}
+
+	message := ConstructScribePokeMessage("ETH/USD", pokeData)
+	assert.Equal(t, "0x7129b8369e85254c8a31583fd1e3e94f179b4bf12f74933a0599732ddbaf8ebc", hexutil.BytesToHex(message))
+}
+
 func TestSignersBlob(t *testing.T) {
 	signers := []types.Address{
 		types.MustAddressFromHex("0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"),

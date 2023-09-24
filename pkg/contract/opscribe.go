@@ -17,9 +17,11 @@ package contract
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
@@ -136,4 +138,49 @@ func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumbe
 		return 0, fmt.Errorf("opScribe: opChallengePeriod query failed: %v", err)
 	}
 	return time.Second * time.Duration(period), nil
+}
+
+// ConstructScribeOpPokeMessage returns the message expected to be signed via ECDSA for calling
+// OpScribe.opPoke method.
+//
+// The message structure is defined as:
+// H(wat ‖ val ‖ age ‖ signature ‖ commitment ‖ signersBlob)
+//
+// Where:
+// - wat: an asset name
+// - val: a price value
+// - age: a time when the price was observed
+// - signature: a Schnorr signature
+// - commitment: a Schnorr commitment
+// - signersBlob: a byte slice with signers indexes obtained from a contract
+func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) []byte {
+	// Asset name (wat):
+	bytes32Wat := make([]byte, 32)
+	copy(bytes32Wat, wat)
+
+	// Price (val):
+	uint128Val := make([]byte, 16)
+	pokeData.Val.SetPrec(ScribePricePrecision).RawBigInt().FillBytes(uint128Val)
+
+	// Time (age):
+	uint32Age := make([]byte, 4)
+	binary.BigEndian.PutUint32(uint32Age, uint32(pokeData.Age.Unix()))
+
+	// Signature:
+	bytes32Signature := make([]byte, 32)
+	schnorrData.Signature.FillBytes(bytes32Signature)
+
+	// Address:
+	bytes20Commitment := make([]byte, 20) //nolint:gomnd
+	copy(bytes20Commitment, schnorrData.Commitment.Bytes())
+
+	data := make([]byte, len(signersBlob)+104) //nolint:gomnd
+	copy(data[0:32], bytes32Wat)
+	copy(data[32:48], uint128Val)
+	copy(data[48:52], uint32Age)
+	copy(data[52:84], bytes32Signature)
+	copy(data[84:104], bytes20Commitment)
+	copy(data[104:], signersBlob)
+
+	return crypto.Keccak256(data).Bytes()
 }

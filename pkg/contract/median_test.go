@@ -29,6 +29,9 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
+// Hash for the AAABBB asset pair, with the price set to 42 and the age to 1605371361:
+var priceHash = "0xc678b27c20ef30b95452d8d61f8f3916899717692d8a01c595971035b25a00ff"
+
 func TestMedian_Val(t *testing.T) {
 	ctx := context.Background()
 	mockClient := new(mockRPC)
@@ -206,4 +209,12 @@ func TestMedian_Poke(t *testing.T) {
 
 	_, _, err := median.Poke(ctx, vals)
 	require.NoError(t, err)
+}
+
+func Test_ConstructMedianPokeMessage(t *testing.T) {
+	assert.Equal(
+		t,
+		priceHash,
+		hexutil.BytesToHex(ConstructMedianPokeMessage("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0))),
+	)
 }

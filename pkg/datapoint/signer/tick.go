@@ -17,22 +17,15 @@ package signer
 
 import (
 	"context"
-	"encoding/binary"
-	"time"
 
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/defiweb/go-eth/wallet"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-// contractPricePrecision is the number of decimal places used by Oracle
-// contracts to represent prices.
-const contractPricePrecision = 18
 
 // TickSigner signs tick data points and recovers the signer address from a
 // signature.
@@ -54,7 +47,11 @@ func (t *TickSigner) Supports(_ context.Context, data datapoint.Point) bool {
 // Sign implements the Signer interface.
 func (t *TickSigner) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
 	return t.signer.SignMessage(
-		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
+		contract.ConstructMedianPokeMessage(
+			model,
+			data.Value.(value.Tick).Price,
+			data.Time,
+		),
 	)
 }
 
@@ -83,29 +80,11 @@ func (t *TickRecoverer) Recover(
 	signature types.Signature,
 ) (*types.Address, error) {
 	return t.recoverer.RecoverMessage(
-		hashTick(model, data.Value.(value.Tick).Price, data.Time).Bytes(),
+		contract.ConstructMedianPokeMessage(
+			model,
+			data.Value.(value.Tick).Price,
+			data.Time,
+		),
 		signature,
 	)
-}
-
-// hashTick is an equivalent of keccak256(abi.encodePacked(val, age, wat))) in Solidity.
-func hashTick(model string, price *bn.DecFloatPointNumber, time time.Time) types.Hash {
-	// Price (val):
-	val := make([]byte, 32)
-	price.DecFixedPoint(contractPricePrecision).RawBigInt().FillBytes(val)
-
-	// Time (age):
-	age := make([]byte, 32)
-	binary.BigEndian.PutUint64(age[24:], uint64(time.Unix()))
-
-	// Asset name (wat):
-	wat := make([]byte, 32)
-	copy(wat, model)
-
-	// Hash:
-	hash := make([]byte, 96)
-	copy(hash[0:32], val)
-	copy(hash[32:64], age)
-	copy(hash[64:96], wat)
-	return crypto.Keccak256(hash)
 }

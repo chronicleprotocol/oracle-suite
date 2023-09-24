@@ -18,12 +18,14 @@ package contract
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
@@ -154,6 +156,37 @@ func (s *Scribe) readPokeData(ctx context.Context, storageSlot int, block types.
 		Val: val,
 		Age: age,
 	}, nil
+}
+
+// ConstructScribePokeMessage returns the message expected to be signed via ECDSA for calling
+// Scribe.poke method.
+//
+// The message is defined as:
+// H(wat ‖ val ‖ age)
+//
+// Where:
+// - wat: an asset name
+// - val: a price value
+// - age: a time when the price was observed
+func ConstructScribePokeMessage(wat string, pokeData PokeData) []byte {
+	// Asset name (wat):
+	bytes32Wat := make([]byte, 32)
+	copy(bytes32Wat, wat)
+
+	// Price (val):
+	uint128Val := make([]byte, 16)
+	pokeData.Val.SetPrec(ScribePricePrecision).RawBigInt().FillBytes(uint128Val)
+
+	// Time (age):
+	uint32Age := make([]byte, 4)
+	binary.BigEndian.PutUint32(uint32Age, uint32(pokeData.Age.Unix()))
+
+	data := make([]byte, 52) //nolint:gomnd
+	copy(data[0:32], bytes32Wat)
+	copy(data[32:48], uint128Val)
+	copy(data[48:52], uint32Age)
+
+	return crypto.Keccak256(data).Bytes()
 }
 
 // SignersBlob helps to generate signersBlob for PokeData struct.

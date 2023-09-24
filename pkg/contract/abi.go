@@ -112,25 +112,6 @@ type SchnorrData struct {
 	SignersBlob []byte
 }
 
-func toPokeDataStruct(p PokeData) PokeDataStruct {
-	return PokeDataStruct{
-		Val: p.Val.RawBigInt(),
-		Age: uint32(p.Age.Unix()),
-	}
-}
-
-func toSchnorrDataStruct(s SchnorrData) SchnorrDataStruct {
-	return SchnorrDataStruct(s)
-}
-
-func toECDSADataStruct(s types.Signature) ECDSADataStruct {
-	return ECDSADataStruct{
-		V: uint8(s.V.Uint64()),
-		R: s.R,
-		S: s.S,
-	}
-}
-
 // PokeDataStruct represents the PokeData struct in the IScribe interface.
 type PokeDataStruct struct {
 	Val *big.Int `abi:"val"`
@@ -149,4 +130,23 @@ type ECDSADataStruct struct {
 	V uint8    `abi:"v"`
 	R *big.Int `abi:"r"`
 	S *big.Int `abi:"s"`
+}
+
+func toPokeDataStruct(p PokeData) PokeDataStruct {
+	return PokeDataStruct{
+		Val: p.Val.RawBigInt(),
+		Age: uint32(p.Age.Unix()),
+	}
+}
+
+func toSchnorrDataStruct(s SchnorrData) SchnorrDataStruct {
+	return SchnorrDataStruct(s)
+}
+
+func toECDSADataStruct(s types.Signature) ECDSADataStruct {
+	return ECDSADataStruct{
+		V: uint8(s.V.Uint64()),
+		R: s.R,
+		S: s.S,
+	}
 }

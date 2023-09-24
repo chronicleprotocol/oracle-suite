@@ -29,7 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 // Hash for the AAABBB asset pair, with the price set to 42 and the age to 1605371361:
@@ -85,8 +84,4 @@ func TestTick_Recover(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, *expAddr, *retAddr)
-}
-
-func TestHashTick(t *testing.T) {
-	assert.Equal(t, priceHash, hashTick("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0)).String())
 }
