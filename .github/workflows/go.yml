@@ -1,8 +1,28 @@
 name: Publish Go Binaries
-
 on:
   workflow_call:
+    inputs:
+      application:
+        description: 'Application Name'
+        type: string
+        required: true
+
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'New Version (no `v` prefix)'
+        type: string
+        required: false
+        default: ''
+      application:
+        description: 'Application Name (lowercase)'
+        type: choice
+        required: true
+        options:
+          - gofer
+          - spire
+          - ghost
+          - spectre
 
 jobs:
   go_releaser:
