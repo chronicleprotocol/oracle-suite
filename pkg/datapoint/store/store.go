@@ -202,7 +202,7 @@ func (p *Store) shouldCollect(model string) bool {
 
 func (p *Store) dataPointCollectorRoutine() {
 	dataPointCh := p.transport.Messages(messages.DataPointV1MessageName)
-	priceCh := p.transport.Messages(messages.PriceV0MessageName)
+	priceCh := p.transport.Messages(messages.PriceV0MessageName) //nolint:staticcheck
 	for {
 		select {
 		case <-p.ctx.Done():
