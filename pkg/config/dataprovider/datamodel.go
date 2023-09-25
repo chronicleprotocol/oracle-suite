@@ -216,8 +216,8 @@ func buildNode(
 // buildOriginNode returns an Origin node based on the given configuration.
 func buildOriginNode(node *configNodeOrigin, origins map[string]origin.Origin) (graph.Node, error) {
 	// Validate the threshold values.
-	freshnessThreshold := time.Duration(node.FreshnessThreshold)
-	expiryThreshold := time.Duration(node.ExpiryThreshold)
+	freshnessThreshold := time.Duration(node.FreshnessThreshold) * time.Second
+	expiryThreshold := time.Duration(node.ExpiryThreshold) * time.Second
 	if freshnessThreshold == 0 {
 		freshnessThreshold = defaultFreshnessThreshold
 	}
