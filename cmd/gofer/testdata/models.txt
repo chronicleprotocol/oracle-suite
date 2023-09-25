@@ -1429,11 +1429,11 @@ Model for GNOUSD:
                            └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
 Model for IBTA/USD:
 ───reference()
-   └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:ishares, query:IBTA/USD)
+   └──origin(expiry_threshold:24h0m0s, freshness_threshold:8h0m0s, origin:ishares, query:IBTA/USD)
 Model for IBTAUSD:
 ───reference()
    └──reference()
-      └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:ishares, query:IBTA/USD)
+      └──origin(expiry_threshold:24h0m0s, freshness_threshold:8h0m0s, origin:ishares, query:IBTA/USD)
 Model for LDO/USD:
 ───reference()
    └──median(min_values:4)
