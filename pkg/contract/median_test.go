@@ -215,6 +215,6 @@ func Test_ConstructMedianPokeMessage(t *testing.T) {
 	assert.Equal(
 		t,
 		priceHash,
-		ConstructMedianPokeMessage("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0)).String(),
+		toEIP191(ConstructMedianPokeMessage("AAABBB", bn.DecFloatPoint(42), time.Unix(1605371361, 0))).String(),
 	)
 }

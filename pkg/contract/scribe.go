@@ -162,14 +162,13 @@ func (s *Scribe) readPokeData(ctx context.Context, storageSlot int, block types.
 // Scribe.poke method.
 //
 // The message is defined as:
-// H(tag ‖ H(wat ‖ val ‖ age))
+// H(wat ‖ val ‖ age)
 //
 // Where:
-// - tag is the message prefix (EIP-191)
 // - wat: an asset name
 // - val: a price value
 // - age: a time when the price was observed
-func ConstructScribePokeMessage(wat string, pokeData PokeData) types.Hash {
+func ConstructScribePokeMessage(wat string, pokeData PokeData) []byte {
 	// Asset name (wat):
 	bytes32Wat := make([]byte, 32)
 	copy(bytes32Wat, wat)
@@ -187,7 +186,7 @@ func ConstructScribePokeMessage(wat string, pokeData PokeData) types.Hash {
 	copy(data[32:48], uint128Val)
 	copy(data[48:52], uint32Age)
 
-	return crypto.Keccak256(crypto.AddMessagePrefix(crypto.Keccak256(data).Bytes()))
+	return crypto.Keccak256(data).Bytes()
 }
 
 // SignersBlob helps to generate signersBlob for PokeData struct.

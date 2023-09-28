@@ -17,7 +17,6 @@ package signer
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
@@ -49,18 +48,13 @@ func (t *TickSigner) Supports(_ context.Context, data datapoint.Point) bool {
 //
 //nolint:gomnd
 func (t *TickSigner) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
-	s, err := t.signer.SignHash(
+	return t.signer.SignMessage(
 		contract.ConstructMedianPokeMessage(
 			model,
 			data.Value.(value.Tick).Price,
 			data.Time,
 		),
 	)
-	if err != nil {
-		return nil, err
-	}
-	s.V = new(big.Int).Add(s.V, big.NewInt(27))
-	return s, nil
 }
 
 // TickRecoverer recovers the signer address from a tick data point and a
@@ -89,11 +83,7 @@ func (t *TickRecoverer) Recover(
 	data datapoint.Point,
 	signature types.Signature,
 ) (*types.Address, error) {
-	switch signature.V.Uint64() {
-	case 27, 28:
-		signature.V = new(big.Int).Sub(signature.V, big.NewInt(27))
-	}
-	return t.recoverer.RecoverHash(
+	return t.recoverer.RecoverMessage(
 		contract.ConstructMedianPokeMessage(
 			model,
 			data.Value.(value.Tick).Price,
