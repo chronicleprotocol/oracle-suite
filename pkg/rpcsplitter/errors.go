@@ -36,7 +36,7 @@ func (e errorList) ErrorCode() int {
 	return mostCommon(codes)
 }
 
-func (e errorList) ErrorData() interface{} {
+func (e errorList) ErrorData() any {
 	data := make([]any, 0, len(e))
 	for _, err := range e {
 		if err, ok := err.(rpc.DataError); ok {

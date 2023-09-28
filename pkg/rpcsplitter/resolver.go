@@ -162,7 +162,7 @@ func extractErrors(resps []any) (filtered []any, errs []error) {
 		if e, ok := r.(error); ok {
 			errs = append(errs, e)
 		} else {
-			filtered = append(resps, r)
+			filtered = append(filtered, r)
 		}
 	}
 	return

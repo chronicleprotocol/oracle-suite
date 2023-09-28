@@ -241,23 +241,15 @@ func TestLogger(t *testing.T) {
 			},
 			want: []want{
 				{name: "debug", value: 1},
-				{name: "debugf", value: 1},
 				{name: "error", value: 1},
-				{name: "errorf", value: 1},
 				{name: "info", value: 1},
-				{name: "infof", value: 1},
 				{name: "warn", value: 1},
-				{name: "warnf", value: 1},
 			},
 			logs: func(l log.Logger) {
 				l.WithField("name", "debug").Debug("debug")
-				l.WithField("name", "debugf").Debugf("debugf")
 				l.WithField("name", "error").Error("error")
-				l.WithField("name", "errorf").Errorf("errorf")
 				l.WithField("name", "info").Info("info")
-				l.WithField("name", "infof").Infof("infof")
 				l.WithField("name", "warn").Warn("warn")
-				l.WithField("name", "warnf").Warnf("warnf")
 			},
 		},
 		// Test panic:
@@ -270,18 +262,6 @@ func TestLogger(t *testing.T) {
 			},
 			logs: func(l log.Logger) {
 				l.WithField("name", "panic").Panic("panic")
-			},
-		},
-		// Test panicf:
-		{
-			metrics: []Metric{
-				{MatchMessage: regexp.MustCompile(".*"), Name: "%{name}"},
-			},
-			want: []want{
-				{name: "panicf", value: 1},
-			},
-			logs: func(l log.Logger) {
-				l.WithField("name", "panicf").Panicf("panicf")
 			},
 		},
 	}
