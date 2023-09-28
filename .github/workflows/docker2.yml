@@ -65,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./${{ inputs.application }}
-          file: ./Dockerfile
+          file: ./${{ inputs.application }}/Dockerfile
           build-args: |
             APP_NAME=${{ inputs.application }}
             APP_VERSION=${{ inputs.version != '' && inputs.version || steps.meta.outputs.version }}
