@@ -210,10 +210,8 @@ func (p Point) MarshalTrace() ([]byte, error) {
 		}
 		meta["time"] = point.Time.In(time.UTC).Format(time.RFC3339Nano)
 		var points []any
-		if point.SubPoints != nil {
-			for _, t := range point.SubPoints {
-				points = append(points, t)
-			}
+		for _, t := range point.SubPoints {
+			points = append(points, t)
 		}
 		for k, v := range point.Meta {
 			if k == "type" {
