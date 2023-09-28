@@ -36,25 +36,15 @@ import (
 
 var log = logging.Logger("rail")
 
-func env(key, def string) string {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return def
-	}
-	return v
-}
-
 func main() {
-	// logging.SetAllLoggers(logging.LevelInfo)
-	logLevel, ok := os.LookupEnv("CFG_LOG_LEVEL")
-	if ok {
-		if err := logging.SetLogLevel("rail", logLevel); err != nil {
-			log.Fatal(err)
-		}
-		if err := logging.SetLogLevel("rail/service", logLevel); err != nil {
-			log.Fatal(err)
-		}
+	logging.SetAllLoggers(logging.LevelInfo)
+	if err := logging.SetLogLevel("rail", "debug"); err != nil {
+		log.Fatal(err)
 	}
+	if err := logging.SetLogLevel("rail/service", "info"); err != nil {
+		log.Fatal(err)
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
