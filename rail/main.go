@@ -26,10 +26,12 @@ import (
 	"os/signal"
 	"strings"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	cryptoPB "github.com/libp2p/go-libp2p/core/crypto/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -96,7 +98,12 @@ func main() {
 	}
 
 	{
-		var gSubOpts []pubsub.Option
+		gSubOpts := []pubsub.Option{
+			pubsub.WithDefaultValidator(func(context.Context, peer.ID, *pubsub.Message) bool { return true }),
+			pubsub.WithDefaultValidator(func(ctx context.Context, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
+				return pubsub.ValidationAccept
+			}),
+		}
 		directPeersVal, ok := os.LookupEnv("CFG_LIBP2P_DIRECT_PEERS_ADDRS")
 		if ok && len(directPeersVal) > 0 {
 			gSubOpts = append(gSubOpts, pubsub.WithDirectPeers(addrInfos(strings.Split(directPeersVal, separator))))
@@ -165,4 +172,12 @@ func addrInfos(addrs []string) []peer.AddrInfo {
 		list = append(list, *pi)
 	}
 	return list
+}
+
+// KeyTypeID uses the Ethereum keys to sign and verify messages.
+const KeyTypeID cryptoPB.KeyType = 10
+
+func init() {
+	crypto.PubKeyUnmarshallers[KeyTypeID] = ethkey.UnmarshalEthPublicKey
+	crypto.PrivKeyUnmarshallers[KeyTypeID] = ethkey.UnmarshalEthPrivateKey
 }

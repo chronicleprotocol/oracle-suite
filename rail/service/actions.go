@@ -164,29 +164,13 @@ func GossipSub(ctx context.Context, opts ...pubsub.Option) Action {
 		}
 
 		go func() {
-			log.Debug("canceling all topics")
-			defer log.Debug("all topics canceled")
 			<-rail.ctx.Done()
+			log.Debug("canceling all topics")
 			for _, c := range cancels {
 				c()
 			}
+			log.Debug("all topics canceled")
 		}()
-
-		// go func() {
-		// 	t := time.NewTicker(10 * time.Second)
-		// 	defer t.Stop()
-		// 	for {
-		// 		select {
-		// 		case <-rail.ctx.Done():
-		// 			return
-		// 		case <-t.C:
-		// 			for _, topic := range messages.AllMessagesMap.Keys() {
-		// 				peers := ps.ListPeers(topic)
-		// 				log.Infow("peers in topic", "topic", topic, "peers", peers)
-		// 			}
-		// 		}
-		// 	}
-		// }()
 
 		return nil
 	}
