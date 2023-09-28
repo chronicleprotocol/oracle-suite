@@ -26,8 +26,6 @@ const dumpMaxDepth = 64
 //   - For types that implement  error, the result of Error is returned.
 //   - In maps, slices, and arrays, each element is recursively normalized
 //     according to these rules and then represented as a JSON.
-//
-//nolint:gocyclo
 func Dump(v any) any {
 	v = dump(v, dumpMaxDepth)
 	if isSimpleType(v) {
@@ -40,6 +38,7 @@ func Dump(v any) any {
 	return json.RawMessage(b)
 }
 
+//nolint:gocyclo,funlen
 func dump(v any, depth int) (ret any) {
 	defer func() {
 		if r := recover(); r != nil {

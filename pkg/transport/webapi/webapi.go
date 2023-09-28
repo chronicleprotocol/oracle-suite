@@ -535,7 +535,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		w.log.
 			WithFields(fields).
 			WithError(err).
-			WithAdvice("This may indicate a bug in the WebAPI server or a bug in the consumer software, or someone is trying to connect to the WebAPI server with incompatible software").
+			WithAdvice("This may indicate a bug in the WebAPI server or a bug in the consumer software, or someone is trying to connect to the WebAPI server with incompatible software"). //nolint:lll
 			Warn("Invalid request signature")
 		res.WriteHeader(http.StatusBadRequest)
 		return
