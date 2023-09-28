@@ -205,9 +205,7 @@ func (p Point) MarshalTrace() ([]byte, error) {
 		meta := make(map[string]any)
 		point := node.(Point)
 		typ := "data_point"
-		if point.Value == nil {
-			meta["value"] = nil
-		} else {
+		if point.Value != nil {
 			meta["value"] = point.Value.Print()
 		}
 		meta["time"] = point.Time.In(time.UTC).Format(time.RFC3339Nano)
