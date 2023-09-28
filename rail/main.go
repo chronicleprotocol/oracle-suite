@@ -31,7 +31,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd/rail/service"
+	service2 "github.com/chronicleprotocol/oracle-suite/rail/service"
 )
 
 var log = logging.Logger("rail")
@@ -90,7 +90,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := service.Railing(
+	if err := service2.Railing(
 		libp2p.Identity(sk),
 		libp2p.ListenAddrStrings([]string{
 			"/ip4/0.0.0.0/tcp/8000",
@@ -103,12 +103,12 @@ func main() {
 		libp2p.EnableNATService(),
 		libp2p.EnableHolePunching(),
 		libp2p.Ping(false),
-		service.Bootstrap(ctx, boots...),
+		service2.Bootstrap(ctx, boots...),
 	)(
-		service.LogListeningAddresses,
-		service.LogEvents,
+		service2.LogListeningAddresses,
+		service2.LogEvents,
 		// service.Pinger(idChan),
-		service.PingAll(),
+		service2.PingAll(),
 	)(ctx); err != nil {
 		log.Error(err)
 	}
