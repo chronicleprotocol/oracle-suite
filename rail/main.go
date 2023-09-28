@@ -24,14 +24,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	service2 "github.com/chronicleprotocol/oracle-suite/rail/service"
+	"github.com/chronicleprotocol/oracle-suite/rail/service"
 )
 
 var log = logging.Logger("rail")
@@ -45,63 +47,26 @@ func env(key, def string) string {
 }
 
 func main() {
-	// logging.SetAllLoggers(logging.LevelInfo)
-	logLevel, ok := os.LookupEnv("CFG_LOG_LEVEL")
-	if ok {
-		if err := logging.SetLogLevel("rail", logLevel); err != nil {
-			log.Fatal(err)
-		}
-		if err := logging.SetLogLevel("rail/service", logLevel); err != nil {
-			log.Fatal(err)
+	separator := env("CFG_ITEM_SEPARATOR", "\n")
+
+	{
+		// logging.SetAllLoggers(logging.LevelInfo)
+		logLevel, ok := os.LookupEnv("CFG_LOG_LEVEL")
+		if ok {
+			if err := logging.SetLogLevel("rail", logLevel); err != nil {
+				log.Fatal(err)
+			}
+			if err := logging.SetLogLevel("rail/service", logLevel); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
-	// idChan := make(chan peer.AddrInfo)
-
-	// go func() {
-	// 	if err := service.Railing()(
-	// 		service.LogListeningAddresses,
-	// 		// service.AddrInfoChan(idChan),
-	// 		service.LogEvents,
-	// 	)(ctx); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }()
-
-	boots := makeBoots(os.Args[1:])
-	// go func() {
-	// 	for _, pi := range boots {
-	// 		idChan <- pi
-	// 	}
-	// }()
-
-	http.Handle("/metrics", promhttp.Handler())
-	go func() {
-		if err := http.ListenAndServe(":8080", nil); err != nil {
-			log.Error(err)
-		}
-	}()
-
-	seedReader := rand.Reader
-	if seed := os.Getenv("CFG_LIBP2P_PK_SEED"); seed != "" {
-		seed, err := hex.DecodeString(seed)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if len(seed) != ed25519.SeedSize {
-			log.Fatal("invalid seed length - needs to be 32 bytes")
-		}
-		seedReader = bytes.NewReader(seed)
-	}
-	sk, _, err := crypto.GenerateEd25519Key(seedReader)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := service2.Railing(
-		libp2p.Identity(sk),
+	// Options to configure libp2p node with
+	options := []libp2p.Option{
 		libp2p.ListenAddrStrings([]string{
 			"/ip4/0.0.0.0/tcp/8000",
 			"/ip4/0.0.0.0/udp/8000/quic-v1",
@@ -113,13 +78,69 @@ func main() {
 		libp2p.EnableNATService(),
 		libp2p.EnableHolePunching(),
 		libp2p.Ping(false),
-		service2.Bootstrap(ctx, boots...),
-	)(
-		service2.LogListeningAddresses,
-		service2.LogEvents,
-		// service.Pinger(idChan),
-		service2.PingAll(),
-	)(ctx); err != nil {
+	}
+
+	// Things to do when libp2p node is ready
+	actions := []service.Action{
+		service.LogListeningAddresses,
+		service.LogEvents,
+	}
+
+	{
+		addrs := os.Args[1:]
+		if len(addrs) == 0 {
+			addrs = defaultBoots
+		}
+		boots := addrInfos(addrs)
+		options = append(options, service.Bootstrap(ctx, boots...))
+	}
+
+	{
+		var gSubOpts []pubsub.Option
+		directPeersVal, ok := os.LookupEnv("CFG_LIBP2P_DIRECT_PEERS_ADDRS")
+		if ok && len(directPeersVal) > 0 {
+			gSubOpts = append(gSubOpts, pubsub.WithDirectPeers(addrInfos(strings.Split(directPeersVal, separator))))
+		}
+		actions = append(actions, service.GossipSub(ctx, gSubOpts...))
+	}
+
+	{
+		idChan := make(chan peer.ID)
+		actions = append(actions,
+			service.Pinger(ctx, idChan),
+			service.ExtractIDs(idChan),
+		)
+	}
+
+	{
+		http.Handle("/metrics", promhttp.Handler())
+		go func() {
+			if err := http.ListenAndServe(":8080", nil); err != nil {
+				log.Error(err)
+			}
+		}()
+	}
+
+	{
+		seedReader := rand.Reader
+		if seed := os.Getenv("CFG_LIBP2P_PK_SEED"); seed != "" {
+			seed, err := hex.DecodeString(seed)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if len(seed) != ed25519.SeedSize {
+				log.Fatal("invalid seed length - needs to be 32 bytes")
+			}
+			seedReader = bytes.NewReader(seed)
+		}
+		sk, _, err := crypto.GenerateEd25519Key(seedReader)
+		if err != nil {
+			log.Fatal(err)
+		}
+		options = append(options, libp2p.Identity(sk))
+	}
+
+	if err := service.Railing(options...)(actions...)()(ctx); err != nil {
 		log.Error(err)
 	}
 }
@@ -133,19 +154,15 @@ var defaultBoots = []string{
 	"/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR",
 }
 
-// /ip4/3.73.40.10/tcp/8000/p2p/12D3KooWQc8EUsV2HqgdVaRpqZQ8LZKobFWvTtX7JpKxqRjzMczh
-func makeBoots(boots []string) []peer.AddrInfo {
-	if len(boots) == 0 {
-		boots = defaultBoots
-	}
-	var idList []peer.AddrInfo
-	for _, addr := range boots {
+func addrInfos(addrs []string) []peer.AddrInfo {
+	var list []peer.AddrInfo
+	for _, addr := range addrs {
 		pi, err := peer.AddrInfoFromString(addr)
 		if err != nil {
 			log.Error(err)
 			continue
 		}
-		idList = append(idList, *pi)
+		list = append(list, *pi)
 	}
-	return idList
+	return list
 }

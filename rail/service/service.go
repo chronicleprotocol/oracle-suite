@@ -19,58 +19,67 @@ import (
 	"context"
 
 	logging "github.com/ipfs/go-log/v2"
-
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 )
 
 var log = logging.Logger("rail/service")
 
-func Railing(opts ...libp2p.Option) func(...Action) func(context.Context) error {
-	return func(acts ...Action) func(context.Context) error {
-		return func(ctx context.Context) error {
-			s := &Rail{
-				libOpts: opts,
-				acts:    acts,
-				wait:    make(chan error),
+type StartFn func(context.Context) error
+type PostNodeFn func(...Action) PostMeshFn
+type PostMeshFn func(...Mesh) StartFn
+
+func Railing(opts ...libp2p.Option) PostNodeFn {
+	return func(acts ...Action) PostMeshFn {
+		return func(mesh ...Mesh) StartFn {
+			return func(ctx context.Context) error {
+				s := &Rail{
+					opts:     opts,
+					acts:     acts,
+					postMesh: mesh,
+					errCh:    make(chan error),
+				}
+				if err := s.Start(ctx); err != nil {
+					return err
+				}
+				return <-s.Wait()
 			}
-			if err := s.Start(ctx); err != nil {
-				return err
-			}
-			return <-s.Wait()
 		}
 	}
 }
 
 type Rail struct {
-	libOpts []libp2p.Option
+	opts []libp2p.Option
 
-	host host.Host
-	wait chan error
+	host  host.Host
+	ctx   context.Context
+	errCh chan error
 
-	acts []Action
+	acts     []Action
+	postMesh []Mesh
 }
 
 func (s *Rail) Start(ctx context.Context) (err error) {
 	log.Info("starting P2P")
-	s.host, err = libp2p.New(s.libOpts...)
+	s.ctx = ctx
+	s.host, err = libp2p.New(s.opts...)
 	if err != nil {
 		return err
 	}
+	go func() {
+		<-s.ctx.Done()
+		log.Info("stopping P2P")
+		s.errCh <- s.host.Close()
+		close(s.errCh)
+	}()
 	for _, act := range s.acts {
 		if err := act(s); err != nil {
 			return err
 		}
 	}
-	go func() {
-		<-ctx.Done()
-		log.Info("stopping P2P")
-		s.wait <- s.host.Close()
-		close(s.wait)
-	}()
 	return nil
 }
 
 func (s *Rail) Wait() <-chan error {
-	return s.wait
+	return s.errCh
 }

@@ -1,4 +1,4 @@
-name: Publish Docker Image 2
+name: Publish Submodule Docker Image
 on:
   workflow_call:
     inputs:
@@ -15,7 +15,7 @@ on:
         required: false
         default: ''
       application:
-        description: 'Application Name (lowercase)'
+        description: 'Application Name (lowercase, same as subdir)'
         type: choice
         required: true
         options:

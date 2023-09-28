@@ -19,6 +19,8 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -35,9 +37,8 @@ func AddrInfoChan(ids chan<- peer.AddrInfo) Action {
 	}
 }
 
-func Pinger(ids <-chan peer.AddrInfo) Action {
+func ConnectoPinger(ctx context.Context, ids <-chan peer.AddrInfo) Action {
 	return func(rail *Rail) error {
-		ctx := context.Background()
 		pingService := ping.NewPingService(rail.host)
 		go func() {
 			for id := range ids {
@@ -54,6 +55,19 @@ func Pinger(ids <-chan peer.AddrInfo) Action {
 	}
 }
 
+func Pinger(ctx context.Context, ids <-chan peer.ID) Action {
+	return func(rail *Rail) error {
+		pingService := ping.NewPingService(rail.host)
+		go func() {
+			for id := range ids {
+				res := <-pingService.Ping(ctx, id)
+				log.Infow("ping", "id", id, "rtt", res.RTT.String())
+			}
+		}()
+		return nil
+	}
+}
+
 func LogListeningAddresses(rail *Rail) error {
 	addrs, err := peer.AddrInfoToP2pAddrs(host.InfoFromHost(rail.host))
 	if err != nil {
@@ -63,26 +77,23 @@ func LogListeningAddresses(rail *Rail) error {
 	return nil
 }
 
-func PingAll() Action {
+func ExtractIDs(ids chan<- peer.ID) Action {
 	return func(rail *Rail) error {
-		ctx := context.Background()
 		sub, err := rail.host.EventBus().Subscribe(new(event.EvtPeerIdentificationCompleted))
 		if err != nil {
 			return err
 		}
 		go func() {
-			<-rail.wait
+			<-rail.errCh
 			log.Debugw("closing subscription")
 			if err := sub.Close(); err != nil {
 				log.Errorw("error closing subscription", "error", err)
 			}
 		}()
-		pingService := ping.NewPingService(rail.host)
 		go func() {
 			for e := range sub.Out() {
 				t := e.(event.EvtPeerIdentificationCompleted)
-				res := <-pingService.Ping(ctx, t.Peer)
-				log.Infow("ping", "id", t.Peer, "rtt", res.RTT.String())
+				ids <- t.Peer
 			}
 		}()
 		return nil
@@ -96,7 +107,7 @@ func LogEvents(rail *Rail) error {
 		return err
 	}
 	go func() {
-		<-rail.wait
+		<-rail.errCh
 		log.Debugw("closing subscription")
 		if err := sub.Close(); err != nil {
 			log.Errorw("error closing subscription", "error", err)
@@ -129,4 +140,54 @@ func LogEvents(rail *Rail) error {
 		}
 	}()
 	return nil
+}
+
+func GossipSub(ctx context.Context, opts ...pubsub.Option) Action {
+	return func(rail *Rail) error {
+		ps, err := pubsub.NewGossipSub(ctx, rail.host, opts...)
+		if err != nil {
+			return err
+		}
+
+		var cancels []pubsub.RelayCancelFunc
+
+		for _, topic := range messages.AllMessagesMap.Keys() {
+			t, err := ps.Join(topic)
+			if err != nil {
+				log.Errorw("error joining topic", "topic", topic, "error", err)
+			}
+			c, err := t.Relay()
+			if err != nil {
+				log.Errorw("error enabling relay", "topic", topic, "error", err)
+			}
+			cancels = append(cancels, c)
+		}
+
+		go func() {
+			log.Debug("canceling all topics")
+			defer log.Debug("all topics canceled")
+			<-rail.ctx.Done()
+			for _, c := range cancels {
+				c()
+			}
+		}()
+
+		// go func() {
+		// 	t := time.NewTicker(10 * time.Second)
+		// 	defer t.Stop()
+		// 	for {
+		// 		select {
+		// 		case <-rail.ctx.Done():
+		// 			return
+		// 		case <-t.C:
+		// 			for _, topic := range messages.AllMessagesMap.Keys() {
+		// 				peers := ps.ListPeers(topic)
+		// 				log.Infow("peers in topic", "topic", topic, "peers", peers)
+		// 			}
+		// 		}
+		// 	}
+		// }()
+
+		return nil
+	}
 }
