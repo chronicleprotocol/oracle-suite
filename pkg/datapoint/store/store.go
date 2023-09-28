@@ -19,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/defiweb/go-eth/types"
 
@@ -35,6 +37,8 @@ import (
 const LoggerTag = "DATA_POINT_STORE"
 
 // Storage is underlying storage implementation for the Store.
+//
+// It must be thread-safe.
 type Storage interface {
 	// Add adds a data point to the store.
 	//
@@ -135,6 +139,7 @@ func (p *Store) Start(ctx context.Context) error {
 	p.log.Info("Starting")
 	p.ctx = ctx
 	go p.dataPointCollectorRoutine()
+	go p.logDataPointsRoutine()
 	go p.contextCancelHandler()
 	return nil
 }
@@ -161,10 +166,13 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 			if err != nil {
 				p.log.
 					WithError(err).
-					WithField("model", point.Model).
-					WithField("from", from).
+					WithFields(log.Fields{
+						"model": point.Model,
+						"from":  from,
+					}).
 					WithFields(datapoint.PointLogFields(point.Point)).
-					Error("Unable to recover address")
+					WithAdvice("This is a sign of a misbehaving feed or a serious bug in the feed software").
+					Error("Unable to recover address from the data point")
 				return
 			}
 			sdp := StoredDataPoint{
@@ -177,18 +185,19 @@ func (p *Store) collectDataPoint(point *messages.DataPoint) {
 				p.log.
 					WithError(err).
 					WithFields(StoredDataPointLogFields(sdp)).
-					Error("Unable to add data point")
+					Error("Unable to add data point to the storage")
 				return
 			}
 			p.log.
 				WithFields(StoredDataPointLogFields(sdp)).
-				Info("Data point collected")
+				Debug("Data point collected")
 			return
 		}
 	}
 	p.log.
 		WithField("model", point.Model).
 		WithFields(datapoint.PointLogFields(point.Point)).
+		WithAdvice("This is probably caused by misconfigured feed or an error in the data model").
 		Error("Unable to find recoverer for the data point")
 }
 
@@ -201,39 +210,20 @@ func (p *Store) shouldCollect(model string) bool {
 	return false
 }
 
-func (p *Store) dataPointCollectorRoutine() {
-	dataPointCh := p.transport.Messages(messages.DataPointV1MessageName)
-	priceCh := p.transport.Messages(messages.PriceV0MessageName) //nolint:staticcheck
-	for {
-		select {
-		case <-p.ctx.Done():
-			return
-		case msg := <-dataPointCh:
-			p.handlePointMessage(msg)
-		case msg := <-priceCh:
-			p.handleLegacyPriceMessage(msg)
-		}
-	}
-}
-
-// contextCancelHandler handles context cancellation.
-func (p *Store) contextCancelHandler() {
-	defer func() { close(p.waitCh) }()
-	defer p.log.Info("Stopped")
-	<-p.ctx.Done()
-}
-
 func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
 		p.log.
 			WithError(msg.Error).
-			Error("Unable to receive message")
+			WithAdvice("Ignore if occurs occasionally, especially if it is related to temporary network issues").
+			Error("Unable to receive a message from the transport layer")
 		return
 	}
 	point, ok := msg.Message.(*messages.DataPoint)
 	if !ok {
 		p.log.
 			WithFields(transport.ReceivedMessageFields(msg)).
+			WithField("type", fmt.Sprintf("%T", msg.Message)).
+			WithAdvice("This is a bug and must be investigated").
 			Error("Unexpected value returned from the transport layer")
 		return
 	}
@@ -241,7 +231,7 @@ func (p *Store) handlePointMessage(msg transport.ReceivedMessage) {
 		p.log.
 			WithFields(transport.ReceivedMessageFields(msg)).
 			WithField("model", point.Model).
-			Warn("Data point rejected, model is not supported")
+			Debug("Data point rejected, model is not supported")
 		return
 	}
 	p.collectDataPoint(point)
@@ -256,13 +246,16 @@ func (p *Store) handleLegacyPriceMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
 		p.log.
 			WithError(msg.Error).
-			Error("Unable to receive message")
+			WithAdvice("Ignore if occurs occasionally, especially if it is related to temporary network issues").
+			Error("Unable to receive a message from the transport layer")
 		return
 	}
 	price, ok := msg.Message.(*messages.Price)
 	if !ok {
 		p.log.
 			WithFields(transport.ReceivedMessageFields(msg)).
+			WithField("type", fmt.Sprintf("%T", msg.Message)).
+			WithAdvice("This is a bug and must be investigated").
 			Error("Unexpected value returned from the transport layer")
 		return
 	}
@@ -288,10 +281,71 @@ func (p *Store) handleLegacyPriceMessage(msg transport.ReceivedMessage) {
 		p.log.
 			WithFields(transport.ReceivedMessageFields(msg)).
 			WithField("model", point.Model).
-			Warn("Data point rejected, model is not supported")
+			Debug("Data point rejected, model is not supported")
 		return
 	}
 	p.collectDataPoint(point)
+}
+
+// logDataPointsSince logs a short summary of data points collected since the
+// given time.
+func (p *Store) logDataPointsSince(since time.Time) {
+	dataPointsLog := make(map[string]any)
+	for _, model := range p.models {
+		dataPoints, err := p.storage.Latest(p.ctx, model)
+		if err != nil {
+			p.log.
+				WithError(err).
+				Error("Failed to fetch latest data points")
+			continue
+		}
+		for _, dp := range dataPoints {
+			if dp.DataPoint.Time.After(since) {
+				key := fmt.Sprintf("%s:%s", dp.From.String(), model)
+				dataPointsLog[key] = dp.DataPoint.Value
+			}
+		}
+	}
+	p.log.
+		WithField("dataPoints", dataPointsLog).
+		Info("Collected data points in the last minute")
+}
+
+func (p *Store) logDataPointsRoutine() {
+	lastSummaryTime := time.Time{}
+	summaryInterval := time.NewTicker(1 * time.Minute)
+	defer summaryInterval.Stop()
+	for {
+		select {
+		case <-p.ctx.Done():
+			return
+		case t := <-summaryInterval.C:
+			p.logDataPointsSince(lastSummaryTime)
+			lastSummaryTime = t
+		}
+	}
+}
+
+func (p *Store) dataPointCollectorRoutine() {
+	dataPointCh := p.transport.Messages(messages.DataPointV1MessageName)
+	priceCh := p.transport.Messages(messages.PriceV0MessageName) //nolint:staticcheck
+	for {
+		select {
+		case <-p.ctx.Done():
+			return
+		case msg := <-dataPointCh:
+			p.handlePointMessage(msg)
+		case msg := <-priceCh:
+			p.handleLegacyPriceMessage(msg)
+		}
+	}
+}
+
+// contextCancelHandler handles context cancellation.
+func (p *Store) contextCancelHandler() {
+	defer func() { close(p.waitCh) }()
+	defer p.log.Info("Stopped")
+	<-p.ctx.Done()
 }
 
 func findPairForLegacyPrice(model string) value.Pair {

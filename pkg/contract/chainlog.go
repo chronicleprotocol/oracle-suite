@@ -51,10 +51,10 @@ func (w *Chainlog) TryGet(ctx context.Context, wat string) (ok bool, address typ
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return false, types.ZeroAddress, fmt.Errorf("chainlog: tryGet query failed: %v", err)
+		return false, types.ZeroAddress, fmt.Errorf("chainlog: tryGet query failed: %w", err)
 	}
 	if err := abiChainlog.Methods["tryGet"].DecodeValues(res, &ok, &address); err != nil {
-		return false, types.ZeroAddress, fmt.Errorf("chainlog: tryGet query failed: %v", err)
+		return false, types.ZeroAddress, fmt.Errorf("chainlog: tryGet query failed: %w", err)
 	}
 	return ok, address, nil
 }

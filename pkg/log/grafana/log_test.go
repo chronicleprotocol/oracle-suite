@@ -340,9 +340,9 @@ func TestLogger(t *testing.T) {
 
 func Test_byPath(t *testing.T) {
 	tests := []struct {
-		value   interface{}
+		value   any
 		path    string
-		want    interface{}
+		want    any
 		invalid bool
 	}{
 		{

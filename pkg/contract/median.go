@@ -70,7 +70,7 @@ func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("median: val query failed: %v", err)
+		return nil, fmt.Errorf("median: val query failed: %w", err)
 	}
 	if len(b) < (offset + length) {
 		return nil, errors.New("median: val query failed: result is too short")
@@ -91,7 +91,7 @@ func (m *Median) Age(ctx context.Context) (time.Time, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return time.Unix(0, 0), fmt.Errorf("median: age query failed: %v", err)
+		return time.Unix(0, 0), fmt.Errorf("median: age query failed: %w", err)
 	}
 	return time.Unix(new(big.Int).SetBytes(res).Int64(), 0), nil
 }
@@ -106,7 +106,7 @@ func (m *Median) Wat(ctx context.Context) (string, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return "", fmt.Errorf("median: wat query failed: %v", err)
+		return "", fmt.Errorf("median: wat query failed: %w", err)
 	}
 	return bytes32ToString(res), nil
 }
@@ -121,7 +121,7 @@ func (m *Median) Bar(ctx context.Context) (int, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("median: bar query failed: %v", err)
+		return 0, fmt.Errorf("median: bar query failed: %w", err)
 	}
 	return int(new(big.Int).SetBytes(res).Int64()), nil
 }
@@ -147,17 +147,17 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 	}
 	calldata, err := abiMedian.Methods["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
 	if err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(m.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, m.client, abiMedian, *tx); err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
 	}
 	txHash, txCpy, err := m.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
 	}
 	return txHash, txCpy, nil
 }

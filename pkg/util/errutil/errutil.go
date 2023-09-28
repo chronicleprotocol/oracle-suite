@@ -15,6 +15,59 @@
 
 package errutil
 
+import "strings"
+
+// Append combines the provided error with a list of errors.
+func Append(err error, errs ...error) error {
+	if err == nil && len(errs) == 0 {
+		return nil
+	}
+	var mErr MultiError
+	if e, ok := err.(MultiError); ok {
+		mErr = e
+	} else if err != nil {
+		mErr = MultiError{err}
+	}
+	for _, e := range errs {
+		if e == nil {
+			continue
+		}
+		if m, ok := e.(MultiError); ok {
+			mErr = append(mErr, m...)
+		} else {
+			mErr = append(mErr, e)
+		}
+	}
+	switch len(mErr) {
+	case 0:
+		return nil
+	case 1:
+		return mErr[0]
+	default:
+		return mErr
+	}
+}
+
+// MultiError is a collection of errors.
+type MultiError []error
+
+// Error implements the error interface.
+func (m MultiError) Error() string {
+	if len(m) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("following errors occurred: [")
+	for i, err := range m {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(err.Error())
+	}
+	b.WriteString("]")
+	return b.String()
+}
+
 // Must is a helper function that panics when the error is not nil. Otherwise,
 // it returns the first argument. It is intended for use with functions that
 // should never return an error when called.

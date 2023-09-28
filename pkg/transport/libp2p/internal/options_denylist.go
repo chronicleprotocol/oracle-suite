@@ -88,7 +88,7 @@ func (f *denylistConnGater) InterceptAddrDial(pid peer.ID, addr multiaddr.Multia
 			"peerID": pid.String(),
 			"addr":   addr.String(),
 		}).
-		Info("Blocked connection")
+		Info("Blocked connection to peer by denylist")
 	return true
 }
 

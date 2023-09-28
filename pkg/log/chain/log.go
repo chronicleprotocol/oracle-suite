@@ -56,7 +56,7 @@ func (l *logger) Level() log.Level {
 }
 
 // WithField implements the log.Logger interface.
-func (l *logger) WithField(key string, value interface{}) log.Logger {
+func (l *logger) WithField(key string, value any) log.Logger {
 	loggers := make([]log.Logger, len(l.loggers))
 	for n, l := range l.loggers {
 		loggers[n] = l.WithField(key, value)
@@ -82,75 +82,45 @@ func (l *logger) WithError(err error) log.Logger {
 	return &logger{shared: l.shared, loggers: loggers}
 }
 
-// Debugf implements the log.Logger interface.
-func (l *logger) Debugf(format string, args ...interface{}) {
-	for _, l := range l.loggers {
-		l.Debugf(format, args...)
+// WithAdvice implements the log.Logger interface.
+func (l *logger) WithAdvice(advice string) log.Logger {
+	loggers := make([]log.Logger, len(l.loggers))
+	for n, l := range l.loggers {
+		loggers[n] = l.WithAdvice(advice)
 	}
-}
-
-// Infof implements the log.Logger interface.
-func (l *logger) Infof(format string, args ...interface{}) {
-	for _, l := range l.loggers {
-		l.Infof(format, args...)
-	}
-}
-
-// Warnf implements the log.Logger interface.
-func (l *logger) Warnf(format string, args ...interface{}) {
-	for _, l := range l.loggers {
-		l.Warnf(format, args...)
-	}
-}
-
-// Errorf implements the log.Logger interface.
-func (l *logger) Errorf(format string, args ...interface{}) {
-	for _, l := range l.loggers {
-		l.Errorf(format, args...)
-	}
-}
-
-// Panicf implements the log.Logger interface.
-func (l *logger) Panicf(format string, args ...interface{}) {
-	for _, l := range l.loggers {
-		func() {
-			defer func() { recover() }() //nolint:errcheck // same panic is thrown below
-			l.Panicf(format, args...)
-		}()
-	}
-	panic(fmt.Sprintf(format, args...))
+	return &logger{shared: l.shared, loggers: loggers}
 }
 
 // Debug implements the log.Logger interface.
-func (l *logger) Debug(args ...interface{}) {
+func (l *logger) Debug(args ...any) {
 	for _, l := range l.loggers {
 		l.Debug(args...)
 	}
 }
 
 // Info implements the log.Logger interface.
-func (l *logger) Info(args ...interface{}) {
+func (l *logger) Info(args ...any) {
 	for _, l := range l.loggers {
 		l.Info(args...)
 	}
 }
 
 // Warn implements the log.Logger interface.
-func (l *logger) Warn(args ...interface{}) {
+func (l *logger) Warn(args ...any) {
 	for _, l := range l.loggers {
 		l.Warn(args...)
 	}
 }
 
 // Error implements the log.Logger interface.
-func (l *logger) Error(args ...interface{}) {
+func (l *logger) Error(args ...any) {
 	for _, l := range l.loggers {
 		l.Error(args...)
 	}
 }
 
 // Panic implements the log.Logger interface.
-func (l *logger) Panic(args ...interface{}) {
+func (l *logger) Panic(args ...any) {
 	for _, l := range l.loggers {
 		func() {
 			defer func() { recover() }() //nolint:errcheck // same panic is thrown below

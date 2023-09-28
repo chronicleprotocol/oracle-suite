@@ -29,6 +29,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/multiformats/go-multiaddr"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"
 )
 
@@ -144,15 +145,19 @@ func DirectPeers(addrs []multiaddr.Multiaddr) Options {
 					continue
 				}
 				n.tsLog.get().
-					WithField("peerID", addrInfo.ID.Pretty()).
-					WithField("addrs", addrInfo.Addrs).
+					WithFields(log.Fields{
+						"peerID": addrInfo.ID.String(),
+						"addrs":  addrInfo.Addrs,
+					}).
 					Info("Connecting to the direct peer")
 				err := n.host.Connect(n.ctx, addrInfo)
 				if err != nil {
 					n.tsLog.get().
-						WithField("peerID", addrInfo.ID.Pretty()).
-						WithField("addrs", addrInfo.Addrs).
 						WithError(err).
+						WithFields(log.Fields{
+							"peerID": addrInfo.ID.String(),
+							"addrs":  addrInfo.Addrs,
+						}).
 						Warn("Unable to connect to the direct peer")
 				}
 			}
@@ -216,12 +221,14 @@ func Discovery(bootstrapAddrs []multiaddr.Multiaddr) Options {
 				if err != nil {
 					n.tsLog.get().
 						WithError(err).
+						WithAdvice("This is a bug and needs to be investigated").
 						Error("Unable to initialize KAD-DHT")
 					return
 				}
 				if err = kadDHT.Bootstrap(n.ctx); err != nil {
 					n.tsLog.get().
 						WithError(err).
+						WithAdvice("This is a bug and needs to be investigated").
 						Error("Unable to bootstrap KAD-DHT")
 					return
 				}
@@ -234,7 +241,7 @@ func Discovery(bootstrapAddrs []multiaddr.Multiaddr) Options {
 				if err != nil {
 					n.tsLog.get().
 						WithError(err).
-						Error("Unable to close KAD-DHT")
+						Warn("Unable to close KAD-DHT")
 				}
 			}
 		}))

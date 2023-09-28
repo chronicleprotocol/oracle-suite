@@ -15,9 +15,39 @@
 
 package rpcsplitter
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/ethereum/go-ethereum/rpc"
+)
 
 type errorList []error
+
+func (e errorList) ErrorCode() int {
+	codes := make([]int, 0, len(e))
+	for _, err := range e {
+		if err, ok := err.(rpc.Error); ok {
+			codes = append(codes, err.ErrorCode())
+		}
+	}
+	if len(codes) == 0 {
+		return -32000
+	}
+	return mostCommon(codes)
+}
+
+func (e errorList) ErrorData() interface{} {
+	data := make([]any, 0, len(e))
+	for _, err := range e {
+		if err, ok := err.(rpc.DataError); ok {
+			data = append(data, err.ErrorData())
+		}
+	}
+	if len(data) == 0 {
+		return nil
+	}
+	return mostCommon(data)
+}
 
 func (e errorList) Error() string {
 	switch len(e) {
@@ -67,4 +97,23 @@ func addError(err error, errs ...error) error {
 		}
 	}
 	return errList
+}
+
+func mostCommon[T comparable](s []T) T {
+	if len(s) == 0 {
+		return *new(T)
+	}
+	m := make(map[T]int)
+	for _, v := range s {
+		m[v]++
+	}
+	var max T
+	var maxCount int
+	for k, v := range m {
+		if v > maxCount {
+			maxCount = v
+			max = k
+		}
+	}
+	return max
 }

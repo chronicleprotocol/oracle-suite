@@ -257,10 +257,10 @@ func (n *Node) Subscribe(topic string) (*Subscription, error) {
 	defer n.mu.Unlock()
 
 	if n.closed {
-		return nil, fmt.Errorf("libp2p node error: %v", ErrConnectionClosed)
+		return nil, fmt.Errorf("libp2p node error: %w", ErrConnectionClosed)
 	}
 	if _, ok := n.subs[topic]; ok {
-		return nil, fmt.Errorf("libp2p node error: %v", ErrAlreadySubscribed)
+		return nil, fmt.Errorf("libp2p node error: %w", ErrAlreadySubscribed)
 	}
 
 	sub, err := newSubscription(n, topic)

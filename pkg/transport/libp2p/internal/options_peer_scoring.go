@@ -54,7 +54,8 @@ func PeerScoring(
 						n.tsLog.get().
 							WithError(err).
 							WithField("topic", e.Topic).
-							Warn("Unable to set topic score params")
+							WithAdvice("This is a bug and needs to be investigated").
+							Error("Unable to set topic score params")
 					}
 				}()
 				sub, err := n.Subscription(e.Topic)

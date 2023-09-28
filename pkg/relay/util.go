@@ -19,9 +19,21 @@ import (
 	"crypto/rand"
 	"math"
 	"math/big"
+	"sort"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
+
+// dataPointsToPrices extracts prices from data points.
+func dataPointsToPrices(dps []datapoint.Point) []*bn.DecFloatPointNumber {
+	p := make([]*bn.DecFloatPointNumber, len(dps))
+	for i, dp := range dps {
+		p[i] = dp.Value.(value.Tick).Price
+	}
+	return p
+}
 
 // calculateSpread calculates the spread between given price and a median
 // price. The spread is returned as percentage points.
@@ -37,6 +49,24 @@ func calculateSpread(new, old *bn.DecFloatPointNumber) float64 {
 	}
 	spread, _ := new.Sub(old).Div(old).Mul(bn.DecFloatPoint(100)).Abs().BigFloat().Float64()
 	return spread
+}
+
+// calculateMedian calculates the median price.
+func calculateMedian(prices []*bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	count := len(prices)
+	if count == 0 {
+		return bn.DecFloatPoint(0)
+	}
+	sort.Slice(prices, func(i, j int) bool {
+		return prices[i].Cmp(prices[j]) < 0
+	})
+	if count%2 == 0 {
+		m := count / 2
+		a := prices[m-1]
+		b := prices[m]
+		return a.Add(b).Div(bn.DecFloatPoint(0))
+	}
+	return prices[(count-1)/2]
 }
 
 // randomInts generates a slice of integers from 0 to n (exclusive), shuffled

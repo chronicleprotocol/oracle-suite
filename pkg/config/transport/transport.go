@@ -34,6 +34,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -214,7 +215,7 @@ func (c *Config) Transport(d Dependencies) (transport.Service, error) {
 	default:
 		c.transport = chain.New(transports...)
 	}
-	return c.transport, nil
+	return logger.New(c.transport, d.Logger), nil
 }
 
 func (c *Config) LibP2PBootstrap(d BootstrapDependencies) (transport.Service, error) {

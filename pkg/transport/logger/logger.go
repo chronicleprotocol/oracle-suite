@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package recoverer
+package logger
 
 import (
 	"context"
@@ -23,64 +23,72 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-// Recoverer is a transport wrapper that handles panics that occur in the
-// underlying transport.
-type Recoverer struct {
+// Logger logs all messages sent and received by the transport.
+type Logger struct {
 	t transport.Service
 	l log.Logger
 }
 
-// New creates a new Recoverer transport.
-func New(t transport.Service, l log.Logger) *Recoverer {
+// New creates a new Logger transport.
+func New(t transport.Service, l log.Logger) *Logger {
 	if t == nil {
 		panic("t cannot be nil")
 	}
 	if l == nil {
 		l = null.New()
 	}
-	return &Recoverer{t: t, l: l}
+	return &Logger{t: t, l: l}
 }
 
 // Start implements the transport.Transport interface.
-func (r *Recoverer) Start(ctx context.Context) error {
+func (r *Logger) Start(ctx context.Context) error {
 	return r.t.Start(ctx)
 }
 
 // Wait implements the transport.Transport interface.
-func (r *Recoverer) Wait() <-chan error {
+func (r *Logger) Wait() <-chan error {
 	return r.t.Wait()
 }
 
 // Broadcast implements the transport.Transport interface.
-func (r *Recoverer) Broadcast(topic string, message transport.Message) (err error) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			r.l.
-				WithField("panic", rec).
-				WithAdvice("This is a critical bug and must be investigated").
-				Error("Recovered from panic")
-			err = fmt.Errorf("recovered from panic: %v", rec)
-		}
-	}()
-	return r.t.Broadcast(topic, message)
+func (r *Logger) Broadcast(topic string, message transport.Message) error {
+	if !log.IsLevel(r.l, log.Debug) {
+		return r.t.Broadcast(topic, message)
+	}
+	err := r.t.Broadcast(topic, message)
+	log := r.l.
+		WithField("topic", topic).
+		WithField("message", message)
+	if err != nil {
+		log.WithError(err)
+	}
+	log.Debug("Broadcasted message")
+	return err
 }
 
 // Messages implements the transport.Transport interface.
-func (r *Recoverer) Messages(topic string) <-chan transport.ReceivedMessage {
-	defer func() {
-		if rec := recover(); rec != nil {
+func (r *Logger) Messages(topic string) <-chan transport.ReceivedMessage {
+	if !log.IsLevel(r.l, log.Debug) {
+		return r.t.Messages(topic)
+	}
+	fi := chanutil.NewFanIn(r.t.Messages(topic))
+	go func() {
+		for msg := range fi.Chan() {
 			r.l.
-				WithField("panic", rec).
-				WithAdvice("This is a critical bug and must be investigated").
-				Error("Recovered from panic")
+				WithField("topic", topic).
+				WithField("message", msg).
+				Debug("Received message")
 		}
 	}()
-	return r.t.Messages(topic)
+	ch := fi.Chan()
+	fi.AutoClose()
+	return ch
 }
 
 // ServiceName implements the supervisor.WithName interface.
-func (r *Recoverer) ServiceName() string {
-	return fmt.Sprintf("Recoverer(%s)", supervisor.ServiceName(r.t))
+func (r *Logger) ServiceName() string {
+	return fmt.Sprintf("Logger(%s)", supervisor.ServiceName(r.t))
 }

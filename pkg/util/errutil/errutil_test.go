@@ -1,11 +1,77 @@
 package errutil
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestAppend(t *testing.T) {
+	err1 := errors.New("error1")
+	err2 := errors.New("error2")
+	multiErr := MultiError{err1, err2}
+
+	t.Run("no errors", func(t *testing.T) {
+		result := Append(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("single error", func(t *testing.T) {
+		result := Append(err1)
+		assert.Equal(t, err1, result)
+	})
+
+	t.Run("multiple errors", func(t *testing.T) {
+		result := Append(err1, err2)
+		assert.IsType(t, MultiError{}, result)
+		assert.Contains(t, result.(MultiError), err1)
+		assert.Contains(t, result.(MultiError), err2)
+	})
+
+	t.Run("append MultiError to error", func(t *testing.T) {
+		result := Append(err1, multiErr)
+		assert.IsType(t, MultiError{}, result)
+		assert.Contains(t, result.(MultiError), err1)
+		assert.Contains(t, result.(MultiError), err2)
+	})
+
+	t.Run("append error to MultiError", func(t *testing.T) {
+		result := Append(multiErr, err1)
+		assert.IsType(t, MultiError{}, result)
+		assert.Contains(t, result.(MultiError), err1)
+		assert.Contains(t, result.(MultiError), err2)
+	})
+
+	t.Run("append MultiError to MultiError", func(t *testing.T) {
+		result := Append(multiErr, multiErr)
+		assert.IsType(t, MultiError{}, result)
+		assert.Contains(t, result.(MultiError), err1)
+		assert.Contains(t, result.(MultiError), err2)
+		assert.Len(t, result.(MultiError), 4) // It should have 4 errors since we appended the same multiError.
+	})
+}
+
+func TestMultiError(t *testing.T) {
+	err1 := errors.New("error1")
+	err2 := errors.New("error2")
+
+	t.Run("Empty MultiError", func(t *testing.T) {
+		var multiErr MultiError
+		assert.Empty(t, multiErr.Error())
+	})
+
+	t.Run("Single error MultiError", func(t *testing.T) {
+		multiErr := MultiError{err1}
+		assert.Equal(t, "following errors occurred: [error1]", multiErr.Error())
+	})
+
+	t.Run("Multiple errors MultiError", func(t *testing.T) {
+		multiErr := MultiError{err1, err2}
+		assert.Equal(t, "following errors occurred: [error1, error2]", multiErr.Error())
+	})
+}
 
 func TestMust(t *testing.T) {
 	tests := []struct {

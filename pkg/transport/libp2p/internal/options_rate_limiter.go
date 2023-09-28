@@ -35,12 +35,15 @@ type RateLimiterConfig struct {
 	// BytesPerSecond is the maximum rate of messages in bytes/s that can be
 	// created by a single peer.
 	BytesPerSecond float64
+
 	// BurstSize is a burst value in bytes for a messages created from a singe
 	// peer.
 	BurstSize int
+
 	// RelayBytesPerSecond is the maximum rate of messages in bytes/s that can
 	// be relayed by a single relay.
 	RelayBytesPerSecond float64
+
 	// RelayBurstSize is a burst value in bytes for a messages relayed by
 	// a singe peer.
 	RelayBurstSize int
@@ -135,6 +138,7 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 						"receivedFromPeerID":   msg.ReceivedFrom.String(),
 						"receivedFromPeerAddr": ethkey.PeerIDToAddress(msg.ReceivedFrom).String(),
 					}).
+					WithAdvice("This is may be caused by a misbehaving relay or peer scoring misconfiguration, please report this issue").
 					Warn("The message has been rejected, rate limit for relay exceeded")
 				return pubsub.ValidationReject
 			}
@@ -147,6 +151,7 @@ func RateLimiter(cfg RateLimiterConfig) Options {
 						"receivedFromPeerID":   msg.ReceivedFrom.String(),
 						"receivedFromPeerAddr": ethkey.PeerIDToAddress(msg.ReceivedFrom).String(),
 					}).
+					WithAdvice("This is may be caused by a misbehaving relay or peer scoring misconfiguration, please report this issue").
 					Warn("The message has been rejected, rate limit for message author exceeded")
 				return pubsub.ValidationReject
 			}

@@ -140,7 +140,9 @@ func (m *MuSigStore) shouldCollectSignature(sig *messages.MuSigSignature) bool {
 
 func (m *MuSigStore) handleSignatureMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
-		m.log.WithError(msg.Error).Error("Unable to receive message")
+		m.log.
+			WithError(msg.Error).
+			Error("Unable to receive a message from the transport layer")
 		return
 	}
 	sig, ok := msg.Message.(*messages.MuSigSignature)

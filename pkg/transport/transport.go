@@ -16,6 +16,9 @@
 package transport
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
@@ -70,6 +73,21 @@ type ReceivedMessage struct {
 
 	// Meta contains optional information about the message.
 	Meta Meta
+}
+
+func (p ReceivedMessage) MarshalJSON() ([]byte, error) {
+	type msg struct {
+		Message Message `json:"message,omitempty"`
+		Author  string  `json:"author,omitempty"`
+		Error   error   `json:"error,omitempty"`
+		Meta    Meta    `json:"meta,omitempty"`
+	}
+	return json.Marshal(msg{
+		Message: p.Message,
+		Author:  fmt.Sprintf("%x", p.Author),
+		Error:   p.Error,
+		Meta:    p.Meta,
+	})
 }
 
 type AppInfo struct {

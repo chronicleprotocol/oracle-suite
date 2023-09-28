@@ -105,7 +105,10 @@ func (s *Sysmon) monitorRoutine() {
 	var spaceAvail uint64
 	wd, err := os.Getwd()
 	if err != nil {
-		s.log.WithError(err).Warn("Failed to get current working directory, disk space monitoring is disabled")
+		s.log.
+			WithError(err).
+			WithAdvice("This warning can be ignored").
+			Warn("Failed to get current working directory, disk space monitoring is disabled")
 	}
 	t := time.NewTicker(s.interval)
 	defer t.Stop()

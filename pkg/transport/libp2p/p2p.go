@@ -203,7 +203,10 @@ func New(cfg Config) (*P2P, error) {
 			maxConnections,
 			5*time.Minute,
 		),
-		internal.Monitor(),
+		internal.Monitor(internal.MonitorConfig{
+			ShowLogOnChange: log.IsLevel(cfg.Logger, log.Debug),
+			ShowLogInterval: 10 * time.Minute,
+		}),
 	}
 	if cfg.ExternalAddr != nil {
 		opts = append(opts, internal.ExternalAddr(cfg.ExternalAddr))
@@ -219,7 +222,6 @@ func New(cfg Config) (*P2P, error) {
 			return nil, fmt.Errorf("P2P transport error: invalid price topic scoring parameters: %w", err)
 		}
 		opts = append(opts,
-			internal.MessageLogger(),
 			internal.RateLimiter(rateLimiterConfig(cfg)),
 			internal.PeerScoring(peerScoreParams, thresholds, func(topic string) *pubsub.TopicScoreParams {
 				if topic == messages.PriceV0MessageName || topic == messages.PriceV1MessageName { //nolint:staticcheck
@@ -357,6 +359,11 @@ func (p *P2P) messagesLoop(topic string, sub *internal.Subscription) {
 			}
 		}
 	}
+}
+
+// ServiceName implements the supervisor.WithName interface.
+func (p *P2P) ServiceName() string {
+	return "LibP2P"
 }
 
 // strsToMaddrs converts multiaddresses given as strings to a

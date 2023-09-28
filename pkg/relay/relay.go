@@ -34,6 +34,7 @@ import (
 const LoggerTag = "RELAY"
 
 type MedianContract interface {
+	Address() types.Address
 	Val(ctx context.Context) (*bn.DecFixedPointNumber, error)
 	Age(ctx context.Context) (time.Time, error)
 	Wat(ctx context.Context) (string, error)
@@ -49,6 +50,7 @@ type MedianContract interface {
 }
 
 type ScribeContract interface {
+	Address() types.Address
 	Wat(ctx context.Context) (string, error)
 	Bar(ctx context.Context) (int, error)
 	Feeds(ctx context.Context) ([]types.Address, []uint8, error)

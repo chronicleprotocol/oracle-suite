@@ -66,7 +66,7 @@ func (s *Scribe) Wat(ctx context.Context) (string, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return "", fmt.Errorf("scribe: wat query failed: %v", err)
+		return "", fmt.Errorf("scribe: wat query failed: %w", err)
 	}
 	return bytes32ToString(res), nil
 }
@@ -81,11 +81,11 @@ func (s *Scribe) Bar(ctx context.Context) (int, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("scribe: bar query failed: %v", err)
+		return 0, fmt.Errorf("scribe: bar query failed: %w", err)
 	}
 	var bar uint8
 	if err := abiScribe.Methods["bar"].DecodeValues(res, &bar); err != nil {
-		return 0, fmt.Errorf("scribe: bar query failed: %v", err)
+		return 0, fmt.Errorf("scribe: bar query failed: %w", err)
 	}
 	return int(bar), nil
 }
@@ -100,12 +100,12 @@ func (s *Scribe) Feeds(ctx context.Context) ([]types.Address, []uint8, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("scribe: feeds query failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: feeds query failed: %w", err)
 	}
 	var feeds []types.Address
 	var feedIndices []uint8
 	if err := abiScribe.Methods["feeds"].DecodeValues(res, &feeds, &feedIndices); err != nil {
-		return nil, nil, fmt.Errorf("scribe: feeds query failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: feeds query failed: %w", err)
 	}
 	return feeds, feedIndices, nil
 }
@@ -113,17 +113,17 @@ func (s *Scribe) Feeds(ctx context.Context) ([]types.Address, []uint8, error) {
 func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData) (*types.Hash, *types.Transaction, error) {
 	calldata, err := abiScribe.Methods["poke"].EncodeArgs(toPokeDataStruct(pokeData), toSchnorrDataStruct(schnorrData))
 	if err != nil {
-		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: poke failed: %w", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, abiScribe, *tx); err != nil {
-		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: poke failed: %w", err)
 	}
 	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("scribe: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("scribe: poke failed: %w", err)
 	}
 	return txHash, txCpy, nil
 }

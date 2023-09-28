@@ -26,6 +26,20 @@ import (
 	"github.com/defiweb/go-eth/types"
 )
 
+// IsRevert returns true if execution of the call was reverted.
+func IsRevert(err error) bool {
+	if errors.As(err, &goethABI.RevertError{}) {
+		return true
+	}
+	if errors.As(err, &goethABI.PanicError{}) {
+		return true
+	}
+	if errors.As(err, &goethABI.CustomError{}) {
+		return true
+	}
+	return false
+}
+
 // simulateTransaction simulates a transaction by calling the contract method
 // and checking for revert or panic.
 func simulateTransaction(ctx context.Context, rpc rpc.RPC, c *goethABI.Contract, tx types.Transaction) error {

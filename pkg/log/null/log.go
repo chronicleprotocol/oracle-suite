@@ -28,17 +28,14 @@ func New() log.Logger {
 	return &logger{}
 }
 
-func (n *logger) Level() log.Level                             { return log.Panic }
-func (n *logger) WithField(_ string, _ interface{}) log.Logger { return n }
-func (n *logger) WithFields(_ log.Fields) log.Logger           { return n }
-func (n *logger) WithError(_ error) log.Logger                 { return n }
-func (n *logger) Debugf(_ string, _ ...interface{})            {}
-func (n *logger) Infof(_ string, _ ...interface{})             {}
-func (n *logger) Warnf(_ string, _ ...interface{})             {}
-func (n *logger) Errorf(_ string, _ ...interface{})            {}
-func (n *logger) Panicf(format string, args ...interface{})    { panic(fmt.Sprintf(format, args...)) }
-func (n *logger) Debug(_ ...interface{})                       {}
-func (n *logger) Info(_ ...interface{})                        {}
-func (n *logger) Warn(_ ...interface{})                        {}
-func (n *logger) Error(_ ...interface{})                       {}
-func (n *logger) Panic(args ...interface{})                    { panic(fmt.Sprint(args...)) }
+func (n *logger) Level() log.Level                     { return log.Panic }
+func (n *logger) WithField(_ string, _ any) log.Logger { return n }
+func (n *logger) WithFields(_ log.Fields) log.Logger   { return n }
+func (n *logger) WithError(_ error) log.Logger         { return n }
+func (n *logger) WithAdvice(_ string) log.Logger       { return n }
+func (n *logger) Panicf(format string, args ...any)    { panic(fmt.Sprintf(format, args...)) }
+func (n *logger) Debug(_ ...any)                       {}
+func (n *logger) Info(_ ...any)                        {}
+func (n *logger) Warn(_ ...any)                        {}
+func (n *logger) Error(_ ...any)                       {}
+func (n *logger) Panic(args ...any)                    { panic(fmt.Sprint(args...)) }

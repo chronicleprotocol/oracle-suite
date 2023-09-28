@@ -45,7 +45,7 @@ func (c *logger) Level() log.Level {
 }
 
 // WithField implements the log.Logger interface.
-func (c *logger) WithField(key string, value interface{}) log.Logger {
+func (c *logger) WithField(key string, value any) log.Logger {
 	f := log.Fields{}
 	for k, v := range c.fields {
 		f[k] = v
@@ -79,71 +79,41 @@ func (c *logger) WithError(err error) log.Logger {
 	return c.WithField("err", err.Error())
 }
 
-// Debugf implements the log.Logger interface.
-func (c *logger) Debugf(format string, args ...interface{}) {
-	if c.level >= log.Debug {
-		c.callback(c.level, c.fields, fmt.Sprintf(format, args...))
-	}
-}
-
-// Infof implements the log.Logger interface.
-func (c *logger) Infof(format string, args ...interface{}) {
-	if c.level >= log.Info {
-		c.callback(c.level, c.fields, fmt.Sprintf(format, args...))
-	}
-}
-
-// Warnf implements the log.Logger interface.
-func (c *logger) Warnf(format string, args ...interface{}) {
-	if c.level >= log.Warn {
-		c.callback(c.level, c.fields, fmt.Sprintf(format, args...))
-	}
-}
-
-// Errorf implements the log.Logger interface.
-func (c *logger) Errorf(format string, args ...interface{}) {
-	if c.level >= log.Error {
-		c.callback(c.level, c.fields, fmt.Sprintf(format, args...))
-	}
-}
-
-// Panicf implements the log.Logger interface.
-func (c *logger) Panicf(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	c.callback(c.level, c.fields, msg)
-	panic(msg)
+// WithAdvice implements the log.Logger interface.
+func (c *logger) WithAdvice(advice string) log.Logger {
+	return c.WithField("advice", advice)
 }
 
 // Debug implements the log.Logger interface.
-func (c *logger) Debug(args ...interface{}) {
+func (c *logger) Debug(args ...any) {
 	if c.level >= log.Debug {
 		c.callback(c.level, c.fields, fmt.Sprint(args...))
 	}
 }
 
 // Info implements the log.Logger interface.
-func (c *logger) Info(args ...interface{}) {
+func (c *logger) Info(args ...any) {
 	if c.level >= log.Info {
 		c.callback(c.level, c.fields, fmt.Sprint(args...))
 	}
 }
 
 // Warn implements the log.Logger interface.
-func (c *logger) Warn(args ...interface{}) {
+func (c *logger) Warn(args ...any) {
 	if c.level >= log.Warn {
 		c.callback(c.level, c.fields, fmt.Sprint(args...))
 	}
 }
 
 // Error implements the log.Logger interface.
-func (c *logger) Error(args ...interface{}) {
+func (c *logger) Error(args ...any) {
 	if c.level >= log.Error {
 		c.callback(c.level, c.fields, fmt.Sprint(args...))
 	}
 }
 
 // Panic implements the log.Logger interface.
-func (c *logger) Panic(args ...interface{}) {
+func (c *logger) Panic(args ...any) {
 	msg := fmt.Sprint(args...)
 	c.callback(c.level, c.fields, msg)
 	panic(msg)

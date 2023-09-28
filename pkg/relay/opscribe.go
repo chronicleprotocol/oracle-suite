@@ -18,8 +18,8 @@ package relay
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/hexutil"
@@ -28,9 +28,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
-
-// TODO: Because the code for OpScribe is so similar to the code for Scribe, we
-//       should consider refactoring it to avoid code duplication.
 
 type opScribeWorker struct {
 	log        log.Logger
@@ -49,39 +46,65 @@ func (w *opScribeWorker) workerRoutine(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-w.ticker.TickCh():
-			if err := w.tryUpdate(ctx); err != nil {
-				w.log.WithError(err).Error("Failed to update Scribe contract")
-			}
+			w.tryUpdate(ctx)
 		}
 	}
 }
 
-func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
+func (w *opScribeWorker) tryUpdate(ctx context.Context) {
 	// Contract data model.
 	wat, err := w.contract.Wat(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get current asset name from the ScribeOptimistic contract")
+		return
 	}
 	if wat != w.dataModel {
-		return fmt.Errorf("invalid wat returned from contract: %s, expected %s", wat, w.dataModel)
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Contract asset name does not match the configured asset name")
+		return
 	}
 
 	// Current price and time of the last update.
 	pokeData, err := w.contract.Read(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(log.Fields{
+				"contractAddress": w.contract.Address(),
+				"dataModel":       w.dataModel,
+			}).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get current price from the ScribeOptimistic contract")
+		return
 	}
 
 	// Quorum.
 	bar, err := w.contract.Bar(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get quorum from the ScribeOptimistic contract")
+		return
 	}
 
 	// Feed list required to generate signersBlob.
 	feeds, indices, err := w.contract.Feeds(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get feed list from the ScribeOptimistic contract")
+		return
 	}
 
 	// Iterate over all signatures to check if any of them can be used to update
@@ -124,8 +147,8 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 
 		// Print logs.
 		w.log.
+			WithFields(w.logFields()).
 			WithFields(log.Fields{
-				"dataModel":        w.dataModel,
 				"bar":              bar,
 				"age":              pokeData.Age,
 				"val":              pokeData.Val,
@@ -136,7 +159,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 				"timeToExpiration": time.Since(pokeData.Age).String(),
 				"currentSpread":    spread,
 			}).
-			Info("Trying to update ScribeOptimistic contract")
+			Debug("ScribeOptimistic worker")
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
@@ -161,12 +184,33 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 					optimistic.ECDSASignature,
 				)
 				if err != nil {
-					return err
+					if strings.Contains(err.Error(), "replacement transaction underpriced") {
+						w.log.
+							WithError(err).
+							WithFields(w.logFields()).
+							WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
+							Warn("Failed to poke the ScribeOptimistic contract; previous transaction is still pending")
+						return
+					}
+					if contract.IsRevert(err) {
+						w.log.
+							WithError(err).
+							WithFields(w.logFields()).
+							WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
+							Error("Failed to poke the ScribeOptimistic contract")
+						return
+					}
+					w.log.
+						WithError(err).
+						WithFields(w.logFields()).
+						WithAdvice("Ignore if it is related to temporary network issues").
+						Error("Failed to poke the ScribeOptimistic contract")
+					return
 				}
 
 				w.log.
+					WithFields(w.logFields()).
 					WithFields(log.Fields{
-						"dataModel":              w.dataModel,
 						"txHash":                 txHash,
 						"txType":                 tx.Type,
 						"txFrom":                 tx.From,
@@ -179,10 +223,15 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) error {
 						"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
 						"txInput":                hexutil.BytesToHex(tx.Input),
 					}).
-					Info("Sent update to the ScribeOptimistic contract")
+					Info("OpPoke transaction sent to the ScribeOptimistic contract")
 			}
 		}
 	}
+}
 
-	return nil
+func (w *opScribeWorker) logFields() log.Fields {
+	return log.Fields{
+		"contractAddress": w.contract.Address(),
+		"dataModel":       w.dataModel,
+	}
 }
