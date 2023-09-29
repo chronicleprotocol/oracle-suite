@@ -68,10 +68,9 @@ func main() {
 	{
 		addrs := os.Args[1:]
 		if len(addrs) == 0 {
-			addrs = defaultBoots
+			addrs = env.Strings("CFG_LIBP2P_BOOTSTRAP_ADDRS", defaultBoots)
 		}
-		boots := addrInfos(addrs)
-		options = append(options, service.Bootstrap(ctx, boots...))
+		options = append(options, service.Bootstrap(ctx, addrInfos(addrs)...))
 	}
 
 	{

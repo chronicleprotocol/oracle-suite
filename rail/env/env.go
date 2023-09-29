@@ -20,6 +20,9 @@ import (
 	"strings"
 )
 
+// String returns a string from the environment variable with the given key.
+// If the variable is not set, the default value is returned.
+// Empty values are allowed and valid.
 func String(key, def string) string {
 	v, ok := os.LookupEnv(key)
 	if !ok {
@@ -28,12 +31,23 @@ func String(key, def string) string {
 	return v
 }
 
+// separator is used to split the environment variable values.
+// It is taken from CFG_ITEM_SEPARATOR environment variable and defaults to a newline.
 var separator = String("CFG_ITEM_SEPARATOR", "\n")
 
+// Strings returns a slice of strings from the environment variable with the
+// given key. If the variable is not set, the default value is returned.
+// The value is split by the separator defined in the CFG_ITEM_SEPARATOR.
+// Values are trimmed of the separator before splitting.
+// If the environment variable exists but is empty, an empty slice is returned.
 func Strings(key string, def []string) []string {
 	v, ok := os.LookupEnv(key)
 	if !ok {
 		return def
 	}
+	if v == "" {
+		return []string{}
+	}
+	v = strings.Trim(v, separator)
 	return strings.Split(v, separator)
 }

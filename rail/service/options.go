@@ -28,6 +28,9 @@ import (
 
 func Bootstrap(ctx context.Context, boots ...peer.AddrInfo) libp2p.Option {
 	return libp2p.Routing(func(host host.Host) (routing.PeerRouting, error) {
+		if len(boots) == 0 {
+			return nil, nil
+		}
 		log.Infow("creating DHT router", "boots", boots)
 		return dual.New(
 			ctx, host,
