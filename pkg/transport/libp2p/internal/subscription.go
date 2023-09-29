@@ -32,6 +32,7 @@ type Subscription struct {
 	ctxCancel context.CancelFunc
 
 	topic          *pubsub.Topic
+	cancelRelay    pubsub.RelayCancelFunc
 	sub            *pubsub.Subscription
 	teh            *pubsub.TopicEventHandler
 	validatorSet   *sets.ValidatorSet
@@ -59,6 +60,10 @@ func newSubscription(node *Node, topic string) (*Subscription, error) {
 		return nil, err
 	}
 	s.topic, err = node.PubSub().Join(topic)
+	if err != nil {
+		return nil, err
+	}
+	s.cancelRelay, err = s.topic.Relay()
 	if err != nil {
 		return nil, err
 	}
@@ -128,5 +133,6 @@ func (s *Subscription) close() error {
 	s.ctxCancel()
 	s.teh.Cancel()
 	s.sub.Cancel()
+	s.cancelRelay()
 	return s.topic.Close()
 }
