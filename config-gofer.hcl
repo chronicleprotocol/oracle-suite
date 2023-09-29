@@ -396,6 +396,13 @@ gofer {
     }
   }
 
+  data_model "GNO/ETH" {
+    indirect {
+      reference { data_model = "GNO/USD" }
+      reference { data_model = "ETH/USD" }
+    }
+  }
+
   data_model "GNO/USD" {
     median {
       min_values = 2
