@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	logging "github.com/ipfs/go-log/v2"
@@ -35,35 +34,13 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/chronicleprotocol/oracle-suite/rail/env"
 	"github.com/chronicleprotocol/oracle-suite/rail/service"
 )
 
 var log = logging.Logger("rail")
 
-func env(key, def string) string {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return def
-	}
-	return v
-}
-
 func main() {
-	separator := env("CFG_ITEM_SEPARATOR", "\n")
-
-	{
-		// logging.SetAllLoggers(logging.LevelInfo)
-		logLevel, ok := os.LookupEnv("CFG_LOG_LEVEL")
-		if ok {
-			if err := logging.SetLogLevel("rail", logLevel); err != nil {
-				log.Fatal(err)
-			}
-			if err := logging.SetLogLevel("rail/service", logLevel); err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
@@ -98,15 +75,9 @@ func main() {
 	}
 
 	{
-		gSubOpts := []pubsub.Option{
-			pubsub.WithDefaultValidator(func(context.Context, peer.ID, *pubsub.Message) bool { return true }),
-			pubsub.WithDefaultValidator(func(ctx context.Context, id peer.ID, psMsg *pubsub.Message) pubsub.ValidationResult {
-				return pubsub.ValidationAccept
-			}),
-		}
-		directPeersVal, ok := os.LookupEnv("CFG_LIBP2P_DIRECT_PEERS_ADDRS")
-		if ok && len(directPeersVal) > 0 {
-			gSubOpts = append(gSubOpts, pubsub.WithDirectPeers(addrInfos(strings.Split(directPeersVal, separator))))
+		var gSubOpts []pubsub.Option
+		if directPeers := env.Strings("CFG_LIBP2P_DIRECT_PEERS_ADDRS", nil); len(directPeers) > 0 {
+			gSubOpts = append(gSubOpts, pubsub.WithDirectPeers(addrInfos(directPeers)))
 		}
 		actions = append(actions, service.GossipSub(ctx, gSubOpts...))
 	}
