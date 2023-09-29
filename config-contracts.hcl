@@ -1197,6 +1197,7 @@ models = [
   "ETH/BTC",
   "ETH/USD",
   "FRAX/USD",
+  "GNO/ETH",
   "GNO/USD",
   "IBTA/USD",
   "LDO/USD",
