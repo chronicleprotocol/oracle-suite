@@ -40,7 +40,7 @@ contracts = [
     "wat": "BTC/USD",
     "IScribeOptimistic": true,
     "address": "0x898D1aB819a24880F636416df7D1493C94143262",
-    "challenge_period": 3600,
+    "challenge_period": 600,
     "poke": {
       "spread": 1,
       "expiration": 32400,

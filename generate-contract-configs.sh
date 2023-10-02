@@ -17,7 +17,7 @@
 set -euo pipefail
 
 # Usage:
-# ./generate-contract-configs.sh <path/to/chronicle-repo>
+# ./generate-contract-configs.sh <path/to/chronicle-repo> [<path/to/musig-repo>]
 
 function findAllConfigs() {
 	local _path="$1"
@@ -63,3 +63,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 
 	echo "}"
 } > config-contracts.hcl
+
+if [[ -n "${2:-}" ]]; then
+	cp config-contracts.hcl "$2"
+fi
