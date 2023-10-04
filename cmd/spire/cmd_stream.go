@@ -32,7 +32,7 @@ import (
 )
 
 func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
-	var raw, typePriceOnly bool
+	var raw bool
 	cc := &cobra.Command{
 		Use:   "stream [TOPIC...]",
 		Args:  cobra.MinimumNArgs(0),
@@ -44,14 +44,6 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 			logger := l.Logger()
 			if len(topics) == 0 {
 				topics = messages.AllMessagesMap.Keys()
-			}
-			if typePriceOnly {
-				topics = []string{
-					messages.PriceV0MessageName, //nolint:staticcheck
-					messages.PriceV1MessageName, //nolint:staticcheck
-					messages.DataPointV1MessageName,
-					messages.MuSigSignatureV1MessageName,
-				}
 			}
 			services, err := c.StreamServices(logger, cc.Root().Use, cc.Root().Version, topics...)
 			if err != nil {
@@ -120,12 +112,6 @@ func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra
 		"raw",
 		false,
 		"show raw messages",
-	)
-	cc.Flags().BoolVar(
-		&typePriceOnly,
-		"price",
-		false,
-		"show only prices",
 	)
 	var format string
 	cc.Flags().StringVarP(&format, "output", "o", "", "(here for backward compatibility)")

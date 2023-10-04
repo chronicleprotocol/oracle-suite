@@ -41,7 +41,6 @@ type streamType struct {
 	Type       string           `json:"type,omitempty"`
 	Version    string           `json:"version,omitempty"`
 	Data       any              `json:"data,omitempty"`
-	Signer     string           `json:"signer,omitempty"`
 	Signature  string           `json:"signature,omitempty"`
 	Signatures []map[string]any `json:"signatures,omitempty"`
 	Meta       map[string]any   `json:"meta,omitempty"`
@@ -96,10 +95,6 @@ func handleMessage(msg transport.ReceivedMessage) streamType {
 		"received_from_peer_id":   msg.Meta.ReceivedFromPeerID,
 		"received_from_peer_addr": msg.Meta.ReceivedFromPeerAddr,
 	}, removeEmptyFields))
-
-	if (v.Signature != "" || len(v.Signatures) > 0) && v.Signer == "" {
-		v.Signer = msg.Meta.PeerAddr
-	}
 
 	return v
 }
@@ -225,8 +220,9 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 	meta := map[string]any{
 		"type": msg.MsgType,
 	}
-	var signatures []map[string]any
+
 	var ticks []map[string]any
+	var signatures []map[string]any
 
 	switch { //nolint:gocritic
 	case msg.MsgMeta.TickV1() != nil:
@@ -242,7 +238,7 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 
 		for _, optimistic := range msgTickMeta.Optimistic {
 			signatures = append(signatures, map[string]any{
-				"type":         "optimistic",
+				"type":         "scribe-optimistic/v1",
 				"signature":    optimistic.ECDSASignature.String(),
 				"signers_blob": hexutil.BytesToHex(optimistic.SignerIndexes),
 			})
@@ -260,8 +256,13 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 	for _, signer := range msg.Signers {
 		signers = append(signers, signer.String())
 	}
-	meta["signers"] = signers
-	meta["trace"] = ticks
+	if signers != nil {
+		meta["trace_signers"] = signers
+	}
+
+	if ticks != nil {
+		meta["trace"] = ticks
+	}
 
 	return streamType{
 		Data:       data,
