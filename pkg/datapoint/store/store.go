@@ -36,6 +36,16 @@ import (
 
 const LoggerTag = "DATA_POINT_STORE"
 
+// DataPointProvider is an interface which provides latest data points from
+// feeds.
+type DataPointProvider interface {
+	// LatestFrom returns the latest data point from a given address.
+	LatestFrom(ctx context.Context, from types.Address, model string) (StoredDataPoint, bool, error)
+
+	// Latest returns the latest data points from all addresses.
+	Latest(ctx context.Context, model string) (map[types.Address]StoredDataPoint, error)
+}
+
 // Storage is underlying storage implementation for the Store.
 //
 // It must be thread-safe.
@@ -149,12 +159,12 @@ func (p *Store) Wait() <-chan error {
 	return p.waitCh
 }
 
-// LatestFrom returns the latest data point from a given address.
+// LatestFrom implements the DataPointProvider interface.
 func (p *Store) LatestFrom(ctx context.Context, from types.Address, model string) (StoredDataPoint, bool, error) {
 	return p.storage.LatestFrom(ctx, from, model)
 }
 
-// Latest returns the latest data points from all addresses.
+// Latest implements the DataPointProvider interface.
 func (p *Store) Latest(ctx context.Context, model string) (map[types.Address]StoredDataPoint, error) {
 	return p.storage.Latest(ctx, model)
 }

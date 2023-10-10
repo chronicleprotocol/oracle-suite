@@ -64,7 +64,7 @@ func calculateMedian(prices []*bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 		m := count / 2
 		a := prices[m-1]
 		b := prices[m]
-		return a.Add(b).Div(bn.DecFloatPoint(0))
+		return a.Add(b).Div(bn.DecFloatPoint(2))
 	}
 	return prices[(count-1)/2]
 }

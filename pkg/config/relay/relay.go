@@ -26,7 +26,8 @@ import (
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
+	datapointStore "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
+	musigStore "github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 
@@ -36,8 +37,8 @@ import (
 
 type Services struct {
 	Relay      *relay.Relay
-	PriceStore *store.Store
-	MuSigStore *relay.MuSigStore
+	PriceStore *datapointStore.Store
+	MuSigStore *musigStore.Store
 }
 
 type Dependencies struct {
@@ -118,9 +119,8 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 
 	// Find data models required by all median contracts.
 	var (
-		medianDataModels   []string
-		scribeDataModels   []string
-		opScribeDataModels []string
+		medianDataModels []string
+		scribeDataModels []string
 	)
 	for _, cfg := range c.Median {
 		medianDataModels = append(medianDataModels, cfg.DataModel)
@@ -129,22 +129,21 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		scribeDataModels = append(scribeDataModels, cfg.DataModel)
 	}
 	for _, cfg := range c.OptimisticScribe {
-		opScribeDataModels = append(opScribeDataModels, cfg.DataModel)
+		scribeDataModels = append(scribeDataModels, cfg.DataModel)
 	}
-
-	m := append(append(medianDataModels, scribeDataModels...), opScribeDataModels...)
+	dataModels := append(append(medianDataModels, scribeDataModels...), scribeDataModels...)
 
 	logger.
 		WithFields(log.Fields{
-			"data_models": m,
+			"dataModels": dataModels,
 		}).
 		Debug("Data models")
 
 	// Create a data point store service for all median contracts.
-	priceStoreSrv, err := store.New(store.Config{
-		Storage:    store.NewMemoryStorage(),
+	priceStoreSrv, err := datapointStore.New(datapointStore.Config{
+		Storage:    datapointStore.NewMemoryStorage(),
 		Transport:  d.Transport,
-		Models:     m,
+		Models:     dataModels,
 		Recoverers: []datapoint.Recoverer{signer.NewTickRecoverer(crypto.ECRecoverer)},
 		Logger:     d.Logger,
 	})
@@ -157,12 +156,11 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		}
 	}
 
-	// Create MuSigStore service.
-	musigStoreSrv := relay.NewMuSigStore(relay.MuSigStoreConfig{
-		Transport:          d.Transport,
-		ScribeDataModels:   scribeDataModels,
-		OpScribeDataModels: opScribeDataModels,
-		Logger:             d.Logger,
+	// Create Store service.
+	musigStoreSrv := musigStore.New(musigStore.Config{
+		Transport:  d.Transport,
+		DataModels: scribeDataModels,
+		Logger:     d.Logger,
 	})
 
 	var (
@@ -217,7 +215,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		scribeCfgs = append(scribeCfgs, relay.ConfigScribe{
 			DataModel:       cfg.DataModel,
 			ContractAddress: cfg.ContractAddr,
-			FeedAddresses:   cfg.Feeds,
 			Client:          client,
 			MuSigStore:      musigStoreSrv,
 			Spread:          cfg.Spread,
@@ -244,7 +241,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		opScribeCfgs = append(opScribeCfgs, relay.ConfigOptimisticScribe{
 			DataModel:       cfg.DataModel,
 			ContractAddress: cfg.ContractAddr,
-			FeedAddresses:   cfg.Feeds,
 			Client:          client,
 			MuSigStore:      musigStoreSrv,
 			Spread:          cfg.Spread,

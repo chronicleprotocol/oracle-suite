@@ -26,12 +26,13 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 type opScribeWorker struct {
 	log        log.Logger
-	muSigStore *MuSigStore
+	muSigStore store.SignatureProvider
 	contract   OpScribeContract
 	dataModel  string
 	spread     float64
@@ -66,7 +67,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) {
 		w.log.
 			WithError(err).
 			WithFields(w.logFields()).
-			WithAdvice("Ignore if it is related to temporary network issues").
+			WithAdvice("This is a bug in the configuration, probably a wrong contract address is used").
 			Error("Contract asset name does not match the configured asset name")
 		return
 	}
@@ -110,13 +111,12 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) {
 	// Iterate over all signatures to check if any of them can be used to update
 	// the price on the Scribe contract.
 	for _, s := range w.muSigStore.SignaturesByDataModel(w.dataModel) {
-		meta := s.MsgMeta.TickV1()
-		if meta == nil {
+		if s.Commitment.IsZero() || s.SchnorrSignature == nil {
 			continue
 		}
 
-		// Signature is does not contain optimistic signatures.
-		if len(meta.Optimistic) == 0 {
+		meta := s.MsgMeta.TickV1()
+		if meta == nil || meta.Val == nil || len(meta.Optimistic) == 0 {
 			continue
 		}
 

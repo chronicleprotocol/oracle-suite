@@ -25,8 +25,9 @@ import (
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	relayConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/relay"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
+	datapointStore "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	musigStore "github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
@@ -49,8 +50,8 @@ type Config struct {
 // Services returns the services that are configured from the Config struct.
 type Services struct {
 	Relay      *relay.Relay
-	PriceStore *store.Store
-	MuSigStore *relay.MuSigStore
+	PriceStore *datapointStore.Store
+	MuSigStore *musigStore.Store
 	Transport  transport.Service
 	Logger     log.Logger
 

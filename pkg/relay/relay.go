@@ -24,9 +24,10 @@ import (
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
+	datapointStore "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	musigStore "github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
@@ -113,7 +114,7 @@ type ConfigMedian struct {
 	Client rpc.RPC
 
 	// DataPointStore is the store used to retrieve data points.
-	DataPointStore *store.Store
+	DataPointStore datapointStore.DataPointProvider
 
 	// DataModel is the name of the data model from which data points
 	// are retrieved.
@@ -144,7 +145,7 @@ type ConfigScribe struct {
 	Client rpc.RPC
 
 	// MuSigStore is the store used to retrieve MuSig signatures.
-	MuSigStore *MuSigStore
+	MuSigStore musigStore.SignatureProvider
 
 	// DataModel is the name of the data model that is used to update
 	// the Scribe contract.
@@ -152,10 +153,6 @@ type ConfigScribe struct {
 
 	// ContractAddress is the address of the Scribe contract.
 	ContractAddress types.Address
-
-	// FeedAddresses is the list of feed addresses that are allowed to
-	// update the Scribe contract.
-	FeedAddresses []types.Address
 
 	// Spread is the minimum calcSpread between the oracle price and new
 	// price required to send update.
@@ -175,7 +172,7 @@ type ConfigOptimisticScribe struct {
 	Client rpc.RPC
 
 	// MuSigStore is the store used to retrieve MuSig signatures.
-	MuSigStore *MuSigStore
+	MuSigStore musigStore.SignatureProvider
 
 	// DataModel is the name of the data model that is used to update
 	// the OptimisticScribe contract.
@@ -183,10 +180,6 @@ type ConfigOptimisticScribe struct {
 
 	// ContractAddress is the address of the OptimisticScribe contract.
 	ContractAddress types.Address
-
-	// FeedAddresses is the list of feed addresses that are allowed to
-	// update the Scribe contract.
-	FeedAddresses []types.Address
 
 	// Spread is the minimum calcSpread between the oracle price and new
 	// price required to send update.

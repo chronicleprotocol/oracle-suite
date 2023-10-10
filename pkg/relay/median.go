@@ -34,7 +34,7 @@ import (
 
 type medianWorker struct {
 	log            log.Logger
-	dataPointStore *store.Store
+	dataPointStore store.DataPointProvider
 	feedAddresses  []types.Address
 	contract       MedianContract
 	dataModel      string
@@ -101,10 +101,9 @@ func (w *medianWorker) tryUpdate(ctx context.Context) {
 
 	// Check if price on the Median contract needs to be updated.
 	// The price needs to be updated if:
-	// - Price is older than the interval specified in the expiration
-	//   field.
+	// - Price is older than the interval specified in the expiration field.
 	// - Price differs from the current price by more than is specified in the
-	//   OracleSpread field.
+	//   Spread field.
 	isExpired := time.Since(age) >= w.expiration
 	isStale := math.IsInf(spread, 0) || spread >= w.spread
 
@@ -213,6 +212,9 @@ func (w *medianWorker) findDataPoints(ctx context.Context, after time.Time, quor
 			continue
 		}
 		if !ok {
+			continue
+		}
+		if sdp.Signature.V == nil || sdp.Signature.R == nil || sdp.Signature.S == nil {
 			continue
 		}
 		if _, ok := sdp.DataPoint.Value.(value.Tick); !ok {
