@@ -18,6 +18,7 @@ package relay
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -280,51 +281,109 @@ func TestOpScribeWorker(t *testing.T) {
 	})
 
 	t.Run("broken message", func(t *testing.T) {
-		mockLogger.reset(t)
-		mockContract.reset(t)
-		mockMuSigStore.reset(t)
-
-		ctx := context.Background()
-		mockLogger.InfoFn = func(args ...any) {}
-		mockLogger.DebugFn = func(args ...any) {}
-		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
-		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
-		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return []types.Address{testFeed}, []uint8{1}, nil
-		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
-				Age: time.Now().Add(-1 * time.Minute),
-			}, nil
-		}
-		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
-			assert.Equal(t, "ETH/USD", model)
-			return []*messages.MuSigSignature{
-				{
-					MuSigMessage: &messages.MuSigMessage{
-						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
-							Wat: "ETH/USD",
-							Val: nil,
-							Age: time.Now(),
-							Optimistic: []messages.MuSigMetaOptimistic{{
-								ECDSASignature: types.Signature{},
-								SignerIndexes:  nil,
-							}},
-						}},
-					},
-					Commitment:       types.ZeroAddress,
-					SchnorrSignature: nil,
+		invalidMessages := []*messages.MuSigSignature{
+			{
+				MuSigMessage:     nil,
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: nil,
+			},
+			{
+				MuSigMessage: &messages.MuSigMessage{
+					MsgMeta: messages.MuSigMeta{Meta: nil},
 				},
-			}
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: nil,
+			},
+			{
+				MuSigMessage: &messages.MuSigMessage{
+					MsgMeta: messages.MuSigMeta{Meta: nil},
+				},
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: big.NewInt(1234567890),
+			},
+			{
+				MuSigMessage: &messages.MuSigMessage{
+					MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+						Wat: "ETH/USD",
+						Val: nil,
+						Age: time.Now(),
+					}},
+				},
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: big.NewInt(1234567890),
+			},
+			{
+				MuSigMessage: &messages.MuSigMessage{
+					MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+						Wat: "ETH/USD",
+						Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+						Age: time.Now(),
+					}},
+				},
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: nil,
+			},
+			{
+				MuSigMessage: &messages.MuSigMessage{
+					MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+						Wat: "ETH/USD",
+						Val: nil,
+						Age: time.Now(),
+					}},
+				},
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: big.NewInt(1234567890),
+			},
+			{
+				MuSigMessage: &messages.MuSigMessage{
+					MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+						Wat: "ETH/USD",
+						Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+						Age: time.Now(),
+						Optimistic: []messages.MuSigMetaOptimistic{{
+							ECDSASignature: types.Signature{},
+							SignerIndexes:  nil,
+						}},
+					}},
+				},
+				Commitment:       types.ZeroAddress,
+				SchnorrSignature: big.NewInt(1234567890),
+			},
 		}
 
-		sw.tryUpdate(ctx)
+		for i, m := range invalidMessages {
+			t.Run(fmt.Sprintf("msg-%d", i+1), func(t *testing.T) {
+				mockLogger.reset(t)
+				mockContract.reset(t)
+				mockMuSigStore.reset(t)
+
+				ctx := context.Background()
+				mockLogger.InfoFn = func(args ...any) {}
+				mockLogger.DebugFn = func(args ...any) {}
+				mockContract.AddressFn = func() types.Address { return types.Address{} }
+				mockContract.WatFn = func(ctx context.Context) (string, error) {
+					return "ETH/USD", nil
+				}
+				mockContract.BarFn = func(ctx context.Context) (int, error) {
+					return 1, nil
+				}
+				mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
+					return []types.Address{testFeed}, []uint8{1}, nil
+				}
+				mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
+					return contract.PokeData{
+						Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+						Age: time.Now().Add(-1 * time.Minute),
+					}, nil
+				}
+				mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
+					assert.Equal(t, "ETH/USD", model)
+					return []*messages.MuSigSignature{m}
+				}
+
+				sw.tryUpdate(ctx)
+			})
+		}
 	})
 
 	t.Run("invalid signers blob", func(t *testing.T) {
