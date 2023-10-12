@@ -162,6 +162,8 @@ func (w *scribeWorker) tryUpdate(ctx context.Context, t time.Time) {
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
+			// If delay is set, wait for the delay to pass before sending the
+			// update transaction.
 			if w.delay > 0 {
 				if w.shouldUpdateAt.IsZero() {
 					w.shouldUpdateAt = t.Add(w.delay)
@@ -186,27 +188,7 @@ func (w *scribeWorker) tryUpdate(ctx context.Context, t time.Time) {
 				},
 			)
 			if err != nil {
-				if strings.Contains(err.Error(), "replacement transaction underpriced") {
-					w.log.
-						WithError(err).
-						WithFields(w.logFields()).
-						WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
-						Warn("Failed to poke the Scribe contract; previous transaction is still pending")
-					return
-				}
-				if contract.IsRevert(err) {
-					w.log.
-						WithError(err).
-						WithFields(w.logFields()).
-						WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-						Error("Failed to poke the Scribe contract")
-					return
-				}
-				w.log.
-					WithError(err).
-					WithFields(w.logFields()).
-					WithAdvice("Ignore if it is related to temporary network issues").
-					Error("Failed to poke the Scribe contract")
+				w.handlePokeErr(err)
 				return
 			}
 
@@ -226,10 +208,34 @@ func (w *scribeWorker) tryUpdate(ctx context.Context, t time.Time) {
 					"txInput":                hexutil.BytesToHex(tx.Input),
 				}).
 				Info("Sent update to the Scribe contract")
-		} else {
-			w.shouldUpdateAt = time.Time{}
+			return
 		}
+		w.shouldUpdateAt = time.Time{}
 	}
+}
+
+func (w *scribeWorker) handlePokeErr(err error) {
+	if strings.Contains(err.Error(), "replacement transaction underpriced") {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
+			Warn("Failed to poke the Scribe contract; previous transaction is still pending")
+		return
+	}
+	if contract.IsRevert(err) {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
+			Error("Failed to poke the Scribe contract")
+		return
+	}
+	w.log.
+		WithError(err).
+		WithFields(w.logFields()).
+		WithAdvice("Ignore if it is related to temporary network issues").
+		Error("Failed to poke the Scribe contract")
 }
 
 func (w *scribeWorker) logFields() log.Fields {

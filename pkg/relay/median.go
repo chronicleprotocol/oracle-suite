@@ -139,27 +139,7 @@ func (w *medianWorker) tryUpdate(ctx context.Context) {
 		// Send *actual* transaction.
 		txHash, tx, err := w.contract.Poke(ctx, vals)
 		if err != nil {
-			if strings.Contains(err.Error(), "replacement transaction underpriced") {
-				w.log.
-					WithError(err).
-					WithFields(w.logFields()).
-					WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
-					Warn("Failed to poke the Median contract; previous transaction is still pending")
-				return
-			}
-			if contract.IsRevert(err) {
-				w.log.
-					WithError(err).
-					WithFields(w.logFields()).
-					WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-					Error("Failed to poke the Median contract")
-				return
-			}
-			w.log.
-				WithError(err).
-				WithFields(w.logFields()).
-				WithAdvice("Ignore if it is related to temporary network issues").
-				Error("Failed to poke the Median contract")
+			w.handlePokeErr(err)
 			return
 		}
 
@@ -247,6 +227,30 @@ func (w *medianWorker) findDataPoints(ctx context.Context, after time.Time, quor
 	}
 
 	return dataPoints, signatures, true
+}
+
+func (w *medianWorker) handlePokeErr(err error) {
+	if strings.Contains(err.Error(), "replacement transaction underpriced") {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
+			Warn("Failed to poke the Median contract; previous transaction is still pending")
+		return
+	}
+	if contract.IsRevert(err) {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
+			Error("Failed to poke the Median contract")
+		return
+	}
+	w.log.
+		WithError(err).
+		WithFields(w.logFields()).
+		WithAdvice("Ignore if it is related to temporary network issues").
+		Error("Failed to poke the Median contract")
 }
 
 func (w *medianWorker) logFields() log.Fields {

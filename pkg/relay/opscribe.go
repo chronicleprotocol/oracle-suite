@@ -184,27 +184,7 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) {
 					optimistic.ECDSASignature,
 				)
 				if err != nil {
-					if strings.Contains(err.Error(), "replacement transaction underpriced") {
-						w.log.
-							WithError(err).
-							WithFields(w.logFields()).
-							WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
-							Warn("Failed to poke the ScribeOptimistic contract; previous transaction is still pending")
-						return
-					}
-					if contract.IsRevert(err) {
-						w.log.
-							WithError(err).
-							WithFields(w.logFields()).
-							WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-							Error("Failed to poke the ScribeOptimistic contract")
-						return
-					}
-					w.log.
-						WithError(err).
-						WithFields(w.logFields()).
-						WithAdvice("Ignore if it is related to temporary network issues").
-						Error("Failed to poke the ScribeOptimistic contract")
+					w.handlePokeErr(err)
 					return
 				}
 
@@ -224,9 +204,34 @@ func (w *opScribeWorker) tryUpdate(ctx context.Context) {
 						"txInput":                hexutil.BytesToHex(tx.Input),
 					}).
 					Info("OpPoke transaction sent to the ScribeOptimistic contract")
+				return
 			}
 		}
 	}
+}
+
+func (w *opScribeWorker) handlePokeErr(err error) {
+	if strings.Contains(err.Error(), "replacement transaction underpriced") {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
+			Warn("Failed to poke the ScribeOptimistic contract; previous transaction is still pending")
+		return
+	}
+	if contract.IsRevert(err) {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
+			Error("Failed to poke the ScribeOptimistic contract")
+		return
+	}
+	w.log.
+		WithError(err).
+		WithFields(w.logFields()).
+		WithAdvice("Ignore if it is related to temporary network issues").
+		Error("Failed to poke the ScribeOptimistic contract")
 }
 
 func (w *opScribeWorker) logFields() log.Fields {
