@@ -64,6 +64,9 @@ spectre {
       # Time in seconds after which the price is considered stale.
       expiration = contract.value.poke.expiration
 
+      # If a contract is optimistic, then we add a delay to the poke interval to allow for the optimistic poke to happen first.
+      delay = try(v.IScribeOptimistic, false) ? 600 : 0
+
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
       interval = contract.value.poke.interval
     }
