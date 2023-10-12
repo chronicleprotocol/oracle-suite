@@ -26,15 +26,31 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
 )
 
-// FilesFlags is used to load multiple config files.
-type FilesFlags struct {
-	paths []string
+func ConfigFlagsForConfig(d config.HasDefaults) ConfigFlags {
+	return ConfigFlagsWithEmbeds(d.DefaultEmbeds()...)
+}
+func ConfigFlagsWithEmbeds(embeds ...[]byte) ConfigFlags {
+	return ConfigFlags{
+		embeds: embeds,
+	}
+}
+
+// ConfigFlags is used to load multiple config files.
+type ConfigFlags struct {
+	paths  []string
+	embeds [][]byte
 }
 
 // Load loads the config files into the given config struct.
-func (ff *FilesFlags) Load(c any) error {
-	if err := config.LoadFiles(c, ff.paths); err != nil {
-		return err
+func (ff *ConfigFlags) Load(c any) error {
+	if len(ff.paths) == 0 {
+		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
+			return err
+		}
+	} else {
+		if err := config.LoadFiles(c, ff.paths); err != nil {
+			return err
+		}
 	}
 	switch {
 	case globals.ShowEnvVarsUsedInConfig:
@@ -54,13 +70,13 @@ func (ff *FilesFlags) Load(c any) error {
 }
 
 // FlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
-func (ff *FilesFlags) FlagSet() *pflag.FlagSet {
+func (ff *ConfigFlags) FlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
 		&ff.paths,
 		"config",
 		"c",
-		[]string{"./config.hcl"},
+		[]string{},
 		"config file",
 	)
 	fs.BoolVar(

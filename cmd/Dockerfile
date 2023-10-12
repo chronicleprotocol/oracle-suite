@@ -20,10 +20,6 @@ FROM gcr.io/distroless/static-debian11
 
 COPY --from=builder /app/dist/* /usr/local/bin/
 
-COPY ./config*.hcl /usr/share/chronicle-suite/
-
-WORKDIR /usr/share/chronicle-suite/
-
 ENTRYPOINT ["/usr/local/bin/chronicle-app"]
 CMD ["run"]
 

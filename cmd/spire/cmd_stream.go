@@ -31,7 +31,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-func NewStreamCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewStreamCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var raw bool
 	cc := &cobra.Command{
 		Use:   "stream [TOPIC...]",
@@ -133,7 +133,7 @@ func NewTopicsCmd() *cobra.Command {
 	return cc
 }
 
-func NewStreamPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewStreamPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var legacy bool
 	cc := &cobra.Command{
 		Use:   "prices",

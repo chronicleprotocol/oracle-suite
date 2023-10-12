@@ -22,6 +22,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	suite "github.com/chronicleprotocol/oracle-suite"
 	dataproviderConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
@@ -39,6 +40,15 @@ type Config struct {
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
 	Content hcl.BodyContent `hcl:",content"`
+}
+
+func (Config) DefaultEmbeds() [][]byte {
+	return [][]byte{
+		suite.ConfigContracts,
+		suite.ConfigDefaults,
+		suite.ConfigGofer,
+		suite.ConfigEthereum,
+	}
 }
 
 // Services returns the services that are configured from the Config struct.

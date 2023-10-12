@@ -15,6 +15,34 @@
 
 package suite
 
+import (
+	_ "embed"
+)
+
 // Version that can be used by commands.
 // It is set by the linker during build.
 var Version = "unknown"
+
+//go:embed config-contracts.hcl
+var ConfigContracts []byte
+
+//go:embed config-defaults.hcl
+var ConfigDefaults []byte
+
+//go:embed config-ethereum.hcl
+var ConfigEthereum []byte
+
+//go:embed config-ghost.hcl
+var ConfigGhost []byte
+
+//go:embed config-gofer.hcl
+var ConfigGofer []byte
+
+//go:embed config-spectre.hcl
+var ConfigSpectre []byte
+
+//go:embed config-spire.hcl
+var ConfigSpire []byte
+
+//go:embed config-transport.hcl
+var ConfigTransport []byte

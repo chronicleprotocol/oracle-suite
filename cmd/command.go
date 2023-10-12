@@ -41,7 +41,7 @@ func NewRootCommand(name, version string, sets ...FlagSetter) *cobra.Command {
 	return c
 }
 
-func NewRunCmd(c supervisor.Config, f *FilesFlags, l *LoggerFlags) *cobra.Command {
+func NewRunCmd(c supervisor.Config, f *ConfigFlags, l *LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "run",
 		Args:    cobra.NoArgs,

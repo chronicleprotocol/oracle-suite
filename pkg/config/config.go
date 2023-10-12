@@ -169,3 +169,27 @@ func LoadFiles(config any, paths []string) error {
 	}
 	return nil
 }
+
+// LoadEmbeds populates config with data from []utilHCL.NamedBytes into the given config,
+// and expanding dynamic blocks before decoding the HCL content.
+func LoadEmbeds(config any, embeds [][]byte) (err error) {
+	var body hcl.Body
+	var diags hcl.Diagnostics
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+	if body, diags = utilHCL.ParseBytesList(embeds); diags.HasErrors() {
+		return diags
+	}
+	if body, diags = variables.Variables(hclContext, body); diags.HasErrors() {
+		return diags
+	}
+	if diags = utilHCL.Decode(hclContext, dynblock.Expand(body, hclContext), config); diags.HasErrors() {
+		return diags
+	}
+	return nil
+}
+
+type HasDefaults interface {
+	DefaultEmbeds() [][]byte
+}

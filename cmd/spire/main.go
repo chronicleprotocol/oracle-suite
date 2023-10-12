@@ -24,21 +24,22 @@ import (
 )
 
 func main() {
-	var ff cmd.FilesFlags
-	var lf cmd.LoggerFlags
-	c := cmd.NewRootCommand("spire", suite.Version, &ff, &lf)
-
 	var config spire.Config
+	cf := cmd.ConfigFlagsForConfig(config)
+
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("spire", suite.Version, &cf, &lf)
+
 	c.AddCommand(
-		cmd.NewRunCmd(&config, &ff, &lf),
-		NewStreamCmd(&config, &ff, &lf),
-		NewPullCmd(&config, &ff, &lf),
-		NewPushCmd(&config, &ff, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
+		NewStreamCmd(&config, &cf, &lf),
+		NewPullCmd(&config, &cf, &lf),
+		NewPushCmd(&config, &cf, &lf),
 	)
 
 	var bootstrapConfig BootstrapConfig
 	c.AddCommand(
-		NewBootstrapCmd(&bootstrapConfig, &ff, &lf),
+		NewBootstrapCmd(&bootstrapConfig, &cf, &lf),
 	)
 
 	if err := c.Execute(); err != nil {

@@ -58,46 +58,17 @@ archives:
     builds:
       - spectre
 
-nfpms:
-  - id: feed
-    package_name: chronicle-feed
-    vendor: Chronicle Labs
-    homepage: https://chroniclelabs.org/
-    maintainer: Chronicle Labs <hello@chroniclelabs.org>
-    license: AGPL-3.0
-    formats:
-      - deb
-    section: default
-    priority: extra
-    scripts:
-      preinstall: "scripts/preinstall.sh"
-      postinstall: "scripts/postinstall.sh"
-
-    contents:
-      - src: config.hcl
-        dst: /opt/chronicle/config.hcl
-        type: config
-      - src: config-contracts.hcl
-        dst: /opt/chronicle/config-contracts.hcl
-        type: config
-      - src: config-defaults.hcl
-        dst: /opt/chronicle/config-defaults.hcl
-        type: config
-      - src: config-ethereum.hcl
-        dst: /opt/chronicle/config-ethereum.hcl
-        type: config
-      - src: config-ghost.hcl
-        dst: /opt/chronicle/config-ghost.hcl
-        type: config
-      - src: config-gofer.hcl
-        dst: /opt/chronicle/config-gofer.hcl
-        type: config
-      - src: config-spectre.hcl
-        dst: /opt/chronicle/config-spectre.hcl
-        type: config
-      - src: config-spire.hcl
-        dst: /opt/chronicle/config-spire.hcl
-        type: config
-      - src: config-transport.hcl
-        dst: /opt/chronicle/config-transport.hcl
-        type: config
+#nfpms:
+#  - id: feed
+#    package_name: chronicle-feed
+#    vendor: Chronicle Labs
+#    homepage: https://chroniclelabs.org/
+#    maintainer: Chronicle Labs <hello@chroniclelabs.org>
+#    license: AGPL-3.0
+#    formats:
+#      - deb
+#    section: default
+#    priority: extra
+#    scripts:
+#      preinstall: "scripts/preinstall.sh"
+#      postinstall: "scripts/postinstall.sh"

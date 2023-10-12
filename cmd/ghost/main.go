@@ -24,13 +24,14 @@ import (
 )
 
 func main() {
-	var ff cmd.FilesFlags
-	var lf cmd.LoggerFlags
-	c := cmd.NewRootCommand("ghost", suite.Version, &ff, &lf)
-
 	var config ghost.Config
+	cf := cmd.ConfigFlagsForConfig(config)
+
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("ghost", suite.Version, &cf, &lf)
+
 	c.AddCommand(
-		cmd.NewRunCmd(&config, &ff, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
 	)
 
 	if err := c.Execute(); err != nil {
