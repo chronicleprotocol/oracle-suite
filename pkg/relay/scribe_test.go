@@ -100,7 +100,7 @@ func TestScribeWorker(t *testing.T) {
 			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 		assert.True(t, pokeCalled)
 	})
 
@@ -148,7 +148,7 @@ func TestScribeWorker(t *testing.T) {
 			}
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 	})
 
 	t.Run("expired", func(t *testing.T) {
@@ -205,7 +205,7 @@ func TestScribeWorker(t *testing.T) {
 			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 		assert.True(t, pokeCalled)
 	})
 
@@ -253,7 +253,7 @@ func TestScribeWorker(t *testing.T) {
 			}
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 	})
 
 	t.Run("broken message", func(t *testing.T) {
@@ -342,7 +342,7 @@ func TestScribeWorker(t *testing.T) {
 					return []*messages.MuSigSignature{m}
 				}
 
-				sw.tryUpdate(ctx)
+				sw.tryUpdate(ctx, time.Now())
 			})
 		}
 	})
@@ -363,7 +363,7 @@ func TestScribeWorker(t *testing.T) {
 			errLogCalled = true
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 		assert.True(t, errLogCalled)
 	})
 
@@ -386,7 +386,7 @@ func TestScribeWorker(t *testing.T) {
 			errLogCalled = true
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 		assert.True(t, errLogCalled)
 	})
 
@@ -412,7 +412,7 @@ func TestScribeWorker(t *testing.T) {
 			errLogCalled = true
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 		assert.True(t, errLogCalled)
 	})
 
@@ -441,7 +441,67 @@ func TestScribeWorker(t *testing.T) {
 			errLogCalled = true
 		}
 
-		sw.tryUpdate(ctx)
+		sw.tryUpdate(ctx, time.Now())
 		assert.True(t, errLogCalled)
+	})
+
+	t.Run("delay", func(t *testing.T) {
+		mockLogger.reset(t)
+		mockContract.reset(t)
+		mockMuSigStore.reset(t)
+
+		sw.delay = 1 * time.Minute
+		defer func() { sw.delay = 0 }()
+
+		ctx := context.Background()
+		musigTime := time.Now()
+		musigCommitment := types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		musigSignature := big.NewInt(1234567890)
+		mockLogger.InfoFn = func(args ...any) {}
+		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.AddressFn = func() types.Address { return types.Address{} }
+		mockContract.WatFn = func(ctx context.Context) (string, error) {
+			return "ETH/USD", nil
+		}
+		mockContract.BarFn = func(ctx context.Context) (int, error) {
+			return 1, nil
+		}
+		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
+			return []types.Address{testFeed}, []uint8{1}, nil
+		}
+		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
+			return contract.PokeData{
+				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+				Age: musigTime.Add(-1 * time.Minute),
+			}, nil
+		}
+		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
+			assert.Equal(t, "ETH/USD", model)
+			return []*messages.MuSigSignature{
+				{
+					MuSigMessage: &messages.MuSigMessage{
+						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+							Wat: "ETH/USD",
+							Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+							Age: musigTime,
+						}},
+					},
+					Commitment:       musigCommitment,
+					SchnorrSignature: musigSignature,
+				},
+			}
+		}
+
+		// It should not poke because of delay.
+		sw.tryUpdate(ctx, musigTime)
+
+		// Still before delay.
+		sw.tryUpdate(ctx, musigTime.Add(30*time.Second))
+
+		// After delay.
+		mockContract.PokeFn = func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData) (*types.Hash, *types.Transaction, error) {
+			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+		}
+		sw.tryUpdate(ctx, time.Now().Add(2*time.Minute))
 	})
 }

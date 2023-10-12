@@ -163,6 +163,9 @@ type ConfigScribe struct {
 	// update.
 	Expiration time.Duration
 
+	// Delay specifies the time to wait before sending an update.
+	Delay time.Duration
+
 	// Ticker notifies the relay to check if an update is required.
 	Ticker *timeutil.Ticker
 }
@@ -224,6 +227,7 @@ func New(cfg Config) (*Relay, error) {
 			dataModel:  s.DataModel,
 			spread:     s.Spread,
 			expiration: s.Expiration,
+			delay:      s.Delay,
 			ticker:     s.Ticker,
 		})
 	}

@@ -30,13 +30,15 @@ import (
 )
 
 type scribeWorker struct {
-	log        log.Logger
-	muSigStore store.SignatureProvider
-	contract   ScribeContract
-	dataModel  string
-	spread     float64
-	expiration time.Duration
-	ticker     *timeutil.Ticker
+	log            log.Logger
+	muSigStore     store.SignatureProvider
+	contract       ScribeContract
+	dataModel      string
+	spread         float64
+	expiration     time.Duration
+	delay          time.Duration
+	shouldUpdateAt time.Time
+	ticker         *timeutil.Ticker
 }
 
 func (w *scribeWorker) workerRoutine(ctx context.Context) {
@@ -46,12 +48,12 @@ func (w *scribeWorker) workerRoutine(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-w.ticker.TickCh():
-			w.tryUpdate(ctx)
+			w.tryUpdate(ctx, time.Now())
 		}
 	}
 }
 
-func (w *scribeWorker) tryUpdate(ctx context.Context) {
+func (w *scribeWorker) tryUpdate(ctx context.Context, t time.Time) {
 	// Contract data model.
 	wat, err := w.contract.Wat(ctx)
 	if err != nil {
@@ -160,6 +162,16 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) {
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
+			if w.delay > 0 {
+				if w.shouldUpdateAt.IsZero() {
+					w.shouldUpdateAt = t.Add(w.delay)
+					return
+				}
+				if t.Before(w.shouldUpdateAt) {
+					return
+				}
+			}
+
 			// Send *actual* transaction.
 			txHash, tx, err := w.contract.Poke(
 				ctx,
@@ -214,6 +226,8 @@ func (w *scribeWorker) tryUpdate(ctx context.Context) {
 					"txInput":                hexutil.BytesToHex(tx.Input),
 				}).
 				Info("Sent update to the Scribe contract")
+		} else {
+			w.shouldUpdateAt = time.Time{}
 		}
 	}
 }

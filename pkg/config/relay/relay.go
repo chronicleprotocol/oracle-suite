@@ -49,13 +49,13 @@ type Dependencies struct {
 
 type Config struct {
 	// Median is a list of Median contracts to watch.
-	Median []configCommon `hcl:"median,block"`
+	Median []configMedian `hcl:"median,block"`
 
 	// Scribe is a list of Scribe contracts to watch.
-	Scribe []configCommon `hcl:"scribe,block"`
+	Scribe []configScribe `hcl:"scribe,block"`
 
 	// OptimisticScribe is a list of OptimisticScribe contracts to watch.
-	OptimisticScribe []configCommon `hcl:"optimistic_scribe,block"`
+	OptimisticScribe []configOptimisticScribe `hcl:"optimistic_scribe,block"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
@@ -96,14 +96,32 @@ type configCommon struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
+type configMedian struct {
+	configCommon
+
+	// Pairs is a list of pairs to store in the price store.
+	Feeds []types.Address `hcl:"feeds"`
+}
+
+type configScribe struct {
+	configCommon
+
+	// Delay is a time in seconds to wait before sending a poke transaction.
+	Delay uint32 `hcl:"delay,optional"`
+}
+
+type configOptimisticScribe struct {
+	configCommon
+}
+
 func configCommonFields(c configCommon) log.Fields {
 	return log.Fields{
-		"ethereum_client": c.EthereumClient,
-		"contract_addr":   c.ContractAddr,
-		"data_model":      c.DataModel,
-		"spread":          c.Spread,
-		"expiration":      c.Expiration,
-		"interval":        c.Interval,
+		"ethereumClient": c.EthereumClient,
+		"contractAddr":   c.ContractAddr,
+		"dataModel":      c.DataModel,
+		"spread":         c.Spread,
+		"expiration":     c.Expiration,
+		"interval":       c.Interval,
 	}
 }
 
@@ -182,7 +200,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 
 		logger.
 			WithField("contract", "Median").
-			WithFields(configCommonFields(cfg)).
+			WithFields(configCommonFields(cfg.configCommon)).
 			Info("Contract")
 
 		medianCfgs = append(medianCfgs, relay.ConfigMedian{
@@ -209,7 +227,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 
 		logger.
 			WithField("contract", "Scribe").
-			WithFields(configCommonFields(cfg)).
+			WithFields(configCommonFields(cfg.configCommon)).
 			Info("Contract")
 
 		scribeCfgs = append(scribeCfgs, relay.ConfigScribe{
@@ -219,6 +237,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			MuSigStore:      musigStoreSrv,
 			Spread:          cfg.Spread,
 			Expiration:      time.Second * time.Duration(cfg.Expiration),
+			Delay:           time.Second * time.Duration(cfg.Delay),
 			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
 		})
 	}
@@ -235,7 +254,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 
 		logger.
 			WithField("contract", "OptimisticScribe").
-			WithFields(configCommonFields(cfg)).
+			WithFields(configCommonFields(cfg.configCommon)).
 			Info("Contract")
 
 		opScribeCfgs = append(opScribeCfgs, relay.ConfigOptimisticScribe{
