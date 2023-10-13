@@ -8,7 +8,8 @@ RUN go mod download -x && mkdir -p ./dist
 
 COPY cmd ./cmd
 COPY pkg ./pkg
-COPY *.go *.hcl ./
+COPY config ./config
+COPY *.go ./
 
 ARG APP_VERSION="0.0.0-dev.0"
 ARG APP_NAME

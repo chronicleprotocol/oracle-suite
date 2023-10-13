@@ -62,8 +62,4 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 	echo "models = $_MODELS"
 
 	echo "}"
-} > config-contracts.hcl
-
-if [[ -n "${2:-}" ]]; then
-	cp config-contracts.hcl "$2"
-fi
+} > config/config-contracts.hcl

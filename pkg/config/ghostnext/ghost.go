@@ -21,7 +21,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/config"
 	configGoferNext "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feednext"
@@ -50,12 +50,12 @@ type Config struct {
 
 func (Config) DefaultEmbeds() [][]byte {
 	return [][]byte{
-		suite.ConfigContracts,
-		suite.ConfigDefaults,
-		suite.ConfigGhost,
-		suite.ConfigGofer,
-		suite.ConfigEthereum,
-		suite.ConfigTransport,
+		config.Contracts,
+		config.Defaults,
+		config.Ghost,
+		config.Gofer,
+		config.Ethereum,
+		config.Transport,
 	}
 }
 

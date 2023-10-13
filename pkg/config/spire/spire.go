@@ -23,7 +23,7 @@ import (
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 
@@ -52,11 +52,11 @@ type Config struct {
 
 func (Config) DefaultEmbeds() [][]byte {
 	return [][]byte{
-		suite.ConfigContracts,
-		suite.ConfigDefaults,
-		suite.ConfigSpire,
-		suite.ConfigTransport,
-		suite.ConfigEthereum,
+		config.Contracts,
+		config.Defaults,
+		config.Spire,
+		config.Transport,
+		config.Ethereum,
 	}
 }
 

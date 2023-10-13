@@ -21,7 +21,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
-	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	relayConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/relay"
@@ -50,11 +50,11 @@ type Config struct {
 
 func (Config) DefaultEmbeds() [][]byte {
 	return [][]byte{
-		suite.ConfigContracts,
-		suite.ConfigDefaults,
-		suite.ConfigSpectre,
-		suite.ConfigTransport,
-		suite.ConfigEthereum,
+		config.Contracts,
+		config.Defaults,
+		config.Spectre,
+		config.Transport,
+		config.Ethereum,
 	}
 }
 

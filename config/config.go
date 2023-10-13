@@ -13,12 +13,32 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package suite
+package config
 
 import (
 	_ "embed"
 )
 
-// Version that can be used by commands.
-// It is set by the linker during build.
-var Version = "unknown"
+//go:embed config-contracts.hcl
+var Contracts []byte
+
+//go:embed config-defaults.hcl
+var Defaults []byte
+
+//go:embed config-ethereum.hcl
+var Ethereum []byte
+
+//go:embed config-ghost.hcl
+var Ghost []byte
+
+//go:embed config-gofer.hcl
+var Gofer []byte
+
+//go:embed config-spectre.hcl
+var Spectre []byte
+
+//go:embed config-spire.hcl
+var Spire []byte
+
+//go:embed config-transport.hcl
+var Transport []byte
