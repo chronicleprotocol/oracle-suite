@@ -22,9 +22,6 @@ import (
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
-	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
 
 type configOrigin struct {
@@ -166,7 +163,7 @@ func (c *configOrigin) PostDecodeBlock(
 	return nil
 }
 
-func (c configOrigin) PostEncodeBody(_ interface{}, body *hclwrite.Body) error {
+func (c configOrigin) PostEncodeBody(body *hclwrite.Body, _ interface{}) error {
 	return utilHCL.Encode(c.OriginConfig, body)
 }
 

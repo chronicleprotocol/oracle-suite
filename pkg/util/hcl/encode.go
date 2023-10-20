@@ -14,11 +14,11 @@ import (
 )
 
 type PreEncodeBody interface {
-	PreEncodeBody(val interface{}, block *hclwrite.Body) error
+	PreEncodeBody(block *hclwrite.Body, val interface{}) error
 }
 
 type PostEncodeBody interface {
-	PostEncodeBody(val interface{}, block *hclwrite.Body) error
+	PostEncodeBody(block *hclwrite.Body, val interface{}) error
 }
 
 func Encode(val interface{}, body *hclwrite.Body) error {
@@ -34,26 +34,26 @@ func Encode(val interface{}, body *hclwrite.Body) error {
 	return populateBody(rv, body)
 }
 
-func EncodeAsBlock(val interface{}, blockType string) (*hclwrite.Block, error) {
+func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error {
 	rv := reflect.ValueOf(val)
 	ty := rv.Type()
 	if ty.Kind() == reflect.Ptr {
 		if !rv.IsValid() {
-			return nil, nil
+			return nil
 		}
 		if rv.IsNil() {
-			return nil, nil
+			return nil
 		}
 		rv = rv.Elem()
 		ty = rv.Type()
 	}
 	if ty.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("value is %s, not struct", ty.Kind())
+		return fmt.Errorf("value is %s, not struct", ty.Kind())
 	}
 
 	meta, diags := getStructMeta(ty)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf(diags.Error())
+		return fmt.Errorf(diags.Error())
 	}
 
 	labels := make([]string, len(meta.Labels))
@@ -67,12 +67,13 @@ func EncodeAsBlock(val interface{}, blockType string) (*hclwrite.Block, error) {
 		}
 	}
 
-	block := hclwrite.NewBlock(blockType, labels)
-	err := populateBody(rv, block.Body())
+	newBlock := hclwrite.NewBlock(blockType, labels)
+	err := populateBody(rv, newBlock.Body())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return block, nil
+	body.AppendBlock(newBlock)
+	return nil
 }
 
 func populateBody(rv reflect.Value, body *hclwrite.Body) error { //nolint:gocyclo
@@ -83,7 +84,7 @@ func populateBody(rv reflect.Value, body *hclwrite.Body) error { //nolint:gocycl
 	}
 
 	if n, ok := rv.Interface().(PreEncodeBody); ok {
-		err := n.PreEncodeBody(rv.Interface(), body)
+		err := n.PreEncodeBody(body, rv.Interface())
 		if err != nil {
 			return err
 		}
@@ -98,24 +99,18 @@ func populateBody(rv reflect.Value, body *hclwrite.Body) error { //nolint:gocycl
 		fieldRv := reflect.ValueOf(fieldVal.Interface())
 		if block.Multiple {
 			for i := 0; i < fieldRv.Len(); i++ {
-				newBlock, err := EncodeAsBlock(fieldRv.Index(i).Interface(), block.Name)
+				err := EncodeAsBlock(fieldRv.Index(i).Interface(), block.Name, body)
 				if err != nil {
 					return err
 				}
-				if newBlock != nil {
-					body.AppendBlock(newBlock)
-					body.AppendNewline()
-				}
+				body.AppendNewline()
 			}
 		} else {
-			newBlock, err := EncodeAsBlock(fieldVal.Interface(), block.Name)
+			err := EncodeAsBlock(fieldVal.Interface(), block.Name, body)
 			if err != nil {
 				return err
 			}
-			if newBlock != nil {
-				body.AppendBlock(newBlock)
-				body.AppendNewline()
-			}
+			body.AppendNewline()
 		}
 	}
 
@@ -137,23 +132,27 @@ func populateBody(rv reflect.Value, body *hclwrite.Body) error { //nolint:gocycl
 				}
 				val = cty.MapVal(mapAddresses)
 			}
+		// case reflect.TypeOf((*config.URL)(nil)).Elem():
+		//	val = cty.StringVal(fieldVal.Interface().(*config.URL).String())
 		default:
 			valTy, err := gocty.ImpliedType(fieldVal.Interface())
 			if err != nil {
-				return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
+				// return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
+				continue
 			}
 			val, err = gocty.ToCtyValue(fieldVal.Interface(), valTy)
 			if err != nil {
 				// This should never happen, since we should always be able
 				// to decode into the implied type.
-				return fmt.Errorf("failed to encode %T as %#v: %s", fieldVal.Interface(), valTy, err)
+				// return fmt.Errorf("failed to encode %T as %#v: %s", fieldVal.Interface(), valTy, err)
+				continue
 			}
 		}
 		body.SetAttributeValue(attr.Name, val)
 	}
 
 	if n, ok := rv.Interface().(PostEncodeBody); ok {
-		err := n.PostEncodeBody(rv.Interface(), body)
+		err := n.PostEncodeBody(body, rv.Interface())
 		if err != nil {
 			return err
 		}
