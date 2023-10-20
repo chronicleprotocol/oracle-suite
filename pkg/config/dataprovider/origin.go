@@ -18,7 +18,10 @@ package dataprovider
 import (
 	"fmt"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
+	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
@@ -161,6 +164,10 @@ func (c *configOrigin) PostDecodeBlock(
 	}
 	c.OriginConfig = config
 	return nil
+}
+
+func (c configOrigin) PostEncodeBody(_ interface{}, body *hclwrite.Body) error {
+	return utilHCL.Encode(c.OriginConfig, body)
 }
 
 func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {

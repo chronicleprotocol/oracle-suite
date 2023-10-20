@@ -47,10 +47,21 @@ const maxTokenCount = 3 // Maximum token count being used as key of the contract
 
 type AssetPair [maxTokenCount]string
 
+func (a AssetPair) String() string {
+	var s string
+	for i := 0; i < len(a); i++ {
+		if i > 0 && len(a[i]) > 0 {
+			s += "/"
+		}
+		s += a[i]
+	}
+	return s
+}
+
 func (a AssetPair) MarshalJSON() ([]byte, error) {
 	var s string
 	for i := 0; i < len(a); i++ {
-		if i > 0 {
+		if i > 0 && len(a[i]) > 0 {
 			s += "/" // separator
 		}
 		s += a[i]

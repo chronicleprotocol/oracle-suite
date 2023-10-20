@@ -17,5 +17,6 @@ package globals
 
 var ShowEnvVarsUsedInConfig bool
 var RenderConfigJSON bool
+var RenderConfigHCL bool
 
 var EnvVars []string

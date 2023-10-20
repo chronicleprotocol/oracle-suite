@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/graph"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
@@ -108,6 +105,37 @@ func (c *configDataModel) configureDataModel(
 		}
 	}
 	return nodes[0], nil
+}
+
+func (c configNode) PostEncodeBody(_ interface{}, body *hclwrite.Body) error {
+	for _, node := range c.Nodes {
+		var blockType string
+		switch nodeType := node.(type) {
+		case *configNodeOrigin:
+			blockType = "origin"
+		case *configNodeReference:
+			blockType = "reference"
+		case *configNodeInvert:
+			blockType = "invert"
+		case *configNodeAlias:
+			blockType = "alias"
+		case *configNodeIndirect:
+			blockType = "indirect"
+		case *configNodeMedian:
+			blockType = "median"
+		case *DeviationCircuitBreaker:
+			blockType = "deviation_circuit_breaker"
+		default:
+			return fmt.Errorf("invalid config node type: %T", nodeType)
+		}
+		newBlock, err := utilHCL.EncodeAsBlock(node, blockType)
+		if err != nil {
+			return err
+		}
+		body.AppendBlock(newBlock)
+		body.AppendNewline()
+	}
+	return nil
 }
 
 var nodeSchema = &hcl.BodySchema{

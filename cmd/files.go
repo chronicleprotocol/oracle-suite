@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/pflag"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
+
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/spf13/pflag"
 )
 
 func ConfigFlagsForConfig(d config.HasDefaults) ConfigFlags {
@@ -65,6 +67,15 @@ func (ff *ConfigFlags) Load(c any) error {
 		}
 		fmt.Println(string(marshaled))
 		os.Exit(0)
+	case globals.RenderConfigHCL:
+		f := hclwrite.NewFile()
+		body := f.Body()
+		err := hcl.Encode(c, body)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(f.Bytes()))
+		os.Exit(0)
 	}
 	return nil
 }
@@ -90,6 +101,12 @@ func (ff *ConfigFlags) FlagSet() *pflag.FlagSet {
 		"config.json",
 		false,
 		"render config as JSON and exit",
+	)
+	fs.BoolVar(
+		&globals.RenderConfigHCL,
+		"config.hcl",
+		false,
+		"render config as HCL and exit",
 	)
 	return fs
 }
