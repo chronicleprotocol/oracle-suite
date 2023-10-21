@@ -1110,27 +1110,46 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 		case reflect.Map:
 			dstMap := make(map[string]cty.Value)
 			for it := src.MapRange(); it.Next(); {
-				key := it.Key().Interface()
-				keyStr, ok := key.(string)
-				if !ok {
-					if u, ok := key.(stringize); ok {
-						keyStr = u.String()
-					}
+				keyRv := reflect.New(stringTy)
+				if err := m.MapRefl(it.Value(), keyRv); err != nil {
+					return err
 				}
-				if keyStr == "" {
+				key := keyRv.Interface().(string)
+				if key == "" {
 					continue
 				}
 				val := reflect.New(dst.Type())
 				if err := m.MapRefl(it.Value(), val); err != nil {
 					return err
 				}
-				dstMap[keyStr] = *(val.Interface().(*cty.Value))
+				dstMap[key] = *(val.Interface().(*cty.Value))
 			}
 			dst.Set(reflect.ValueOf(cty.MapVal(dstMap)))
 		default:
-			return fmt.Errorf("unsupported type %s", src.Type())
+			return fmt.Errorf("unsupported type %s to ctyValue", src.Type())
 		}
 		return nil
+	}
+}
+
+func strMapper(_ *anymapper.Mapper, _, dst reflect.Type) anymapper.MapFunc {
+	if dst != stringTy {
+		return nil
+	}
+
+	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+		val := src.Interface()
+		str, ok := val.(string)
+		if ok {
+			dst.Set(reflect.ValueOf(str))
+			return nil
+		}
+		if u, ok := val.(stringize); !ok {
+			str = u.String()
+			dst.Set(reflect.ValueOf(str))
+			return nil
+		}
+		return fmt.Errorf("unsupported type %s to String", src.Type())
 	}
 }
 
@@ -1138,4 +1157,5 @@ func init() {
 	mapper = anymapper.New()
 	mapper.Context.StrictTypes = true
 	mapper.Mappers[ctyValTy] = ctyMapper
+	mapper.Mappers[stringTy] = strMapper
 }
