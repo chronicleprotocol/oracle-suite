@@ -23,9 +23,19 @@ import (
 	"strings"
 
 	"github.com/defiweb/go-anymapper"
+	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
+
+type stringize interface {
+	String() string
+}
+
+// Marshaler marshals cty.Value.
+type Marshaler interface {
+	MarshalHCL() (cty.Value, error)
+}
 
 // Unmarshaler unmarshals a value from cty.Value.
 type Unmarshaler interface {
@@ -691,7 +701,10 @@ var (
 	rangeTy       = reflect.TypeOf((*hcl.Range)(nil)).Elem()
 	ctyValTy      = reflect.TypeOf((*cty.Value)(nil)).Elem()
 	bigIntTy      = reflect.TypeOf((*big.Int)(nil)).Elem()
+	bigIntPtrTy   = reflect.TypeOf((*big.Int)(nil))
 	bigFloatTy    = reflect.TypeOf((*big.Float)(nil)).Elem()
+	addressTy     = reflect.TypeOf((*types.Address)(nil)).Elem()
+	stringTy      = reflect.TypeOf("")
 	anyTy         = reflect.TypeOf((*any)(nil)).Elem()
 )
 
@@ -716,10 +729,20 @@ func derefValue(v reflect.Value) reflect.Value {
 	return v
 }
 
+func ctyMapper(m *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
+	if src == ctyValTy {
+		return fromCtyMapper(m, src, dst)
+	}
+	if dst == ctyValTy {
+		return toCtyMapper(m, src, dst)
+	}
+	return nil
+}
+
 // ctyMapper is a mapping function that maps cty.Value to other types.
 //
 //nolint:funlen,gocyclo
-func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
+func fromCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 	if src != ctyValTy {
 		return nil
 	}
@@ -946,6 +969,166 @@ func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 			dst.Set(dstMap)
 		default:
 			return fmt.Errorf("unsupported type %s", dst.Type())
+		}
+		return nil
+	}
+}
+
+func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc { //nolint:gocyclo
+	if dst != ctyValTy {
+		return nil
+	}
+
+	if src == addressTy {
+		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+			ctyVal := cty.StringVal(src.String())
+			dst.Set(reflect.ValueOf(ctyVal))
+			return nil
+		}
+	}
+
+	// cty.Value -> cty.Value
+	if src == ctyValTy {
+		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+			dst.Set(src)
+			return nil
+		}
+	}
+
+	// big.Int -> cty.Value
+	if src == bigIntTy {
+		return func(_ *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+			val, ok := src.Interface().(big.Int)
+			if !ok {
+				return fmt.Errorf("cannot encode from big.Int %s", src.Type().Name())
+			}
+			dst.Set(reflect.ValueOf(cty.NumberUIntVal(val.Uint64())))
+			return nil
+		}
+	}
+
+	// *big.Int -> cty.Value
+	if src == bigIntPtrTy {
+		return func(_ *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+			val, ok := src.Interface().(*big.Int)
+			if !ok {
+				return fmt.Errorf("cannot encode from *big.Int %s", src.Type().Name())
+			}
+			dst.Set(reflect.ValueOf(cty.NumberUIntVal(val.Uint64())))
+			return nil
+		}
+	}
+
+	// big.Float -> cty.Value
+	if src == bigFloatTy {
+		return func(_ *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+			val, ok := src.Interface().(big.Float)
+			if !ok {
+				return fmt.Errorf("cannot encode from big.Float %s", src.Type().Name())
+			}
+			valFloat, _ := val.Float64()
+			dst.Set(reflect.ValueOf(cty.NumberFloatVal(valFloat)))
+			return nil
+		}
+	}
+
+	// string -> cty.Value
+	// bool -> cty.Value
+	// int -> cty.Value
+	// uint -> cty.Value
+	// flaot -> cty.Value
+	// slice -> cty.Value
+	// map -> cty.Value
+	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
+		// Try to use marshaler interfaces.
+		if src.CanAddr() {
+			if u, ok := src.Addr().Interface().(Marshaler); ok {
+				ctyVal, err := u.MarshalHCL()
+				if err != nil {
+					return err
+				}
+				dst.Set(reflect.ValueOf(ctyVal))
+				return nil
+			}
+			if u, ok := src.Addr().Interface().(encoding.TextMarshaler); ok && src.Type() == stringTy {
+				text, err := u.MarshalText()
+				if err != nil {
+					return err
+				}
+				ctyVal := cty.StringVal(string(text))
+				dst.Set(reflect.ValueOf(ctyVal))
+				return nil
+			}
+		} else {
+			if u, ok := src.Interface().(Marshaler); ok {
+				ctyVal, err := u.MarshalHCL()
+				if err != nil {
+					return err
+				}
+				dst.Set(reflect.ValueOf(ctyVal))
+				return nil
+			}
+			if u, ok := src.Interface().(encoding.TextMarshaler); ok && src.Type() == stringTy {
+				text, err := u.MarshalText()
+				if err != nil {
+					return err
+				}
+				ctyVal := cty.StringVal(string(text))
+				dst.Set(reflect.ValueOf(ctyVal))
+				return nil
+			}
+		}
+
+		switch src.Kind() {
+		case reflect.String:
+			ctyVal := cty.StringVal(src.String())
+			dst.Set(reflect.ValueOf(ctyVal))
+		case reflect.Bool:
+			ctyVal := cty.BoolVal(src.Bool())
+			dst.Set(reflect.ValueOf(ctyVal))
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			ctyVal := cty.NumberIntVal(src.Int())
+			dst.Set(reflect.ValueOf(ctyVal))
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			ctyVal := cty.NumberUIntVal(src.Uint())
+			dst.Set(reflect.ValueOf(ctyVal))
+		case reflect.Float32, reflect.Float64:
+			ctyVal := cty.NumberFloatVal(src.Float())
+			dst.Set(reflect.ValueOf(ctyVal))
+		case reflect.Slice:
+			dstSlice := make([]cty.Value, src.Len())
+			for i := 0; i < src.Len(); i++ {
+				elem := reflect.New(dst.Type())
+				if err := m.MapRefl(src.Index(i), elem); err != nil {
+					return err
+				}
+				dstSlice[i] = *(elem.Interface().(*cty.Value))
+			}
+			if src.Len() > 0 {
+				dst.Set(reflect.ValueOf(cty.ListVal(dstSlice)))
+			}
+		case reflect.Map:
+			dstMap := make(map[string]cty.Value)
+			for it := src.MapRange(); it.Next(); {
+				key := it.Key().Interface()
+				keyStr, ok := key.(string)
+				if !ok {
+					if u, ok := key.(stringize); ok {
+						keyStr = u.String()
+					}
+				}
+				if keyStr == "" {
+					continue
+				}
+				val := reflect.New(dst.Type())
+				if err := m.MapRefl(it.Value(), val); err != nil {
+					return err
+				}
+				dstMap[keyStr] = *(val.Interface().(*cty.Value))
+			}
+			dst.Set(reflect.ValueOf(cty.MapVal(dstMap)))
+		default:
+			return fmt.Errorf("unsupported type %s", src.Type())
 		}
 		return nil
 	}

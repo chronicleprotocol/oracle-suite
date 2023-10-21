@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/defiweb/go-eth/types"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
@@ -106,6 +107,15 @@ func (c ContractAddresses) MarshalJSON() ([]byte, error) {
 		t[s] = address
 	}
 	return json.Marshal(t)
+}
+
+func (c ContractAddresses) MarshalHCL() (cty.Value, error) {
+	mapAddresses := make(map[string]cty.Value)
+	for key, value := range c {
+		pairs := key.String()
+		mapAddresses[pairs] = cty.StringVal(value.String())
+	}
+	return cty.MapVal(mapAddresses), nil
 }
 
 // ByPair returns the contract address and the indexes of tokens, where the contract contains the given pair

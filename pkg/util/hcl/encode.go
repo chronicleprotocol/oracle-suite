@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/defiweb/go-eth/types"
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
 
 type PreEncodeBody interface {
@@ -117,36 +114,13 @@ func populateBody(rv reflect.Value, body *hclwrite.Body) error { //nolint:gocycl
 	for _, attr := range meta.Attrs {
 		fieldVal := rv.FieldByIndex(attr.Reflect.Index)
 
-		// todo, rewrite ctyMapper, dstType is ctyValue
-		// todo, big.Int, big.Float
+		if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
+			continue
+		}
+
 		var val cty.Value
-		switch fieldVal.Type() {
-		case reflect.TypeOf((*types.Address)(nil)).Elem():
-			val = cty.StringVal(fieldVal.Interface().(types.Address).String())
-		case reflect.TypeOf((*origin.ContractAddresses)(nil)).Elem():
-			if addresses, ok := fieldVal.Interface().(origin.ContractAddresses); ok {
-				mapAddresses := make(map[string]cty.Value)
-				for key, value := range addresses {
-					pairs := key.String()
-					mapAddresses[pairs] = cty.StringVal(value.String())
-				}
-				val = cty.MapVal(mapAddresses)
-			}
-		// case reflect.TypeOf((*config.URL)(nil)).Elem():
-		//	val = cty.StringVal(fieldVal.Interface().(*config.URL).String())
-		default:
-			valTy, err := gocty.ImpliedType(fieldVal.Interface())
-			if err != nil {
-				// return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
-				continue
-			}
-			val, err = gocty.ToCtyValue(fieldVal.Interface(), valTy)
-			if err != nil {
-				// This should never happen, since we should always be able
-				// to decode into the implied type.
-				// return fmt.Errorf("failed to encode %T as %#v: %s", fieldVal.Interface(), valTy, err)
-				continue
-			}
+		if err := mapper.Map(fieldVal.Interface(), &val); err != nil {
+			return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
 		}
 		body.SetAttributeValue(attr.Name, val)
 	}
