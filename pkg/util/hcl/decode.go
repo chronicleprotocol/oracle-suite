@@ -981,7 +981,8 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 
 	if src == addressTy {
 		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			ctyVal := cty.StringVal(src.String())
+			addr := src.Interface().(types.Address)
+			ctyVal := cty.StringVal(addr.String())
 			dst.Set(reflect.ValueOf(ctyVal))
 			return nil
 		}
@@ -1106,6 +1107,8 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 			}
 			if src.Len() > 0 {
 				dst.Set(reflect.ValueOf(cty.ListVal(dstSlice)))
+			} else {
+				dst.Set(reflect.ValueOf(cty.ListValEmpty(cty.NilType)))
 			}
 		case reflect.Map:
 			dstMap := make(map[string]cty.Value)
