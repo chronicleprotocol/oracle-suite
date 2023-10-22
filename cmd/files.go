@@ -44,26 +44,20 @@ type ConfigFlags struct {
 
 // Load loads the config files into the given config struct.
 func (ff *ConfigFlags) Load(c any, cacheConfigPath string) error {
-	if len(ff.embeds) == 0 && len(ff.paths) == 0 && cacheConfigPath == "" {
-		return fmt.Errorf("failed in loading config")
-	}
-	if len(ff.embeds) > 0 {
-		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
+	if cacheConfigPath != "" { //nolint:gocritic
+		if err := config.LoadFiles(c, []string{cacheConfigPath}); err != nil {
 			return err
 		}
-	}
-	if len(ff.paths) > 0 {
+	} else if len(ff.paths) > 0 {
 		if err := config.LoadFiles(c, ff.paths); err != nil {
 			return err
 		}
-	}
-	if cacheConfigPath != "" {
-		if err := config.LoadFiles(c, []string{cacheConfigPath}); err != nil {
-			fmt.Println("failed in load cache config", cacheConfigPath)
-			if len(ff.embeds) == 0 && len(ff.paths) == 0 { // Nothing config loaded
-				return err
-			}
+	} else if len(ff.embeds) > 0 {
+		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
+			return err
 		}
+	} else {
+		return fmt.Errorf("failed in loading config")
 	}
 	switch {
 	case globals.ShowEnvVarsUsedInConfig:
