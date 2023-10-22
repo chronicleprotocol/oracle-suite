@@ -20,6 +20,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )

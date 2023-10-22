@@ -73,7 +73,7 @@ func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error
 	return nil
 }
 
-func populateBody(rv reflect.Value, body *hclwrite.Body) error { //nolint:gocyclo
+func populateBody(rv reflect.Value, body *hclwrite.Body) error {
 	ty := rv.Type()
 	meta, diags := getStructMeta(ty)
 	if diags.HasErrors() {
