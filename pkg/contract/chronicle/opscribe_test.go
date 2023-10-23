@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func TestOpScribe_OpChallengePeriod(t *testing.T) {
 			nil,
 		)
 
-	challengePeriod, err := scribe.OpChallengePeriod(ctx)
+	challengePeriod, err := scribe.OpChallengePeriod().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, time.Second*300, challengePeriod)
 }
@@ -222,7 +222,7 @@ func TestOpScribe_OpPoke(t *testing.T) {
 			nil,
 		)
 
-	_, _, err := scribe.OpPoke(ctx, pokeData, schnorrData, ecdsaData)
+	_, _, err := scribe.OpPoke(pokeData, schnorrData, ecdsaData).SendTransaction(ctx)
 	require.NoError(t, err)
 }
 

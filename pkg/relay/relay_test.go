@@ -20,10 +20,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
@@ -89,7 +91,6 @@ func (m *mockLogger) Debug(args ...any) {
 
 func (m *mockLogger) Info(args ...any) {
 	m.InfoFn(args...)
-
 }
 
 func (m *mockLogger) Warn(args ...any) {
@@ -143,13 +144,16 @@ func (m *mockTransport) Messages(topic string) <-chan transport.ReceivedMessage 
 }
 
 type mockMedianContract struct {
+	ClientFn  func() rpc.RPC
 	AddressFn func() types.Address
 	ValFn     func(ctx context.Context) (*bn.DecFixedPointNumber, error)
-	AgeFn     func(ctx context.Context) (time.Time, error)
-	BarFn     func(ctx context.Context) (int, error)
-	WatFn     func(ctx context.Context) (string, error)
-	PokeFn    func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error)
+	WatFn     func() contract.TypedSelfCaller[string]
+	AgeFn     func() contract.TypedSelfCaller[time.Time]
+	BarFn     func() contract.TypedSelfCaller[int]
+	PokeFn    func(vals []chronicle.MedianVal) contract.SelfTransactableCaller
 }
+
+var _ MedianContract = (*mockMedianContract)(nil)
 
 func newMockMedianContract(t *testing.T) *mockMedianContract {
 	mc := &mockMedianContract{}
@@ -158,6 +162,10 @@ func newMockMedianContract(t *testing.T) *mockMedianContract {
 }
 
 func (m *mockMedianContract) reset(t *testing.T) {
+	m.ClientFn = func() rpc.RPC {
+		assert.FailNow(t, "unexpected call to Client")
+		return nil
+	}
 	m.AddressFn = func() types.Address {
 		assert.FailNow(t, "unexpected call to Address")
 		return types.Address{}
@@ -166,22 +174,26 @@ func (m *mockMedianContract) reset(t *testing.T) {
 		assert.FailNow(t, "unexpected call to Val")
 		return nil, nil
 	}
-	m.AgeFn = func(ctx context.Context) (time.Time, error) {
+	m.AgeFn = func() contract.TypedSelfCaller[time.Time] {
 		assert.FailNow(t, "unexpected call to Age")
-		return time.Time{}, nil
+		return nil
 	}
-	m.BarFn = func(ctx context.Context) (int, error) {
+	m.BarFn = func() contract.TypedSelfCaller[int] {
 		assert.FailNow(t, "unexpected call to Bar")
-		return 0, nil
+		return nil
 	}
-	m.WatFn = func(ctx context.Context) (string, error) {
+	m.WatFn = func() contract.TypedSelfCaller[string] {
 		assert.FailNow(t, "unexpected call to Wat")
-		return "", nil
+		return nil
 	}
-	m.PokeFn = func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
+	m.PokeFn = func(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
 		assert.FailNow(t, "unexpected call to Poke")
-		return nil, nil, nil
+		return nil
 	}
+}
+
+func (m *mockMedianContract) Client() rpc.RPC {
+	return m.ClientFn()
 }
 
 func (m *mockMedianContract) Address() types.Address {
@@ -192,31 +204,34 @@ func (m *mockMedianContract) Val(ctx context.Context) (*bn.DecFixedPointNumber, 
 	return m.ValFn(ctx)
 }
 
-func (m *mockMedianContract) Age(ctx context.Context) (time.Time, error) {
-	return m.AgeFn(ctx)
+func (m *mockMedianContract) Age() contract.TypedSelfCaller[time.Time] {
+	return m.AgeFn()
 }
 
-func (m *mockMedianContract) Bar(ctx context.Context) (int, error) {
-	return m.BarFn(ctx)
+func (m *mockMedianContract) Bar() contract.TypedSelfCaller[int] {
+	return m.BarFn()
 }
 
-func (m *mockMedianContract) Wat(ctx context.Context) (string, error) {
-	return m.WatFn(ctx)
+func (m *mockMedianContract) Wat() contract.TypedSelfCaller[string] {
+	return m.WatFn()
 }
 
-func (m *mockMedianContract) Poke(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
-	return m.PokeFn(ctx, vals)
+func (m *mockMedianContract) Poke(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
+	return m.PokeFn(vals)
 }
 
 // Assume mockScribeContract, mockMuSigStore, and mockTicker are similar to the mock structures used in previous tests.
 type mockScribeContract struct {
+	ClientFn  func() rpc.RPC
 	AddressFn func() types.Address
-	WatFn     func(ctx context.Context) (string, error)
-	BarFn     func(ctx context.Context) (int, error)
-	FeedsFn   func(ctx context.Context) ([]types.Address, []uint8, error)
-	ReadFn    func(ctx context.Context) (contract.PokeData, error)
-	PokeFn    func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData) (*types.Hash, *types.Transaction, error)
+	ReadFn    func(ctx context.Context) (chronicle.PokeData, error)
+	WatFn     func() contract.TypedSelfCaller[string]
+	BarFn     func() contract.TypedSelfCaller[int]
+	FeedsFn   func() contract.TypedSelfCaller[chronicle.FeedsResult]
+	PokeFn    func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller
 }
+
+var _ ScribeContract = (*mockScribeContract)(nil)
 
 func newMockScribeContract(t *testing.T) *mockScribeContract {
 	sc := &mockScribeContract{}
@@ -225,60 +240,70 @@ func newMockScribeContract(t *testing.T) *mockScribeContract {
 }
 
 func (m *mockScribeContract) reset(t *testing.T) {
+	m.ClientFn = func() rpc.RPC {
+		assert.FailNow(t, "unexpected call to Client")
+		return nil
+	}
+	m.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		assert.FailNow(t, "unexpected call to Read")
+		return chronicle.PokeData{}, nil
+	}
 	m.AddressFn = func() types.Address {
 		assert.FailNow(t, "unexpected call to Address")
 		return types.Address{}
 	}
-	m.WatFn = func(ctx context.Context) (string, error) {
+	m.WatFn = func() contract.TypedSelfCaller[string] {
 		assert.FailNow(t, "unexpected call to Wat")
-		return "", nil
+		return nil
 	}
-	m.BarFn = func(ctx context.Context) (int, error) {
+	m.BarFn = func() contract.TypedSelfCaller[int] {
 		assert.FailNow(t, "unexpected call to Bar")
-		return 0, nil
+		return nil
 	}
-	m.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
+	m.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
 		assert.FailNow(t, "unexpected call to Feeds")
-		return nil, nil, nil
+		return nil
 	}
-	m.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-		assert.FailNow(t, "unexpected call to Read")
-		return contract.PokeData{}, nil
-	}
-	m.PokeFn = func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData) (*types.Hash, *types.Transaction, error) {
+	m.PokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller {
 		assert.FailNow(t, "unexpected call to Poke")
-		return nil, nil, nil
+		return nil
 	}
+}
+
+func (m *mockScribeContract) Client() rpc.RPC {
+	return m.ClientFn()
 }
 
 func (m *mockScribeContract) Address() types.Address {
 	return m.AddressFn()
 }
 
-func (m *mockScribeContract) Wat(ctx context.Context) (string, error) {
-	return m.WatFn(ctx)
-}
-
-func (m *mockScribeContract) Bar(ctx context.Context) (int, error) {
-	return m.BarFn(ctx)
-}
-
-func (m *mockScribeContract) Feeds(ctx context.Context) ([]types.Address, []uint8, error) {
-	return m.FeedsFn(ctx)
-}
-
-func (m *mockScribeContract) Read(ctx context.Context) (contract.PokeData, error) {
+func (m *mockScribeContract) Read(ctx context.Context) (chronicle.PokeData, error) {
 	return m.ReadFn(ctx)
 }
 
-func (m *mockScribeContract) Poke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData) (*types.Hash, *types.Transaction, error) {
-	return m.PokeFn(ctx, pokeData, schnorrData)
+func (m *mockScribeContract) Wat() contract.TypedSelfCaller[string] {
+	return m.WatFn()
+}
+
+func (m *mockScribeContract) Bar() contract.TypedSelfCaller[int] {
+	return m.BarFn()
+}
+
+func (m *mockScribeContract) Feeds() contract.TypedSelfCaller[chronicle.FeedsResult] {
+	return m.FeedsFn()
+}
+
+func (m *mockScribeContract) Poke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller {
+	return m.PokeFn(pokeData, schnorrData)
 }
 
 type mockOpScribeContract struct {
 	mockScribeContract
-	OpPokeFn func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error)
+	OpPokeFn func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller
 }
+
+var _ OpScribeContract = (*mockOpScribeContract)(nil)
 
 func newMockOpScribeContract(t *testing.T) *mockOpScribeContract {
 	sc := &mockOpScribeContract{}
@@ -288,14 +313,14 @@ func newMockOpScribeContract(t *testing.T) *mockOpScribeContract {
 
 func (m *mockOpScribeContract) reset(t *testing.T) {
 	m.mockScribeContract.reset(t)
-	m.OpPokeFn = func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error) {
+	m.OpPokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
 		assert.FailNow(t, "unexpected call to OpPoke")
-		return nil, nil, nil
+		return nil
 	}
 }
 
-func (m *mockOpScribeContract) OpPoke(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error) {
-	return m.OpPokeFn(ctx, pokeData, schnorrData, ecdsaData)
+func (m *mockOpScribeContract) OpPoke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
+	return m.OpPokeFn(pokeData, schnorrData, ecdsaData)
 }
 
 type mockDataPointProvider struct {

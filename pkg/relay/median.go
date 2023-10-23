@@ -21,78 +21,62 @@ import (
 	"strings"
 	"time"
 
-	"github.com/defiweb/go-eth/hexutil"
+	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 type medianWorker struct {
-	log            log.Logger
+	contract       MedianContract
 	dataPointStore store.DataPointProvider
 	feedAddresses  []types.Address
-	contract       MedianContract
 	dataModel      string
 	spread         float64
 	expiration     time.Duration
 	ticker         *timeutil.Ticker
+	log            log.Logger
 }
 
-func (w *medianWorker) workerRoutine(ctx context.Context) {
-	w.ticker.Start(ctx)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-w.ticker.TickCh():
-			w.tryUpdate(ctx)
-		}
-	}
+func (w *medianWorker) client() rpc.RPC {
+	return w.contract.Client()
 }
 
-func (w *medianWorker) tryUpdate(ctx context.Context) {
-	// Current median price.
-	val, err := w.contract.Val(ctx)
-	if err != nil {
-		w.log.
-			WithError(err).
-			WithFields(w.logFields()).
-			WithAdvice("Ignore if it is related to temporary network issues").
-			Error("Failed to get current median price from the Median contract")
-		return
-	}
+func (w *medianWorker) address() types.Address {
+	return w.contract.Address()
+}
 
-	// Time of the last update.
-	age, err := w.contract.Age(ctx)
+func (w *medianWorker) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+	wat, val, age, bar, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
 			WithError(err).
 			WithFields(w.logFields()).
 			WithAdvice("Ignore if it is related to temporary network issues").
-			Error("Failed to get last update time from the Median contract")
-		return
+			Error("Failed to call Median contract")
+		return 0, nil
 	}
-
-	// Quorum.
-	bar, err := w.contract.Bar(ctx)
-	if err != nil {
+	if wat != w.dataModel {
 		w.log.
 			WithError(err).
 			WithFields(w.logFields()).
-			WithAdvice("Ignore if it is related to temporary network issues").
-			Error("Failed to get quorum from the Median contract")
-		return
+			WithAdvice("This is a bug in the configuration, probably a wrong contract address is used").
+			Error("Contract asset name does not match the configured asset name")
+		return 0, nil
 	}
 
 	// Load data points from the store.
 	dataPoints, signatures, ok := w.findDataPoints(ctx, age, bar)
 	if !ok {
-		return
+		return 0, nil
 	}
 
 	prices := dataPointsToPrices(dataPoints)
@@ -125,10 +109,10 @@ func (w *medianWorker) tryUpdate(ctx context.Context) {
 
 	// If price is stale or expired, send update.
 	if isExpired || isStale {
-		vals := make([]contract.MedianVal, len(prices))
+		vals := make([]chronicle.MedianVal, len(prices))
 		for i := range dataPoints {
-			vals[i] = contract.MedianVal{
-				Val: prices[i].DecFixedPoint(contract.MedianPricePrecision),
+			vals[i] = chronicle.MedianVal{
+				Val: prices[i].DecFixedPoint(chronicle.MedianPricePrecision),
 				Age: dataPoints[i].Time,
 				V:   uint8(signatures[i].V.Uint64()),
 				R:   signatures[i].R,
@@ -136,30 +120,37 @@ func (w *medianWorker) tryUpdate(ctx context.Context) {
 			}
 		}
 
-		// Send *actual* transaction.
-		txHash, tx, err := w.contract.Poke(ctx, vals)
+		poke := w.contract.Poke(vals)
+		gas, err := poke.Gas(ctx, types.LatestBlockNumber)
 		if err != nil {
 			w.handlePokeErr(err)
-			return
+			return 0, nil
 		}
 
-		w.log.
-			WithFields(w.logFields()).
-			WithFields(log.Fields{
-				"txHash":                 txHash,
-				"txType":                 tx.Type,
-				"txFrom":                 tx.From,
-				"txTo":                   tx.To,
-				"txChainId":              tx.ChainID,
-				"txNonce":                tx.Nonce,
-				"txGasPrice":             tx.GasPrice,
-				"txGasLimit":             tx.GasLimit,
-				"txMaxFeePerGas":         tx.MaxFeePerGas,
-				"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
-				"txInput":                hexutil.BytesToHex(tx.Input),
-			}).
-			Info("Poke transaction sent to the Median contract")
+		return gas, poke
 	}
+
+	return 0, nil
+}
+
+func (w *medianWorker) currentState(ctx context.Context) (wat string, val *bn.DecFixedPointNumber, age time.Time, bar int, err error) {
+	val, err = w.contract.Val(ctx)
+	if err != nil {
+		return "", nil, time.Time{}, 0, err
+	}
+	if err := multicall.AggregateCallables(
+		w.contract.Client(),
+		w.contract.Wat(),
+		w.contract.Age(),
+		w.contract.Bar(),
+	).Call(ctx, types.LatestBlockNumber, []any{
+		&wat,
+		&age,
+		&bar,
+	}); err != nil {
+		return "", nil, time.Time{}, 0, err
+	}
+	return wat, val, age, bar, nil
 }
 
 func (w *medianWorker) findDataPoints(ctx context.Context, after time.Time, quorum int) ([]datapoint.Point, []types.Signature, bool) {
@@ -238,14 +229,16 @@ func (w *medianWorker) handlePokeErr(err error) {
 			Warn("Failed to poke the Median contract; previous transaction is still pending")
 		return
 	}
-	if contract.IsRevert(err) {
-		w.log.
-			WithError(err).
-			WithFields(w.logFields()).
-			WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-			Error("Failed to poke the Median contract")
-		return
-	}
+	/*
+		if contract.IsRevert(err) {
+			w.log.
+				WithError(err).
+				WithFields(w.logFields()).
+				WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
+				Error("Failed to poke the Median contract")
+			return
+		}
+	*/
 	w.log.
 		WithError(err).
 		WithFields(w.logFields()).
@@ -255,7 +248,7 @@ func (w *medianWorker) handlePokeErr(err error) {
 
 func (w *medianWorker) logFields() log.Fields {
 	return log.Fields{
-		"contractAddress": w.contract.Address(),
-		"dataModel":       w.dataModel,
+		"address":   w.contract.Address(),
+		"dataModel": w.dataModel,
 	}
 }

@@ -18,7 +18,7 @@ package main
 import (
 	"github.com/defiweb/go-eth/hexutil"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -128,7 +128,7 @@ func handleTickDataPointMessage(msg *messages.DataPoint) streamType {
 		Version: "1.1",
 		Data: map[string]any{
 			"wat": msg.Model,
-			"val": tick.Price.DecFixedPoint(contract.MedianPricePrecision).RawBigInt().String(),
+			"val": tick.Price.DecFixedPoint(chronicle.MedianPricePrecision).RawBigInt().String(),
 			"age": msg.Point.Time.Unix(),
 		},
 		Meta: map[string]any{
@@ -242,7 +242,7 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 
 		for _, tick := range msgTickMeta.FeedTicks {
 			ticks = append(ticks, map[string]any{
-				"val": tick.Val.SetPrec(contract.ScribePricePrecision).RawBigInt().String(),
+				"val": tick.Val.SetPrec(chronicle.ScribePricePrecision).RawBigInt().String(),
 				"age": tick.Age.Unix(),
 				"sig": tick.VRS.String(),
 			})
@@ -259,7 +259,7 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 		data = map[string]any{
 			"body": msg.MsgBody.String(),
 			"wat":  msgTickMeta.Wat,
-			"val":  msgTickMeta.Val.SetPrec(contract.ScribePricePrecision).RawBigInt().String(),
+			"val":  msgTickMeta.Val.SetPrec(chronicle.ScribePricePrecision).RawBigInt().String(),
 			"age":  msgTickMeta.Age.Unix(),
 		}
 	}

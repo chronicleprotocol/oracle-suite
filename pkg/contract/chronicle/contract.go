@@ -13,52 +13,11 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"bytes"
-	"context"
-	"errors"
-
-	goethABI "github.com/defiweb/go-eth/abi"
-	"github.com/defiweb/go-eth/rpc"
-	"github.com/defiweb/go-eth/rpc/transport"
-	"github.com/defiweb/go-eth/types"
 )
-
-// IsRevert returns true if execution of the call was reverted.
-func IsRevert(err error) bool {
-	if errors.As(err, &goethABI.RevertError{}) {
-		return true
-	}
-	if errors.As(err, &goethABI.PanicError{}) {
-		return true
-	}
-	if errors.As(err, &goethABI.CustomError{}) {
-		return true
-	}
-	return false
-}
-
-// simulateTransaction simulates a transaction by calling the contract method
-// and checking for revert or panic.
-func simulateTransaction(ctx context.Context, rpc rpc.RPC, c *goethABI.Contract, tx types.Transaction) error {
-	_, _, err := rpc.Call(ctx, tx.Call, types.LatestBlockNumber)
-	if err != nil {
-		var rpcErr *transport.RPCError
-		if errors.As(err, &rpcErr) {
-			data, ok := rpcErr.Data.([]byte)
-			if !ok {
-				return err
-			}
-			if err := c.ToError(data); err != nil {
-				return err
-			}
-		}
-		return err
-	}
-	return nil
-}
 
 // stringToBytes32 converts a Go string to bytes32.
 func stringToBytes32(s string) []byte {

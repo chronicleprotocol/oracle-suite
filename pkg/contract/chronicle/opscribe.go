@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"time"
 
+	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
@@ -41,8 +43,22 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
-func (s *OpScribe) OpChallengePeriod(ctx context.Context) (time.Duration, error) {
-	return s.opChallengePeriod(ctx, types.LatestBlockNumber)
+func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
+	return contract.NewTypedCall[time.Duration](
+		contract.CallOpts{
+			Client:  s.client,
+			Address: s.address,
+			Method:  abiOpScribe.Methods["opChallengePeriod"],
+			Decoder: func(m *goethABI.Method, data []byte, res any) error {
+				var period uint16
+				if err := m.DecodeValues(data, &period); err != nil {
+					return fmt.Errorf("opScribe: query failed: %w", err)
+				}
+				*res.(*time.Duration) = time.Duration(period) * time.Second
+				return nil
+			},
+		},
+	)
 }
 
 func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
@@ -54,7 +70,7 @@ func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, er
 	if err != nil {
 		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
-	challengePeriod, err := s.opChallengePeriod(ctx, types.BlockNumberFromBigInt(blockNumber))
+	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
 		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
@@ -89,36 +105,19 @@ func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	return pokeData, nil
 }
 
-func (s *OpScribe) OpPoke(
-	ctx context.Context,
-	pokeData PokeData,
-	schnorrData SchnorrData,
-	ecdsaData types.Signature,
-) (
-	*types.Hash,
-	*types.Transaction,
-	error,
-) {
-
-	calldata, err := abiOpScribe.Methods["opPoke"].EncodeArgs(
-		toPokeDataStruct(pokeData),
-		toSchnorrDataStruct(schnorrData),
-		toECDSADataStruct(ecdsaData),
+func (s *OpScribe) OpPoke(pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
+	return contract.NewTransactableCall(
+		contract.CallOpts{
+			Client:  s.client,
+			Address: s.address,
+			Method:  abiOpScribe.Methods["opPoke"],
+			Arguments: []any{
+				toPokeDataStruct(pokeData),
+				toSchnorrDataStruct(schnorrData),
+				toECDSADataStruct(ecdsaData),
+			},
+		},
 	)
-	if err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
-	}
-	tx := (&types.Transaction{}).
-		SetTo(s.address).
-		SetInput(calldata)
-	if err := simulateTransaction(ctx, s.client, abiOpScribe, *tx); err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
-	}
-	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
-	}
-	return txHash, txCpy, nil
 }
 
 func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumber) (time.Duration, error) {

@@ -60,3 +60,9 @@ func TestIndexOf(t *testing.T) {
 	assert.Equal(t, 1, IndexOf([]string{"a", "b", "c"}, "b"))
 	assert.Equal(t, -1, IndexOf([]string{"a", "b", "c"}, "d"))
 }
+
+func TestAppendUnique(t *testing.T) {
+	assert.Equal(t, []string{"a", "b", "c"}, AppendUnique([]string{"a", "b"}, "c"))
+	assert.Equal(t, []string{"a", "b", "c"}, AppendUnique([]string{"a", "b", "c"}, "c"))
+	assert.Equal(t, []string{"a", "b", "c", "d"}, AppendUnique([]string{"a", "b", "c"}, "d"))
+}

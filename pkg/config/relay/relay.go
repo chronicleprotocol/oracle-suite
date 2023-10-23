@@ -27,12 +27,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 	datapointStore "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	musigStore "github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 type Services struct {
@@ -87,10 +86,6 @@ type configCommon struct {
 	// expired. If the price is expired, the relay will update it.
 	Expiration uint32 `hcl:"expiration"`
 
-	// Interval is a time interval in seconds between checking if the price
-	// needs to be updated.
-	Interval uint32 `hcl:"interval"`
-
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
 	Content hcl.BodyContent `hcl:",content"`
@@ -105,9 +100,6 @@ type configMedian struct {
 
 type configScribe struct {
 	configCommon
-
-	// Delay is a time in seconds to wait before sending a poke transaction.
-	Delay uint32 `hcl:"delay,optional"`
 }
 
 type configOptimisticScribe struct {
@@ -121,7 +113,6 @@ func configCommonFields(c configCommon) log.Fields {
 		"dataModel":      c.DataModel,
 		"spread":         c.Spread,
 		"expiration":     c.Expiration,
-		"interval":       c.Interval,
 	}
 }
 
@@ -211,7 +202,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			DataPointStore:  priceStoreSrv,
 			Spread:          cfg.Spread,
 			Expiration:      time.Second * time.Duration(cfg.Expiration),
-			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
 		})
 	}
 	for _, cfg := range c.Scribe {
@@ -237,8 +227,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			MuSigStore:      musigStoreSrv,
 			Spread:          cfg.Spread,
 			Expiration:      time.Second * time.Duration(cfg.Expiration),
-			Delay:           time.Second * time.Duration(cfg.Delay),
-			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
 		})
 	}
 	for _, cfg := range c.OptimisticScribe {
@@ -264,7 +252,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			MuSigStore:      musigStoreSrv,
 			Spread:          cfg.Spread,
 			Expiration:      time.Second * time.Duration(cfg.Expiration),
-			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
 		})
 	}
 
@@ -273,6 +260,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		Scribes:           scribeCfgs,
 		OptimisticScribes: opScribeCfgs,
 		Logger:            d.Logger,
+		Ticker:            timeutil.NewTicker(time.Minute),
 	})
 	if err != nil {
 		return nil, &hcl.Diagnostic{

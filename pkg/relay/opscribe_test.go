@@ -23,10 +23,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/mock"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
@@ -58,19 +61,26 @@ func TestOpScribeWorker(t *testing.T) {
 		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return []types.Address{testFeed}, []uint8{1}, nil
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed},
+					FeedIndices: []uint8{1},
+				},
+				nil,
+			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
@@ -82,7 +92,7 @@ func TestOpScribeWorker(t *testing.T) {
 						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
-							Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 							Age: musigTime,
 							Optimistic: []messages.MuSigMetaOptimistic{{
 								ECDSASignature: musigOpSignature,
@@ -97,16 +107,16 @@ func TestOpScribeWorker(t *testing.T) {
 		}
 
 		pokeCalled := false
-		mockContract.OpPokeFn = func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error) {
+		mockContract.OpPokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
 			pokeCalled = true
-			assert.Equal(t, bn.DecFixedPoint(110, contract.ScribePricePrecision), pokeData.Val)
+			assert.Equal(t, bn.DecFixedPoint(110, chronicle.ScribePricePrecision), pokeData.Val)
 			assert.Equal(t, musigTime, pokeData.Age)
 			assert.Equal(t, musigCommitment, schnorrData.Commitment)
 			assert.Equal(t, musigSignature, schnorrData.Signature)
-			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.tryUpdate(ctx)
+		sw.createRelayCall(ctx)
 		assert.True(t, pokeCalled)
 	})
 
@@ -122,19 +132,26 @@ func TestOpScribeWorker(t *testing.T) {
 		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return []types.Address{testFeed}, []uint8{1}, nil
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed},
+					FeedIndices: []uint8{1},
+				},
+				nil,
+			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
 			}, nil
 		}
@@ -146,7 +163,7 @@ func TestOpScribeWorker(t *testing.T) {
 						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
-							Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+							Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 							Age: musigTime,
 							Optimistic: []messages.MuSigMetaOptimistic{{
 								ECDSASignature: musigOpSignature,
@@ -161,16 +178,16 @@ func TestOpScribeWorker(t *testing.T) {
 		}
 
 		pokeCalled := false
-		mockContract.OpPokeFn = func(ctx context.Context, pokeData contract.PokeData, schnorrData contract.SchnorrData, ecdsaData types.Signature) (*types.Hash, *types.Transaction, error) {
+		mockContract.OpPokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
 			pokeCalled = true
-			assert.Equal(t, bn.DecFixedPoint(100, contract.ScribePricePrecision), pokeData.Val)
+			assert.Equal(t, bn.DecFixedPoint(100, chronicle.ScribePricePrecision), pokeData.Val)
 			assert.Equal(t, musigTime, pokeData.Age)
 			assert.Equal(t, musigCommitment, schnorrData.Commitment)
 			assert.Equal(t, musigSignature, schnorrData.Signature)
-			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.tryUpdate(ctx)
+		sw.createRelayCall(ctx)
 		assert.True(t, pokeCalled)
 	})
 
@@ -186,19 +203,26 @@ func TestOpScribeWorker(t *testing.T) {
 		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return []types.Address{testFeed}, []uint8{1}, nil
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed},
+					FeedIndices: []uint8{1},
+				},
+				nil,
+			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
@@ -210,7 +234,7 @@ func TestOpScribeWorker(t *testing.T) {
 						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
-							Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+							Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 							Age: musigTime,
 							Optimistic: []messages.MuSigMetaOptimistic{{
 								ECDSASignature: musigOpSignature,
@@ -224,7 +248,7 @@ func TestOpScribeWorker(t *testing.T) {
 			}
 		}
 
-		sw.tryUpdate(ctx)
+		sw.createRelayCall(ctx)
 	})
 
 	t.Run("old signature", func(t *testing.T) {
@@ -239,19 +263,26 @@ func TestOpScribeWorker(t *testing.T) {
 		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return []types.Address{testFeed}, []uint8{1}, nil
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed},
+					FeedIndices: []uint8{1},
+				},
+				nil,
+			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
@@ -263,7 +294,7 @@ func TestOpScribeWorker(t *testing.T) {
 						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
-							Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 							Age: musigTime,
 							Optimistic: []messages.MuSigMetaOptimistic{{
 								ECDSASignature: musigOpSignature,
@@ -277,7 +308,7 @@ func TestOpScribeWorker(t *testing.T) {
 			}
 		}
 
-		sw.tryUpdate(ctx)
+		sw.createRelayCall(ctx)
 	})
 
 	t.Run("broken message", func(t *testing.T) {
@@ -316,7 +347,7 @@ func TestOpScribeWorker(t *testing.T) {
 				MuSigMessage: &messages.MuSigMessage{
 					MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 						Wat: "ETH/USD",
-						Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+						Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 						Age: time.Now(),
 					}},
 				},
@@ -338,7 +369,7 @@ func TestOpScribeWorker(t *testing.T) {
 				MuSigMessage: &messages.MuSigMessage{
 					MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 						Wat: "ETH/USD",
-						Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+						Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 						Age: time.Now(),
 						Optimistic: []messages.MuSigMetaOptimistic{{
 							ECDSASignature: types.Signature{},
@@ -360,19 +391,26 @@ func TestOpScribeWorker(t *testing.T) {
 				ctx := context.Background()
 				mockLogger.InfoFn = func(args ...any) {}
 				mockLogger.DebugFn = func(args ...any) {}
+				mockContract.ClientFn = func() rpc.RPC { return nil }
 				mockContract.AddressFn = func() types.Address { return types.Address{} }
-				mockContract.WatFn = func(ctx context.Context) (string, error) {
-					return "ETH/USD", nil
+				mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+					return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 				}
-				mockContract.BarFn = func(ctx context.Context) (int, error) {
-					return 1, nil
+				mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+					return mock.NewTypedCaller[int](t).MockResult(1, nil)
 				}
-				mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-					return []types.Address{testFeed}, []uint8{1}, nil
+				mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+					return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+						chronicle.FeedsResult{
+							Feeds:       []types.Address{testFeed},
+							FeedIndices: []uint8{1},
+						},
+						nil,
+					)
 				}
-				mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-					return contract.PokeData{
-						Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+				mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+					return chronicle.PokeData{
+						Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 						Age: time.Now().Add(-1 * time.Minute),
 					}, nil
 				}
@@ -381,7 +419,7 @@ func TestOpScribeWorker(t *testing.T) {
 					return []*messages.MuSigSignature{m}
 				}
 
-				sw.tryUpdate(ctx)
+				sw.createRelayCall(ctx)
 			})
 		}
 	})
@@ -398,19 +436,26 @@ func TestOpScribeWorker(t *testing.T) {
 		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return []types.Address{testFeed}, []uint8{1}, nil
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed},
+					FeedIndices: []uint8{1},
+				},
+				nil,
+			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
 			}, nil
 		}
@@ -422,7 +467,7 @@ func TestOpScribeWorker(t *testing.T) {
 						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
-							Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 							Age: musigTime,
 							Optimistic: []messages.MuSigMetaOptimistic{{
 								ECDSASignature: musigOpSignature,
@@ -436,104 +481,38 @@ func TestOpScribeWorker(t *testing.T) {
 			}
 		}
 
-		sw.tryUpdate(ctx)
+		sw.createRelayCall(ctx)
 	})
 
-	t.Run("wat call error", func(t *testing.T) {
+	t.Run("call error", func(t *testing.T) {
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "", errors.New("error")
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(chronicle.FeedsResult{}, errors.New("foo"))
+		}
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-15 * time.Minute),
+			}, nil
+		}
 		errLogCalled := false
 		mockLogger.ErrorFn = func(args ...any) {
 			errLogCalled = true
 		}
 
-		sw.tryUpdate(ctx)
-		assert.True(t, errLogCalled)
-	})
-
-	t.Run("read call error", func(t *testing.T) {
-		mockLogger.reset(t)
-		mockContract.reset(t)
-		mockMuSigStore.reset(t)
-
-		ctx := context.Background()
-		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
-		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{}, errors.New("error")
-		}
-
-		errLogCalled := false
-		mockLogger.ErrorFn = func(args ...any) {
-			errLogCalled = true
-		}
-
-		sw.tryUpdate(ctx)
-		assert.True(t, errLogCalled)
-	})
-
-	t.Run("bar call error", func(t *testing.T) {
-		mockLogger.reset(t)
-		mockContract.reset(t)
-		mockMuSigStore.reset(t)
-
-		ctx := context.Background()
-		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
-		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{}, errors.New("error")
-		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 0, errors.New("network error")
-		}
-
-		errLogCalled := false
-		mockLogger.ErrorFn = func(args ...any) {
-			errLogCalled = true
-		}
-
-		sw.tryUpdate(ctx)
-		assert.True(t, errLogCalled)
-	})
-
-	t.Run("feeds call error", func(t *testing.T) {
-		mockLogger.reset(t)
-		mockContract.reset(t)
-		mockMuSigStore.reset(t)
-
-		ctx := context.Background()
-		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.WatFn = func(ctx context.Context) (string, error) {
-			return "ETH/USD", nil
-		}
-		mockContract.ReadFn = func(ctx context.Context) (contract.PokeData, error) {
-			return contract.PokeData{}, errors.New("error")
-		}
-		mockContract.BarFn = func(ctx context.Context) (int, error) {
-			return 1, nil
-		}
-		mockContract.FeedsFn = func(ctx context.Context) ([]types.Address, []uint8, error) {
-			return nil, nil, errors.New("error")
-		}
-
-		errLogCalled := false
-		mockLogger.ErrorFn = func(args ...any) {
-			errLogCalled = true
-		}
-
-		sw.tryUpdate(ctx)
+		sw.createRelayCall(ctx)
 		assert.True(t, errLogCalled)
 	})
 }

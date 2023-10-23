@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"math/big"
@@ -38,6 +38,7 @@ var (
 	abiOpScribe    *goethABI.Contract
 	abiWatRegistry *goethABI.Contract
 	abiChainlog    *goethABI.Contract
+	abiMulticall3  *goethABI.Contract
 )
 
 func init() {
@@ -71,6 +72,7 @@ func init() {
 		`bar()(uint8 bar)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
 		`poke(PokeData pokeData, SchnorrData schnorrData)`,
+		`poke_optimized_7136211(PokeData pokeData, SchnorrData schnorrData)`,
 	)
 
 	abiOpScribe, _ = abi.ParseSignatures(
@@ -89,6 +91,7 @@ func init() {
 		`opChallengePeriod()(uint16 opChallengePeriod)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
 		`opPoke(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
+		`opPoke_optimized_397084999(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
 	)
 
 	abiWatRegistry, _ = abi.ParseSignatures(
@@ -99,6 +102,18 @@ func init() {
 	abiChainlog, _ = abi.ParseSignatures(
 		`tryGet(bytes32 key)(bool, address)`,
 	)
+}
+
+type SecondsDuration int64
+
+func (s SecondsDuration) Duration() time.Duration {
+	return time.Duration(s) * time.Second
+}
+
+type Bytes32String []byte
+
+func (b Bytes32String) String() string {
+	return bytes32ToString(b)
 }
 
 type PokeData struct {
@@ -134,7 +149,7 @@ type ECDSADataStruct struct {
 
 func toPokeDataStruct(p PokeData) PokeDataStruct {
 	return PokeDataStruct{
-		Val: p.Val.RawBigInt(),
+		Val: p.Val.SetPrec(ScribePricePrecision).RawBigInt(),
 		Age: uint32(p.Age.Unix()),
 	}
 }
