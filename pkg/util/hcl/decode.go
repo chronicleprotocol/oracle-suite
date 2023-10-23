@@ -701,7 +701,6 @@ var (
 	rangeTy       = reflect.TypeOf((*hcl.Range)(nil)).Elem()
 	ctyValTy      = reflect.TypeOf((*cty.Value)(nil)).Elem()
 	bigIntTy      = reflect.TypeOf((*big.Int)(nil)).Elem()
-	bigIntPtrTy   = reflect.TypeOf((*big.Int)(nil))
 	bigFloatTy    = reflect.TypeOf((*big.Float)(nil)).Elem()
 	addressTy     = reflect.TypeOf((*types.Address)(nil)).Elem()
 	stringTy      = reflect.TypeOf("")
