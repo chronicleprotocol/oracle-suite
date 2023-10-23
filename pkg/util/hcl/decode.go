@@ -974,14 +974,19 @@ func fromCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc
 	}
 }
 
+// toCtyMapper is a mapping function that maps any types to cty.Value.
 func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc { //nolint:gocyclo
 	if dst != ctyValTy {
 		return nil
 	}
 
+	// types.Address -> cty.Value
 	if src == addressTy {
 		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			addr := src.Interface().(types.Address)
+			addr, ok := src.Interface().(types.Address)
+			if !ok {
+				return fmt.Errorf("cannot encode from types.Address %s", src.Type().Name())
+			}
 			ctyVal := cty.StringVal(addr.String())
 			dst.Set(reflect.ValueOf(ctyVal))
 			return nil
@@ -1008,18 +1013,6 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 		}
 	}
 
-	// *big.Int -> cty.Value
-	if src == bigIntPtrTy {
-		return func(_ *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			val, ok := src.Interface().(*big.Int)
-			if !ok {
-				return fmt.Errorf("cannot encode from *big.Int %s", src.Type().Name())
-			}
-			dst.Set(reflect.ValueOf(cty.NumberUIntVal(val.Uint64())))
-			return nil
-		}
-	}
-
 	// big.Float -> cty.Value
 	if src == bigFloatTy {
 		return func(_ *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
@@ -1037,12 +1030,12 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 	// bool -> cty.Value
 	// int -> cty.Value
 	// uint -> cty.Value
-	// flaot -> cty.Value
+	// float -> cty.Value
 	// slice -> cty.Value
 	// map -> cty.Value
 	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 		// Try to use marshaler interfaces.
-		if src.CanAddr() {
+		if src.CanAddr() { // i.e. *config.URL
 			if u, ok := src.Addr().Interface().(Marshaler); ok {
 				ctyVal, err := u.MarshalHCL()
 				if err != nil {
@@ -1060,7 +1053,7 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 				dst.Set(reflect.ValueOf(ctyVal))
 				return nil
 			}
-		} else {
+		} else { // i.e. origin.ContractAddresses
 			if u, ok := src.Interface().(Marshaler); ok {
 				ctyVal, err := u.MarshalHCL()
 				if err != nil {
