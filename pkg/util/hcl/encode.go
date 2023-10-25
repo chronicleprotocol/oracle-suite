@@ -69,7 +69,7 @@ func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error
 	return nil
 }
 
-func populateBody(ptrVal reflect.Value, body *hclwrite.Body) error {
+func populateBody(ptrVal reflect.Value, body *hclwrite.Body) error { //nolint:gocyclo
 	rv := derefValue(ptrVal)
 	ty := rv.Type()
 	meta, diags := getStructMeta(ty)
@@ -99,21 +99,22 @@ func populateBody(ptrVal reflect.Value, body *hclwrite.Body) error {
 
 		fieldRv := derefValue(fieldVal)
 		if block.Multiple {
-			if fieldRv.Kind() == reflect.Map {
+			switch fieldRv.Kind() {
+			case reflect.Map:
 				for it := fieldRv.MapRange(); it.Next(); {
 					err := EncodeAsBlock(it.Value().Interface(), block.Name, body)
 					if err != nil {
 						return err
 					}
 				}
-			} else if fieldRv.Kind() == reflect.Slice {
+			case reflect.Slice:
 				for i := 0; i < fieldRv.Len(); i++ {
 					err := EncodeAsBlock(fieldRv.Index(i).Interface(), block.Name, body)
 					if err != nil {
 						return err
 					}
 				}
-			} else {
+			default:
 				return fmt.Errorf("unknown multiple blocks to encode %T as HCL expression", fieldVal.Interface())
 			}
 		} else {
