@@ -136,7 +136,6 @@ func (c configNode) PostEncodeBody(body *hclwrite.Body, _ interface{}) error {
 		if err != nil {
 			return err
 		}
-		body.AppendNewline()
 	}
 	return nil
 }

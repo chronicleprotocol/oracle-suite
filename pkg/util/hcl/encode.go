@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -19,12 +17,9 @@ type PostEncodeBody interface {
 }
 
 func Encode(val interface{}, body *hclwrite.Body) error {
-	rv := reflect.ValueOf(val)
+	ptrVal := reflect.ValueOf(val)
+	rv := derefValue(ptrVal)
 	ty := rv.Type()
-	if ty.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-		ty = rv.Type()
-	}
 	if ty.Kind() != reflect.Struct {
 		return fmt.Errorf("value is %s, not struct", ty.Kind())
 	}
@@ -32,18 +27,9 @@ func Encode(val interface{}, body *hclwrite.Body) error {
 }
 
 func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error {
-	rv := reflect.ValueOf(val)
+	ptrVal := reflect.ValueOf(val)
+	rv := derefValue(ptrVal)
 	ty := rv.Type()
-	if ty.Kind() == reflect.Ptr {
-		if !rv.IsValid() {
-			return nil
-		}
-		if rv.IsNil() {
-			return nil
-		}
-		rv = rv.Elem()
-		ty = rv.Type()
-	}
 	if ty.Kind() != reflect.Struct {
 		return fmt.Errorf("value is %s, not struct", ty.Kind())
 	}
@@ -53,15 +39,25 @@ func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error
 		return fmt.Errorf(diags.Error())
 	}
 
-	labels := make([]string, len(meta.Labels))
-	for i, lf := range meta.Labels {
+	if blockType == "ethereum" {
+		fmt.Println("ethereum")
+	}
+
+	var labels []string
+	for _, lf := range meta.Labels {
 		fieldVal := rv.FieldByIndex(lf.Reflect.Index)
-		if label, ok := fieldVal.Interface().(string); ok {
-			labels[i] = label
+
+		var label string
+		if err := mapper.Map(fieldVal.Interface(), &label); err != nil {
+			return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
 		}
-		if pair, ok := fieldVal.Interface().(value.Pair); ok {
-			labels[i] = pair.String()
+		if !lf.Optional && label == "" {
+			return fmt.Errorf("missing block label: %s", blockType)
 		}
+		labels = append(labels, label)
+	}
+	if len(labels) != len(meta.Labels) {
+		return fmt.Errorf("missing block label")
 	}
 
 	newBlock := hclwrite.NewBlock(blockType, labels)
@@ -73,7 +69,8 @@ func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error
 	return nil
 }
 
-func populateBody(rv reflect.Value, body *hclwrite.Body) error {
+func populateBody(ptrVal reflect.Value, body *hclwrite.Body) error {
+	rv := derefValue(ptrVal)
 	ty := rv.Type()
 	meta, diags := getStructMeta(ty)
 	if diags.HasErrors() {
@@ -93,28 +90,57 @@ func populateBody(rv reflect.Value, body *hclwrite.Body) error {
 		}
 
 		fieldVal := rv.FieldByIndex(block.Reflect.Index)
-		fieldRv := reflect.ValueOf(fieldVal.Interface())
+		if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
+			if !block.Optional {
+				return fmt.Errorf("missing block: %s", block.Name)
+			}
+			continue
+		}
+
+		fieldRv := derefValue(fieldVal)
 		if block.Multiple {
-			for i := 0; i < fieldRv.Len(); i++ {
-				err := EncodeAsBlock(fieldRv.Index(i).Interface(), block.Name, body)
-				if err != nil {
-					return err
+			if fieldRv.Kind() == reflect.Map {
+				for it := fieldRv.MapRange(); it.Next(); {
+					err := EncodeAsBlock(it.Value().Interface(), block.Name, body)
+					if err != nil {
+						return err
+					}
 				}
-				body.AppendNewline()
+			} else if fieldRv.Kind() == reflect.Slice {
+				for i := 0; i < fieldRv.Len(); i++ {
+					err := EncodeAsBlock(fieldRv.Index(i).Interface(), block.Name, body)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				return fmt.Errorf("unknown multiple blocks to encode %T as HCL expression", fieldVal.Interface())
 			}
 		} else {
 			err := EncodeAsBlock(fieldVal.Interface(), block.Name, body)
 			if err != nil {
 				return err
 			}
-			body.AppendNewline()
 		}
 	}
 
 	for _, attr := range meta.Attrs {
+		if attr.Ignore {
+			continue
+		}
 		fieldVal := rv.FieldByIndex(attr.Reflect.Index)
 
 		if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
+			if !attr.Optional {
+				return fmt.Errorf("missing attribute: %s", attr.Name)
+			}
+			continue
+		}
+
+		if fieldVal.IsZero() { // is null value or empty value
+			if !attr.Optional {
+				return fmt.Errorf("missing attribute: %s", attr.Name)
+			}
 			continue
 		}
 

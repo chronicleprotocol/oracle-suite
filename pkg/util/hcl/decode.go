@@ -26,6 +26,8 @@ import (
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
 
 type stringize interface {
@@ -703,6 +705,7 @@ var (
 	bigIntTy      = reflect.TypeOf((*big.Int)(nil)).Elem()
 	bigFloatTy    = reflect.TypeOf((*big.Float)(nil)).Elem()
 	addressTy     = reflect.TypeOf((*types.Address)(nil)).Elem()
+	pairTy        = reflect.TypeOf((*value.Pair)(nil)).Elem()
 	stringTy      = reflect.TypeOf("")
 	anyTy         = reflect.TypeOf((*any)(nil)).Elem()
 )
@@ -1106,18 +1109,19 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 			dstMap := make(map[string]cty.Value)
 			for it := src.MapRange(); it.Next(); {
 				keyRv := reflect.New(stringTy)
-				if err := m.MapRefl(it.Value(), keyRv); err != nil {
+				if err := m.MapRefl(it.Key(), keyRv); err != nil {
 					return err
 				}
-				key := keyRv.Interface().(string)
+				key := derefValue(keyRv).Interface().(string)
 				if key == "" {
 					continue
 				}
-				val := reflect.New(dst.Type())
-				if err := m.MapRefl(it.Value(), val); err != nil {
+				valRv := reflect.New(dst.Type())
+				if err := m.MapRefl(it.Value(), valRv); err != nil {
 					return err
 				}
-				dstMap[key] = *(val.Interface().(*cty.Value))
+				val := derefValue(valRv).Interface().(cty.Value)
+				dstMap[key] = val
 			}
 			dst.Set(reflect.ValueOf(cty.MapVal(dstMap)))
 		default:
@@ -1144,6 +1148,14 @@ func strMapper(_ *anymapper.Mapper, _, dst reflect.Type) anymapper.MapFunc {
 			dst.Set(reflect.ValueOf(str))
 			return nil
 		}
+		if u, ok := val.(encoding.TextMarshaler); ok {
+			text, err := u.MarshalText()
+			if err != nil {
+				return err
+			}
+			dst.Set(reflect.ValueOf(string(text)))
+			return nil
+		}
 		return fmt.Errorf("unsupported type %s to String", src.Type())
 	}
 }
@@ -1153,4 +1165,5 @@ func init() {
 	mapper.Context.StrictTypes = true
 	mapper.Mappers[ctyValTy] = ctyMapper
 	mapper.Mappers[stringTy] = strMapper
+	mapper.Mappers[pairTy] = strMapper
 }

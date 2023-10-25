@@ -1,12 +1,42 @@
 package config
 
 import (
+	netURL "net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zclconf/go-cty/cty"
 )
+
+func TestURL_MarshalHCL(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		expectedCty cty.Value
+		wantErr     bool
+	}{
+		{
+			name:        "valid URL",
+			url:         "https://example.com",
+			expectedCty: cty.StringVal("https://example.com"),
+			wantErr:     false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			url, _ := netURL.Parse(test.url)
+			u := URL(*url)
+			cty, err := u.MarshalHCL()
+			if test.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expectedCty, cty)
+			}
+		})
+	}
+}
 
 func TestURL_UnmarshalHCL(t *testing.T) {
 	tests := []struct {
