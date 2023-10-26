@@ -98,9 +98,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
 		value: (.optimistic_poke // {expiration:null,spread:null,interval:null}),
 	}'
-} | sort | jq -s 'from_entries' > config/relays00.json
-
-#jq -c "{env,chain,wat,address}" <<<"$__medians" | sort > "$1/deployments/medians.jsonl"
+} | sort | jq -s 'from_entries' > config/relays.json
 
 #TODO go through all contracts and make sure they are in the relay.json config with 0 values, so they can be easily fixed
 #todo write an adr
