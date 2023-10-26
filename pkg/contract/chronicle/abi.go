@@ -106,18 +106,6 @@ func init() {
 	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
 }
 
-type SecondsDuration int64
-
-func (s SecondsDuration) Duration() time.Duration {
-	return time.Duration(s) * time.Second
-}
-
-type Bytes32String []byte
-
-func (b Bytes32String) String() string {
-	return bytes32ToString(b)
-}
-
 type PokeData struct {
 	Val *bn.DecFixedPointNumber
 	Age time.Time
