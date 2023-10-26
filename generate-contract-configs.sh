@@ -74,6 +74,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 } > config/config-contracts.hcl
 
 {
+# the commented code might still be useful
 #	jq <<<"$__medians" -c '{
 #		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
 #		value: (.poke // {expiration:null,spread:null,interval:null}),
@@ -88,15 +89,15 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 #	}'
 	jq <<<"$_CONTRACTS" -c '.[] | select(.IMedian) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
-		value: (.poke // {"expiration":null,"spread":null,"interval":null}),
+		value: (if .poke == null or (.poke | length) == 0 then {expiration:null,spread:null,interval:null} else .poke end),
 	}'
 	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribe) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke"),
-		value: (.poke // {expiration:null,spread:null,interval:null}),
+		value: (if .poke == null or (.poke | length) == 0 then {expiration:null,spread:null,interval:null} else .poke end),
 	}'
 	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribeOptimistic) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
-		value: (.poke_optimistic // {expiration:null,spread:null,interval:null}),
+		value: (if .poke_optimistic == null or (.poke_optimistic | length) == 0 then {expiration:null,spread:null,interval:null} else .poke_optimistic end),
 	}'
 } | sort | jq -s 'from_entries' > config/relays.json
 
