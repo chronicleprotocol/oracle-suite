@@ -45,6 +45,8 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, "MKR/USD", cfg.OptimisticScribe[0].DataModel)
 				assert.Equal(t, float64(3), cfg.OptimisticScribe[0].Spread)
 				assert.Equal(t, uint32(500), cfg.OptimisticScribe[0].Expiration)
+				assert.Equal(t, float64(4), cfg.OptimisticScribe[0].OptimisticSpread)
+				assert.Equal(t, uint32(600), cfg.OptimisticScribe[0].OptimisticExpiration)
 				assert.Equal(t, []types.Address{
 					types.MustAddressFromHex("0x4455667788990011223344556677889900112233"),
 					types.MustAddressFromHex("0x5566778899001122334455667788990011223344"),
