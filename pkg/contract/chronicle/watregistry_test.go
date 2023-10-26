@@ -45,7 +45,7 @@ func TestWatRegistry_Bar(t *testing.T) {
 			nil,
 		)
 
-	bar, err := watRegistry.Bar(ctx, "ETH/USD")
+	bar, err := watRegistry.Bar("ETH/USD").Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, 13, bar)
 }
@@ -84,7 +84,7 @@ func TestWatRegistry_Feeds(t *testing.T) {
 			nil,
 		)
 
-	feeds, err := watRegistry.Feeds(ctx, "ETH/USD")
+	feeds, err := watRegistry.Feeds("ETH/USD").Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, expectedFeeds, feeds)
 }

@@ -99,7 +99,7 @@ func init() {
 	)
 
 	abiChainlog, _ = abi.ParseSignatures(
-		`tryGet(bytes32 key)(bool, address)`,
+		`tryGet(bytes32 key)(bool ok, address address)`,
 	)
 
 	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]

@@ -146,9 +146,6 @@ func (a *AggregatedCallables) DecodeTo(data []byte, res any) error {
 			if multiCallResIdx >= len(multiCallRes) {
 				continue
 			}
-			if !resRelf.Index(i).CanAddr() {
-				return fmt.Errorf("unable to decode element %d: not addressable", i)
-			}
 			if err := safeDecode(resRelf.Index(i), dec, multiCallRes[multiCallResIdx].Data); err != nil {
 				return fmt.Errorf("unable to decode element %d: %w", i, err)
 			}

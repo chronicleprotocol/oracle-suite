@@ -16,13 +16,10 @@
 package chronicle
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 )
 
 type WatRegistry struct {
@@ -41,40 +38,28 @@ func (w *WatRegistry) Address() types.Address {
 	return w.address
 }
 
-func (w *WatRegistry) Bar(ctx context.Context, wat string) (int, error) {
-	res, _, err := w.client.Call(
-		ctx,
-		types.Call{
-			To:    &w.address,
-			Input: errutil.Must(abiWatRegistry.Methods["bar"].EncodeArgs(stringToBytes32(wat))),
+func (w *WatRegistry) Bar(wat string) contract.TypedSelfCaller[int] {
+	method := abiWatRegistry.Methods["bar"]
+	return contract.NewTypedCall[int](
+		contract.CallOpts{
+			Client:       w.client,
+			Address:      w.address,
+			Encoder:      contract.NewCallEncoder(method, stringToBytes32(wat)),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiWatRegistry),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return 0, fmt.Errorf("watRegistry: bar query failed: %w", err)
-	}
-	var bar uint8
-	if err := abiWatRegistry.Methods["bar"].DecodeValues(res, &bar); err != nil {
-		return 0, fmt.Errorf("watRegistry: bar query failed: %w", err)
-	}
-	return int(bar), nil
 }
 
-func (w *WatRegistry) Feeds(ctx context.Context, wat string) ([]types.Address, error) {
-	res, _, err := w.client.Call(
-		ctx,
-		types.Call{
-			To:    &w.address,
-			Input: errutil.Must(abiWatRegistry.Methods["feeds"].EncodeArgs(stringToBytes32(wat))),
+func (w *WatRegistry) Feeds(wat string) contract.TypedSelfCaller[[]types.Address] {
+	method := abiWatRegistry.Methods["feeds"]
+	return contract.NewTypedCall[[]types.Address](
+		contract.CallOpts{
+			Client:       w.client,
+			Address:      w.address,
+			Encoder:      contract.NewCallEncoder(method, stringToBytes32(wat)),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiWatRegistry),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return nil, fmt.Errorf("watRegistry: feeds query failed: %w", err)
-	}
-	var feeds []types.Address
-	if err := abiWatRegistry.Methods["feeds"].DecodeValues(res, &feeds); err != nil {
-		return nil, fmt.Errorf("watRegistry: feeds query failed: %w", err)
-	}
-	return feeds, nil
 }
