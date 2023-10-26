@@ -30,36 +30,65 @@ function findAllConfigs() {
 	done
 }
 
+__medians="$(jq -c 'select(.enabled==true) | del(.enabled)' "$1/deployments/medians.jsonl")"
+__relays="$(jq -c '.' "config/relays.json")"
+
+_CONTRACT_MAP="$({
+	findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog)$'
+	findAllConfigs "$1/deployments" '^TorAddressRegister_Feeds' 'name'
+} | jq -c '{(.environment+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add')"
+
+_CONTRACTS="$({
+	findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
+	| jq -c --argjson p "$__relays" \
+	'{
+		env: .environment,
+		chain,
+		wat: .IScribe.wat,
+		address,
+		chain_id:.chainId,
+		IScribe: (.IScribe != null),
+		IScribeOptimistic: (.IScribeOptimistic != null),
+		challenge_period:.IScribeOptimistic.opChallengePeriod,
+	}	+ {
+		poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")]},
+		optimistic_poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")],
+	} | del(..|nulls)'
+	jq <<<"$__medians" --argjson p "$__relays" -c '{env,chain,wat,address,IMedian:true} + {
+		poke:$p[(.env+"-"+.chain+"-"+.wat+"-median-poke")],
+	} | del(..|nulls)'
+} | sort | jq -s '.')"
+
 _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 
 {
 	echo "variables {"
-
-	echo -n "contract_map = "
-	{
-		findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog)$'
-		findAllConfigs "$1/deployments" '^TorAddressRegister_Feeds_1$' 'name'
-	} | jq -c '{(.environment+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add'
-
-	echo -n "contracts = "
-	{
-		findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
-		| jq -c \
-		--argjson p "$(jq -c '.' "config/relays.json")" \
-		'{
-			env: .environment,
-			chain,
-			chain_id:.chainId,
-			IScribe: (.IScribe != null),
-			wat: .IScribe.wat,
-			IScribeOptimistic: (.IScribeOptimistic != null),
-			address,
-			challenge_period:.IScribeOptimistic.opChallengePeriod,
-		} + ($p[(.environment + "-" + .chain + "-" + .IScribe.wat)]) | del(..|nulls)'
-		jq -c 'select(.enabled==true) | del(.enabled)' "$1/deployments/medians.jsonl"
-	} | sort | jq -s '.'
-
+	echo "contract_map = $_CONTRACT_MAP"
+	echo "contracts = $_CONTRACTS"
 	echo "models = $_MODELS"
-
 	echo "}"
 } > config/config-contracts.hcl
+
+{
+	jq <<<"$__medians" -c '{
+		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
+		value: (.poke // {expiration:null,spread:null,interval:null}),
+	}'
+#	jq <<<"$_CONTRACTS" -c '.[] | select(.IMedian) | {
+#		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
+#		value: (.poke // {"expiration":null,"spread":null,"interval":null}),
+#	}'
+	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribe) | {
+		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke"),
+		value: (.poke // {expiration:null,spread:null,interval:null}),
+	}'
+	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribeOptimistic) | {
+		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
+		value: (.optimistic_poke // {expiration:null,spread:null,interval:null}),
+	}'
+} | sort | jq -s 'from_entries' > config/relays.json
+
+#jq -c "{env,chain,wat,address}" <<<"$__medians" | sort > "$1/deployments/medians.jsonl"
+
+#TODO go through all contracts and make sure they are in the relay.json config with 0 values, so they can be easily fixed
+#todo write an adr
