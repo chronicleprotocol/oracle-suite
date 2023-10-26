@@ -18,20 +18,19 @@ package origin
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"sort"
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
+	"golang.org/x/exp/maps"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
@@ -96,7 +95,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
 
-	totals := make(map[value.Pair]*big.Float)
+	totals := make(map[value.Pair]*bn.DecFloatPointNumber)
 
 	var calls []types.Call
 	var pools []*ComposableStablePool
@@ -119,7 +118,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 		pools = append(pools, c)
 		calls = append(calls, errutil.Must(c.createInitCalls())...)
 
-		totals[pair] = new(big.Float).SetInt64(0)
+		totals[pair] = bn.DecFloatPoint(0)
 	}
 
 	if len(calls) < 1 || len(pools) < 1 {
@@ -200,18 +199,15 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 		for _, c := range pools {
 			baseToken := tokenDetails[c.config.Pair.Base]
 			quoteToken := tokenDetails[c.config.Pair.Quote]
-			amountIn := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)
+			amountIn := bn.DecFloatPoint(10).Exp(bn.DecFloatPoint(baseToken.decimals))
 			amountOut, _, err := c.calcAmountOut(baseToken, quoteToken, amountIn)
 			if err != nil {
 				points[c.config.Pair] = datapoint.Point{Error: err}
 				return nil, err
 			}
 			// price = amountOut / 10 ^ quoteDecimals
-			price := new(big.Float).Quo(
-				new(big.Float).SetInt(amountOut),
-				new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(quoteToken.decimals)), nil)),
-			)
-			totals[c.config.Pair] = totals[c.config.Pair].Add(totals[c.config.Pair], price)
+			price := amountOut.Div(bn.DecFloatPoint(10).Exp(bn.DecFloatPoint(quoteToken.decimals)))
+			totals[c.config.Pair] = totals[c.config.Pair].Add(price)
 		}
 	}
 
@@ -219,12 +215,12 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 		if points[pair].Error != nil {
 			continue
 		}
-		avgPrice := new(big.Float).Quo(totals[pair], new(big.Float).SetUint64(uint64(len(b.blocks))))
+		avgPrice := totals[pair].Div(bn.DecFloatPoint(len(b.blocks)))
 
 		// Invert the price if inverted price
 		_, baseIndex, quoteIndex, _ := b.contractAddresses.ByPair(pair)
 		if baseIndex > quoteIndex {
-			avgPrice = new(big.Float).Quo(new(big.Float).SetUint64(1), avgPrice)
+			avgPrice = bn.DecFloatPoint(1).Div(avgPrice)
 		}
 
 		tick := value.NewTick(pair, avgPrice, nil)

@@ -2,108 +2,108 @@ package origin
 
 import (
 	"fmt"
-	"math/big"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-var bigIntZero = big.NewInt(0)
-var bigIntOne = big.NewInt(1)
-var bigIntTwo = big.NewInt(2)
-var bigIntEther = big.NewInt(ether)
+var bigIntZero = bn.DecFloatPoint(0)
+var bigIntOne = bn.DecFloatPoint(1)
+var bigIntTwo = bn.DecFloatPoint(2)
+var bigIntEther = bn.DecFloatPoint(ether)
 
 const AmpPrecision = 1e3
 
-var ampPrecision = big.NewInt(AmpPrecision)
+var ampPrecision = bn.DecFloatPoint(AmpPrecision)
 
-func _mulDownFixed(a *big.Int, b *big.Int) *big.Int {
-	var ret = new(big.Int).Mul(a, b)
-	return new(big.Int).Div(ret, bigIntEther)
+func _mulDownFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	var ret = a.Mul(b)
+	return ret.Div(bigIntEther)
 }
 
-func _mulUpFixed(a *big.Int, b *big.Int) *big.Int {
-	var ret = new(big.Int).Mul(a, b)
+func _mulUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	var ret = a.Mul(b)
 	if ret.Cmp(bigIntZero) == 0 {
 		return ret
 	}
-	return new(big.Int).Add(new(big.Int).Div(new(big.Int).Sub(ret, bigIntOne), bigIntEther), bigIntOne)
+	return ret.Sub(bigIntOne).Div(bigIntEther).Add(bigIntOne)
 }
 
-func _divRounding(a *big.Int, b *big.Int, roundUp bool) *big.Int {
+func _divRounding(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber, roundUp bool) *bn.DecFloatPointNumber {
 	if roundUp {
 		return _divUp(a, b)
 	}
 	return _divDown(a, b)
 }
 
-func _divDown(a *big.Int, b *big.Int) *big.Int {
-	return new(big.Int).Div(a, b)
+func _divDown(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return a.Div(b)
 }
 
-func _divUp(a *big.Int, b *big.Int) *big.Int {
+func _divUp(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
-	return new(big.Int).Add(new(big.Int).Div(new(big.Int).Sub(a, bigIntOne), b), bigIntOne)
+	return a.Sub(bigIntOne).Div(b).Add(bigIntOne)
 }
 
-func _divUpFixed(a *big.Int, b *big.Int) *big.Int {
+func _divUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
-	aInflated := new(big.Int).Mul(a, bigIntEther)
-	return new(big.Int).Add(new(big.Int).Div(new(big.Int).Sub(aInflated, bigIntOne), b), bigIntOne)
+	aInflated := a.Mul(bigIntEther)
+	return aInflated.Sub(bigIntOne).Div(b).Add(bigIntOne)
 }
 
-func _divDownFixed(a *big.Int, b *big.Int) *big.Int {
+func _divDownFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
-	var ret = new(big.Int).Mul(a, bigIntEther)
-	return new(big.Int).Div(ret, b)
+	var ret = a.Mul(bigIntEther)
+	return ret.Div(b)
 }
 
-func _complementFixed(x *big.Int) *big.Int {
+func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	if x.Cmp(bigIntEther) < 0 {
-		return new(big.Int).Sub(bigIntEther, x)
+		return bigIntEther.Sub(x)
 	}
-	return big.NewInt(0)
+	return bn.DecFloatPoint(0)
 }
 
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L57
-func _calculateInvariant(amp *big.Int, balances []*big.Int, roundUp bool) (*big.Int, error) { //nolint:unparam
+func _calculateInvariant(amp *bn.DecFloatPointNumber, balances []*bn.DecFloatPointNumber, roundUp bool) ( //nolint:unparam
+	*bn.DecFloatPointNumber,
+	error,
+) {
+
 	var sum = bigIntZero
 	var numTokens = len(balances)
-	var numTokensBi = big.NewInt(int64(numTokens))
+	var numTokensBi = bn.DecFloatPoint(numTokens)
 	for i := 0; i < numTokens; i++ {
-		sum = new(big.Int).Add(sum, balances[i])
+		sum = sum.Add(balances[i])
 	}
 	if sum.Cmp(bigIntZero) == 0 {
 		return bigIntZero, nil
 	}
-	var prevInvariant *big.Int
+	var prevInvariant *bn.DecFloatPointNumber
 	var invariant = sum
-	var ampTotal = new(big.Int).Mul(amp, numTokensBi)
+	var ampTotal = amp.Mul(numTokensBi)
 	for i := 0; i < 255; i++ {
-		var PD = new(big.Int).Mul(balances[0], numTokensBi) // P_D
+		var PD = balances[0].Mul(numTokensBi) // P_D
 		for j := 1; j < numTokens; j++ {
-			PD = _divRounding(new(big.Int).Mul(new(big.Int).Mul(PD, balances[j]), numTokensBi), invariant, roundUp)
+			PD = _divRounding(PD.Mul(balances[j]).Mul(numTokensBi), invariant, roundUp)
 		}
 		prevInvariant = invariant
 		invariant = _divRounding(
-			new(big.Int).Add(
-				new(big.Int).Mul(new(big.Int).Mul(numTokensBi, invariant), invariant),
-				_divRounding(new(big.Int).Mul(new(big.Int).Mul(ampTotal, sum), PD), ampPrecision, roundUp),
-			),
-			new(big.Int).Add(
-				new(big.Int).Mul(new(big.Int).Add(numTokensBi, bigIntOne), invariant),
-				_divRounding(new(big.Int).Mul(new(big.Int).Sub(ampTotal, ampPrecision), PD), ampPrecision, !roundUp),
-			),
+			numTokensBi.Mul(invariant).Mul(invariant).Add(
+				_divRounding(ampTotal.Mul(sum).Mul(PD), ampPrecision, roundUp)),
+			numTokensBi.Add(bigIntOne).Mul(invariant).Add(
+				_divRounding(ampTotal.Sub(ampPrecision).Mul(PD), ampPrecision, !roundUp)),
 			roundUp,
 		)
 		if invariant.Cmp(prevInvariant) > 0 {
-			if new(big.Int).Sub(invariant, prevInvariant).Cmp(bigIntOne) <= 0 {
+			if invariant.Sub(prevInvariant).Cmp(bigIntOne) <= 0 {
 				return invariant, nil
 			}
-		} else if new(big.Int).Sub(prevInvariant, invariant).Cmp(bigIntOne) <= 0 {
+		} else if prevInvariant.Sub(invariant).Cmp(bigIntOne) <= 0 {
 			return invariant, nil
 		}
 	}
@@ -113,44 +113,42 @@ func _calculateInvariant(amp *big.Int, balances []*big.Int, roundUp bool) (*big.
 // _calcBptOutGivenExactTokensIn implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L201
 func _calcBptOutGivenExactTokensIn(
-	amp *big.Int,
-	balances []*big.Int,
-	amountsIn []*big.Int,
-	bptTotalSupply, invariant, swapFeePercentage *big.Int,
-) (*big.Int, *big.Int, error) {
+	amp *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
+	amountsIn []*bn.DecFloatPointNumber,
+	bptTotalSupply, invariant, swapFeePercentage *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
-	feeAmountIn := big.NewInt(0)
-	sumBalances := big.NewInt(0)
+	feeAmountIn := bn.DecFloatPoint(0)
+	sumBalances := bn.DecFloatPoint(0)
 	for _, balance := range balances {
-		sumBalances.Add(sumBalances, balance)
+		sumBalances = sumBalances.Add(balance)
 	}
 
-	balanceRatiosWithFee := make([]*big.Int, len(amountsIn))
-	invariantRatioWithFees := big.NewInt(0)
+	balanceRatiosWithFee := make([]*bn.DecFloatPointNumber, len(amountsIn))
+	invariantRatioWithFees := bn.DecFloatPoint(0)
 	for i, balance := range balances {
 		currentWeight := _divDownFixed(balance, sumBalances)
-		balanceRatiosWithFee[i] = _divDownFixed(new(big.Int).Add(balance, amountsIn[i]), balance)
-		invariantRatioWithFees.Add(invariantRatioWithFees, _mulDownFixed(balanceRatiosWithFee[i], currentWeight))
+		balanceRatiosWithFee[i] = _divDownFixed(balance.Add(amountsIn[i]), balance)
+		invariantRatioWithFees = invariantRatioWithFees.Add(_mulDownFixed(balanceRatiosWithFee[i], currentWeight))
 	}
 
-	newBalances := make([]*big.Int, len(balances))
+	newBalances := make([]*bn.DecFloatPointNumber, len(balances))
 	for i, balance := range balances {
-		var amountInWithoutFee *big.Int
+		var amountInWithoutFee *bn.DecFloatPointNumber
 		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
-			nonTaxableAmount := _mulDownFixed(balance, new(big.Int).Sub(invariantRatioWithFees, big.NewInt(ether)))
-			taxableAmount := new(big.Int).Sub(amountsIn[i], nonTaxableAmount)
-			amountInWithoutFee = new(big.Int).Add(
-				nonTaxableAmount,
-				_mulDownFixed(
-					taxableAmount,
-					new(big.Int).Sub(big.NewInt(ether), swapFeePercentage),
-				),
-			)
+			nonTaxableAmount := _mulDownFixed(balance,
+				invariantRatioWithFees.Sub(bn.DecFloatPoint(ether)))
+			taxableAmount := amountsIn[i].Sub(nonTaxableAmount)
+			amountInWithoutFee = nonTaxableAmount.Add(_mulDownFixed(
+				taxableAmount,
+				bn.DecFloatPoint(ether).Sub(swapFeePercentage),
+			))
 		} else {
 			amountInWithoutFee = amountsIn[i]
 		}
-		feeAmountIn = feeAmountIn.Add(feeAmountIn, new(big.Int).Sub(amountsIn[i], amountInWithoutFee))
-		newBalances[i] = new(big.Int).Add(balance, amountInWithoutFee)
+		feeAmountIn = feeAmountIn.Add(amountsIn[i].Sub(amountInWithoutFee))
+		newBalances[i] = balance.Add(amountInWithoutFee)
 	}
 
 	newInvariant, err := _calculateInvariant(amp, newBalances, false)
@@ -159,86 +157,83 @@ func _calcBptOutGivenExactTokensIn(
 	}
 
 	invariantRatio := _divDownFixed(newInvariant, invariant)
-	if invariantRatio.Cmp(big.NewInt(ether)) > 0 {
-		return _mulDownFixed(bptTotalSupply, new(big.Int).Sub(invariantRatio, big.NewInt(ether))), feeAmountIn, nil
+	if invariantRatio.Cmp(bn.DecFloatPoint(ether)) > 0 {
+		return _mulDownFixed(bptTotalSupply, invariantRatio.Sub(bn.DecFloatPoint(ether))), feeAmountIn, nil
 	}
-	return big.NewInt(0), feeAmountIn, nil
+	return bn.DecFloatPoint(0), feeAmountIn, nil
 }
 
 // _calcTokenOutGivenExactBptIn implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L354
 func _calcTokenOutGivenExactBptIn(
-	amp *big.Int,
-	balances []*big.Int,
+	amp *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
 	tokenIndex int,
-	bptAmountIn *big.Int,
-	bptTotalSupply, invariant, swapFeePercentage *big.Int,
-) (*big.Int, *big.Int, error) {
+	bptAmountIn *bn.DecFloatPointNumber,
+	bptTotalSupply, invariant, swapFeePercentage *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
-	newInvariant := _mulUpFixed(_divUpFixed(new(big.Int).Sub(bptTotalSupply, bptAmountIn), bptTotalSupply), invariant)
+	newInvariant := _mulUpFixed(_divUpFixed(bptTotalSupply.Sub(bptAmountIn), bptTotalSupply), invariant)
 	newBalanceTokenIndex, err := _getTokenBalanceGivenInvariantAndAllOtherBalances(amp, balances, newInvariant, tokenIndex)
 	if err != nil {
 		return nil, nil, err
 	}
-	amountOutWithoutFee := new(big.Int).Sub(balances[tokenIndex], newBalanceTokenIndex)
+	amountOutWithoutFee := balances[tokenIndex].Sub(newBalanceTokenIndex)
 
-	sumBalances := big.NewInt(0)
+	sumBalances := bn.DecFloatPoint(0)
 	for _, balance := range balances {
-		sumBalances.Add(sumBalances, balance)
+		sumBalances = sumBalances.Add(balance)
 	}
 
 	currentWeight := _divDownFixed(balances[tokenIndex], sumBalances)
 	taxablePercentage := _complementFixed(currentWeight)
 
 	taxableAmount := _mulUpFixed(amountOutWithoutFee, taxablePercentage)
-	nonTaxableAmount := new(big.Int).Sub(amountOutWithoutFee, taxableAmount)
+	nonTaxableAmount := amountOutWithoutFee.Sub(taxableAmount)
 
 	feeOfTaxableAmount := _mulDownFixed(
 		taxableAmount,
-		new(big.Int).Sub(big.NewInt(ether), swapFeePercentage),
+		bn.DecFloatPoint(ether).Sub(swapFeePercentage),
 	)
 
-	feeAmount := new(big.Int).Sub(taxableAmount, feeOfTaxableAmount)
-	return new(big.Int).Add(nonTaxableAmount, feeOfTaxableAmount), feeAmount, nil
+	feeAmount := taxableAmount.Sub(feeOfTaxableAmount)
+	return nonTaxableAmount.Add(feeOfTaxableAmount), feeAmount, nil
 }
 
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L399
 func _getTokenBalanceGivenInvariantAndAllOtherBalances(
-	a *big.Int,
-	balances []*big.Int,
-	invariant *big.Int,
+	a *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
+	invariant *bn.DecFloatPointNumber,
 	tokenIndex int,
-) (*big.Int, error) {
+) (*bn.DecFloatPointNumber, error) {
 
 	var nTokens = len(balances)
-	var nTokensBi = big.NewInt(int64(nTokens))
-	var ampTotal = new(big.Int).Mul(a, nTokensBi)
+	var nTokensBi = bn.DecFloatPoint(nTokens)
+	var ampTotal = a.Mul(nTokensBi)
 	var sum = balances[0]
-	var PD = new(big.Int).Mul(balances[0], nTokensBi) // P_D
+	var PD = balances[0].Mul(nTokensBi) // P_D
 	for j := 1; j < nTokens; j++ {
-		PD = _divDown(new(big.Int).Mul(new(big.Int).Mul(PD, balances[j]), nTokensBi), invariant)
-		sum = new(big.Int).Add(sum, balances[j])
+		PD = _divDown(PD.Mul(balances[j]).Mul(nTokensBi), invariant)
+		sum = sum.Add(balances[j])
 	}
-	sum = new(big.Int).Sub(sum, balances[tokenIndex])
-	var inv2 = new(big.Int).Mul(invariant, invariant)
-	var c = new(big.Int).Mul(
-		new(big.Int).Mul(_divUp(inv2, new(big.Int).Mul(ampTotal, PD)), ampPrecision),
-		balances[tokenIndex],
-	)
-	var b = new(big.Int).Add(sum, new(big.Int).Mul(_divDown(invariant, ampTotal), ampPrecision))
-	var prevTokenBalance *big.Int
-	var tokenBalance = _divUp(new(big.Int).Add(inv2, c), new(big.Int).Add(invariant, b))
+	sum = sum.Sub(balances[tokenIndex])
+	var inv2 = invariant.Mul(invariant)
+	var c = _divUp(inv2, ampTotal.Mul(PD)).Mul(ampPrecision).Mul(balances[tokenIndex])
+	var b = sum.Add(_divDown(invariant, ampTotal).Mul(ampPrecision))
+	var prevTokenBalance *bn.DecFloatPointNumber
+	var tokenBalance = _divUp(inv2.Add(c), invariant.Add(b))
 	for i := 0; i < 255; i++ {
 		prevTokenBalance = tokenBalance
 		tokenBalance = _divUp(
-			new(big.Int).Add(new(big.Int).Mul(tokenBalance, tokenBalance), c),
-			new(big.Int).Sub(new(big.Int).Add(new(big.Int).Mul(tokenBalance, bigIntTwo), b), invariant),
+			tokenBalance.Mul(tokenBalance).Add(c),
+			tokenBalance.Mul(bigIntTwo).Add(b).Sub(invariant),
 		)
 		if tokenBalance.Cmp(prevTokenBalance) > 0 {
-			if new(big.Int).Sub(tokenBalance, prevTokenBalance).Cmp(bigIntOne) <= 0 {
+			if tokenBalance.Sub(prevTokenBalance).Cmp(bigIntOne) <= 0 {
 				return tokenBalance, nil
 			}
-		} else if new(big.Int).Sub(prevTokenBalance, tokenBalance).Cmp(bigIntOne) <= 0 {
+		} else if prevTokenBalance.Sub(tokenBalance).Cmp(bigIntOne) <= 0 {
 			return tokenBalance, nil
 		}
 	}
@@ -247,19 +242,19 @@ func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L124
 func _calcOutGivenIn(
-	a *big.Int,
-	balances []*big.Int,
+	a *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
 	tokenIndexIn int,
 	tokenIndexOut int,
-	tokenAmountIn *big.Int,
-	invariant *big.Int,
-) (*big.Int, error) {
+	tokenAmountIn *bn.DecFloatPointNumber,
+	invariant *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, error) {
 
-	balances[tokenIndexIn] = new(big.Int).Add(balances[tokenIndexIn], tokenAmountIn)
+	balances[tokenIndexIn] = balances[tokenIndexIn].Add(tokenAmountIn)
 	var finalBalanceOut, err = _getTokenBalanceGivenInvariantAndAllOtherBalances(a, balances, invariant, tokenIndexOut)
 	if err != nil {
 		return nil, err
 	}
-	balances[tokenIndexIn] = new(big.Int).Sub(balances[tokenIndexIn], tokenAmountIn)
-	return new(big.Int).Sub(new(big.Int).Sub(balances[tokenIndexOut], finalBalanceOut), bigIntOne), nil
+	balances[tokenIndexIn] = balances[tokenIndexIn].Sub(tokenAmountIn)
+	return balances[tokenIndexOut].Sub(finalBalanceOut).Sub(bigIntOne), nil
 }

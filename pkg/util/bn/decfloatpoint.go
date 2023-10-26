@@ -198,6 +198,20 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
+// Exp exponential function by y and return the x ^ y.
+func (x *DecFloatPointNumber) Exp(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if x.x.Sign() == 0 {
+		return DecFloatPoint(0)
+	}
+	if x.Cmp(DecFloatPoint(1)) == 0 {
+		return DecFloatPoint(1)
+	}
+	z := new(big.Int).Exp(x.x.x, y.x.x, nil)
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
+	n.adjustPrec()
+	return n
+}
+
 // DivPrec divides the number by y and returns the result.
 //
 // Division by zero panics.

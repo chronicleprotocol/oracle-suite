@@ -7,6 +7,7 @@ import (
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 type ComposableStablePoolConfig struct {
@@ -15,31 +16,31 @@ type ComposableStablePoolConfig struct {
 }
 
 type LastJoinExitData struct {
-	LastJoinExitAmplification *big.Int
-	LastPostJoinExitInvariant *big.Int
+	LastJoinExitAmplification *bn.DecFloatPointNumber
+	LastPostJoinExitInvariant *bn.DecFloatPointNumber
 }
 
 type TokenRateCache struct {
-	Rate     *big.Int
-	OldRate  *big.Int
-	Duration *big.Int
-	Expires  *big.Int
+	Rate     *bn.DecFloatPointNumber
+	OldRate  *bn.DecFloatPointNumber
+	Duration *bn.DecFloatPointNumber
+	Expires  *bn.DecFloatPointNumber
 }
 
 type AmplificationParameter struct {
-	Value      *big.Int
+	Value      *bn.DecFloatPointNumber
 	IsUpdating bool
-	Precision  *big.Int
+	Precision  *bn.DecFloatPointNumber
 }
 
 type Extra struct {
 	AmplificationParameter              AmplificationParameter
-	ScalingFactors                      []*big.Int
+	ScalingFactors                      []*bn.DecFloatPointNumber
 	LastJoinExit                        LastJoinExitData
 	TokensExemptFromYieldProtocolFee    []bool
 	TokenRateCaches                     []TokenRateCache
-	ProtocolFeePercentageCacheSwapType  *big.Int
-	ProtocolFeePercentageCacheYieldType *big.Int
+	ProtocolFeePercentageCacheSwapType  *bn.DecFloatPointNumber
+	ProtocolFeePercentageCacheYieldType *bn.DecFloatPointNumber
 }
 
 type ComposableStablePoolFullConfig struct {
@@ -50,9 +51,9 @@ type ComposableStablePoolFullConfig struct {
 	Tokens            []types.Address
 	BptIndex          int
 	RateProviders     []types.Address
-	Balances          []*big.Int
-	TotalSupply       *big.Int
-	SwapFeePercentage *big.Int
+	Balances          []*bn.DecFloatPointNumber
+	TotalSupply       *bn.DecFloatPointNumber
+	SwapFeePercentage *bn.DecFloatPointNumber
 	Extra             Extra
 }
 
@@ -149,7 +150,10 @@ func (c *ComposableStablePool) decodePoolTokensCall(resp []byte) error {
 		return fmt.Errorf("failed decoding pool tokens calls: %s, %w", c.config.Pair.String(), err)
 	}
 	c.config.Tokens = tokens
-	c.config.Balances = balances
+	c.config.Balances = make([]*bn.DecFloatPointNumber, len(balances))
+	for i, balance := range balances {
+		c.config.Balances[i] = bn.DecFloatPoint(balance)
+	}
 	return nil
 }
 
@@ -243,16 +247,19 @@ func (c *ComposableStablePool) decodePoolParamsCalls(resp [][]byte) error {
 		c.config.Extra.TokensExemptFromYieldProtocolFee = append(c.config.Extra.TokensExemptFromYieldProtocolFee, isTokenExempt)
 	}
 
-	c.config.SwapFeePercentage = swapFeePercentage
-	c.config.Extra.AmplificationParameter.Value = amplificationParameter
+	c.config.SwapFeePercentage = bn.DecFloatPoint(swapFeePercentage)
+	c.config.Extra.AmplificationParameter.Value = bn.DecFloatPoint(amplificationParameter)
 	c.config.Extra.AmplificationParameter.IsUpdating = isUpdating
-	c.config.Extra.AmplificationParameter.Precision = amplificationPrecision
-	c.config.Extra.ScalingFactors = scalingFactors
-	c.config.Extra.LastJoinExit.LastJoinExitAmplification = lastJoinExitAmplification
-	c.config.Extra.LastJoinExit.LastPostJoinExitInvariant = lastPostJoinExitInvariant
-	c.config.TotalSupply = totalSupply
-	c.config.Extra.ProtocolFeePercentageCacheSwapType = feePercentageCacheSwap
-	c.config.Extra.ProtocolFeePercentageCacheYieldType = feePercentageCacheYield
+	c.config.Extra.AmplificationParameter.Precision = bn.DecFloatPoint(amplificationPrecision)
+	c.config.Extra.ScalingFactors = make([]*bn.DecFloatPointNumber, len(scalingFactors))
+	for i, factor := range scalingFactors {
+		c.config.Extra.ScalingFactors[i] = bn.DecFloatPoint(factor)
+	}
+	c.config.Extra.LastJoinExit.LastJoinExitAmplification = bn.DecFloatPoint(lastJoinExitAmplification)
+	c.config.Extra.LastJoinExit.LastPostJoinExitInvariant = bn.DecFloatPoint(lastPostJoinExitInvariant)
+	c.config.TotalSupply = bn.DecFloatPoint(totalSupply)
+	c.config.Extra.ProtocolFeePercentageCacheSwapType = bn.DecFloatPoint(feePercentageCacheSwap)
+	c.config.Extra.ProtocolFeePercentageCacheYieldType = bn.DecFloatPoint(feePercentageCacheYield)
 	return nil
 }
 
@@ -292,17 +299,22 @@ func (c *ComposableStablePool) decodeTokenRateCacheCalls(resp [][]byte) error {
 			return fmt.Errorf("failed decoding token rate cache calls: %s, %w", c.config.Pair.String(), err)
 		}
 		c.config.Extra.TokenRateCaches[i] = TokenRateCache{
-			Rate:     rate,
-			OldRate:  oldRate,
-			Duration: duration,
-			Expires:  expires,
+			Rate:     bn.DecFloatPoint(rate),
+			OldRate:  bn.DecFloatPoint(oldRate),
+			Duration: bn.DecFloatPoint(duration),
+			Expires:  bn.DecFloatPoint(expires),
 		}
 		n++
 	}
 	return nil
 }
 
-func (c *ComposableStablePool) calcAmountOut(tokenIn ERC20Details, tokenOut ERC20Details, amountIn *big.Int) (*big.Int, *big.Int, error) {
+func (c *ComposableStablePool) calcAmountOut(tokenIn ERC20Details, tokenOut ERC20Details, amountIn *bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	error,
+) {
+
 	indexIn := -1
 	indexOut := -1
 	for i, address := range c.config.Tokens {
@@ -317,24 +329,24 @@ func (c *ComposableStablePool) calcAmountOut(tokenIn ERC20Details, tokenOut ERC2
 		return nil, nil, fmt.Errorf("not found tokens in %s: %s, %s", c.config.Pair.String(), tokenIn.symbol, tokenOut.symbol)
 	}
 
-	var amountOut, feeAmount *big.Int
+	var amountOut, feeAmount *bn.DecFloatPointNumber
 	var err error
 	if tokenIn.address == c.config.ContractAddress || tokenOut.address == c.config.ContractAddress {
 		amountOut, feeAmount, err = c._swapWithBptGivenIn(indexIn, indexOut, amountIn)
 	} else {
 		amountOut, feeAmount, err = c._swapGivenIn(indexIn, indexOut, amountIn)
 	}
-	return amountOut, feeAmount, err
+	return bn.DecFloatPoint(amountOut), bn.DecFloatPoint(feeAmount), err
 }
 
 // _onRegularSwap implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L283
 func (c *ComposableStablePool) _onRegularSwap(
-	amountIn *big.Int,
-	registeredBalances []*big.Int,
+	amountIn *bn.DecFloatPointNumber,
+	registeredBalances []*bn.DecFloatPointNumber,
 	registeredIndexIn,
 	registeredIndexOut int,
-) (*big.Int, error) {
+) (*bn.DecFloatPointNumber, error) {
 	// Adjust indices and balances for BPT token
 	// uint256[] memory balances = _dropBptItem(registeredBalances);
 	// uint256 indexIn = _skipBptIndex(indexIn);
@@ -359,19 +371,24 @@ func (c *ComposableStablePool) _onRegularSwap(
 // _onSwapGivenIn implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L242
 func (c *ComposableStablePool) _onSwapGivenIn(
-	amountIn *big.Int,
-	registeredBalances []*big.Int,
+	amountIn *bn.DecFloatPointNumber,
+	registeredBalances []*bn.DecFloatPointNumber,
 	indexIn,
 	indexOut int,
-) (*big.Int, error) {
+) (*bn.DecFloatPointNumber, error) {
 
 	return c._onRegularSwap(amountIn, registeredBalances, indexIn, indexOut)
 }
 
 // _swapWithBptGivenIn implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L314
-func (c *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amountIn *big.Int) (*big.Int, *big.Int, error) {
-	var amountCalculated, feeAmount *big.Int
+func (c *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amountIn *bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	error,
+) {
+
+	var amountCalculated, feeAmount *bn.DecFloatPointNumber
 
 	// bool isGivenIn = swapRequest.kind == IVault.SwapKind.GIVEN_IN;
 	// _upscaleArray(registeredBalances, scalingFactors);
@@ -446,13 +463,13 @@ func (c *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amount
 // _exitSwapExactBptInForTokenOut implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L504
 func (c *ComposableStablePool) _exitSwapExactBptInForTokenOut(
-	bptAmount *big.Int,
-	balances []*big.Int,
+	bptAmount *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
 	indexOut int,
-	currentAmp *big.Int,
-	actualSupply *big.Int,
-	preJoinExitInvariant *big.Int,
-) (*big.Int, *big.Int, *big.Int, error) {
+	currentAmp *bn.DecFloatPointNumber,
+	actualSupply *bn.DecFloatPointNumber,
+	preJoinExitInvariant *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
 	amountOut, feeAmount, err := _calcTokenOutGivenExactBptIn(
 		currentAmp, balances, indexOut, bptAmount, actualSupply, preJoinExitInvariant, c.config.SwapFeePercentage)
@@ -460,8 +477,8 @@ func (c *ComposableStablePool) _exitSwapExactBptInForTokenOut(
 		return nil, nil, nil, err
 	}
 
-	balances[indexOut].Sub(balances[indexOut], amountOut)
-	postJoinExitSupply := new(big.Int).Sub(actualSupply, bptAmount)
+	balances[indexOut] = balances[indexOut].Sub(amountOut)
+	postJoinExitSupply := actualSupply.Sub(bptAmount)
 
 	return amountOut, postJoinExitSupply, feeAmount, nil
 }
@@ -470,13 +487,13 @@ func (c *ComposableStablePool) _exitSwapExactBptInForTokenOut(
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L375
 func (c *ComposableStablePool) _doJoinSwap(
 	isGivenIn bool,
-	amount *big.Int,
-	balances []*big.Int,
+	amount *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
 	indexIn int,
-	currentAmp *big.Int,
-	actualSupply *big.Int,
-	preJoinExitInvariant *big.Int,
-) (*big.Int, *big.Int, *big.Int, error) {
+	currentAmp *bn.DecFloatPointNumber,
+	actualSupply *bn.DecFloatPointNumber,
+	preJoinExitInvariant *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
 	if isGivenIn {
 		return c._joinSwapExactTokenInForBptOut(amount, balances, indexIn, currentAmp, actualSupply, preJoinExitInvariant)
@@ -489,13 +506,13 @@ func (c *ComposableStablePool) _doJoinSwap(
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L470
 func (c *ComposableStablePool) _doExitSwap(
 	isGivenIn bool,
-	amount *big.Int,
-	balances []*big.Int,
+	amount *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
 	indexOut int,
-	currentAmp *big.Int,
-	actualSupply *big.Int,
-	preJoinExitInvariant *big.Int,
-) (*big.Int, *big.Int, *big.Int, error) {
+	currentAmp *bn.DecFloatPointNumber,
+	actualSupply *bn.DecFloatPointNumber,
+	preJoinExitInvariant *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
 	if isGivenIn {
 		return c._exitSwapExactBptInForTokenOut(amount, balances, indexOut, currentAmp, actualSupply, preJoinExitInvariant)
@@ -507,17 +524,17 @@ func (c *ComposableStablePool) _doExitSwap(
 // _joinSwapExactTokenInForBptOut implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L409
 func (c *ComposableStablePool) _joinSwapExactTokenInForBptOut(
-	amountIn *big.Int,
-	balances []*big.Int,
+	amountIn *bn.DecFloatPointNumber,
+	balances []*bn.DecFloatPointNumber,
 	indexIn int,
-	currentAmp *big.Int,
-	actualSupply *big.Int,
-	preJoinExitInvariant *big.Int,
-) (*big.Int, *big.Int, *big.Int, error) {
+	currentAmp *bn.DecFloatPointNumber,
+	actualSupply *bn.DecFloatPointNumber,
+	preJoinExitInvariant *bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
-	amountsIn := make([]*big.Int, len(balances))
+	amountsIn := make([]*bn.DecFloatPointNumber, len(balances))
 	for i := range amountsIn {
-		amountsIn[i] = new(big.Int)
+		amountsIn[i] = bn.DecFloatPoint(0)
 	}
 	amountsIn[indexIn] = amountIn
 	bptOut, feeAmountIn, err := _calcBptOutGivenExactTokensIn(
@@ -525,15 +542,22 @@ func (c *ComposableStablePool) _joinSwapExactTokenInForBptOut(
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	balances[indexIn].Add(balances[indexIn], amountIn)
-	postJoinExitSupply := new(big.Int).Add(actualSupply, bptOut)
+	balances[indexIn] = balances[indexIn].Add(amountIn)
+	postJoinExitSupply := actualSupply.Add(bptOut)
 
 	return bptOut, postJoinExitSupply, feeAmountIn, nil
 }
 
 // _beforeJoinExit implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L701
-func (c *ComposableStablePool) _beforeJoinExit(registeredBalances []*big.Int) (*big.Int, []*big.Int, *big.Int, *big.Int, error) {
+func (c *ComposableStablePool) _beforeJoinExit(registeredBalances []*bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	[]*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	error,
+) {
+
 	preJoinExitSupply, balances, oldAmpPreJoinExitInvariant, err := c._payProtocolFeesBeforeJoinExit(registeredBalances)
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -541,7 +565,7 @@ func (c *ComposableStablePool) _beforeJoinExit(registeredBalances []*big.Int) (*
 	currentAmp := c.config.Extra.AmplificationParameter.Value
 
 	var (
-		preJoinExitInvariant *big.Int
+		preJoinExitInvariant *bn.DecFloatPointNumber
 	)
 
 	if currentAmp.Cmp(c.config.Extra.LastJoinExit.LastJoinExitAmplification) == 0 {
@@ -559,8 +583,8 @@ func (c *ComposableStablePool) _beforeJoinExit(registeredBalances []*big.Int) (*
 // _payProtocolFeesBeforeJoinExit implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolProtocolFees.sol#L64
 func (c *ComposableStablePool) _payProtocolFeesBeforeJoinExit(
-	registeredBalances []*big.Int,
-) (*big.Int, []*big.Int, *big.Int, error) {
+	registeredBalances []*bn.DecFloatPointNumber,
+) (*bn.DecFloatPointNumber, []*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
 	virtualSupply, droppedBalances := c._dropBptItemFromBalances(registeredBalances)
 	expectedProtocolOwnershipPercentage, currentInvariantWithLastJoinExitAmp, err := c._getProtocolPoolOwnershipPercentage(droppedBalances)
@@ -569,26 +593,31 @@ func (c *ComposableStablePool) _payProtocolFeesBeforeJoinExit(
 	}
 	protocolFeeAmount := c._bptForPoolOwnershipPercentage(virtualSupply, expectedProtocolOwnershipPercentage)
 
-	return new(big.Int).Add(virtualSupply, protocolFeeAmount), droppedBalances, currentInvariantWithLastJoinExitAmp, nil
+	return virtualSupply.Add(protocolFeeAmount), droppedBalances, currentInvariantWithLastJoinExitAmp, nil
 }
 
 // _getProtocolPoolOwnershipPercentage implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolProtocolFees.sol#L102
-func (c *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*big.Int) (*big.Int, *big.Int, error) {
+func (c *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	error,
+) {
+
 	swapFeeGrowthInvariant, totalNonExemptGrowthInvariant, totalGrowthInvariant, err := c._getGrowthInvariants(balances)
 	if err != nil {
 		return nil, nil, err
 	}
 	// Calculate the delta for swap fee growth invariant
-	swapFeeGrowthInvariantDelta := new(big.Int).Sub(swapFeeGrowthInvariant, c.config.Extra.LastJoinExit.LastPostJoinExitInvariant)
+	swapFeeGrowthInvariantDelta := swapFeeGrowthInvariant.Sub(c.config.Extra.LastJoinExit.LastPostJoinExitInvariant)
 	if swapFeeGrowthInvariantDelta.Cmp(bigIntZero) < 0 {
-		swapFeeGrowthInvariantDelta.SetUint64(0)
+		swapFeeGrowthInvariantDelta = bn.DecFloatPoint(0)
 	}
 
 	// Calculate the delta for non-exempt yield growth invariant
-	nonExemptYieldGrowthInvariantDelta := new(big.Int).Sub(totalNonExemptGrowthInvariant, swapFeeGrowthInvariant)
+	nonExemptYieldGrowthInvariantDelta := totalNonExemptGrowthInvariant.Sub(swapFeeGrowthInvariant)
 	if nonExemptYieldGrowthInvariantDelta.Cmp(bigIntZero) < 0 {
-		nonExemptYieldGrowthInvariantDelta.SetUint64(0)
+		nonExemptYieldGrowthInvariantDelta = bn.DecFloatPoint(0)
 	}
 
 	// swapFeeGrowthInvariantDelta/totalGrowthInvariant*getProtocolFeePercentageCache
@@ -601,18 +630,24 @@ func (c *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*b
 		c.config.Extra.ProtocolFeePercentageCacheYieldType)
 
 	// Calculate the total protocol ComposableStablePool ownership percentage
-	protocolPoolOwnershipPercentage := new(big.Int).Add(protocolSwapFeePercentage, protocolYieldPercentage)
+	protocolPoolOwnershipPercentage := protocolSwapFeePercentage.Add(protocolYieldPercentage)
 
 	return protocolPoolOwnershipPercentage, totalGrowthInvariant, nil
 }
 
 // _getGrowthInvariants implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolProtocolFees.sol#L189
-func (c *ComposableStablePool) _getGrowthInvariants(balances []*big.Int) (*big.Int, *big.Int, *big.Int, error) {
+func (c *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	error,
+) {
+
 	var (
-		swapFeeGrowthInvariant        *big.Int
-		totalNonExemptGrowthInvariant *big.Int
-		totalGrowthInvariant          *big.Int
+		swapFeeGrowthInvariant        *bn.DecFloatPointNumber
+		totalNonExemptGrowthInvariant *bn.DecFloatPointNumber
+		totalGrowthInvariant          *bn.DecFloatPointNumber
 		err                           error
 	)
 
@@ -672,14 +707,14 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*big.Int) (*big.I
 
 // _dropBptItemFromBalances implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolStorage.sol#L259
-func (c *ComposableStablePool) _dropBptItemFromBalances(balances []*big.Int) (*big.Int, []*big.Int) {
+func (c *ComposableStablePool) _dropBptItemFromBalances(balances []*bn.DecFloatPointNumber) (*bn.DecFloatPointNumber, []*bn.DecFloatPointNumber) {
 	return c._getVirtualSupply(balances[c.config.BptIndex]), c._dropBptItem(balances)
 }
 
 // _getVirtualSupply implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolStorage.sol#L386
-func (c *ComposableStablePool) _getVirtualSupply(bptBalance *big.Int) *big.Int {
-	return new(big.Int).Sub(c.config.TotalSupply, bptBalance)
+func (c *ComposableStablePool) _getVirtualSupply(bptBalance *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return c.config.TotalSupply.Sub(bptBalance)
 }
 
 // _hasRateProvider implements same functionality with the following url:
@@ -718,9 +753,9 @@ func (c *ComposableStablePool) _areAllTokensExempt() bool {
 
 // _getAdjustedBalances implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L222
-func (c *ComposableStablePool) _getAdjustedBalances(balances []*big.Int, ignoreExemptFlags bool) []*big.Int {
+func (c *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFloatPointNumber, ignoreExemptFlags bool) []*bn.DecFloatPointNumber {
 	totalTokensWithoutBpt := len(balances)
-	adjustedBalances := make([]*big.Int, totalTokensWithoutBpt)
+	adjustedBalances := make([]*bn.DecFloatPointNumber, totalTokensWithoutBpt)
 
 	for i := 0; i < totalTokensWithoutBpt; i++ {
 		skipBptIndex := i
@@ -740,32 +775,32 @@ func (c *ComposableStablePool) _getAdjustedBalances(balances []*big.Int, ignoreE
 
 // _adjustedBalance implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L242
-func (c *ComposableStablePool) _adjustedBalance(balance *big.Int, cache *TokenRateCache) *big.Int {
-	return _divDown(new(big.Int).Mul(balance, cache.OldRate), cache.Rate)
+func (c *ComposableStablePool) _adjustedBalance(balance *bn.DecFloatPointNumber, cache *TokenRateCache) *bn.DecFloatPointNumber {
+	return _divDown(balance.Mul(cache.OldRate), cache.Rate)
 }
 
 // _dropBptItem implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolStorage.sol#L246
-func (c *ComposableStablePool) _dropBptItem(amounts []*big.Int) []*big.Int {
-	amountsWithoutBpt := make([]*big.Int, len(amounts)-1)
+func (c *ComposableStablePool) _dropBptItem(amounts []*bn.DecFloatPointNumber) []*bn.DecFloatPointNumber {
+	amountsWithoutBpt := make([]*bn.DecFloatPointNumber, len(amounts)-1)
 	bptIndex := c.config.BptIndex
 
 	for i := 0; i < len(amountsWithoutBpt); i++ {
 		if i < bptIndex {
-			amountsWithoutBpt[i] = new(big.Int).Set(amounts[i])
+			amountsWithoutBpt[i] = amounts[i]
 		} else {
-			amountsWithoutBpt[i] = new(big.Int).Set(amounts[i+1])
+			amountsWithoutBpt[i] = amounts[i+1]
 		}
 	}
 	return amountsWithoutBpt
 }
 
-func (c *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolOwnershipPercentage *big.Int) *big.Int {
+func (c *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolOwnershipPercentage *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// If we mint some amount `bptAmount` of BPT then the percentage ownership of the pool this grants is given by:
 	// `poolOwnershipPercentage = bptAmount / (totalSupply + bptAmount)`.
 	// Solving for `bptAmount`, we arrive at:
 	// `bptAmount = totalSupply * poolOwnershipPercentage / (1 - poolOwnershipPercentage)`.
-	return _divDown(new(big.Int).Mul(totalSupply, poolOwnershipPercentage), _complementFixed(poolOwnershipPercentage))
+	return _divDown(totalSupply.Mul(poolOwnershipPercentage), _complementFixed(poolOwnershipPercentage))
 }
 
 // _skipBptIndex implements same functionality with the following url:
@@ -779,7 +814,11 @@ func (c *ComposableStablePool) _skipBptIndex(index int) int {
 
 // _swapGivenIn simulates the functionality of `_swapGivenIn` in `ComposableStablePool`
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L187
-func (c *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *big.Int) (*big.Int, *big.Int, error) {
+func (c *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+	error,
+) {
 	// Fees are subtracted before scaling, to reduce the complexity of the rounding direction analysis.
 	// swapRequest.amount = _subtractSwapFeeAmount(swapRequest.amount);
 	amountAfterFee, feeAmount := c._subtractSwapFeeAmount(amountIn, c.config.SwapFeePercentage)
@@ -798,19 +837,23 @@ func (c *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *big
 	return _divDownFixed(amountOut, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
 }
 
-func (c *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage *big.Int) (*big.Int, *big.Int) {
+func (c *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage *bn.DecFloatPointNumber) (
+	*bn.DecFloatPointNumber,
+	*bn.DecFloatPointNumber,
+) {
+
 	feeAmount := _mulUpFixed(amount, swapFeePercentage)
-	return new(big.Int).Sub(amount, feeAmount), feeAmount
+	return amount.Sub(feeAmount), feeAmount
 }
 
-func (c *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*big.Int) []*big.Int {
-	result := make([]*big.Int, len(amounts))
+func (c *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*bn.DecFloatPointNumber) []*bn.DecFloatPointNumber {
+	result := make([]*bn.DecFloatPointNumber, len(amounts))
 	for i, amount := range amounts {
 		result[i] = _mulUpFixed(amount, scalingFactors[i])
 	}
 	return result
 }
 
-func (c *ComposableStablePool) _upscale(amount, scalingFactor *big.Int) *big.Int {
+func (c *ComposableStablePool) _upscale(amount, scalingFactor *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _mulUpFixed(amount, scalingFactor)
 }
