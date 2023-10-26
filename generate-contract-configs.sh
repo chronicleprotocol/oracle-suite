@@ -51,7 +51,7 @@ _CONTRACTS="$({
 		IScribeOptimistic: (.IScribeOptimistic != null),
 		challenge_period:.IScribeOptimistic.opChallengePeriod,
 		poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")],
-		optimistic_poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")],
+		poke_optimistic:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")],
 	} | del(..|nulls)'
 	jq <<<"$__medians" --argjson p "$__relays" -c '{
 		env,
@@ -96,7 +96,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 	}'
 	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribeOptimistic) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
-		value: (.optimistic_poke // {expiration:null,spread:null,interval:null}),
+		value: (.poke_optimistic // {expiration:null,spread:null,interval:null}),
 	}'
 } | sort | jq -s 'from_entries' > config/relays.json
 

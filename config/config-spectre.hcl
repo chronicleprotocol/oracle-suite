@@ -26,10 +26,13 @@ spectre {
       data_model = replace(contract.value.wat, "/", "")
 
       # Spread in percent points above which the price is considered stale.
-      spread = try(contract.value.poke.spread, 1)
+      spread = contract.value.poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = try(contract.value.poke.expiration, 32400)
+      expiration = contract.value.poke.expiration
+
+      # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
+      interval = contract.value.poke.interval
     }
   }
 
@@ -38,7 +41,7 @@ spectre {
       for v in var.contracts : v
       if v.env == var.environment
       && v.chain == var.chain_name
-      && try(v.IScribe, false) && try(v.IScribeOptimistic, false) == false
+      && try(v.IScribe, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
     ]
     iterator = contract
@@ -56,10 +59,16 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = try(contract.value.poke.spread, 1)
+      spread = contract.value.poke.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = try(contract.value.poke.expiration, 32400)
+      expiration = contract.value.poke.expiration
+
+      # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
+      interval = contract.value.poke.interval
+
+      # If a contract is optimistic, then we add a delay to the poke interval to allow for the optimistic poke to happen first.
+      delay = try(v.IScribeOptimistic, false) ? 600 : 0
     }
   }
 
@@ -86,16 +95,13 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = try(contract.value.poke.spread, 1)
+      spread = contract.value.poke_optimistic.spread
 
       # Time in seconds after which the price is considered stale.
-      expiration = try(contract.value.poke.expiration, 32400)
+      expiration = contract.value.poke_optimistic.expiration
 
-      # Spread in percent points above which the price is considered stale.
-      optimistic_spread = try(contract.value.optimistic_poke.spread, 0.5)
-
-      # Time in seconds after which the price is considered stale.
-      optimistic_expiration = try(contract.value.optimistic_poke.expiration, 28800)
+      # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
+      interval = contract.value.poke_optimistic.interval
     }
   }
 }

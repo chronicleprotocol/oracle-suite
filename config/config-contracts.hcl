@@ -46,7 +46,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -66,7 +66,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -94,7 +94,7 @@ contracts = [
     "IScribeOptimistic": true,
     "challenge_period": 1200,
     "poke": {},
-    "optimistic_poke": {}
+    "poke_optimistic": {}
   },
   {
     "env": "prod",
@@ -122,7 +122,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -142,7 +142,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -170,7 +170,7 @@ contracts = [
     "IScribeOptimistic": true,
     "challenge_period": 1200,
     "poke": {},
-    "optimistic_poke": {}
+    "poke_optimistic": {}
   },
   {
     "env": "prod",
@@ -234,7 +234,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -254,7 +254,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -286,7 +286,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -306,7 +306,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -334,7 +334,7 @@ contracts = [
     "IScribeOptimistic": true,
     "challenge_period": 1200,
     "poke": {},
-    "optimistic_poke": {}
+    "poke_optimistic": {}
   },
   {
     "env": "prod",
@@ -346,7 +346,7 @@ contracts = [
     "IScribeOptimistic": true,
     "challenge_period": 1200,
     "poke": {},
-    "optimistic_poke": {}
+    "poke_optimistic": {}
   },
   {
     "env": "prod",
@@ -358,7 +358,7 @@ contracts = [
     "IScribeOptimistic": true,
     "challenge_period": 1200,
     "poke": {},
-    "optimistic_poke": {}
+    "poke_optimistic": {}
   },
   {
     "env": "prod",
@@ -374,7 +374,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -393,7 +393,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1141,7 +1141,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1161,7 +1161,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1181,7 +1181,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1201,7 +1201,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1221,7 +1221,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1241,7 +1241,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1261,7 +1261,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1281,7 +1281,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1301,7 +1301,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1321,7 +1321,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1341,7 +1341,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1361,7 +1361,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1381,7 +1381,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1401,7 +1401,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1421,7 +1421,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1441,7 +1441,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1461,7 +1461,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1481,7 +1481,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1501,7 +1501,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1521,7 +1521,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1541,7 +1541,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1561,7 +1561,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1581,7 +1581,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1601,7 +1601,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1617,7 +1617,7 @@ contracts = [
     "IScribeOptimistic": true,
     "challenge_period": 3600,
     "poke": {},
-    "optimistic_poke": {}
+    "poke_optimistic": {}
   },
   {
     "env": "stage",
@@ -1633,7 +1633,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
@@ -1653,7 +1653,7 @@ contracts = [
       "expiration": 32400,
       "interval": 120
     },
-    "optimistic_poke": {
+    "poke_optimistic": {
       "spread": 0.5,
       "expiration": 28800,
       "interval": 120
