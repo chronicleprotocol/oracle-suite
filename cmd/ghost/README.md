@@ -204,7 +204,7 @@ Available Commands:
   run         Run Feed agent
 
 Flags:
-  -c, --config strings                                 config file (default [./config.hcl])
+  -c, --config strings                                 config file (optional) 
   -h, --help                                           help for ghost
   -f, --log.format text|json                           log format (default text)
   -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default info)

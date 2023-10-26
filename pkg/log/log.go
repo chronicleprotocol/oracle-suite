@@ -69,31 +69,71 @@ func IsLevel(logger Logger, level Level) bool {
 	return logger.Level() >= level
 }
 
-type Fields = map[string]interface{}
+type Fields = map[string]any
 
 type ErrorWithFields interface {
 	error
-	Fields() Fields
+	LogFields() Fields
 }
 
+// Logger defines an interface for structured logging with varying levels of
+// severity.
 type Logger interface {
+	// Level returns the current logging level.
 	Level() Level
 
-	WithField(key string, value interface{}) Logger
+	// WithField returns a new logger instance that includes the specified
+	// key-value pair.
+	WithField(key string, value any) Logger
+
+	// WithFields returns a new logger instance that includes the specified
+	// key-value pairs.
 	WithFields(fields Fields) Logger
+
+	// WithError associates an error with the logger, returning a new logger
+	// instance. The associated error will be included in subsequent log
+	// messages.
 	WithError(err error) Logger
 
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Panicf(format string, args ...interface{})
+	// WithAdvice associates a recommended action or advice with the logger,
+	// detailing what steps should be taken in response to the event being
+	// logged. This can be helpful to guide system administrators or developers
+	// on the appropriate course of action when reading the logs.
+	//
+	// Examples:
+	// - "Ignore if happens occasionally"
+	// - "This is a known issue; a fix is in progress"
+	// - "Report immediately to the development team"
+	WithAdvice(advice string) Logger
 
-	Debug(args ...interface{})
-	Info(args ...interface{})
-	Warn(args ...interface{})
-	Error(args ...interface{})
-	Panic(args ...interface{})
+	// Debug logs detailed system-level diagnostic messages useful during
+	// development and troubleshooting. It should contain information that's
+	// typically too verbose for regular operation.
+	Debug(args ...any)
+
+	// Info logs informational messages that highlight the progress of the
+	// application's normal operation, such as startup and significant runtime
+	// events. These messages should be concise but informative for system
+	// administrators and should not occur at a high rate.
+	Info(args ...any)
+
+	// Warn logs potentially harmful situations, unexpected events, or minor
+	// issues. This might include things like deprecations or approaching
+	// resource limits. These aren't immediate errors but can lead to them if
+	// unaddressed.
+	Warn(args ...any)
+
+	// Error logs failures that prevent an operation from completing
+	// successfully. While the application might continue running, these issues
+	// typically require intervention to resolve, either as system
+	// administration or code changes.
+	Error(args ...any)
+
+	// Panic logs severe errors that might cause the application to crash or be
+	// in an unstable state. Logging at this level should be rare and often
+	// followed by program termination. These messages should provide enough
+	// context to diagnose and rectify catastrophic failures.
+	Panic(args ...any)
 }
 
 // LoggerService is a logger that needs to be started to be used.

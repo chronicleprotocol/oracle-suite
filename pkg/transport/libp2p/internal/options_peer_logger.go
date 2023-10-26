@@ -16,47 +16,16 @@
 package internal
 
 import (
-	"github.com/defiweb/go-eth/types"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/multiformats/go-multiaddr"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
-
-type PeerInfo struct {
-	peerID          peer.ID
-	peerAddr        types.Address
-	topic           string
-	listens         []multiaddr.Multiaddr
-	userAgent       string
-	protocolVersion string
-	protocols       []protocol.ID
-}
-
-func PeerInfos(c chan<- PeerInfo) Options {
-	return func(n *Node) error {
-		n.AddPubSubEventHandler(sets.PubSubEventHandlerFunc(func(topic string, event pubsub.PeerEvent) {
-			p := n.Peerstore()
-			pp, _ := p.GetProtocols(event.Peer)
-			c <- PeerInfo{
-				peerID:          event.Peer,
-				peerAddr:        ethkey.PeerIDToAddress(event.Peer),
-				topic:           topic,
-				listens:         p.PeerInfo(event.Peer).Addrs,
-				userAgent:       GetPeerUserAgent(p, event.Peer),
-				protocolVersion: GetPeerProtocolVersion(p, event.Peer),
-				protocols:       pp,
-			}
-		}))
-		return nil
-	}
-}
 
 // PeerLogger logs all peers handled by libp2p's pubsub system.
 func PeerLogger() Options {

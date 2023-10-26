@@ -3,10 +3,10 @@ package graph
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
-
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
@@ -88,6 +88,7 @@ func (u *Updater) fetchDataPoints(ctx context.Context, queries queryMap) dataPoi
 							"origin": originName,
 							"panic":  r,
 						}).
+						WithAdvice("This is a critical bug and must be investigated").
 						Error("Panic while fetching data points from the origin")
 				}
 			}()
@@ -98,19 +99,20 @@ func (u *Updater) fetchDataPoints(ctx context.Context, queries queryMap) dataPoi
 
 			// Fetch data points from the origin and store them in the map.
 			points, err := origin.FetchDataPoints(ctx, queries)
+			mu.Lock()
 			if err != nil {
-				u.logger.
-					WithError(err).
-					WithFields(log.Fields{
-						"origin": originName,
-					}).
-					Error("Failed to fetch data points from the origin")
+				for _, query := range queries {
+					pointsMap.add(originName, query, datapoint.Point{
+						Time:  time.Now(),
+						Error: err,
+					})
+				}
+			} else {
+				for query, point := range points {
+					pointsMap.add(originName, query, point)
+				}
 			}
-			for query, point := range points {
-				mu.Lock()
-				pointsMap.add(originName, query, point)
-				mu.Unlock()
-			}
+			mu.Unlock()
 		}(originName, query)
 	}
 
@@ -130,7 +132,8 @@ func (u *Updater) updateNodesWithDataPoints(nodes nodesMap, points dataPointsMap
 						"origin": k.origin,
 						"query":  k.query,
 					}).
-					Warn("The origin did not return a data point for the query")
+					WithAdvice("This is a bug and must be investigated").
+					Error("The origin did not return a data point for the query")
 				continue
 			}
 			if err := node.SetDataPoint(point); err != nil {
@@ -140,6 +143,7 @@ func (u *Updater) updateNodesWithDataPoints(nodes nodesMap, points dataPointsMap
 						"query":  k.query,
 					}).
 					WithError(err).
+					WithAdvice("Ignore if occurs occasionally").
 					Warn("Failed to set data point on the origin node")
 			}
 		}

@@ -52,7 +52,8 @@ func messageValidator(topics map[string]transport.Message, logger log.Logger) in
 							"peerID":   psMsg.GetFrom().String(),
 							"peerAddr": feedAddr.String(),
 						}).
-						Warn("The message has been rejected, unable to unmarshall")
+						WithAdvice("This is a critical bug and needs to be investigated").
+						Error("The message has been rejected, unable to unmarshall")
 					return pubsub.ValidationReject
 				}
 				psMsg.ValidatorData = msg
@@ -77,7 +78,7 @@ func feedValidator(feeds []types.Address, logger log.Logger) internal.Options {
 						"peerID":   psMsg.GetFrom().String(),
 						"peerAddr": from.String(),
 					}).
-					Warn("Message ignored, feed is not allowed to send messages")
+					Debug("Message ignored, feed is not allowed to send messages")
 				return pubsub.ValidationIgnore
 			}
 			return pubsub.ValidationAccept

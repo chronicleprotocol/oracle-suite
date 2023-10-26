@@ -157,7 +157,8 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 					WithError(err).
 					WithField("model", model).
 					WithFields(datapoint.PointLogFields(point)).
-					Error("BeforeBroadcast hook failed")
+					WithAdvice("This is a bug and must be investigated").
+					Error("BeforeSign hook failed; data point will not be broadcasted")
 				return
 			}
 		}
@@ -169,7 +170,8 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 				WithError(err).
 				WithField("model", model).
 				WithFields(datapoint.PointLogFields(point)).
-				Error("Unable to sign data point")
+				WithAdvice("This is a bug and must be investigated").
+				Error("Failed to sign the data point; data point will not be broadcasted")
 		}
 
 		// BeforeBroadcast hook.
@@ -179,7 +181,8 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 					WithError(err).
 					WithField("model", model).
 					WithFields(datapoint.PointLogFields(point)).
-					Error("BeforeBroadcast hook failed")
+					WithAdvice("This is a bug and must be investigated").
+					Error("BeforeBroadcast hook failed; data point will not be broadcasted")
 				return
 			}
 		}
@@ -194,18 +197,20 @@ func (f *Feed) broadcast(model string, point datapoint.Point) {
 			f.log.
 				WithError(err).
 				WithFields(messages.DataPointMessageLogFields(*msg)).
-				Error("Unable to broadcast data point")
+				WithAdvice("Ignore if it is related to temporary network issues").
+				Error("Failed to broadcast the data point")
 		} else {
 			f.log.
 				WithFields(messages.DataPointMessageLogFields(*msg)).
-				Info("Data point broadcast")
+				Info("Data point successfully broadcasted")
 		}
 	}
 	if !found {
 		f.log.
 			WithField("model", model).
 			WithFields(datapoint.PointLogFields(point)).
-			Warn("Unable to find signer for data point")
+			WithAdvice("This is a bug and must be investigated, probably caused by adding an invalid data model in the config").
+			Warn("No signer algorithm found for the data point")
 	}
 }
 
@@ -225,7 +230,7 @@ func (f *Feed) broadcasterRoutine() {
 				f.log.
 					WithError(err).
 					WithField("models", models).
-					Error("Unable to update data points")
+					Error("Failed to fetch data points from provider")
 				continue
 			}
 
@@ -237,15 +242,18 @@ func (f *Feed) broadcasterRoutine() {
 						f.log.
 							WithError(err).
 							WithField("model", model).
-							WithFields(datapoint.PointLogFields(point)).
 							WithField("trace", string(trace)).
-							Debug("Invalid data point trace")
+							WithFields(datapoint.PointLogFields(point)).
+							WithAdvice("Ignore if this occurs occasionally").
+							Warn("Data point is invalid; it will be skipped")
+					} else {
+						f.log.
+							WithError(err).
+							WithField("model", model).
+							WithFields(datapoint.PointLogFields(point)).
+							WithAdvice("Ignore if this occurs occasionally").
+							Warn("Data point is invalid; it will be skipped")
 					}
-					f.log.
-						WithError(err).
-						WithField("model", model).
-						WithFields(datapoint.PointLogFields(point)).
-						Error("Unable to broadcast data point, data point is invalid")
 					continue
 				}
 				f.broadcast(model, point)

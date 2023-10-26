@@ -13,11 +13,12 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package relay
+package store
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -30,49 +31,54 @@ import (
 
 const MuSigLoggerTag = "MUSIG_STORE"
 
-type MuSigStore struct {
+type SignatureProvider interface {
+	// SignaturesByDataModel returns a list of signatures for the given data
+	// model.
+	SignaturesByDataModel(model string) []*messages.MuSigSignature
+}
+
+// Store stores MuSigSignature messages received from the transport layer.
+//
+// It stores only the latest signature provided by each feed for each data
+// model.
+type Store struct {
 	ctx    context.Context
 	mu     sync.Mutex
 	waitCh chan error
 	log    log.Logger
 
-	transport          transport.Transport
-	scribeDataModels   []string
-	opScribeDataModels []string
-	signatures         map[storeKey]*messages.MuSigSignature
+	transport  transport.Transport
+	dataModels []string
+	signatures map[storeKey]*messages.MuSigSignature
 }
 
-// MuSigStoreConfig is the configuration for MuSigStore.
-type MuSigStoreConfig struct {
+// Config is the configuration for Store.
+type Config struct {
 	// Transport is an implementation of transport used to fetch data from
 	// feeds.
 	Transport transport.Service
 
-	// ScribeDataModels is the list of models for which we should collect
+	// DataModels is the list of models for which we should collect
 	// signatures.
-	ScribeDataModels []string
-
-	// OpScribeDataModels is the list of models for which we should collect
-	// optimistic signatures.
-	OpScribeDataModels []string
+	DataModels []string
 
 	// Logger is a current logger interface used by the store.
 	Logger log.Logger
 }
 
-func NewMuSigStore(cfg MuSigStoreConfig) *MuSigStore {
-	return &MuSigStore{
-		waitCh:             make(chan error),
-		log:                cfg.Logger.WithField("tag", MuSigLoggerTag),
-		transport:          cfg.Transport,
-		scribeDataModels:   cfg.ScribeDataModels,
-		opScribeDataModels: cfg.OpScribeDataModels,
-		signatures:         make(map[storeKey]*messages.MuSigSignature),
+// New creates a new Store instance.
+func New(cfg Config) *Store {
+	return &Store{
+		waitCh:     make(chan error),
+		log:        cfg.Logger.WithField("tag", MuSigLoggerTag),
+		transport:  cfg.Transport,
+		dataModels: cfg.DataModels,
+		signatures: make(map[storeKey]*messages.MuSigSignature),
 	}
 }
 
 // Start implements the supervisor.Service interface.
-func (m *MuSigStore) Start(ctx context.Context) error {
+func (m *Store) Start(ctx context.Context) error {
 	if m.ctx != nil {
 		return errors.New("service can be started only once")
 	}
@@ -87,11 +93,12 @@ func (m *MuSigStore) Start(ctx context.Context) error {
 }
 
 // Wait implements the supervisor.Service interface.
-func (m *MuSigStore) Wait() <-chan error {
+func (m *Store) Wait() <-chan error {
 	return m.waitCh
 }
 
-func (m *MuSigStore) SignaturesByDataModel(model string) []*messages.MuSigSignature {
+// SignaturesByDataModel implements SignatureProvider interface.
+func (m *Store) SignaturesByDataModel(model string) []*messages.MuSigSignature {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -111,7 +118,7 @@ func (m *MuSigStore) SignaturesByDataModel(model string) []*messages.MuSigSignat
 	return signatures
 }
 
-func (m *MuSigStore) collectSignature(feed types.Address, sig *messages.MuSigSignature) {
+func (m *Store) collectSignature(feed types.Address, sig *messages.MuSigSignature) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	key := storeKey{wat: m.signatureDataModel(sig), feed: feed}
@@ -125,12 +132,12 @@ func (m *MuSigStore) collectSignature(feed types.Address, sig *messages.MuSigSig
 	m.signatures[key] = sig
 }
 
-func (m *MuSigStore) shouldCollectSignature(sig *messages.MuSigSignature) bool {
+func (m *Store) shouldCollectSignature(sig *messages.MuSigSignature) bool {
 	model := m.signatureDataModel(sig)
 	if model == "" {
 		return false
 	}
-	for _, a := range m.scribeDataModels {
+	for _, a := range m.dataModels {
 		if a == model {
 			return true
 		}
@@ -138,14 +145,20 @@ func (m *MuSigStore) shouldCollectSignature(sig *messages.MuSigSignature) bool {
 	return false
 }
 
-func (m *MuSigStore) handleSignatureMessage(msg transport.ReceivedMessage) {
+func (m *Store) handleSignatureMessage(msg transport.ReceivedMessage) {
 	if msg.Error != nil {
-		m.log.WithError(msg.Error).Error("Unable to receive message")
+		m.log.
+			WithError(msg.Error).
+			WithAdvice("Ignore if occurs occasionally, especially if it is related to temporary network issues").
+			Error("Unable to receive a message from the transport layer")
 		return
 	}
 	sig, ok := msg.Message.(*messages.MuSigSignature)
 	if !ok {
-		m.log.Error("Unexpected value returned from the transport layer")
+		m.log.
+			WithField("type", fmt.Sprintf("%T", msg.Message)).
+			WithAdvice("This is a bug and must be investigated").
+			Error("Unexpected value returned from the transport layer")
 		return
 	}
 	if !m.shouldCollectSignature(sig) {
@@ -154,7 +167,7 @@ func (m *MuSigStore) handleSignatureMessage(msg transport.ReceivedMessage) {
 	m.collectSignature(msgAuthorToAddr(msg.Author), sig)
 }
 
-func (m *MuSigStore) signatureDataModel(sig *messages.MuSigSignature) string {
+func (m *Store) signatureDataModel(sig *messages.MuSigSignature) string {
 	msgMeta := sig.MsgMeta.TickV1()
 	if msgMeta == nil {
 		return ""
@@ -162,7 +175,7 @@ func (m *MuSigStore) signatureDataModel(sig *messages.MuSigSignature) string {
 	return msgMeta.Wat
 }
 
-func (m *MuSigStore) collectorRoutine() {
+func (m *Store) collectorRoutine() {
 	sigCh := m.transport.Messages(messages.MuSigSignatureV1MessageName)
 	for {
 		select {
@@ -175,7 +188,7 @@ func (m *MuSigStore) collectorRoutine() {
 }
 
 // contextCancelHandler handles context cancellation.
-func (m *MuSigStore) contextCancelHandler() {
+func (m *Store) contextCancelHandler() {
 	defer func() { close(m.waitCh) }()
 	defer m.log.Info("Stopped")
 	<-m.ctx.Done()

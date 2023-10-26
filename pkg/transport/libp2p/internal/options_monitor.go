@@ -22,8 +22,19 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/multiformats/go-multiaddr"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/internal/sets"
 )
+
+type MonitorConfig struct {
+	// ShowLogOnChange enables logging immediately when the number of peers
+	// or connections changes.
+	ShowLogOnChange bool
+
+	// ShowLogInterval specifies the interval between logging.
+	// When ShowLogOnChange is true, then the delay resets after each change.
+	ShowLogInterval time.Duration
+}
 
 type monitorNotifee struct {
 	mu sync.RWMutex
@@ -42,7 +53,6 @@ func (n *monitorNotifee) ListenClose(network.Network, multiaddr.Multiaddr) {}
 func (n *monitorNotifee) Connected(_ network.Network, _ network.Conn) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
-
 	if !n.stopped {
 		n.notifeeCh <- struct{}{}
 	}
@@ -58,12 +68,6 @@ func (n *monitorNotifee) Disconnected(_ network.Network, _ network.Conn) {
 	}
 }
 
-// OpenedStream implements the network.Notifiee interface.
-func (n *monitorNotifee) OpenedStream(network.Network, network.Stream) {}
-
-// ClosedStream implements the network.Notifiee interface.
-func (n *monitorNotifee) ClosedStream(network.Network, network.Stream) {}
-
 // Stop stops monitoring notifee.
 func (n *monitorNotifee) Stop() {
 	n.mu.Lock()
@@ -73,29 +77,34 @@ func (n *monitorNotifee) Stop() {
 	close(n.notifeeCh)
 }
 
-func Monitor() Options {
+func Monitor(cfg MonitorConfig) Options {
 	return func(n *Node) error {
-		log := func() {
+		printLog := func() {
 			n.tsLog.get().
-				WithField("count", len(n.host.Network().Peers())).
-				Info("Peers")
+				WithFields(log.Fields{
+					"peerCount": len(n.host.Network().Peers()),
+					"connCount": len(n.host.Network().Conns()),
+				}).
+				Info("Connection monitor")
 		}
 
 		notifeeCh := make(chan struct{})
 		notifee := &monitorNotifee{notifeeCh: notifeeCh}
+		if cfg.ShowLogOnChange {
+			n.AddNotifee(notifee)
+		}
 
-		n.AddNotifee(notifee)
 		n.AddNodeEventHandler(sets.NodeEventHandlerFunc(func(event interface{}) {
 			if _, ok := event.(sets.NodeStartedEvent); ok {
 				go func() {
-					t := time.NewTicker(10 * time.Minute)
+					t := time.NewTicker(cfg.ShowLogInterval)
 					for {
 						select {
 						case <-notifeeCh:
-							log()
-							t.Reset(10 * time.Minute)
+							printLog()
+							t.Reset(cfg.ShowLogInterval)
 						case <-t.C:
-							log()
+							printLog()
 						case <-n.ctx.Done():
 							notifee.Stop()
 							t.Stop()

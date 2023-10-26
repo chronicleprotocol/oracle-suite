@@ -405,6 +405,13 @@ gofer {
     }
   }
 
+  data_model "GNO/ETH" {
+    indirect {
+      reference { data_model = "GNO/USD" }
+      reference { data_model = "ETH/USD" }
+    }
+  }
+
   data_model "GNO/USD" {
     median {
       min_values = 2
@@ -429,7 +436,11 @@ gofer {
   }
 
   data_model "IBTA/USD" {
-    origin "ishares" { query = "IBTA/USD" }
+    origin "ishares" {
+      query               = "IBTA/USD"
+      freshness_threshold = 3600 * 8
+      expiry_threshold    = 3600 * 24
+    }
   }
 
   data_model "LDO/USD" {

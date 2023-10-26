@@ -139,7 +139,7 @@ func Test_WebAPI(t *testing.T) {
 				// Wait for error log:
 				assert.Eventually(t, func() bool {
 					for _, m := range l.Mock().Calls {
-						if m.Method == "Warn" && m.Arguments[0].([]any)[0] == "Feed not allowed to send messages" {
+						if m.Method == "Debug" && m.Arguments[0].([]any)[0] == "Feed is not allowed to send messages" {
 							return true
 						}
 					}
@@ -264,7 +264,7 @@ func Test_WebAPI(t *testing.T) {
 				// Wait for error log:
 				assert.Eventually(t, func() bool {
 					for _, m := range l.Mock().Calls {
-						if m.Method == "Warn" && m.Arguments[0].([]any)[0] == "Invalid message pack signature" {
+						if m.Method == "Error" && m.Arguments[0].([]any)[0] == "Invalid message pack signature" {
 							return true
 						}
 					}
@@ -292,7 +292,7 @@ func Test_WebAPI(t *testing.T) {
 				// Wait for error log:
 				assert.Eventually(t, func() bool {
 					for _, m := range l.Mock().Calls {
-						if m.Method == "Warn" && m.Arguments[0].([]any)[0] == "Message signer does not match request author" {
+						if m.Method == "Error" && m.Arguments[0].([]any)[0] == "Message signer does not match request author" {
 							return true
 						}
 					}
@@ -326,7 +326,9 @@ func Test_WebAPI(t *testing.T) {
 			logger.Mock().On("WithError", mock.Anything).Return(logger)
 			logger.Mock().On("WithField", mock.Anything, mock.Anything).Return(logger)
 			logger.Mock().On("WithFields", mock.Anything).Return(logger)
-			logger.Mock().On("Warn", mock.Anything).Return()
+			logger.Mock().On("WithAdvice", mock.Anything).Return(logger)
+			logger.Mock().On("Error", mock.Anything)
+			logger.Mock().On("Warn", mock.Anything)
 			logger.Mock().On("Info", mock.Anything)
 			logger.Mock().On("Debug", mock.Anything)
 

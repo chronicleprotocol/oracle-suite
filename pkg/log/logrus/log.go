@@ -56,7 +56,7 @@ func (l *logger) Level() log.Level {
 }
 
 // WithField implements new log.Logger interface.
-func (l *logger) WithField(key string, value interface{}) log.Logger {
+func (l *logger) WithField(key string, value any) log.Logger {
 	return &logger{log: l.log.WithField(key, value), lvl: l.lvl}
 }
 
@@ -68,57 +68,37 @@ func (l *logger) WithFields(fields log.Fields) log.Logger {
 // WithError implements new log.Logger interface.
 func (l *logger) WithError(err error) log.Logger {
 	if fErr, ok := err.(log.ErrorWithFields); ok {
-		return &logger{log: l.log.WithFields(fErr.Fields()).WithError(err), lvl: l.lvl}
+		return &logger{log: l.log.WithFields(fErr.LogFields()).WithError(err), lvl: l.lvl}
 	}
 	return &logger{log: l.log.WithError(err), lvl: l.lvl}
 }
 
-// Debugf implements new log.Logger interface.
-func (l *logger) Debugf(format string, args ...interface{}) {
-	l.log.Debugf(format, args...)
-}
-
-// Infof implements new log.Logger interface.
-func (l *logger) Infof(format string, args ...interface{}) {
-	l.log.Infof(format, args...)
-}
-
-// Warnf implements new log.Logger interface.
-func (l *logger) Warnf(format string, args ...interface{}) {
-	l.log.Warnf(format, args...)
-}
-
-// Errorf implements new log.Logger interface.
-func (l *logger) Errorf(format string, args ...interface{}) {
-	l.log.Errorf(format, args...)
-}
-
-// Panicf implements new log.Logger interface.
-func (l *logger) Panicf(format string, args ...interface{}) {
-	l.log.Panicf(format, args...)
+// WithAdvice implements the log.Logger interface.
+func (l *logger) WithAdvice(advice string) log.Logger {
+	return l.WithField("advice", advice)
 }
 
 // Debug implements new log.Logger interface.
-func (l *logger) Debug(args ...interface{}) {
+func (l *logger) Debug(args ...any) {
 	l.log.Debug(args...)
 }
 
 // Info implements new log.Logger interface.
-func (l *logger) Info(args ...interface{}) {
+func (l *logger) Info(args ...any) {
 	l.log.Info(args...)
 }
 
 // Warn implements new log.Logger interface.
-func (l *logger) Warn(args ...interface{}) {
+func (l *logger) Warn(args ...any) {
 	l.log.Warn(args...)
 }
 
 // Error implements new log.Logger interface.
-func (l *logger) Error(args ...interface{}) {
+func (l *logger) Error(args ...any) {
 	l.log.Error(args...)
 }
 
 // Panic implements new log.Logger interface.
-func (l *logger) Panic(args ...interface{}) {
+func (l *logger) Panic(args ...any) {
 	l.log.Panic(args...)
 }

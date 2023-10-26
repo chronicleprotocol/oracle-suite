@@ -23,6 +23,7 @@ import (
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 
@@ -47,6 +48,16 @@ type Config struct {
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
 	Content hcl.BodyContent `hcl:",content"`
+}
+
+func (Config) DefaultEmbeds() [][]byte {
+	return [][]byte{
+		config.Contracts,
+		config.Defaults,
+		config.Spire,
+		config.Transport,
+		config.Ethereum,
+	}
 }
 
 type ConfigSpire struct {

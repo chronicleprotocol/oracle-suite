@@ -250,7 +250,7 @@ Available Commands:
   stream      Streams data from the network
 
 Flags:
-  -c, --config strings                                 config file (default [./config.hcl])
+  -c, --config strings                                 config file (optional)
   -h, --help                                           help for spire
   -f, --log.format text|json                           log format (default text)
   -v, --log.verbosity panic|error|warning|info|debug   verbosity level (default info)

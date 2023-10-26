@@ -541,7 +541,7 @@ func (s *server) call(
 						// WithField("args", args).
 						WithField("duration", time.Since(t)).
 						WithError(err).
-						Error("Call error")
+						Debug("Call error")
 					ch <- err
 				default:
 					s.log.

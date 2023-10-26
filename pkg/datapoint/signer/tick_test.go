@@ -21,39 +21,36 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
+	"github.com/defiweb/go-eth/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-	"github.com/chronicleprotocol/oracle-suite/pkg/ethereum/mocks"
 )
 
-// Hash for the AAABBB asset pair, with the price set to 42 and the age to 1605371361:
-var priceHash = "0x5e7aa8f6514c872b2020a7f63c72a382e813dc0624a2fb3c28367fee763be154"
+// Private key used for signing:
+var privKey = wallet.NewKeyFromBytes(bytes.Repeat([]byte{0xAA}, 32))
+
+// Signature for AAABBB asset pair, with the price set to 42 and the age to 1605371361:
+var expSignature = types.MustSignatureFromHex("0x5bfb263357b92e071604ca7d5fee9859360c6983582de40c72c104e0f941ce8f60f658e4ec492c4ada5f6c4c00688829534483aeea7ef392472474b97ac3395d1b")
 
 func TestTick_Supports(t *testing.T) {
 	t.Run("supported data point", func(t *testing.T) {
-		k := &mocks.Key{}
-		s := NewTickSigner(k)
+		s := NewTickSigner(privKey)
 		assert.True(t, s.Supports(context.Background(), datapoint.Point{Value: value.Tick{}}))
 	})
 	t.Run("unsupported data point", func(t *testing.T) {
-		k := &mocks.Key{}
-		s := NewTickSigner(k)
+		s := NewTickSigner(privKey)
 		assert.False(t, s.Supports(context.Background(), datapoint.Point{Value: value.StaticValue{}}))
 	})
 }
 
 func TestTick_Sign(t *testing.T) {
-	k := &mocks.Key{}
-	s := NewTickSigner(k)
-
-	expSig := types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65))
-	k.On("SignHash", types.MustHashFromHex(priceHash, types.PadNone)).Return(expSig, nil).Once()
-
-	retSig, err := s.Sign(context.Background(), "AAABBB", datapoint.Point{
+	signer := NewTickSigner(privKey)
+	signature, err := signer.Sign(context.Background(), "AAABBB", datapoint.Point{
 		Value:     value.NewTick(value.Pair{Base: "AAA", Quote: "BBB"}, 42, 0),
 		Time:      time.Unix(1605371361, 0),
 		SubPoints: nil,
@@ -61,26 +58,18 @@ func TestTick_Sign(t *testing.T) {
 		Error:     nil,
 	})
 	require.NoError(t, err)
-
-	assert.Equal(t, *expSig, *retSig)
+	assert.Equal(t, expSignature, *signature)
 }
 
 func TestTick_Recover(t *testing.T) {
-	r := &mocks.Recoverer{}
-	s := NewTickRecoverer(r)
-
-	msgSig := types.MustSignatureFromBytesPtr(bytes.Repeat([]byte{0xAA}, 65))
-	expAddr := types.MustAddressFromHexPtr("0x1234567890123456789012345678901234567890")
-	r.On("RecoverHash", types.MustHashFromHex(priceHash, types.PadNone), *msgSig).Return(expAddr, nil).Once()
-
-	retAddr, err := s.Recover(context.Background(), "AAABBB", datapoint.Point{
+	recoverer := NewTickRecoverer(crypto.ECRecoverer)
+	address, err := recoverer.Recover(context.Background(), "AAABBB", datapoint.Point{
 		Value:     value.NewTick(value.Pair{Base: "AAA", Quote: "BBB"}, 42, 0),
 		Time:      time.Unix(1605371361, 0),
 		SubPoints: nil,
 		Meta:      nil,
 		Error:     nil,
-	}, *msgSig)
+	}, expSignature)
 	require.NoError(t, err)
-
-	assert.Equal(t, *expAddr, *retAddr)
+	assert.Equal(t, privKey.Address(), *address)
 }

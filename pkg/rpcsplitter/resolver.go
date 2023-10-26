@@ -41,8 +41,9 @@ type defaultResolver struct {
 
 // resolve implements resolver interface.
 func (r *defaultResolver) resolve(resps []any) (any, error) {
+	resps, errs := extractErrors(resps)
 	if len(resps) < r.minResponses {
-		return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
+		return nil, addError(errNotEnoughResponses, errs...)
 	}
 	if len(resps) == 1 {
 		return resps[0], nil
@@ -51,9 +52,6 @@ func (r *defaultResolver) resolve(resps []any) (any, error) {
 	mostCommonCounter := 0
 	multiple := false
 	for _, a := range resps {
-		if _, ok := a.(error); ok {
-			continue
-		}
 		counter := 0
 		for _, b := range resps {
 			if compare(a, b) {
@@ -70,7 +68,7 @@ func (r *defaultResolver) resolve(resps []any) (any, error) {
 		}
 	}
 	if multiple || mostCommonCounter < r.minResponses {
-		return nil, addError(errDifferentResponses, collectErrors(resps)...)
+		return nil, addError(errDifferentResponses, errs...)
 	}
 	return mostCommonResp, nil
 }
@@ -87,9 +85,10 @@ type gasValueResolver struct {
 
 // resolve implements resolver interface.
 func (r *gasValueResolver) resolve(resps []any) (any, error) {
+	resps, errs := extractErrors(resps)
 	ns := filterByNumberType(resps)
 	if len(ns) < r.minResponses {
-		return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
+		return nil, addError(errNotEnoughResponses, errs...)
 	}
 	if len(ns) == 1 {
 		return resps[0], nil
@@ -131,9 +130,10 @@ type blockNumberResolver struct {
 
 // resolve implements resolver interface.
 func (r *blockNumberResolver) resolve(resps []any) (any, error) {
+	resps, errs := extractErrors(resps)
 	ns := filterByNumberType(resps)
 	if len(ns) < r.minResponses {
-		return nil, addError(errNotEnoughResponses, collectErrors(resps)...)
+		return nil, addError(errNotEnoughResponses, errs...)
 	}
 	if len(ns) == 1 {
 		return ns[0], nil
@@ -157,6 +157,17 @@ func (r *blockNumberResolver) resolve(resps []any) (any, error) {
 	return bigToNumberPtr(block), nil
 }
 
+func extractErrors(resps []any) (filtered []any, errs []error) {
+	for _, r := range resps {
+		if e, ok := r.(error); ok {
+			errs = append(errs, e)
+		} else {
+			filtered = append(filtered, r)
+		}
+	}
+	return
+}
+
 func filterByNumberType(resps []any) (s []*types.Number) {
 	for _, r := range resps {
 		if t, ok := r.(*types.Number); ok {
@@ -169,13 +180,4 @@ func filterByNumberType(resps []any) (s []*types.Number) {
 func bigToNumberPtr(x *big.Int) *types.Number {
 	n := types.BigToNumber(x)
 	return &n
-}
-
-func collectErrors(resps []any) (errs []error) {
-	for _, r := range resps {
-		if t, ok := r.(error); ok {
-			errs = append(errs, t)
-		}
-	}
-	return
 }

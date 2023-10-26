@@ -52,19 +52,19 @@ func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
 func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, error) {
 	blockNumber, err := s.client.BlockNumber(ctx)
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %v", err)
+		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	challengePeriod, err := s.opChallengePeriod(ctx, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %v", err)
+		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %v", err)
+		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	opPokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %v", err)
+		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
 	if opPokeDataFinalized && opPokeData.Age.After(pokeData.Age) {
@@ -76,7 +76,7 @@ func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, er
 func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
 	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.LatestBlockNumber)
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: readPokeData query failed: %v", err)
+		return PokeData{}, fmt.Errorf("opScribe: readPokeData query failed: %w", err)
 	}
 	return pokeData, nil
 }
@@ -84,7 +84,7 @@ func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
 func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	pokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.LatestBlockNumber)
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: readOpPokeData query failed: %v", err)
+		return PokeData{}, fmt.Errorf("opScribe: readOpPokeData query failed: %w", err)
 	}
 	return pokeData, nil
 }
@@ -106,17 +106,17 @@ func (s *OpScribe) OpPoke(
 		toECDSADataStruct(ecdsaData),
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %v", err)
+		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(s.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, s.client, abiOpScribe, *tx); err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %v", err)
+		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
 	}
 	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %v", err)
+		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
 	}
 	return txHash, txCpy, nil
 }
@@ -131,11 +131,11 @@ func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumbe
 		block,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("opScribe: opChallengePeriod query failed: %v", err)
+		return 0, fmt.Errorf("opScribe: opChallengePeriod query failed: %w", err)
 	}
 	var period uint16
 	if err := abiOpScribe.Methods["opChallengePeriod"].DecodeValues(res, &period); err != nil {
-		return 0, fmt.Errorf("opScribe: opChallengePeriod query failed: %v", err)
+		return 0, fmt.Errorf("opScribe: opChallengePeriod query failed: %w", err)
 	}
 	return time.Second * time.Duration(period), nil
 }
@@ -144,17 +144,16 @@ func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumbe
 // OpScribe.opPoke method.
 //
 // The message structure is defined as:
-// H(tag ‖ H(wat ‖ val ‖ age ‖ signature ‖ commitment ‖ signersBlob))
+// H(wat ‖ val ‖ age ‖ signature ‖ commitment ‖ signersBlob)
 //
 // Where:
-// - tag is the message prefix (EIP-191)
 // - wat: an asset name
 // - val: a price value
 // - age: a time when the price was observed
 // - signature: a Schnorr signature
 // - commitment: a Schnorr commitment
 // - signersBlob: a byte slice with signers indexes obtained from a contract
-func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) types.Hash {
+func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) []byte {
 	// Asset name (wat):
 	bytes32Wat := make([]byte, 32)
 	copy(bytes32Wat, wat)
@@ -183,5 +182,5 @@ func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData Sch
 	copy(data[84:104], bytes20Commitment)
 	copy(data[104:], signersBlob)
 
-	return crypto.Keccak256(crypto.AddMessagePrefix(crypto.Keccak256(data).Bytes()))
+	return crypto.Keccak256(data).Bytes()
 }

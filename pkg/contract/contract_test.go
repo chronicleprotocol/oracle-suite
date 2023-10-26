@@ -20,6 +20,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/rpc/transport"
@@ -199,4 +200,8 @@ func TestBytesToString(t *testing.T) {
 			assert.Equal(t, tt.expected, bytes32ToString(tt.input))
 		})
 	}
+}
+
+func toEIP191(msg []byte) types.Hash {
+	return crypto.Keccak256(crypto.AddMessagePrefix(msg))
 }

@@ -24,15 +24,16 @@ import (
 )
 
 func main() {
-	var ff cmd.FilesFlags
-	var lf cmd.LoggerFlags
-	c := cmd.NewRootCommand("gofer", suite.Version, &ff, &lf)
-
 	var config gofer.Config
+	cf := cmd.ConfigFlagsForConfig(config)
+
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("gofer", suite.Version, &cf, &lf)
+
 	c.AddCommand(
-		cmd.NewRunCmd(&config, &ff, &lf),
-		NewModelsCmd(&config, &ff, &lf),
-		NewDataCmd(&config, &ff, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
+		NewModelsCmd(&config, &cf, &lf),
+		NewDataCmd(&config, &cf, &lf),
 	)
 
 	if err := c.Execute(); err != nil {

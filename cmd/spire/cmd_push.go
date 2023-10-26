@@ -28,7 +28,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func NewPushCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPushCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	cc := &cobra.Command{
 		Use:   "push",
 		Args:  cobra.ExactArgs(1),
@@ -40,7 +40,7 @@ func NewPushCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.C
 	return cc
 }
 
-func NewPushPriceCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPushPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price",
 		Args:  cobra.MaximumNArgs(1),

@@ -26,13 +26,13 @@ spectre {
       data_model = replace(contract.value.wat, "/", "")
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.poke.spread
+      spread = try(contract.value.poke.spread, 1)
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.poke.expiration
+      expiration = try(contract.value.poke.expiration, 32400)
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.poke.interval
+      interval = try(contract.value.poke.interval, 120)
     }
   }
 
@@ -59,13 +59,16 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.poke.spread
+      spread = try(contract.value.poke.spread, 1)
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.poke.expiration
+      expiration = try(contract.value.poke.expiration, 32400)
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.poke.interval
+      interval = try(contract.value.poke.interval, 120)
+
+      # If a contract is optimistic, then we add a delay to the poke interval to allow for the optimistic poke to happen first.
+      delay = try(v.IScribeOptimistic, false) ? 600 : 0
     }
   }
 
@@ -92,13 +95,13 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.optimistic_poke.spread
+      spread = try(contract.value.optimistic_poke.spread, 0.5)
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.optimistic_poke.expiration
+      expiration = try(contract.value.optimistic_poke.expiration, 28800)
 
       # Specifies how often in seconds Spectre should check if Oracle contract needs to be updated.
-      interval = contract.value.optimistic_poke.interval
+      interval = try(contract.value.optimistic_poke.interval, 120)
     }
   }
 }

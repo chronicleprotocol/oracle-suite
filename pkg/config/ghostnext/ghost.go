@@ -21,6 +21,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/config"
 	configGoferNext "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feednext"
@@ -45,6 +46,17 @@ type Config struct {
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
 	Content hcl.BodyContent `hcl:",content"`
+}
+
+func (Config) DefaultEmbeds() [][]byte {
+	return [][]byte{
+		config.Contracts,
+		config.Defaults,
+		config.Ghost,
+		config.Gofer,
+		config.Ethereum,
+		config.Transport,
+	}
 }
 
 // Services returns the services configured for Lair.

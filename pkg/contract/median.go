@@ -70,7 +70,7 @@ func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("median: val query failed: %v", err)
+		return nil, fmt.Errorf("median: val query failed: %w", err)
 	}
 	if len(b) < (offset + length) {
 		return nil, errors.New("median: val query failed: result is too short")
@@ -91,7 +91,7 @@ func (m *Median) Age(ctx context.Context) (time.Time, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return time.Unix(0, 0), fmt.Errorf("median: age query failed: %v", err)
+		return time.Unix(0, 0), fmt.Errorf("median: age query failed: %w", err)
 	}
 	return time.Unix(new(big.Int).SetBytes(res).Int64(), 0), nil
 }
@@ -106,7 +106,7 @@ func (m *Median) Wat(ctx context.Context) (string, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return "", fmt.Errorf("median: wat query failed: %v", err)
+		return "", fmt.Errorf("median: wat query failed: %w", err)
 	}
 	return bytes32ToString(res), nil
 }
@@ -121,7 +121,7 @@ func (m *Median) Bar(ctx context.Context) (int, error) {
 		types.LatestBlockNumber,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("median: bar query failed: %v", err)
+		return 0, fmt.Errorf("median: bar query failed: %w", err)
 	}
 	return int(new(big.Int).SetBytes(res).Int64()), nil
 }
@@ -147,17 +147,17 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 	}
 	calldata, err := abiMedian.Methods["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
 	if err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
 	}
 	tx := (&types.Transaction{}).
 		SetTo(m.address).
 		SetInput(calldata)
 	if err := simulateTransaction(ctx, m.client, abiMedian, *tx); err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
 	}
 	txHash, txCpy, err := m.client.SendTransaction(ctx, *tx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %v", err)
+		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
 	}
 	return txHash, txCpy, nil
 }
@@ -166,14 +166,13 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 // Median.poke method.
 //
 // The message structure is defined as:
-// H(tag ‖ H(val ‖ age ‖ wat)
+// H(val ‖ age ‖ wat)
 //
 // Where:
-// - tag:
 // - val: a price value
 // - age: a time when the price was observed
 // - wat: an asset name
-func ConstructMedianPokeMessage(wat string, val *bn.DecFloatPointNumber, age time.Time) types.Hash {
+func ConstructMedianPokeMessage(wat string, val *bn.DecFloatPointNumber, age time.Time) []byte {
 	// Price (val):
 	uint256Val := make([]byte, 32)
 	val.DecFixedPoint(MedianPricePrecision).RawBigInt().FillBytes(uint256Val)
@@ -192,5 +191,5 @@ func ConstructMedianPokeMessage(wat string, val *bn.DecFloatPointNumber, age tim
 	copy(data[32:64], uint256Age)
 	copy(data[64:96], bytes32Wat)
 
-	return crypto.Keccak256(crypto.AddMessagePrefix(crypto.Keccak256(data).Bytes()))
+	return crypto.Keccak256(data).Bytes()
 }

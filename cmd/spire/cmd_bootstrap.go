@@ -39,7 +39,7 @@ type BootstrapConfig struct {
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func NewBootstrapCmd(c *BootstrapConfig, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewBootstrapCmd(c *BootstrapConfig, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "bootstrap",
 		Args:    cobra.ExactArgs(0),

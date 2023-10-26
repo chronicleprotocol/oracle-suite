@@ -29,7 +29,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 )
 
-func NewPullCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPullCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	cc := &cobra.Command{
 		Use:   "pull",
 		Args:  cobra.ExactArgs(1),
@@ -42,7 +42,7 @@ func NewPullCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.C
 	return cc
 }
 
-func NewPullPriceCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPullPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price ASSET_PAIR FEED",
 		Args:  cobra.ExactArgs(2),
@@ -87,7 +87,7 @@ type pullPricesOptions struct {
 	FilterFrom string
 }
 
-func NewPullPricesCmd(c *spire.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPullPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var pullPricesOpts pullPricesOptions
 	cc := &cobra.Command{
 		Use:   "prices",

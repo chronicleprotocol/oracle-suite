@@ -413,14 +413,22 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 		w.rand,
 	)
 	if err != nil {
-		w.log.WithError(err).WithField("address", addr).Error("Failed to sign URL")
+		w.log.
+			WithError(err).
+			WithField("address", addr).
+			WithAdvice("This is a bug and must be investigated").
+			Error("Failed to sign URL")
 		return
 	}
 
 	// Prepare the request.
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		w.log.WithField("address", addr).WithError(err).Error("Failed to create request")
+		w.log.
+			WithError(err).
+			WithField("address", addr).
+			WithAdvice("This is a bug and must be investigated").
+			Error("Failed to create request")
 	}
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/x-protobuf")
@@ -429,7 +437,11 @@ func (w *WebAPI) doHTTPRequest(ctx context.Context, addr string, data []byte, t 
 	// Send the request.
 	res, err := w.client.Do(req)
 	if err != nil {
-		w.log.WithField("address", addr).WithError(err).Error("Failed to send messages to consumer")
+		w.log.
+			WithError(err).
+			WithField("address", addr).
+			WithAdvice("Ignore if occurs occasionally, especially if it is related to temporary network issues").
+			Warn("Failed to send messages to consumer")
 		return
 	}
 	res.Body.Close()
@@ -462,6 +474,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		w.log.
 			WithFields(fields).
+			WithAdvice("This may happen if someone is trying to connect to the WebAPI server with incompatible software").
 			Warn("Invalid request method")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -471,6 +484,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != consumePath {
 		w.log.
 			WithFields(fields).
+			WithAdvice("This may happen if someone is trying to connect to the WebAPI server with incompatible software").
 			Warn("Invalid request path")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -481,6 +495,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		w.log.
 			WithFields(fields).
 			WithField("content-type", h).
+			WithAdvice("This may happen if someone is trying to connect to the WebAPI server with incompatible software").
 			Warn("Invalid content type")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -491,6 +506,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		w.log.
 			WithFields(fields).
 			WithField("content-encoding", h).
+			WithAdvice("This may happen if someone is trying to connect to the WebAPI server with incompatible software").
 			Warn("Invalid request encoding")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -519,6 +535,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		w.log.
 			WithFields(fields).
 			WithError(err).
+			WithAdvice("This may indicate a bug in the WebAPI server or a bug in the consumer software, or someone is trying to connect to the WebAPI server with incompatible software"). //nolint:lll
 			Warn("Invalid request signature")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -530,7 +547,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if !sliceutil.Contains(w.allowlist, *requestAuthor) {
 		w.log.
 			WithFields(fields).
-			Warn("Feed not allowed to send messages")
+			Debug("Feed is not allowed to send messages")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -541,6 +558,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if timestamp.After(currentTimestamp.Add(w.maxClockSkew)) {
 		w.log.
 			WithFields(fields).
+			WithAdvice("This may be cased by setting incorrect system time on this server or server that send the message").
 			Warn("Timestamp too far in the future")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -548,6 +566,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if timestamp.Before(currentTimestamp.Add(-w.flushTicker.Duration() - w.maxClockSkew)) {
 		w.log.
 			WithFields(fields).
+			WithAdvice("This may be cased by setting incorrect system time on this server or server that send the message").
 			Warn("Timestamp too far in the past")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -558,6 +577,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if timestamp.Before(w.lastReqs[*requestAuthor].Add(w.flushTicker.Duration() - w.maxClockSkew)) {
 		w.log.
 			WithFields(fields).
+			WithAdvice("This may be causes by misconfiguration on this server or server that send the message").
 			Warn("Too many messages received in a short time")
 		res.WriteHeader(http.StatusTooManyRequests)
 		return
@@ -568,6 +588,7 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		w.log.WithFields(fields).
 			WithError(err).
+			WithAdvice("Ignore if occurs occasionally, especially if it is related to temporary network issues").
 			Warn("Unable to read request body")
 		res.WriteHeader(http.StatusBadRequest)
 		return
@@ -576,7 +597,8 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		w.log.WithFields(fields).
 			WithError(err).
-			Warn("Unable to decompress request body")
+			WithAdvice("This is likely a bug and must be investigated").
+			Error("Unable to decompress request body")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -585,9 +607,10 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	mp := &pb.MessagePack{}
 	if err := proto.Unmarshal(body, mp); err != nil {
 		w.log.
-			WithFields(fields).
 			WithError(err).
-			Warn("Unable to decode protobuf message")
+			WithFields(fields).
+			WithAdvice("This is likely a bug and must be investigated").
+			Error("Unable to decode protobuf message")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -598,9 +621,10 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 	messagePackSigner, err := verifyMessage(mp, w.recover)
 	if err != nil {
 		w.log.
-			WithFields(fields).
 			WithError(err).
-			Warn("Invalid message pack signature")
+			WithFields(fields).
+			WithAdvice("This is likely a bug and must be investigated").
+			Error("Invalid message pack signature")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -608,7 +632,8 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 		w.log.
 			WithFields(fields).
 			WithField("signer", messagePackSigner).
-			Warn("Message signer does not match request author")
+			WithAdvice("This is likely a bug and must be investigated").
+			Error("Message signer does not match request author")
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -624,9 +649,10 @@ func (w *WebAPI) consumeHandler(res http.ResponseWriter, req *http.Request) {
 			msg := reflect.New(ref).Interface().(transport.Message)
 			if err := msg.UnmarshallBinary(bin); err != nil {
 				w.log.
-					WithFields(fields).
 					WithError(err).
-					Warn("Unable to unmarshal message")
+					WithFields(fields).
+					WithAdvice("This is likely a bug and must be investigated").
+					Error("Unable to unmarshal message")
 				continue
 			}
 
@@ -672,10 +698,16 @@ func (w *WebAPI) flushRoutine(ctx context.Context) {
 			if err := w.flushMessages(ctx, tm); err != nil {
 				w.log.
 					WithError(err).
+					WithAdvice("This is a bug and must be investigated").
 					Error("Failed to send messages")
 			}
 		}
 	}
+}
+
+// ServiceName implements the supervisor.WithName interface.
+func (w *WebAPI) ServiceName() string {
+	return "WebAPI"
 }
 
 // contextCancelHandler handles context cancellation.

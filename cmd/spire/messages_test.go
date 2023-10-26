@@ -58,7 +58,12 @@ func TestHandleMessage(t *testing.T) {
 				"age": 1234567890
 			},
 			"signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+			"signatures": [
+				{
+					"signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+					"type": "median/v1"
+				}
+			],
 			"meta": {
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_id": "peer1",
@@ -108,7 +113,12 @@ func TestHandleMessage(t *testing.T) {
 				"age": 1234567890
 			},
 			"signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
+			"signatures": [
+				{
+					"signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
+					"type": "median/v1"
+				}
+			],
 			"meta": {
 				"transport": "libp2p",
 				"user_agent": "spire/v0.0.0",
@@ -149,9 +159,8 @@ func TestHandleMessage(t *testing.T) {
 				"val": "3000000000000000000000",
 				"wat": "ETH/USD"
 			},
-			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"signatures": [{
-				"type": "optimistic",
+				"type": "scribe-optimistic/v1",
 				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
 				"signers_blob":"0x123456"
 			}],
@@ -165,7 +174,7 @@ func TestHandleMessage(t *testing.T) {
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"started_at": 1234567890,
 				"topic": "musig_initialize/v1",
-				"signers": ["0x1234567890abcdef1234567890abcdef12345678"],
+				"trace_signers": ["0x1234567890abcdef1234567890abcdef12345678"],
 				"trace": [{
 					"age": 1234567890,
 					"sig": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
@@ -235,7 +244,6 @@ func TestHandleMessage(t *testing.T) {
 			"type": "musig_partial_signature",
 			"version": "0.1",
 			"signature": "0x499602d2",
-			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"meta": {
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"transport": "libp2p",
@@ -277,12 +285,14 @@ func TestHandleMessage(t *testing.T) {
 				"wat": "ETH/USD",
 				"commitment": "0x1234567890abcdef1234567890abcdef12345678"
 			},
-			"signer": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
 			"signature": "0x499602d2",
 			"signatures": [{
-				"type": "optimistic",
+				"type": "scribe-optimistic/v1",
 				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
 				"signers_blob":"0x123456"
+			},{
+				"type": "scribe/v1",
+				"signature":"0x499602d2"
 			}],
 			"meta": {
 				"type": "musig_initialize",
@@ -294,7 +304,7 @@ func TestHandleMessage(t *testing.T) {
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"computed_at": 1234567890,
 				"topic": "musig_signature/v1",
-				"signers": ["0x1234567890abcdef1234567890abcdef12345678"],
+				"trace_signers": ["0x1234567890abcdef1234567890abcdef12345678"],
 				"trace": [{
 					"age": 1234567890,
 					"sig": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",

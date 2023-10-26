@@ -24,6 +24,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/sysmon"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
 const LoggerTag = "SUPERVISOR"
@@ -41,6 +42,14 @@ type Service interface {
 	// When the service is stopped, the channel will be closed. If an error
 	// occurs, an error will be sent to the channel before closing it.
 	Wait() <-chan error
+}
+
+// WithName is an optional interface that can be implemented by a service
+// to provide a name. The name is used in logs and metrics.
+type WithName interface {
+	Service
+
+	ServiceName() string
 }
 
 // Supervisor manages long-running services that implement the Service
@@ -87,7 +96,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	s.ctx, s.ctxCancel = context.WithCancel(ctx)
 	for _, srv := range s.services {
 		s.log.
-			WithField("service", serviceName(srv)).
+			WithField("service", ServiceName(srv)).
 			Debug("Starting service")
 		if err := srv.Start(s.ctx); err != nil {
 			s.ctxCancel()
@@ -123,16 +132,17 @@ func (s *Supervisor) serviceMonitor() {
 			c[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(srv.Wait())}
 		}
 		n, v, ok := reflect.Select(c)
-		name := serviceName(s.services[n])
+		name := ServiceName(s.services[n])
 
 		// If service failed, cancel the context to stop the others:
 		if !v.IsNil() {
 			s.log.
 				WithError(v.Interface().(error)).
 				WithField("service", name).
+				WithAdvice("This is a critical bug and must be investigated").
 				Error("Service crashed")
 			if err == nil {
-				err = v.Interface().(error) // TODO(mdobak): Consider using multierror.
+				err = errutil.Append(err, v.Interface().(error))
 			}
 			s.ctxCancel()
 			continue
@@ -143,8 +153,6 @@ func (s *Supervisor) serviceMonitor() {
 			Debug("Service stopped")
 
 		// Remove service from list if channel is closed:
-		// TODO(mdobak): If service is not removed from the list, there is no need
-		//               rebuild select cases above.
 		if !ok {
 			s.services = append(s.services[:n], s.services[n+1:]...)
 		}
@@ -155,6 +163,12 @@ func (s *Supervisor) serviceMonitor() {
 	close(s.waitCh)
 }
 
-func serviceName(s interface{}) string {
-	return reflect.Indirect(reflect.ValueOf(s)).Type().String()
+// ServiceName returns the name of the service. If the service implements
+// the WithName interface, the ServiceName method is used. Otherwise, the
+// name of the type is returned.
+func ServiceName(s any) string {
+	if n, ok := s.(WithName); ok {
+		return n.ServiceName()
+	}
+	return reflect.Indirect(reflect.ValueOf(s)).Type().Name()
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 )
 
@@ -56,7 +57,10 @@ func (r *Recoverer) Wait() <-chan error {
 func (r *Recoverer) Broadcast(topic string, message transport.Message) (err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			r.l.WithField("panic", rec).Error("Recovered from panic")
+			r.l.
+				WithField("panic", rec).
+				WithAdvice("This is a critical bug and must be investigated").
+				Error("Recovered from panic")
 			err = fmt.Errorf("recovered from panic: %v", rec)
 		}
 	}()
@@ -67,8 +71,16 @@ func (r *Recoverer) Broadcast(topic string, message transport.Message) (err erro
 func (r *Recoverer) Messages(topic string) <-chan transport.ReceivedMessage {
 	defer func() {
 		if rec := recover(); rec != nil {
-			r.l.WithField("panic", rec).Error("Recovered from panic")
+			r.l.
+				WithField("panic", rec).
+				WithAdvice("This is a critical bug and must be investigated").
+				Error("Recovered from panic")
 		}
 	}()
 	return r.t.Messages(topic)
+}
+
+// ServiceName implements the supervisor.WithName interface.
+func (r *Recoverer) ServiceName() string {
+	return fmt.Sprintf("Recoverer(%s)", supervisor.ServiceName(r.t))
 }

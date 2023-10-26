@@ -24,13 +24,14 @@ import (
 )
 
 func main() {
-	var ff cmd.FilesFlags
-	var lf cmd.LoggerFlags
-	c := cmd.NewRootCommand("spectre", suite.Version, &ff, &lf)
-
 	var config spectre.Config
+	cf := cmd.ConfigFlagsForConfig(config)
+
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("spectre", suite.Version, &cf, &lf)
+
 	c.AddCommand(
-		cmd.NewRunCmd(&config, &ff, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
 	)
 
 	if err := c.Execute(); err != nil {

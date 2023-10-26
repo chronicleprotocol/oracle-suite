@@ -17,9 +17,8 @@ package relay
 
 import (
 	"context"
-	"fmt"
 	"math"
-	"sort"
+	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/hexutil"
@@ -30,13 +29,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 type medianWorker struct {
 	log            log.Logger
-	dataPointStore *store.Store
+	dataPointStore store.DataPointProvider
 	feedAddresses  []types.Address
 	contract       MedianContract
 	dataModel      string
@@ -52,38 +50,49 @@ func (w *medianWorker) workerRoutine(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-w.ticker.TickCh():
-			if err := w.tryUpdate(ctx); err != nil {
-				w.log.
-					WithError(err).
-					Error("Failed to update Median contract")
-			}
+			w.tryUpdate(ctx)
 		}
 	}
 }
 
-func (w *medianWorker) tryUpdate(ctx context.Context) error {
+func (w *medianWorker) tryUpdate(ctx context.Context) {
 	// Current median price.
 	val, err := w.contract.Val(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get current median price from the Median contract")
+		return
 	}
 
 	// Time of the last update.
 	age, err := w.contract.Age(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get last update time from the Median contract")
+		return
 	}
 
 	// Quorum.
 	bar, err := w.contract.Bar(ctx)
 	if err != nil {
-		return err
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if it is related to temporary network issues").
+			Error("Failed to get quorum from the Median contract")
+		return
 	}
 
 	// Load data points from the store.
-	dataPoints, signatures, err := w.getDataPoints(ctx, age, bar)
-	if err != nil {
-		return err
+	dataPoints, signatures, ok := w.findDataPoints(ctx, age, bar)
+	if !ok {
+		return
 	}
 
 	prices := dataPointsToPrices(dataPoints)
@@ -92,17 +101,16 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 
 	// Check if price on the Median contract needs to be updated.
 	// The price needs to be updated if:
-	// - Price is older than the interval specified in the expiration
-	//   field.
+	// - Price is older than the interval specified in the expiration field.
 	// - Price differs from the current price by more than is specified in the
-	//   OracleSpread field.
+	//   Spread field.
 	isExpired := time.Since(age) >= w.expiration
 	isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 	// Print logs.
 	w.log.
+		WithFields(w.logFields()).
 		WithFields(log.Fields{
-			"dataModel":        w.dataModel,
 			"bar":              bar,
 			"age":              age,
 			"val":              val,
@@ -113,7 +121,7 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 			"timeToExpiration": time.Since(age).String(),
 			"currentSpread":    spread,
 		}).
-		Info("Trying to update Median contract")
+		Debug("Median worker")
 
 	// If price is stale or expired, send update.
 	if isExpired || isStale {
@@ -131,12 +139,13 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 		// Send *actual* transaction.
 		txHash, tx, err := w.contract.Poke(ctx, vals)
 		if err != nil {
-			return err
+			w.handlePokeErr(err)
+			return
 		}
 
 		w.log.
+			WithFields(w.logFields()).
 			WithFields(log.Fields{
-				"dataModel":              w.dataModel,
 				"txHash":                 txHash,
 				"txType":                 tx.Type,
 				"txFrom":                 tx.From,
@@ -149,19 +158,22 @@ func (w *medianWorker) tryUpdate(ctx context.Context) error {
 				"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
 				"txInput":                hexutil.BytesToHex(tx.Input),
 			}).
-			Info("Sent update to the Median contract")
+			Info("Poke transaction sent to the Median contract")
 	}
-
-	return nil
 }
 
-func (w *medianWorker) getDataPoints(ctx context.Context, after time.Time, quorum int) ([]datapoint.Point, []types.Signature, error) {
+func (w *medianWorker) findDataPoints(ctx context.Context, after time.Time, quorum int) ([]datapoint.Point, []types.Signature, bool) {
 	// Generate slice of random indices to select data points from.
 	// It is important to select data points randomly to avoid promoting
 	// any particular feed.
 	randIndices, err := randomInts(len(w.feedAddresses))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate random indices: %w", err)
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("This is a bug and needs to be investigated").
+			Error("Failed to generate random indices")
+		return nil, nil, false
 	}
 
 	// Try to get data points from the store from the feeds in the random order
@@ -173,25 +185,24 @@ func (w *medianWorker) getDataPoints(ctx context.Context, after time.Time, quoru
 		if err != nil {
 			w.log.
 				WithError(err).
-				WithFields(log.Fields{
-					"contract":    w.contract,
-					"dataModel":   w.dataModel,
-					"feedAddress": w.feedAddresses[i],
-				}).
+				WithFields(w.logFields()).
+				WithField("feedAddress", w.feedAddresses[i]).
+				WithAdvice("Ignore if occurs occasionally").
 				Warn("Failed to get data point")
 			continue
 		}
 		if !ok {
 			continue
 		}
+		if sdp.Signature.V == nil || sdp.Signature.R == nil || sdp.Signature.S == nil {
+			continue
+		}
 		if _, ok := sdp.DataPoint.Value.(value.Tick); !ok {
 			w.log.
-				WithFields(log.Fields{
-					"contract":    w.contract,
-					"dataModel":   w.dataModel,
-					"feedAddress": w.feedAddresses[i],
-				}).
-				Warn("Data point is not a tick")
+				WithFields(w.logFields()).
+				WithField("feedAddress", w.feedAddresses[i]).
+				WithAdvice("This is probably caused by setting a wrong data model for this contract").
+				Error("Data point is not a tick")
 			continue
 		}
 		if sdp.DataPoint.Time.Before(after) {
@@ -204,35 +215,47 @@ func (w *medianWorker) getDataPoints(ctx context.Context, after time.Time, quoru
 		}
 	}
 	if len(dataPoints) != quorum {
-		return nil, nil, fmt.Errorf("unable to obtain enough data points, want %d, got %d", quorum, len(dataPoints))
+		w.log.
+			WithFields(w.logFields()).
+			WithFields(log.Fields{
+				"quorum": quorum,
+				"found":  len(dataPoints),
+			}).
+			WithAdvice("Ignore if occurs during the first few minutes after the start of the relay").
+			Warn("Unable to obtain enough data points")
+		return nil, nil, false
 	}
 
-	return dataPoints, signatures, nil
+	return dataPoints, signatures, true
 }
 
-// dataPointsToPrices extracts prices from data points.
-func dataPointsToPrices(dataPoints []datapoint.Point) []*bn.DecFloatPointNumber {
-	prices := make([]*bn.DecFloatPointNumber, len(dataPoints))
-	for i, dp := range dataPoints {
-		prices[i] = dp.Value.(value.Tick).Price
+func (w *medianWorker) handlePokeErr(err error) {
+	if strings.Contains(err.Error(), "replacement transaction underpriced") {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
+			Warn("Failed to poke the Median contract; previous transaction is still pending")
+		return
 	}
-	return prices
+	if contract.IsRevert(err) {
+		w.log.
+			WithError(err).
+			WithFields(w.logFields()).
+			WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
+			Error("Failed to poke the Median contract")
+		return
+	}
+	w.log.
+		WithError(err).
+		WithFields(w.logFields()).
+		WithAdvice("Ignore if it is related to temporary network issues").
+		Error("Failed to poke the Median contract")
 }
 
-// calculateMedian calculates the median price.
-func calculateMedian(prices []*bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	count := len(prices)
-	if count == 0 {
-		return bn.DecFloatPoint(0)
+func (w *medianWorker) logFields() log.Fields {
+	return log.Fields{
+		"contractAddress": w.contract.Address(),
+		"dataModel":       w.dataModel,
 	}
-	sort.Slice(prices, func(i, j int) bool {
-		return prices[i].Cmp(prices[j]) < 0
-	})
-	if count%2 == 0 {
-		m := count / 2
-		a := prices[m-1]
-		b := prices[m]
-		return a.Add(b).Div(bn.DecFloatPoint(0))
-	}
-	return prices[(count-1)/2]
 }

@@ -24,6 +24,7 @@ import (
 
 	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ghost "github.com/chronicleprotocol/oracle-suite/pkg/config/ghostnext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
@@ -40,7 +41,7 @@ func TestConfig_Ghost_Run(t *testing.T) {
 	}{
 		{
 			name:     "ghost-run-test",
-			args:     []string{"--config", "../../config.hcl"},
+			args:     []string{},
 			config:   &ghost.Config{},
 			services: &ghost.Services{},
 			envVars: map[string]string{
@@ -56,9 +57,9 @@ func TestConfig_Ghost_Run(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			var ff = cmd.FilesFlags{}
-			require.NoError(t, ff.FlagSet().Parse(tt.args))
-			require.NoError(t, ff.Load(tt.config))
+			var cf = cmd.ConfigFlagsForConfig(tt.config.(config.HasDefaults))
+			require.NoError(t, cf.FlagSet().Parse(tt.args))
+			require.NoError(t, cf.Load(tt.config))
 
 			s, err := tt.config.Services(null.New(), tt.name, suite.Version)
 			require.NoError(t, err)

@@ -45,8 +45,10 @@ func (t *TickSigner) Supports(_ context.Context, data datapoint.Point) bool {
 }
 
 // Sign implements the Signer interface.
+//
+
 func (t *TickSigner) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
-	return t.signer.SignHash(
+	return t.signer.SignMessage(
 		contract.ConstructMedianPokeMessage(
 			model,
 			data.Value.(value.Tick).Price,
@@ -73,13 +75,15 @@ func (t *TickRecoverer) Supports(_ context.Context, data datapoint.Point) bool {
 }
 
 // Recover implements the Recoverer interface.
+//
+
 func (t *TickRecoverer) Recover(
 	_ context.Context,
 	model string,
 	data datapoint.Point,
 	signature types.Signature,
 ) (*types.Address, error) {
-	return t.recoverer.RecoverHash(
+	return t.recoverer.RecoverMessage(
 		contract.ConstructMedianPokeMessage(
 			model,
 			data.Value.(value.Tick).Price,

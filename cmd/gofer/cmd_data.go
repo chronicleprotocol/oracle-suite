@@ -34,7 +34,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-func NewDataCmd(c supervisor.Config, f *cmd.FilesFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewDataCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var format formatTypeValue
 	cc := &cobra.Command{
 		Use:     "data [MODEL...]",

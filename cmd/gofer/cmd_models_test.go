@@ -68,7 +68,7 @@ func TestNewModelsCmd_List(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	os.Args = []string{"gofer", "-c", "../../config.hcl", "-v", "warning", "models"}
+	os.Args = []string{"gofer", "-v", "warning", "models"}
 	main()
 
 	_ = w.Close()
@@ -99,7 +99,7 @@ func TestNewModelsCmd(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			os.Args = []string{"gofer", "-c", "../../config.hcl", "models", "-v", "warning", "-o", "trace", "--no-color", model}
+			os.Args = []string{"gofer", "models", "-v", "warning", "-o", "trace", "--no-color", model}
 			main()
 
 			_ = w.Close()

@@ -1,3 +1,18 @@
+//  Copyright (C) 2021-2023 Chronicle Labs, Inc.
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as
+//  published by the Free Software Foundation, either version 3 of the
+//  License, or (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package hcl
 
 import (
@@ -43,9 +58,25 @@ func ParseFile(path string, subject *hcl.Range) (hcl.Body, hcl.Diagnostics) {
 			Subject:  subject,
 		}}
 	}
-	file, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1})
+	return parseBytes(path, src)
+}
+
+func parseBytes(name string, src []byte) (hcl.Body, hcl.Diagnostics) {
+	file, diags := hclsyntax.ParseConfig(src, name, hcl.Pos{Line: 1, Column: 1})
 	if diags.HasErrors() {
 		return nil, diags
 	}
 	return file.Body, nil
+}
+
+func ParseBytesList(embeds [][]byte) (hcl.Body, hcl.Diagnostics) {
+	bodies := make([]hcl.Body, len(embeds))
+	for n := 0; n < len(embeds); n++ {
+		body, diags := parseBytes(fmt.Sprintf("embeded #%d", n), embeds[n])
+		if diags.HasErrors() {
+			return nil, diags
+		}
+		bodies[n] = body
+	}
+	return hcl.MergeBodies(bodies), nil
 }

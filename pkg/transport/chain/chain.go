@@ -18,9 +18,14 @@ package chain
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 // Chain is a transport implementation that chains multiple transports
@@ -49,7 +54,7 @@ func (m *Chain) Broadcast(topic string, message transport.Message) error {
 	var err error
 	for _, t := range m.ts {
 		if bErr := t.Broadcast(topic, message); bErr != nil {
-			err = bErr // TODO(mdobak): Collect all errors.
+			err = errutil.Append(err, bErr)
 		}
 	}
 	return err
@@ -85,4 +90,12 @@ func (m *Chain) Start(ctx context.Context) error {
 // Wait implements the transport.Transport interface.
 func (m *Chain) Wait() <-chan error {
 	return m.waitCh
+}
+
+// ServiceName implements the supervisor.WithName interface.
+func (m *Chain) ServiceName() string {
+	return fmt.Sprintf(
+		"Chain(%s)",
+		strings.Join(sliceutil.Map(m.ts, func(t transport.Service) string { return supervisor.ServiceName(t) }), ", "),
+	)
 }
