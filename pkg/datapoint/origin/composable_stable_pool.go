@@ -4,58 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
-
-const Bytes32Length = 32
-
-type Bytes32 [Bytes32Length]byte
-
-var ZeroBytes32 = Bytes32{}
-
-func Bytes32FromBytes(b []byte) (Bytes32, error) {
-	if len(b) > Bytes32Length {
-		return ZeroBytes32, fmt.Errorf("bytes too long %d", len(b))
-	}
-	var bytes32 Bytes32
-	copy(bytes32[Bytes32Length-len(b):], b)
-	return bytes32, nil
-}
-
-func Bytes32FromHex(h string) (Bytes32, error) {
-	b, err := hexutil.HexToBytes(h)
-	if err != nil {
-		return ZeroBytes32, err
-	}
-	return Bytes32FromBytes(b)
-}
-
-func MustBytes32FromBytes(b []byte) Bytes32 {
-	bytes32, err := Bytes32FromBytes(b)
-	if err != nil {
-		panic(err)
-	}
-	return bytes32
-}
-
-func MustBytes32FromHex(h string) Bytes32 {
-	bytes32, err := Bytes32FromHex(h)
-	if err != nil {
-		panic(err)
-	}
-	return bytes32
-}
-
-func (b Bytes32) Bytes() []byte {
-	return b[:]
-}
-
-func (b Bytes32) String() string {
-	return hexutil.BytesToHex(b[:])
-}
 
 type ComposableStablePoolConfig struct {
 	Pair            value.Pair
@@ -93,7 +45,7 @@ type Extra struct {
 type ComposableStablePoolFullConfig struct {
 	Pair              value.Pair
 	ContractAddress   types.Address
-	PoolID            Bytes32
+	PoolID            types.Bytes
 	Vault             types.Address
 	Tokens            []types.Address
 	BptIndex          int
@@ -162,7 +114,8 @@ func (c *ComposableStablePool) decodeInitCalls(resp [][]byte) error {
 	if len(resp) != 4 {
 		return fmt.Errorf("not matched response for init calls: %s, %d", c.config.Pair.String(), len(resp))
 	}
-	var poolID = MustBytes32FromBytes(resp[0])
+
+	var poolID = types.Bytes(resp[0]).PadLeft(32)
 	var vault = types.MustAddressFromBytes(resp[1][len(resp[1])-types.AddressLength:])
 	var bptIndex = new(big.Int).SetBytes(resp[2]).Int64()
 	var rateProviders []types.Address
