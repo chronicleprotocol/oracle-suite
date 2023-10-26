@@ -300,7 +300,8 @@ func (m *mockScribeContract) Poke(pokeData chronicle.PokeData, schnorrData chron
 
 type mockOpScribeContract struct {
 	mockScribeContract
-	OpPokeFn func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller
+	ReadNextFn func(ctx context.Context) (chronicle.PokeData, error)
+	OpPokeFn   func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller
 }
 
 var _ OpScribeContract = (*mockOpScribeContract)(nil)
@@ -313,10 +314,18 @@ func newMockOpScribeContract(t *testing.T) *mockOpScribeContract {
 
 func (m *mockOpScribeContract) reset(t *testing.T) {
 	m.mockScribeContract.reset(t)
+	m.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		assert.FailNow(t, "unexpected call to ReadNext")
+		return chronicle.PokeData{}, nil
+	}
 	m.OpPokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
 		assert.FailNow(t, "unexpected call to OpPoke")
 		return nil
 	}
+}
+
+func (m *mockOpScribeContract) ReadNext(ctx context.Context) (chronicle.PokeData, error) {
+	return m.ReadNextFn(ctx)
 }
 
 func (m *mockOpScribeContract) OpPoke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {

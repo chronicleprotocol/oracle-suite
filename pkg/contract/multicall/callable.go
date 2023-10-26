@@ -47,38 +47,47 @@ type AggregatedCallables struct {
 	allowFail bool
 }
 
+// AggregateCallables creates a new AggregatedCallables instance.
 func AggregateCallables(client rpc.RPC, calls ...contract.Callable) *AggregatedCallables {
-	return &AggregatedCallables{client: client, calls: calls}
+	return &AggregatedCallables{
+		client: client,
+		calls:  calls,
+	}
 }
 
+// AllowFail allows the aggregated call to partially fail. If a call fails,
+// the rest of the calls will still be executed.
 func (a *AggregatedCallables) AllowFail() *AggregatedCallables {
 	a.allowFail = true
 	return a
 }
 
+// Address implements the contract.Callable interface.
 func (a *AggregatedCallables) Address() types.Address {
-	if len(a.calls) == 1 {
-		return a.calls[0].Address()
+	nonZeroCalls := a.nonZeroCalls()
+	if len(nonZeroCalls) == 0 {
+		return types.ZeroAddress
+	}
+	if len(nonZeroCalls) == 1 {
+		return nonZeroCalls[0].Address()
 	}
 	return multicallAddress
 }
 
+// CallData implements the contract.Callable interface.
 func (a *AggregatedCallables) CallData() ([]byte, error) {
-	callsArg := make([]Call, 0, len(a.calls))
-	for i, c := range a.calls {
-		address := c.Address()
-		if address == types.ZeroAddress {
-			continue
-		}
+	nonZeroCalls := a.nonZeroCalls()
+	callsArg := make([]Call, len(nonZeroCalls))
+	for i, c := range nonZeroCalls {
 		callData, err := c.CallData()
 		if err != nil {
 			return nil, fmt.Errorf("unable to encode call %d: %w", i, err)
 		}
-		callsArg = append(callsArg, Call{
+		callsArg[i] = Call{
 			Target:    c.Address(),
 			CallData:  callData,
 			AllowFail: a.allowFail,
-		})
+		}
 	}
 	if len(callsArg) == 0 {
 		return nil, nil
@@ -89,60 +98,72 @@ func (a *AggregatedCallables) CallData() ([]byte, error) {
 	return multicallAbi.Methods["aggregate3"].EncodeArgs(callsArg)
 }
 
-func (a *AggregatedCallables) DecodeTo(bytes []byte, res any) error {
+// DecodeTo implements the contract.Decoder interface.
+func (a *AggregatedCallables) DecodeTo(data []byte, res any) error {
+	if res == nil {
+		return nil
+	}
 	if len(a.calls) == 0 {
 		return nil
 	}
-	if len(a.calls) == 1 {
-		if dec, ok := a.calls[0].(contract.Decoder); ok {
-			return dec.DecodeTo(bytes, res)
-		}
+	resRelf := reflect.ValueOf(res)
+	for resRelf.Kind() == reflect.Ptr {
+		resRelf = resRelf.Elem()
+	}
+	if resRelf.Kind() == reflect.Interface && resRelf.IsNil() {
 		return nil
 	}
-	var results []Result
-	if bytes != nil {
-		if err := multicallAbi.Methods["aggregate3"].DecodeValue(bytes, &results); err != nil {
-			return fmt.Errorf("unable to decode result: %w", err)
-		}
-	}
-	rv := reflect.ValueOf(res)
-	for rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-	if rv.Kind() != reflect.Slice {
+	if resRelf.Kind() != reflect.Slice {
 		return fmt.Errorf("result must be a slice")
 	}
-	resIdx := 0
+	if resRelf.Len() == 0 {
+		return nil
+	}
+	var multiCallRes []Result
+	if data != nil {
+		if len(a.nonZeroCalls()) == 1 {
+			multiCallRes = []Result{{Data: data, Success: true}}
+		} else {
+			if err := multicallAbi.Methods["aggregate3"].DecodeValues(data, &multiCallRes); err != nil {
+				return fmt.Errorf("unable to decode result: %w", err)
+			}
+		}
+	}
+	multiCallResIdx := 0
 	for i, call := range a.calls {
-		if i >= rv.Len() {
+		if i >= resRelf.Len() {
 			continue
 		}
-		if dec, ok := call.(contract.Decoder); ok {
-			if call.Address() == types.ZeroAddress {
-				if err := dec.DecodeTo(nil, rv.Index(i).Addr().Interface()); err != nil {
-					return fmt.Errorf("unable to decode element %d: %w", i, err)
-				}
-				continue
-			}
-			if resIdx >= len(results) {
-				continue
-			}
-			if !rv.Index(i).CanAddr() {
-				return fmt.Errorf("unable to decode element %d: not addressable", i)
-			}
-			if err := dec.DecodeTo(results[resIdx].Data, rv.Index(i).Addr().Interface()); err != nil {
+		dec, ok := call.(contract.Decoder)
+		if !ok {
+			continue
+		}
+		if call.Address() == types.ZeroAddress {
+			if err := safeDecode(resRelf.Index(i), dec, nil); err != nil {
 				return fmt.Errorf("unable to decode element %d: %w", i, err)
 			}
+		} else {
+			if multiCallResIdx >= len(multiCallRes) {
+				continue
+			}
+			if !resRelf.Index(i).CanAddr() {
+				return fmt.Errorf("unable to decode element %d: not addressable", i)
+			}
+			if err := safeDecode(resRelf.Index(i), dec, multiCallRes[multiCallResIdx].Data); err != nil {
+				return fmt.Errorf("unable to decode element %d: %w", i, err)
+			}
+			multiCallResIdx++
 		}
-		resIdx++
 	}
 	return nil
 }
 
+// Client implements the contract.Caller interface.
 func (a *AggregatedCallables) Client() rpc.RPC {
 	return a.client
 }
 
+// Call implements the contract.Caller interface.
 func (a *AggregatedCallables) Call(ctx context.Context, number types.BlockNumber, res any) error {
 	callData, err := a.CallData()
 	if err != nil {
@@ -151,17 +172,15 @@ func (a *AggregatedCallables) Call(ctx context.Context, number types.BlockNumber
 	if callData == nil {
 		return a.DecodeTo(nil, res)
 	}
-	data, _, err := a.client.Call(
-		ctx,
-		types.Call{To: &multicallAddress, Input: callData},
-		number,
-	)
+	address := a.Address()
+	data, _, err := a.client.Call(ctx, types.Call{To: &address, Input: callData}, number)
 	if err != nil {
-		return fmt.Errorf("call failed: %w", err)
+		return fmt.Errorf("multicall failed: %w", err)
 	}
 	return a.DecodeTo(data, res)
 }
 
+// Gas implements the contract.Caller interface.
 func (a *AggregatedCallables) Gas(ctx context.Context, number types.BlockNumber) (uint64, error) {
 	callData, err := a.CallData()
 	if err != nil {
@@ -170,13 +189,41 @@ func (a *AggregatedCallables) Gas(ctx context.Context, number types.BlockNumber)
 	if callData == nil {
 		return 0, nil
 	}
-	return a.client.EstimateGas(ctx, types.Call{To: &multicallAddress, Input: callData}, number)
+	address := a.Address()
+	return a.client.EstimateGas(ctx, types.Call{To: &address, Input: callData}, number)
 }
 
+// SendTransaction implements the contract.Transactor interface.
 func (a *AggregatedCallables) SendTransaction(ctx context.Context) (*types.Hash, *types.Transaction, error) {
 	callData, err := a.CallData()
 	if err != nil {
 		return nil, nil, err
 	}
-	return a.client.SendTransaction(ctx, types.Transaction{Call: types.Call{To: &multicallAddress, Input: callData}})
+	address := a.Address()
+	return a.client.SendTransaction(ctx, types.Transaction{Call: types.Call{To: &address, Input: callData}})
+}
+
+func (a *AggregatedCallables) nonZeroCalls() []contract.Callable {
+	var nonZeroCalls []contract.Callable
+	for _, c := range a.calls {
+		if c.Address() != types.ZeroAddress {
+			nonZeroCalls = append(nonZeroCalls, c)
+		}
+	}
+	return nonZeroCalls
+}
+
+func safeDecode(v reflect.Value, dec contract.Decoder, data []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		if !v.CanSet() {
+			return fmt.Errorf("unable to decode value to %s", v.Type())
+		}
+		v.Set(reflect.New(v.Type().Elem()))
+	}
+	return dec.DecodeTo(data, v.Interface())
 }

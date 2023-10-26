@@ -17,10 +17,12 @@ package contract
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
 )
 
@@ -45,25 +47,47 @@ type TypedDecoder[T any] interface {
 
 // Caller can perform a call to a contract and decode the result.
 type Caller interface {
+	// Address returns the address of the contract to call.
 	Address() types.Address
+
+	// Client returns the RPC client to use when performing the call.
 	Client() rpc.RPC
+
+	// Call executes the call and decodes the result into res.
 	Call(ctx context.Context, number types.BlockNumber, res any) error
+
+	// Gas returns the estimated gas usage of the call.
 	Gas(ctx context.Context, number types.BlockNumber) (uint64, error)
 }
 
 // TypedCaller can perform a call to a contract and decode the result.
 type TypedCaller[T any] interface {
+	// Address returns the address of the contract to call.
 	Address() types.Address
+
+	// Client returns the RPC client to use when performing the call.
 	Client() rpc.RPC
+
+	// Call executes the call and decodes the result into res.
 	Call(ctx context.Context, number types.BlockNumber) (T, error)
+
+	// Gas returns the estimated gas usage of the call.
 	Gas(ctx context.Context, number types.BlockNumber) (uint64, error)
 }
 
 // Transactor can send a transaction to a contract.
 type Transactor interface {
+	// Address returns the address of the contract to send a transaction to.
 	Address() types.Address
+
+	// Client returns the RPC client to use when sending the transaction.
 	Client() rpc.RPC
+
+	// SendTransaction sends a call as a transaction.
 	SendTransaction(ctx context.Context) (*types.Hash, *types.Transaction, error)
+
+	// Gas returns the estimated gas usage of the transaction.
+	Gas(ctx context.Context, number types.BlockNumber) (uint64, error)
 }
 
 type DecodeCallable interface {
@@ -113,16 +137,17 @@ type CallOpts struct {
 	// Address is the address of the contract to call or send a transaction to.
 	Address types.Address
 
-	// Method is the ABI method used to encode the call data and decode the
-	// result.
-	Method *goethABI.Method
-
-	// Arguments are the arguments of the contract call or transaction.
-	Arguments []any
+	// Encoder is an optional encoder that will be used to encode the
+	// arguments of the contract call.
+	Encoder func() ([]byte, error)
 
 	// Decoder is an optional decoder that will be used to decode the result
 	// returned by the contract call.
-	Decoder func(*goethABI.Method, []byte, any) error
+	Decoder func([]byte, any) error
+
+	// ErrorDecoder is an optional decoder that will be used to decode the
+	// error returned by the contract call.
+	ErrorDecoder func(err error) error
 }
 
 // Call is a contract call.
@@ -131,11 +156,11 @@ type CallOpts struct {
 // if the call should be executed immediately or passed as an argument to
 // another function.
 type Call struct {
-	client  rpc.RPC
-	address types.Address
-	method  *goethABI.Method
-	args    []any
-	decoder func(*goethABI.Method, []byte, any) error
+	client       rpc.RPC
+	address      types.Address
+	encoder      func() ([]byte, error)
+	decoder      func([]byte, any) error
+	errorDecoder func(err error) error
 }
 
 // TransactableCall works like Call but can be also used to send a transaction.
@@ -153,71 +178,98 @@ type TypedTransactableCall[T any] struct {
 	transactableCall
 }
 
+// NewCallEncoder creates a new encoder for the given method and arguments.
+//
+// It can be used to create a CallOpts.Encoder.
+func NewCallEncoder(method *goethABI.Method, args ...any) func() ([]byte, error) {
+	return func() ([]byte, error) {
+		return method.EncodeArgs(args...)
+	}
+}
+
+// NewCallDecoder creates a new decoder for the given method and result.
+//
+// It can be used to create a CallOpts.Decoder.
+func NewCallDecoder(method *goethABI.Method) func(data []byte, res any) error {
+	return func(data []byte, res any) error {
+		switch method.Outputs().Size() {
+		case 0:
+			return nil
+		case 1:
+			if err := method.DecodeValues(data, res); err != nil {
+				return fmt.Errorf("failed to decode result: %w", err)
+			}
+		default:
+			if err := method.DecodeValue(data, res); err != nil {
+				return fmt.Errorf("%s failed: %w", method.Name(), err)
+			}
+		}
+		return nil
+	}
+}
+
+// NewContractErrorDecoder creates a new decoder that can handle errors
+// defined in the given contract.
+//
+// It can be used to create a CallOpts.ErrorDecoder.
+func NewContractErrorDecoder(contract *goethABI.Contract) func(err error) error {
+	return func(err error) error {
+		data := errorData(err)
+		if data == nil {
+			return err
+		}
+		return contract.ToError(data)
+	}
+}
+
 // NewCall creates a new Call instance.
 func NewCall(opts CallOpts) *Call {
+	if opts.Encoder == nil {
+		opts.Encoder = defEncoder
+	}
+	if opts.Decoder == nil {
+		opts.Decoder = defDecoder
+	}
+	if opts.ErrorDecoder == nil {
+		opts.ErrorDecoder = defErrorDecoder
+	}
 	return &Call{
-		client:  opts.Client,
-		address: opts.Address,
-		method:  opts.Method,
-		args:    opts.Arguments,
-		decoder: opts.Decoder,
+		client:       opts.Client,
+		address:      opts.Address,
+		encoder:      opts.Encoder,
+		decoder:      opts.Decoder,
+		errorDecoder: opts.ErrorDecoder,
 	}
 }
 
 // NewTransactableCall creates a new TransactableCall instance.
 func NewTransactableCall(opts CallOpts) *TransactableCall {
-	return &TransactableCall{
-		call: Call{
-			client:  opts.Client,
-			address: opts.Address,
-			method:  opts.Method,
-			args:    opts.Arguments,
-			decoder: opts.Decoder,
-		},
-	}
+	return &TransactableCall{call: *NewCall(opts)}
 }
 
 // NewTypedCall creates a new TypedCall instance.
 func NewTypedCall[T any](opts CallOpts) *TypedCall[T] {
-	return &TypedCall[T]{
-		call: Call{
-			client:  opts.Client,
-			address: opts.Address,
-			method:  opts.Method,
-			args:    opts.Arguments,
-			decoder: opts.Decoder,
-		},
-	}
+	return &TypedCall[T]{call: *NewCall(opts)}
 }
 
 // NewTypedTransactableCall creates a new TypedTransactableCall instance.
 func NewTypedTransactableCall[T any](opts CallOpts) *TypedTransactableCall[T] {
-	return &TypedTransactableCall[T]{
-		transactableCall: TransactableCall{
-			call: Call{
-				client:  opts.Client,
-				address: opts.Address,
-				method:  opts.Method,
-				args:    opts.Arguments,
-				decoder: opts.Decoder,
-			},
-		},
-	}
+	return &TypedTransactableCall[T]{transactableCall: TransactableCall{call: *NewCall(opts)}}
 }
 
-// Client implements the HasClient interface.
+// Client implements the Caller, TypedCaller, and Transactor interface.
 func (c *Call) Client() rpc.RPC {
 	return c.client
 }
 
-// Address implements the Callable interface.
+// Address implements the Callable, Caller, TypedCaller, and Transactor interface.
 func (c *Call) Address() types.Address {
 	return c.address
 }
 
 // CallData implements the Callable interface.
 func (c *Call) CallData() ([]byte, error) {
-	return c.method.EncodeArgs(c.args...)
+	return c.encoder()
 }
 
 // DecodeTo implements the Decoder interface.
@@ -226,64 +278,49 @@ func (c *Call) DecodeTo(data []byte, res any) error {
 		return nil
 	}
 	if c.decoder != nil {
-		return c.decoder(c.method, data, res)
-	}
-	switch c.method.Outputs().Size() {
-	case 0:
-		return nil
-	case 1:
-		if err := c.method.DecodeValues(data, res); err != nil {
-			return fmt.Errorf("%s failed: %w", c.method.Name(), err)
-		}
-	default:
-		if err := c.method.DecodeValue(data, res); err != nil {
-			return fmt.Errorf("%s failed: %w", c.method.Name(), err)
-		}
+		return c.decoder(data, res)
 	}
 	return nil
 }
 
 // Call executes the call and decodes the result into res.
 func (c *Call) Call(ctx context.Context, number types.BlockNumber, res any) error {
-	calldata, err := c.method.EncodeArgs(c.args...)
+	callData, err := c.encoder()
 	if err != nil {
-		return fmt.Errorf("%s failed: %w", c.method.Name(), err)
+		return err
 	}
-	data, _, err := c.client.Call(
-		ctx,
-		types.Call{To: &c.address, Input: calldata},
-		number,
-	)
+	data, _, err := c.client.Call(ctx, types.Call{To: &c.address, Input: callData}, number)
 	if err != nil {
-		return fmt.Errorf("%s failed: %w", c.method.Name(), err)
-	}
-	if c.method.Outputs().Size() == 0 {
-		return nil
+		return c.errorDecoder(err)
 	}
 	return c.DecodeTo(data, res)
 }
 
 // Gas returns the estimated gas usage of the call.
 func (c *Call) Gas(ctx context.Context, number types.BlockNumber) (uint64, error) {
-	calldata, err := c.method.EncodeArgs(c.args...)
+	callData, err := c.encoder()
 	if err != nil {
-		return 0, fmt.Errorf("%s failed: %w", c.method.Name(), err)
+		return 0, err
 	}
-	return c.client.EstimateGas(ctx, types.Call{To: &c.address, Input: calldata}, number)
+	gas, err := c.client.EstimateGas(ctx, types.Call{To: &c.address, Input: callData}, number)
+	if err != nil {
+		return 0, c.errorDecoder(err)
+	}
+	return gas, nil
 }
 
 // SendTransaction sends a call as a transaction.
 func (t *TransactableCall) SendTransaction(ctx context.Context) (*types.Hash, *types.Transaction, error) {
-	calldata, err := t.method.EncodeArgs(t.args...)
+	callData, err := t.encoder()
 	if err != nil {
-		return nil, nil, fmt.Errorf("%s failed: %w", t.method.Name(), err)
+		return nil, nil, err
 	}
 	txHash, txCpy, err := t.client.SendTransaction(
 		ctx,
-		types.Transaction{Call: types.Call{To: &t.address, Input: calldata}},
+		types.Transaction{Call: types.Call{To: &t.address, Input: callData}},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("%s failed: %w", t.method.Name(), err)
+		return nil, nil, fmt.Errorf("failed to send transaction: %w", err)
 	}
 	return txHash, txCpy, nil
 }
@@ -322,6 +359,38 @@ func (t *TypedTransactableCall[T]) Call(ctx context.Context, number types.BlockN
 		return res, err
 	}
 	return res, nil
+}
+
+var defEncoder = func() ([]byte, error) { return nil, nil }
+var defDecoder = func([]byte, any) error { return nil }
+var defErrorDecoder = func(err error) error {
+	data := errorData(err)
+	if data == nil {
+		return err
+	}
+	if goethABI.IsRevert(data) {
+		return goethABI.RevertError{Reason: goethABI.DecodeRevert(data)}
+	}
+	if goethABI.IsPanic(data) {
+		return goethABI.PanicError{Code: goethABI.DecodePanic(data)}
+	}
+	return err
+}
+
+func errorData(err error) []byte {
+	if err == nil {
+		return nil
+	}
+	var data []byte
+	rpcError := &transport.RPCError{}
+	if errors.As(err, &rpcError) {
+		data, _ = rpcError.Data.([]byte)
+	}
+	var rpcErrorData interface{ RPCErrorData() any }
+	if errors.As(err, &rpcErrorData) {
+		data, _ = rpcErrorData.RPCErrorData().([]byte)
+	}
+	return data
 }
 
 // Create private aliases to allow embedding without exposing the methods:

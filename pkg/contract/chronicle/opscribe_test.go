@@ -150,7 +150,7 @@ func TestOpScribe_ReadAt(t *testing.T) {
 					nil,
 				)
 
-			pokeData, err := scribe.ReadAt(ctx, time.Unix(tt.readTime, 0))
+			pokeData, _, err := scribe.ReadAt(ctx, time.Unix(tt.readTime, 0))
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedVal, pokeData.Val.String())
 			assert.Equal(t, tt.expectedAge, pokeData.Age.Unix())
@@ -177,7 +177,8 @@ func TestOpScribe_OpPoke(t *testing.T) {
 
 	calldata := hexutil.MustHexToBytes(
 		"0x" +
-			"6712af9e" +
+			//"6712af9e" +
+			"00000000" + // for optimized opPoke
 			"000000000000000000000000000000000000000000000584f61606acd0134800" +
 			"0000000000000000000000000000000000000000000000000000000064e7d147" +
 			"00000000000000000000000000000000000000000000000000000000000000c0" +

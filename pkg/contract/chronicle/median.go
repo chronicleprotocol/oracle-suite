@@ -24,7 +24,6 @@ import (
 	"sort"
 	"time"
 
-	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
@@ -87,39 +86,46 @@ func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 }
 
 func (m *Median) Age() contract.TypedSelfCaller[time.Time] {
+	method := abiMedian.Methods["age"]
 	return contract.NewTypedCall[time.Time](
 		contract.CallOpts{
 			Client:  m.client,
 			Address: m.address,
-			Method:  abiMedian.Methods["age"],
-			Decoder: func(m *goethABI.Method, data []byte, res any) error {
+			Encoder: contract.NewCallEncoder(method),
+			Decoder: func(data []byte, res any) error {
 				*res.(*time.Time) = time.Unix(new(big.Int).SetBytes(data).Int64(), 0)
 				return nil
 			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
 	)
 }
 
 func (m *Median) Wat() contract.TypedSelfCaller[string] {
+	method := abiMedian.Methods["wat"]
 	return contract.NewTypedCall[string](
 		contract.CallOpts{
 			Client:  m.client,
 			Address: m.address,
-			Method:  abiMedian.Methods["wat"],
-			Decoder: func(m *goethABI.Method, data []byte, res any) error {
+			Encoder: contract.NewCallEncoder(method),
+			Decoder: func(data []byte, res any) error {
 				*res.(*string) = bytes32ToString(data)
 				return nil
 			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
 	)
 }
 
 func (m *Median) Bar() contract.TypedSelfCaller[int] {
+	method := abiMedian.Methods["bar"]
 	return contract.NewTypedCall[int](
 		contract.CallOpts{
-			Client:  m.client,
-			Address: m.address,
-			Method:  abiScribe.Methods["bar"],
+			Client:       m.client,
+			Address:      m.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
 	)
 }
@@ -142,10 +148,10 @@ func (m *Median) Poke(vals []MedianVal) contract.SelfTransactableCaller {
 	}
 	return contract.NewTransactableCall(
 		contract.CallOpts{
-			Client:    m.client,
-			Address:   m.address,
-			Method:    abiMedian.Methods["poke"],
-			Arguments: []any{valSlice, ageSlice, vSlice, rSlice, sSlice},
+			Client:       m.client,
+			Address:      m.address,
+			Encoder:      contract.NewCallEncoder(abiMedian.Methods["poke"], valSlice, ageSlice, vSlice, rSlice, sSlice),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
 	)
 }

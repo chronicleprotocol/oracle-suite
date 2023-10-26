@@ -18,7 +18,6 @@ package relay
 import (
 	"context"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -35,7 +34,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-type medianWorker struct {
+type median struct {
 	contract       MedianContract
 	dataPointStore store.DataPointProvider
 	feedAddresses  []types.Address
@@ -46,15 +45,15 @@ type medianWorker struct {
 	log            log.Logger
 }
 
-func (w *medianWorker) client() rpc.RPC {
+func (w *median) client() rpc.RPC {
 	return w.contract.Client()
 }
 
-func (w *medianWorker) address() types.Address {
+func (w *median) address() types.Address {
 	return w.contract.Address()
 }
 
-func (w *medianWorker) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
 	wat, val, age, bar, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
@@ -105,7 +104,7 @@ func (w *medianWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 			"timeToExpiration": time.Since(age).String(),
 			"currentSpread":    spread,
 		}).
-		Debug("Median worker")
+		Debug("Median ")
 
 	// If price is stale or expired, send update.
 	if isExpired || isStale {
@@ -123,7 +122,11 @@ func (w *medianWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 		poke := w.contract.Poke(vals)
 		gas, err := poke.Gas(ctx, types.LatestBlockNumber)
 		if err != nil {
-			w.handlePokeErr(err)
+			w.log.
+				WithError(err).
+				WithFields(w.logFields()).
+				WithAdvice("Ignore if it is related to temporary network issues").
+				Error("Failed to poke the Median contract")
 			return 0, nil
 		}
 
@@ -133,7 +136,7 @@ func (w *medianWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 	return 0, nil
 }
 
-func (w *medianWorker) currentState(ctx context.Context) (wat string, val *bn.DecFixedPointNumber, age time.Time, bar int, err error) {
+func (w *median) currentState(ctx context.Context) (wat string, val *bn.DecFixedPointNumber, age time.Time, bar int, err error) {
 	val, err = w.contract.Val(ctx)
 	if err != nil {
 		return "", nil, time.Time{}, 0, err
@@ -153,7 +156,7 @@ func (w *medianWorker) currentState(ctx context.Context) (wat string, val *bn.De
 	return wat, val, age, bar, nil
 }
 
-func (w *medianWorker) findDataPoints(ctx context.Context, after time.Time, quorum int) ([]datapoint.Point, []types.Signature, bool) {
+func (w *median) findDataPoints(ctx context.Context, after time.Time, quorum int) ([]datapoint.Point, []types.Signature, bool) {
 	// Generate slice of random indices to select data points from.
 	// It is important to select data points randomly to avoid promoting
 	// any particular feed.
@@ -220,33 +223,7 @@ func (w *medianWorker) findDataPoints(ctx context.Context, after time.Time, quor
 	return dataPoints, signatures, true
 }
 
-func (w *medianWorker) handlePokeErr(err error) {
-	if strings.Contains(err.Error(), "replacement transaction underpriced") {
-		w.log.
-			WithError(err).
-			WithFields(w.logFields()).
-			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
-			Warn("Failed to poke the Median contract; previous transaction is still pending")
-		return
-	}
-	/*
-		if contract.IsRevert(err) {
-			w.log.
-				WithError(err).
-				WithFields(w.logFields()).
-				WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-				Error("Failed to poke the Median contract")
-			return
-		}
-	*/
-	w.log.
-		WithError(err).
-		WithFields(w.logFields()).
-		WithAdvice("Ignore if it is related to temporary network issues").
-		Error("Failed to poke the Median contract")
-}
-
-func (w *medianWorker) logFields() log.Fields {
+func (w *median) logFields() log.Fields {
 	return log.Fields{
 		"address":   w.contract.Address(),
 		"dataModel": w.dataModel,

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
@@ -44,33 +43,34 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 }
 
 func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
+	method := abiOpScribe.Methods["opChallengePeriod"]
 	return contract.NewTypedCall[time.Duration](
 		contract.CallOpts{
 			Client:  s.client,
 			Address: s.address,
-			Method:  abiOpScribe.Methods["opChallengePeriod"],
-			Decoder: func(m *goethABI.Method, data []byte, res any) error {
+			Encoder: contract.NewCallEncoder(method),
+			Decoder: func(data []byte, res any) error {
 				var period uint16
-				if err := m.DecodeValues(data, &period); err != nil {
+				if err := method.DecodeValues(data, &period); err != nil {
 					return fmt.Errorf("opScribe: query failed: %w", err)
 				}
 				*res.(*time.Duration) = time.Duration(period) * time.Second
 				return nil
 			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiOpScribe),
 		},
 	)
 }
 
 func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
-	return s.ReadAt(ctx, time.Now())
+	pd, _, err := s.ReadAt(ctx, time.Now())
+	return pd, err
 }
 
-func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, error) {
+// ReadNext reads the next poke data from the contract without checking if the
+// latest optimistic poke is already finalized.
+func (s *OpScribe) ReadNext(ctx context.Context) (PokeData, error) {
 	blockNumber, err := s.client.BlockNumber(ctx)
-	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
-	}
-	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
 		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
@@ -82,11 +82,42 @@ func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, er
 	if err != nil {
 		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
-	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
-	if opPokeDataFinalized && opPokeData.Age.After(pokeData.Age) {
+	if opPokeData.Age.After(pokeData.Age) {
 		return opPokeData, nil
 	}
 	return pokeData, nil
+}
+
+// ReadAt reads the PokeData from the contract using the given readTime as the
+// reference time for determining if the latest optimistic poke is finalized.
+//
+// If the latest optimistic poke is finalized, the returned PokeData will be
+// the latest optimistic poke. Otherwise, the returned PokeData will be the
+// latest poke.
+//
+// The returned boolean indicates if the latest optimistic poke is finalized.
+func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, bool, error) {
+	blockNumber, err := s.client.BlockNumber(ctx)
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	opPokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
+	if opPokeDataFinalized && opPokeData.Age.After(pokeData.Age) {
+		return opPokeData, true, nil
+	}
+	return pokeData, opPokeDataFinalized, nil
 }
 
 func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
@@ -110,12 +141,13 @@ func (s *OpScribe) OpPoke(pokeData PokeData, schnorrData SchnorrData, ecdsaData 
 		contract.CallOpts{
 			Client:  s.client,
 			Address: s.address,
-			Method:  abiOpScribe.Methods["opPoke"],
-			Arguments: []any{
+			Encoder: contract.NewCallEncoder(
+				abiOpScribe.Methods["opPoke"],
 				toPokeDataStruct(pokeData),
 				toSchnorrDataStruct(schnorrData),
 				toECDSADataStruct(ecdsaData),
-			},
+			),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiOpScribe),
 		},
 	)
 }

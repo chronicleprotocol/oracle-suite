@@ -55,12 +55,13 @@ func NewMulticall(client rpc.RPC) *Multicall {
 }
 
 func (m *Multicall) Aggregate3(calls []Call) contract.TypedSelfTransactableCaller[[]Result] {
+	method := multicallAbi.Methods["aggregate3"]
 	return contract.NewTypedTransactableCall[[]Result](
 		contract.CallOpts{
-			Client:    m.client,
-			Address:   multicallAddress,
-			Method:    multicallAbi.Methods["aggregate3"],
-			Arguments: []any{calls},
+			Client:  m.client,
+			Address: multicallAddress,
+			Encoder: contract.NewCallEncoder(method, calls),
+			Decoder: contract.NewCallDecoder(method),
 		},
 	)
 }

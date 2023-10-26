@@ -18,41 +18,29 @@ package relay
 import (
 	"bytes"
 	"context"
+	"errors"
 	"math"
-	"strings"
 	"time"
 
-	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	"github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-type opScribeWorker struct {
-	contract   OpScribeContract
-	muSigStore store.SignatureProvider
-	dataModel  string
-	spread     float64
-	expiration time.Duration
-	ticker     *timeutil.Ticker
-	log        log.Logger
+type opScribe struct {
+	scribe
+
+	opContract   OpScribeContract
+	opSpread     float64
+	opExpiration time.Duration
 }
 
-func (w *opScribeWorker) client() rpc.RPC {
-	return w.contract.Client()
-}
-
-func (w *opScribeWorker) address() types.Address {
-	return w.contract.Address()
-}
-
-func (w *opScribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
-	wat, bar, feeds, pokeData, err := w.currentState(ctx)
+func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+	wat, bar, feeds, currPokeData, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
 			WithError(err).
@@ -76,26 +64,27 @@ func (w *opScribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint6
 		if s.Commitment.IsZero() || s.SchnorrSignature == nil {
 			continue
 		}
-
 		meta := s.MsgMeta.TickV1()
-		if meta == nil || meta.Val == nil || len(meta.Optimistic) == 0 {
+
+		// If signature is not optimistic, skip it.
+		if len(meta.Optimistic) == 0 {
 			continue
 		}
 
 		// If the signature is older than the current price, skip it.
-		if meta.Age.Before(pokeData.Age) {
+		if meta.Age.Before(currPokeData.Age) {
 			continue
 		}
 
-		// Check if price on the Scribe contract needs to be updated.
+		// Check if price on ScribeOptimistic contract needs to be updated.
 		// The price needs to be updated if:
 		// - Price is older than the interval specified in the expiration
 		//   field.
 		// - Price differs from the current price by more than is specified in the
 		//   OracleSpread field.
-		spread := calculateSpread(pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
-		isExpired := time.Since(pokeData.Age) >= w.expiration
-		isStale := math.IsInf(spread, 0) || spread >= w.spread
+		spread := calculateSpread(currPokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
+		isExpired := time.Since(currPokeData.Age) >= w.opExpiration
+		isStale := math.IsInf(spread, 0) || spread >= w.opSpread
 
 		// Generate signersBlob.
 		// If signersBlob returns an error, it means that some signers are not
@@ -111,62 +100,57 @@ func (w *opScribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint6
 		w.log.
 			WithFields(w.logFields()).
 			WithFields(log.Fields{
-				"bar":              bar,
-				"age":              pokeData.Age,
-				"val":              pokeData.Val,
-				"expired":          isExpired,
-				"stale":            isStale,
-				"expiration":       w.expiration,
-				"spread":           w.spread,
-				"timeToExpiration": time.Since(pokeData.Age).String(),
-				"currentSpread":    spread,
+				"bar":           bar,
+				"age":           currPokeData.Age,
+				"val":           currPokeData.Val,
+				"expired":       isExpired,
+				"stale":         isStale,
+				"expiration":    w.opExpiration,
+				"spread":        w.opSpread,
+				"currentSpread": spread,
 			}).
-			Debug("ScribeOptimistic worker")
+			Debug("ScribeOptimistic")
 
-		// If price is stale or expired, send update.
+		pokeData := chronicle.PokeData{
+			Val: meta.Val,
+			Age: meta.Age,
+		}
+		schnorrData := chronicle.SchnorrData{
+			Signature:   s.SchnorrSignature,
+			Commitment:  s.Commitment,
+			SignersBlob: signersBlob,
+		}
+
+		// If price is stale or expired, send optimistic update.
 		if isExpired || isStale {
 			for _, optimistic := range meta.Optimistic {
 				// Verify if signersBlob is same as provided in the message.
 				if !bytes.Equal(signersBlob, optimistic.SignerIndexes) {
 					continue
 				}
-
-				poke := w.contract.OpPoke(
-					chronicle.PokeData{
-						Val: meta.Val,
-						Age: meta.Age,
-					},
-					chronicle.SchnorrData{
-						Signature:   s.SchnorrSignature,
-						Commitment:  s.Commitment,
-						SignersBlob: signersBlob,
-					},
-					optimistic.ECDSASignature,
-				)
-
+				poke := w.opContract.OpPoke(pokeData, schnorrData, optimistic.ECDSASignature)
 				gas, err := poke.Gas(ctx, types.LatestBlockNumber)
 				if err != nil {
 					w.handlePokeErr(err)
 					return 0, nil
 				}
-
 				return gas, poke
 			}
 		}
 	}
-	return 0, nil
+	return w.scribe.createRelayCall(ctx)
 }
 
-func (w *opScribeWorker) currentState(ctx context.Context) (wat string, bar int, feeds chronicle.FeedsResult, pokeData chronicle.PokeData, err error) {
-	pokeData, err = w.contract.Read(ctx)
+func (w *opScribe) currentState(ctx context.Context) (wat string, bar int, feeds chronicle.FeedsResult, pokeData chronicle.PokeData, err error) {
+	pokeData, err = w.opContract.ReadNext(ctx)
 	if err != nil {
 		return "", 0, chronicle.FeedsResult{}, chronicle.PokeData{}, err
 	}
 	if err := multicall.AggregateCallables(
-		w.contract.Client(),
-		w.contract.Wat(),
-		w.contract.Bar(),
-		w.contract.Feeds(),
+		w.opContract.Client(),
+		w.opContract.Wat(),
+		w.opContract.Bar(),
+		w.opContract.Feeds(),
 	).Call(ctx, types.LatestBlockNumber, []any{
 		&wat,
 		&bar,
@@ -177,35 +161,14 @@ func (w *opScribeWorker) currentState(ctx context.Context) (wat string, bar int,
 	return wat, bar, feeds, pokeData, nil
 }
 
-func (w *opScribeWorker) handlePokeErr(err error) {
-	if strings.Contains(err.Error(), "replacement transaction underpriced") {
-		w.log.
-			WithError(err).
-			WithFields(w.logFields()).
-			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
-			Warn("Failed to poke the ScribeOptimistic contract; previous transaction is still pending")
+func (w *opScribe) handlePokeErr(err error) {
+	var customError abi.CustomError
+	if errors.As(err, &customError) && customError.Type.Name() == "InChallengePeriod" {
 		return
 	}
-	/*
-		if contract.IsRevert(err) {
-			w.log.
-				WithError(err).
-				WithFields(w.logFields()).
-				WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-				Error("Failed to poke the ScribeOptimistic contract")
-			return
-		}
-	*/
 	w.log.
 		WithError(err).
 		WithFields(w.logFields()).
 		WithAdvice("Ignore if it is related to temporary network issues").
 		Error("Failed to poke the ScribeOptimistic contract")
-}
-
-func (w *opScribeWorker) logFields() log.Fields {
-	return log.Fields{
-		"address":   w.contract.Address(),
-		"dataModel": w.dataModel,
-	}
 }

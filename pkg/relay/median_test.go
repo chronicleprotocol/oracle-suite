@@ -35,7 +35,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func TestMedianWorker(t *testing.T) {
+func TestMedian(t *testing.T) {
 	testFeed1 := types.MustAddressFromHex("0x1111111111111111111111111111111111111111")
 	testFeed2 := types.MustAddressFromHex("0x2222222222222222222222222222222222222222")
 	testFeed3 := types.MustAddressFromHex("0x3333333333333333333333333333333333333333")
@@ -44,7 +44,7 @@ func TestMedianWorker(t *testing.T) {
 	mockTransport := newMockTransport(t)
 	mockStore := newMockDataPointProvider(t)
 
-	mw := &medianWorker{
+	mw := &median{
 		contract:       mockContract,
 		dataPointStore: mockStore,
 		feedAddresses:  []types.Address{testFeed1, testFeed2, testFeed3},

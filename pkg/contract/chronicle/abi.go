@@ -38,7 +38,6 @@ var (
 	abiOpScribe    *goethABI.Contract
 	abiWatRegistry *goethABI.Contract
 	abiChainlog    *goethABI.Contract
-	abiMulticall3  *goethABI.Contract
 )
 
 func init() {
@@ -102,6 +101,9 @@ func init() {
 	abiChainlog, _ = abi.ParseSignatures(
 		`tryGet(bytes32 key)(bool, address)`,
 	)
+
+	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]
+	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
 }
 
 type SecondsDuration int64

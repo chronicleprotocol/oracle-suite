@@ -24,7 +24,6 @@ import (
 	"sort"
 	"time"
 
-	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
@@ -70,31 +69,38 @@ func (s *Scribe) Wat() contract.TypedSelfCaller[string] {
 		contract.CallOpts{
 			Client:  s.client,
 			Address: s.address,
-			Method:  abiScribe.Methods["wat"],
-			Decoder: func(m *goethABI.Method, data []byte, res any) error {
+			Encoder: contract.NewCallEncoder(abiScribe.Methods["wat"]),
+			Decoder: func(data []byte, res any) error {
 				*res.(*string) = bytes32ToString(data)
 				return nil
 			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
 	)
 }
 
 func (s *Scribe) Bar() contract.TypedSelfCaller[int] {
+	method := abiScribe.Methods["bar"]
 	return contract.NewTypedCall[int](
 		contract.CallOpts{
-			Client:  s.client,
-			Address: s.address,
-			Method:  abiScribe.Methods["bar"],
+			Client:       s.client,
+			Address:      s.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
 	)
 }
 
 func (s *Scribe) Feeds() contract.TypedSelfCaller[FeedsResult] {
+	method := abiScribe.Methods["feeds"]
 	return contract.NewTypedCall[FeedsResult](
 		contract.CallOpts{
-			Client:  s.client,
-			Address: s.address,
-			Method:  abiScribe.Methods["feeds"],
+			Client:       s.client,
+			Address:      s.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
 	)
 }
@@ -104,11 +110,12 @@ func (s *Scribe) Poke(pokeData PokeData, schnorrData SchnorrData) contract.SelfT
 		contract.CallOpts{
 			Client:  s.client,
 			Address: s.address,
-			Method:  abiScribe.Methods["poke"],
-			Arguments: []any{
+			Encoder: contract.NewCallEncoder(
+				abiScribe.Methods["poke"],
 				toPokeDataStruct(pokeData),
 				toSchnorrDataStruct(schnorrData),
-			},
+			),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
 	)
 }

@@ -34,19 +34,24 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func TestOpScribeWorker(t *testing.T) {
+func TestOpScribe(t *testing.T) {
 	testFeed := types.MustAddressFromHex("0x1111111111111111111111111111111111111111")
 	mockLogger := newMockLogger(t)
 	mockContract := newMockOpScribeContract(t)
 	mockMuSigStore := newMockSignatureProvider(t)
 
-	sw := &opScribeWorker{
-		log:        mockLogger,
-		muSigStore: mockMuSigStore,
-		contract:   mockContract,
-		dataModel:  "ETH/USD",
-		spread:     0.05,
-		expiration: 10 * time.Minute,
+	sw := &opScribe{
+		scribe: scribe{
+			contract:   mockContract,
+			muSigStore: mockMuSigStore,
+			dataModel:  "ETH/USD",
+			spread:     0.1,
+			expiration: 30 * time.Minute,
+			log:        mockLogger,
+		},
+		opContract:   mockContract,
+		opSpread:     0.05,
+		opExpiration: 10 * time.Minute,
 	}
 
 	t.Run("above spread", func(t *testing.T) {
@@ -78,7 +83,7 @@ func TestOpScribeWorker(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
@@ -149,7 +154,7 @@ func TestOpScribeWorker(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
@@ -226,6 +231,12 @@ func TestOpScribeWorker(t *testing.T) {
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-1 * time.Minute),
+			}, nil
+		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
 			return []*messages.MuSigSignature{
@@ -281,6 +292,12 @@ func TestOpScribeWorker(t *testing.T) {
 			)
 		}
 		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-1 * time.Minute),
+			}, nil
+		}
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
@@ -414,6 +431,12 @@ func TestOpScribeWorker(t *testing.T) {
 						Age: time.Now().Add(-1 * time.Minute),
 					}, nil
 				}
+				mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+					return chronicle.PokeData{
+						Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+						Age: time.Now().Add(-1 * time.Minute),
+					}, nil
+				}
 				mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 					assert.Equal(t, "ETH/USD", model)
 					return []*messages.MuSigSignature{m}
@@ -459,6 +482,12 @@ func TestOpScribeWorker(t *testing.T) {
 				Age: time.Now().Add(-15 * time.Minute),
 			}, nil
 		}
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-15 * time.Minute),
+			}, nil
+		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
 			return []*messages.MuSigSignature{
@@ -481,6 +510,11 @@ func TestOpScribeWorker(t *testing.T) {
 			}
 		}
 
+		// If OpPoke cannot be called, revert to regular Poke.
+		mockContract.PokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller {
+			return mock.NewCaller(t).MockAllowAllCalls()
+		}
+
 		sw.createRelayCall(ctx)
 	})
 
@@ -501,7 +535,7 @@ func TestOpScribeWorker(t *testing.T) {
 		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
 			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(chronicle.FeedsResult{}, errors.New("foo"))
 		}
-		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),

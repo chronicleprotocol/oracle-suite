@@ -34,13 +34,13 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func TestScribeWorker(t *testing.T) {
+func TestScribe(t *testing.T) {
 	testFeed := types.MustAddressFromHex("0x1111111111111111111111111111111111111111")
 	mockLogger := newMockLogger(t)
 	mockContract := newMockScribeContract(t)
 	mockMuSigStore := newMockSignatureProvider(t)
 
-	sw := &scribeWorker{
+	sw := &scribe{
 		log:        mockLogger,
 		muSigStore: mockMuSigStore,
 		contract:   mockContract,

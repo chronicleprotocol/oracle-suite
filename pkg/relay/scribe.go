@@ -18,7 +18,6 @@ package relay
 import (
 	"context"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -29,30 +28,27 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-type scribeWorker struct {
-	contract       ScribeContract
-	muSigStore     store.SignatureProvider
-	dataModel      string
-	spread         float64
-	expiration     time.Duration
-	shouldUpdateAt time.Time
-	ticker         *timeutil.Ticker
-	log            log.Logger
+type scribe struct {
+	contract   ScribeContract
+	muSigStore store.SignatureProvider
+	dataModel  string
+	spread     float64
+	expiration time.Duration
+	log        log.Logger
 }
 
-func (w *scribeWorker) client() rpc.RPC {
+func (w *scribe) client() rpc.RPC {
 	return w.contract.Client()
 }
 
-func (w *scribeWorker) address() types.Address {
+func (w *scribe) address() types.Address {
 	return w.contract.Address()
 }
 
-func (w *scribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
-	wat, bar, feeds, pokeData, err := w.currentState(ctx)
+func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+	wat, bar, feeds, currPokeData, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
 			WithError(err).
@@ -83,7 +79,7 @@ func (w *scribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 		}
 
 		// If the signature is older than the current price, skip it.
-		if meta.Age.Before(pokeData.Age) {
+		if meta.Age.Before(currPokeData.Age) {
 			continue
 		}
 
@@ -93,8 +89,8 @@ func (w *scribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 		//   field.
 		// - Price differs from the current price by more than is specified in the
 		//   OracleSpread field.
-		spread := calculateSpread(pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
-		isExpired := time.Since(pokeData.Age) >= w.expiration
+		spread := calculateSpread(currPokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
+		isExpired := time.Since(currPokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 		// Generate signersBlob.
@@ -112,17 +108,16 @@ func (w *scribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 		w.log.
 			WithFields(w.logFields()).
 			WithFields(log.Fields{
-				"bar":              bar,
-				"age":              pokeData.Age,
-				"val":              pokeData.Val,
-				"expired":          isExpired,
-				"stale":            isStale,
-				"expiration":       w.expiration,
-				"spread":           w.spread,
-				"timeToExpiration": time.Since(pokeData.Age).String(),
-				"currentSpread":    spread,
+				"bar":           bar,
+				"age":           currPokeData.Age,
+				"val":           currPokeData.Val,
+				"expired":       isExpired,
+				"stale":         isStale,
+				"expiration":    w.expiration,
+				"spread":        w.spread,
+				"currentSpread": spread,
 			}).
-			Debug("Scribe worker")
+			Debug("Scribe ")
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
@@ -140,7 +135,11 @@ func (w *scribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 
 			gas, err := poke.Gas(ctx, types.LatestBlockNumber)
 			if err != nil {
-				w.handlePokeErr(err)
+				w.log.
+					WithError(err).
+					WithFields(w.logFields()).
+					WithAdvice("Ignore if it is related to temporary network issues").
+					Error("Failed to poke the Scribe contract")
 				return 0, nil
 			}
 
@@ -150,7 +149,7 @@ func (w *scribeWorker) createRelayCall(ctx context.Context) (gasEstimate uint64,
 	return 0, nil
 }
 
-func (w *scribeWorker) currentState(ctx context.Context) (wat string, bar int, feeds chronicle.FeedsResult, pokeData chronicle.PokeData, err error) {
+func (w *scribe) currentState(ctx context.Context) (wat string, bar int, feeds chronicle.FeedsResult, pokeData chronicle.PokeData, err error) {
 	pokeData, err = w.contract.Read(ctx)
 	if err != nil {
 		return "", 0, chronicle.FeedsResult{}, chronicle.PokeData{}, err
@@ -170,33 +169,7 @@ func (w *scribeWorker) currentState(ctx context.Context) (wat string, bar int, f
 	return wat, bar, feeds, pokeData, nil
 }
 
-func (w *scribeWorker) handlePokeErr(err error) {
-	if strings.Contains(err.Error(), "replacement transaction underpriced") {
-		w.log.
-			WithError(err).
-			WithFields(w.logFields()).
-			WithAdvice("This is expected during large price movements; the relay tries to update multiple contracts at once").
-			Warn("Failed to poke the Scribe contract; previous transaction is still pending")
-		return
-	}
-	/*
-		if contract.IsRevert(err) {
-			w.log.
-				WithError(err).
-				WithFields(w.logFields()).
-				WithAdvice("Probably caused by a race condition between multiple relays; if this is a case, no action is required").
-				Error("Failed to poke the Scribe contract")
-			return
-		}
-	*/
-	w.log.
-		WithError(err).
-		WithFields(w.logFields()).
-		WithAdvice("Ignore if it is related to temporary network issues").
-		Error("Failed to poke the Scribe contract")
-}
-
-func (w *scribeWorker) logFields() log.Fields {
+func (w *scribe) logFields() log.Fields {
 	return log.Fields{
 		"address":   w.contract.Address(),
 		"dataModel": w.dataModel,

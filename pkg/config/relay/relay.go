@@ -83,7 +83,7 @@ type configCommon struct {
 	Spread float64 `hcl:"spread"`
 
 	// Expiration is a time in seconds after which the price is considered
-	// expired. If the price is expired, the relay will update it.
+	// expired which triggers an update.
 	Expiration uint32 `hcl:"expiration"`
 
 	// HCL fields:
@@ -104,6 +104,15 @@ type configScribe struct {
 
 type configOptimisticScribe struct {
 	configCommon
+
+	// OptimisticSpread is a minimum spread between the current price to
+	// trigger an optimistic update. A spread is represented as a percentage
+	// point, e.g. 1 means 1%.
+	OptimisticSpread float64 `hcl:"optimistic_spread"`
+
+	// OptimisticExpiration is a time in seconds after which the price is
+	// considered expired which triggers an optimistic update.
+	OptimisticExpiration uint32 `hcl:"optimistic_expiration"`
 }
 
 func configCommonFields(c configCommon) log.Fields {
@@ -246,12 +255,14 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			Info("Contract")
 
 		opScribeCfgs = append(opScribeCfgs, relay.ConfigOptimisticScribe{
-			DataModel:       cfg.DataModel,
-			ContractAddress: cfg.ContractAddr,
-			Client:          client,
-			MuSigStore:      musigStoreSrv,
-			Spread:          cfg.Spread,
-			Expiration:      time.Second * time.Duration(cfg.Expiration),
+			DataModel:            cfg.DataModel,
+			ContractAddress:      cfg.ContractAddr,
+			Client:               client,
+			MuSigStore:           musigStoreSrv,
+			Spread:               cfg.Spread,
+			Expiration:           time.Second * time.Duration(cfg.Expiration),
+			OptimisticSpread:     cfg.OptimisticSpread,
+			OptimisticExpiration: time.Second * time.Duration(cfg.OptimisticExpiration),
 		})
 	}
 
@@ -260,7 +271,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		Scribes:           scribeCfgs,
 		OptimisticScribes: opScribeCfgs,
 		Logger:            d.Logger,
-		Ticker:            timeutil.NewTicker(time.Minute),
+		Ticker:            timeutil.NewTicker(time.Minute * 2),
 	})
 	if err != nil {
 		return nil, &hcl.Diagnostic{
