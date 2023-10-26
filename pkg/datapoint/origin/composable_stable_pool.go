@@ -440,7 +440,7 @@ func (c *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amount
 		return nil, nil, fmt.Errorf("INVALID_AMOUNT_OUT_CALCULATED")
 	}
 	// _downscaleDown(amountCalculated, scalingFactors[registeredIndexOut]) // Amount out, round down
-	return DivDownFixed(amountCalculated, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
+	return _divDownFixed(amountCalculated, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
 }
 
 // _exitSwapExactBptInForTokenOut implements same functionality with the following url:
@@ -592,12 +592,12 @@ func (c *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*b
 	}
 
 	// swapFeeGrowthInvariantDelta/totalGrowthInvariant*getProtocolFeePercentageCache
-	protocolSwapFeePercentage := MulDownFixed(
-		DivDownFixed(swapFeeGrowthInvariantDelta, totalGrowthInvariant),
+	protocolSwapFeePercentage := _mulDownFixed(
+		_divDownFixed(swapFeeGrowthInvariantDelta, totalGrowthInvariant),
 		c.config.Extra.ProtocolFeePercentageCacheSwapType)
 
-	protocolYieldPercentage := MulDownFixed(
-		DivDownFixed(nonExemptYieldGrowthInvariantDelta, totalGrowthInvariant),
+	protocolYieldPercentage := _mulDownFixed(
+		_divDownFixed(nonExemptYieldGrowthInvariantDelta, totalGrowthInvariant),
 		c.config.Extra.ProtocolFeePercentageCacheYieldType)
 
 	// Calculate the total protocol ComposableStablePool ownership percentage
@@ -616,7 +616,7 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*big.Int) (*big.I
 		err                           error
 	)
 
-	// This invariant result is calc by DivDown (round down)
+	// This invariant result is calc by _divDown (round down)
 	// https://github.com/balancer/balancer-v2-monorepo/blob/b46023f7c5deefaf58a0a42559a36df420e1639f/pkg/pool-stable/contracts/StableMath.sol#L96
 	swapFeeGrowthInvariant, err = _calculateInvariant(
 		c.config.Extra.LastJoinExit.LastJoinExitAmplification,
@@ -741,7 +741,7 @@ func (c *ComposableStablePool) _getAdjustedBalances(balances []*big.Int, ignoreE
 // _adjustedBalance implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L242
 func (c *ComposableStablePool) _adjustedBalance(balance *big.Int, cache *TokenRateCache) *big.Int {
-	return DivDown(new(big.Int).Mul(balance, cache.OldRate), cache.Rate)
+	return _divDown(new(big.Int).Mul(balance, cache.OldRate), cache.Rate)
 }
 
 // _dropBptItem implements same functionality with the following url:
@@ -765,7 +765,7 @@ func (c *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolO
 	// `poolOwnershipPercentage = bptAmount / (totalSupply + bptAmount)`.
 	// Solving for `bptAmount`, we arrive at:
 	// `bptAmount = totalSupply * poolOwnershipPercentage / (1 - poolOwnershipPercentage)`.
-	return DivDown(new(big.Int).Mul(totalSupply, poolOwnershipPercentage), ComplementFixed(poolOwnershipPercentage))
+	return _divDown(new(big.Int).Mul(totalSupply, poolOwnershipPercentage), _complementFixed(poolOwnershipPercentage))
 }
 
 // _skipBptIndex implements same functionality with the following url:
@@ -795,22 +795,22 @@ func (c *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *big
 		return nil, nil, err
 	}
 
-	return DivDownFixed(amountOut, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
+	return _divDownFixed(amountOut, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
 }
 
 func (c *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage *big.Int) (*big.Int, *big.Int) {
-	feeAmount := MulUpFixed(amount, swapFeePercentage)
+	feeAmount := _mulUpFixed(amount, swapFeePercentage)
 	return new(big.Int).Sub(amount, feeAmount), feeAmount
 }
 
 func (c *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*big.Int) []*big.Int {
 	result := make([]*big.Int, len(amounts))
 	for i, amount := range amounts {
-		result[i] = MulUpFixed(amount, scalingFactors[i])
+		result[i] = _mulUpFixed(amount, scalingFactors[i])
 	}
 	return result
 }
 
 func (c *ComposableStablePool) _upscale(amount, scalingFactor *big.Int) *big.Int {
-	return MulUpFixed(amount, scalingFactor)
+	return _mulUpFixed(amount, scalingFactor)
 }

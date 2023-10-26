@@ -14,12 +14,12 @@ const AmpPrecision = 1e3
 
 var ampPrecision = big.NewInt(AmpPrecision)
 
-func MulDownFixed(a *big.Int, b *big.Int) *big.Int {
+func _mulDownFixed(a *big.Int, b *big.Int) *big.Int {
 	var ret = new(big.Int).Mul(a, b)
 	return new(big.Int).Div(ret, bigIntEther)
 }
 
-func MulUpFixed(a *big.Int, b *big.Int) *big.Int {
+func _mulUpFixed(a *big.Int, b *big.Int) *big.Int {
 	var ret = new(big.Int).Mul(a, b)
 	if ret.Cmp(bigIntZero) == 0 {
 		return ret
@@ -27,25 +27,25 @@ func MulUpFixed(a *big.Int, b *big.Int) *big.Int {
 	return new(big.Int).Add(new(big.Int).Div(new(big.Int).Sub(ret, bigIntOne), bigIntEther), bigIntOne)
 }
 
-func DivRounding(a *big.Int, b *big.Int, roundUp bool) *big.Int {
+func _divRounding(a *big.Int, b *big.Int, roundUp bool) *big.Int {
 	if roundUp {
-		return DivUp(a, b)
+		return _divUp(a, b)
 	}
-	return DivDown(a, b)
+	return _divDown(a, b)
 }
 
-func DivDown(a *big.Int, b *big.Int) *big.Int {
+func _divDown(a *big.Int, b *big.Int) *big.Int {
 	return new(big.Int).Div(a, b)
 }
 
-func DivUp(a *big.Int, b *big.Int) *big.Int {
+func _divUp(a *big.Int, b *big.Int) *big.Int {
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
 	return new(big.Int).Add(new(big.Int).Div(new(big.Int).Sub(a, bigIntOne), b), bigIntOne)
 }
 
-func DivUpFixed(a *big.Int, b *big.Int) *big.Int {
+func _divUpFixed(a *big.Int, b *big.Int) *big.Int {
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
@@ -53,7 +53,7 @@ func DivUpFixed(a *big.Int, b *big.Int) *big.Int {
 	return new(big.Int).Add(new(big.Int).Div(new(big.Int).Sub(aInflated, bigIntOne), b), bigIntOne)
 }
 
-func DivDownFixed(a *big.Int, b *big.Int) *big.Int {
+func _divDownFixed(a *big.Int, b *big.Int) *big.Int {
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
@@ -61,7 +61,7 @@ func DivDownFixed(a *big.Int, b *big.Int) *big.Int {
 	return new(big.Int).Div(ret, b)
 }
 
-func ComplementFixed(x *big.Int) *big.Int {
+func _complementFixed(x *big.Int) *big.Int {
 	if x.Cmp(bigIntEther) < 0 {
 		return new(big.Int).Sub(bigIntEther, x)
 	}
@@ -85,17 +85,17 @@ func _calculateInvariant(amp *big.Int, balances []*big.Int, roundUp bool) (*big.
 	for i := 0; i < 255; i++ {
 		var PD = new(big.Int).Mul(balances[0], numTokensBi) // P_D
 		for j := 1; j < numTokens; j++ {
-			PD = DivRounding(new(big.Int).Mul(new(big.Int).Mul(PD, balances[j]), numTokensBi), invariant, roundUp)
+			PD = _divRounding(new(big.Int).Mul(new(big.Int).Mul(PD, balances[j]), numTokensBi), invariant, roundUp)
 		}
 		prevInvariant = invariant
-		invariant = DivRounding(
+		invariant = _divRounding(
 			new(big.Int).Add(
 				new(big.Int).Mul(new(big.Int).Mul(numTokensBi, invariant), invariant),
-				DivRounding(new(big.Int).Mul(new(big.Int).Mul(ampTotal, sum), PD), ampPrecision, roundUp),
+				_divRounding(new(big.Int).Mul(new(big.Int).Mul(ampTotal, sum), PD), ampPrecision, roundUp),
 			),
 			new(big.Int).Add(
 				new(big.Int).Mul(new(big.Int).Add(numTokensBi, bigIntOne), invariant),
-				DivRounding(new(big.Int).Mul(new(big.Int).Sub(ampTotal, ampPrecision), PD), ampPrecision, !roundUp),
+				_divRounding(new(big.Int).Mul(new(big.Int).Sub(ampTotal, ampPrecision), PD), ampPrecision, !roundUp),
 			),
 			roundUp,
 		)
@@ -128,20 +128,20 @@ func _calcBptOutGivenExactTokensIn(
 	balanceRatiosWithFee := make([]*big.Int, len(amountsIn))
 	invariantRatioWithFees := big.NewInt(0)
 	for i, balance := range balances {
-		currentWeight := DivDownFixed(balance, sumBalances)
-		balanceRatiosWithFee[i] = DivDownFixed(new(big.Int).Add(balance, amountsIn[i]), balance)
-		invariantRatioWithFees.Add(invariantRatioWithFees, MulDownFixed(balanceRatiosWithFee[i], currentWeight))
+		currentWeight := _divDownFixed(balance, sumBalances)
+		balanceRatiosWithFee[i] = _divDownFixed(new(big.Int).Add(balance, amountsIn[i]), balance)
+		invariantRatioWithFees.Add(invariantRatioWithFees, _mulDownFixed(balanceRatiosWithFee[i], currentWeight))
 	}
 
 	newBalances := make([]*big.Int, len(balances))
 	for i, balance := range balances {
 		var amountInWithoutFee *big.Int
 		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
-			nonTaxableAmount := MulDownFixed(balance, new(big.Int).Sub(invariantRatioWithFees, big.NewInt(ether)))
+			nonTaxableAmount := _mulDownFixed(balance, new(big.Int).Sub(invariantRatioWithFees, big.NewInt(ether)))
 			taxableAmount := new(big.Int).Sub(amountsIn[i], nonTaxableAmount)
 			amountInWithoutFee = new(big.Int).Add(
 				nonTaxableAmount,
-				MulDownFixed(
+				_mulDownFixed(
 					taxableAmount,
 					new(big.Int).Sub(big.NewInt(ether), swapFeePercentage),
 				),
@@ -158,9 +158,9 @@ func _calcBptOutGivenExactTokensIn(
 		return nil, nil, err
 	}
 
-	invariantRatio := DivDownFixed(newInvariant, invariant)
+	invariantRatio := _divDownFixed(newInvariant, invariant)
 	if invariantRatio.Cmp(big.NewInt(ether)) > 0 {
-		return MulDownFixed(bptTotalSupply, new(big.Int).Sub(invariantRatio, big.NewInt(ether))), feeAmountIn, nil
+		return _mulDownFixed(bptTotalSupply, new(big.Int).Sub(invariantRatio, big.NewInt(ether))), feeAmountIn, nil
 	}
 	return big.NewInt(0), feeAmountIn, nil
 }
@@ -175,7 +175,7 @@ func _calcTokenOutGivenExactBptIn(
 	bptTotalSupply, invariant, swapFeePercentage *big.Int,
 ) (*big.Int, *big.Int, error) {
 
-	newInvariant := MulUpFixed(DivUpFixed(new(big.Int).Sub(bptTotalSupply, bptAmountIn), bptTotalSupply), invariant)
+	newInvariant := _mulUpFixed(_divUpFixed(new(big.Int).Sub(bptTotalSupply, bptAmountIn), bptTotalSupply), invariant)
 	newBalanceTokenIndex, err := _getTokenBalanceGivenInvariantAndAllOtherBalances(amp, balances, newInvariant, tokenIndex)
 	if err != nil {
 		return nil, nil, err
@@ -187,13 +187,13 @@ func _calcTokenOutGivenExactBptIn(
 		sumBalances.Add(sumBalances, balance)
 	}
 
-	currentWeight := DivDownFixed(balances[tokenIndex], sumBalances)
-	taxablePercentage := ComplementFixed(currentWeight)
+	currentWeight := _divDownFixed(balances[tokenIndex], sumBalances)
+	taxablePercentage := _complementFixed(currentWeight)
 
-	taxableAmount := MulUpFixed(amountOutWithoutFee, taxablePercentage)
+	taxableAmount := _mulUpFixed(amountOutWithoutFee, taxablePercentage)
 	nonTaxableAmount := new(big.Int).Sub(amountOutWithoutFee, taxableAmount)
 
-	feeOfTaxableAmount := MulDownFixed(
+	feeOfTaxableAmount := _mulDownFixed(
 		taxableAmount,
 		new(big.Int).Sub(big.NewInt(ether), swapFeePercentage),
 	)
@@ -216,21 +216,21 @@ func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 	var sum = balances[0]
 	var PD = new(big.Int).Mul(balances[0], nTokensBi) // P_D
 	for j := 1; j < nTokens; j++ {
-		PD = DivDown(new(big.Int).Mul(new(big.Int).Mul(PD, balances[j]), nTokensBi), invariant)
+		PD = _divDown(new(big.Int).Mul(new(big.Int).Mul(PD, balances[j]), nTokensBi), invariant)
 		sum = new(big.Int).Add(sum, balances[j])
 	}
 	sum = new(big.Int).Sub(sum, balances[tokenIndex])
 	var inv2 = new(big.Int).Mul(invariant, invariant)
 	var c = new(big.Int).Mul(
-		new(big.Int).Mul(DivUp(inv2, new(big.Int).Mul(ampTotal, PD)), ampPrecision),
+		new(big.Int).Mul(_divUp(inv2, new(big.Int).Mul(ampTotal, PD)), ampPrecision),
 		balances[tokenIndex],
 	)
-	var b = new(big.Int).Add(sum, new(big.Int).Mul(DivDown(invariant, ampTotal), ampPrecision))
+	var b = new(big.Int).Add(sum, new(big.Int).Mul(_divDown(invariant, ampTotal), ampPrecision))
 	var prevTokenBalance *big.Int
-	var tokenBalance = DivUp(new(big.Int).Add(inv2, c), new(big.Int).Add(invariant, b))
+	var tokenBalance = _divUp(new(big.Int).Add(inv2, c), new(big.Int).Add(invariant, b))
 	for i := 0; i < 255; i++ {
 		prevTokenBalance = tokenBalance
-		tokenBalance = DivUp(
+		tokenBalance = _divUp(
 			new(big.Int).Add(new(big.Int).Mul(tokenBalance, tokenBalance), c),
 			new(big.Int).Sub(new(big.Int).Add(new(big.Int).Mul(tokenBalance, bigIntTwo), b), invariant),
 		)

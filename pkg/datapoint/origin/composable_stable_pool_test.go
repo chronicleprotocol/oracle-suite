@@ -26,7 +26,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 			Quote: "B",
 		},
 		ContractAddress: types.MustAddressFromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a5431"),
-		PoolID:          MustBytes32FromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a543100000000000000000000050a"),
+		PoolID:          types.Bytes("0x9001cbbd96f54a658ff4e6e65ab564ded76a543100000000000000000000050a"),
 		Vault:           types.MustAddressFromHex("0xba12222222228d8ba445958a75a0704d566bf2c8"),
 		Tokens: []types.Address{
 			types.MustAddressFromHex("0x60d604890feaa0b5460b28a424407c24fe89374a"), // A
