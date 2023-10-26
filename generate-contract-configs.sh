@@ -50,11 +50,15 @@ _CONTRACTS="$({
 		IScribe: (.IScribe != null),
 		IScribeOptimistic: (.IScribeOptimistic != null),
 		challenge_period:.IScribeOptimistic.opChallengePeriod,
-	}	+ {
-		poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")]},
+		poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")],
 		optimistic_poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")],
 	} | del(..|nulls)'
-	jq <<<"$__medians" --argjson p "$__relays" -c '{env,chain,wat,address,IMedian:true} + {
+	jq <<<"$__medians" --argjson p "$__relays" -c '{
+		env,
+		chain,
+		wat,
+		address,
+		IMedian:true,
 		poke:$p[(.env+"-"+.chain+"-"+.wat+"-median-poke")],
 	} | del(..|nulls)'
 } | sort | jq -s '.')"
@@ -70,14 +74,22 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 } > config/config-contracts.hcl
 
 {
-	jq <<<"$__medians" -c '{
-		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
-		value: (.poke // {expiration:null,spread:null,interval:null}),
-	}'
-#	jq <<<"$_CONTRACTS" -c '.[] | select(.IMedian) | {
+#	jq <<<"$__medians" -c '{
 #		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
-#		value: (.poke // {"expiration":null,"spread":null,"interval":null}),
+#		value: (.poke // {expiration:null,spread:null,interval:null}),
 #	}'
+#	jq <<<"$__relays" -c 'to_entries | .[] | select(.value.poke != null) | {
+#		key: (.key+"-scribe-poke"),
+#		value: .value.poke,
+#	}'
+#	jq <<<"$__relays" -c 'to_entries | .[] | select(.value.optimistic_poke != null) | {
+#		key: (.key+"-scribe-poke-optimistic"),
+#		value: .value.optimistic_poke,
+#	}'
+	jq <<<"$_CONTRACTS" -c '.[] | select(.IMedian) | {
+		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
+		value: (.poke // {"expiration":null,"spread":null,"interval":null}),
+	}'
 	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribe) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke"),
 		value: (.poke // {expiration:null,spread:null,interval:null}),
@@ -86,7 +98,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
 		value: (.optimistic_poke // {expiration:null,spread:null,interval:null}),
 	}'
-} | sort | jq -s 'from_entries' > config/relays.json
+} | sort | jq -s 'from_entries' > config/relays00.json
 
 #jq -c "{env,chain,wat,address}" <<<"$__medians" | sort > "$1/deployments/medians.jsonl"
 
