@@ -117,7 +117,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 			continue
 		}
 		pools = append(pools, c)
-		calls = append(calls, errutil.Must(c.CreateInitCalls())...)
+		calls = append(calls, errutil.Must(c.createInitCalls())...)
 
 		totals[pair] = new(big.Float).SetInt64(0)
 	}
@@ -134,12 +134,12 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 	calls = make([]types.Call, 0)
 	n := len(resp) / len(pools)
 	for i, c := range pools {
-		err := c.DecodeInitCalls(resp[i*n : i*n+n])
+		err := c.decodeInitCalls(resp[i*n : i*n+n])
 		if err != nil {
 			points[c.config.Pair] = datapoint.Point{Error: err}
 			return nil, err
 		}
-		calls = append(calls, errutil.Must(c.CreatePoolTokensCall()))
+		calls = append(calls, errutil.Must(c.createPoolTokensCall()))
 	}
 	// Get pool tokens from vault by given pool id
 	resp, err = ethereum.MultiCall(ctx, b.client, calls, types.LatestBlockNumber)
@@ -148,7 +148,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 	}
 	tokensMap := make(map[types.Address]struct{})
 	for i, c := range pools {
-		err := c.DecodePoolTokensCall(resp[i])
+		err := c.decodePoolTokensCall(resp[i])
 		if err != nil {
 			points[c.config.Pair] = datapoint.Point{Error: err}
 			return nil, err
@@ -165,7 +165,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 	for _, blockDelta := range b.blocks {
 		calls = make([]types.Call, 0)
 		for _, c := range pools {
-			calls = append(calls, errutil.Must(c.CreatePoolParamsCalls())...)
+			calls = append(calls, errutil.Must(c.createPoolParamsCalls())...)
 		}
 		resp, err = ethereum.MultiCall(ctx, b.client, calls, types.BlockNumberFromUint64(uint64(block.Int64()-blockDelta)))
 		if err != nil {
@@ -174,12 +174,12 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 		calls = make([]types.Call, 0)
 		n = len(resp) / len(pools)
 		for i, c := range pools {
-			err := c.DecodePoolParamsCalls(resp[i*n : i*n+n])
+			err := c.decodePoolParamsCalls(resp[i*n : i*n+n])
 			if err != nil {
 				points[c.config.Pair] = datapoint.Point{Error: err}
 				return nil, err
 			}
-			calls = append(calls, errutil.Must(c.CreateTokenRateCacheCalls())...)
+			calls = append(calls, errutil.Must(c.createTokenRateCacheCalls())...)
 		}
 
 		if len(calls) > 0 {
@@ -189,7 +189,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 			}
 			n = len(resp) / len(pools)
 			for i, c := range pools {
-				err := c.DecodeTokenRateCacheCalls(resp[i*n : i*n+n])
+				err := c.decodeTokenRateCacheCalls(resp[i*n : i*n+n])
 				if err != nil {
 					points[c.config.Pair] = datapoint.Point{Error: err}
 					return nil, err
@@ -201,7 +201,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 			baseToken := tokenDetails[c.config.Pair.Base]
 			quoteToken := tokenDetails[c.config.Pair.Quote]
 			amountIn := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil)
-			amountOut, _, err := c.CalcAmountOut(baseToken, quoteToken, amountIn)
+			amountOut, _, err := c.calcAmountOut(baseToken, quoteToken, amountIn)
 			if err != nil {
 				points[c.config.Pair] = datapoint.Point{Error: err}
 				return nil, err

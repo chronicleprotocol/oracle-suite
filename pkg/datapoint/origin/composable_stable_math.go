@@ -69,7 +69,7 @@ func ComplementFixed(x *big.Int) *big.Int {
 }
 
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L57
-func CalculateInvariant(amp *big.Int, balances []*big.Int, roundUp bool) (*big.Int, error) {
+func _calculateInvariant(amp *big.Int, balances []*big.Int, roundUp bool) (*big.Int, error) { //nolint:unparam
 	var sum = bigIntZero
 	var numTokens = len(balances)
 	var numTokensBi = big.NewInt(int64(numTokens))
@@ -110,8 +110,100 @@ func CalculateInvariant(amp *big.Int, balances []*big.Int, roundUp bool) (*big.I
 	return nil, fmt.Errorf("STABLE_INVARIANT_DIDNT_CONVERGE")
 }
 
+// _calcBptOutGivenExactTokensIn implements same functionality with the following url:
+// https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L201
+func _calcBptOutGivenExactTokensIn(
+	amp *big.Int,
+	balances []*big.Int,
+	amountsIn []*big.Int,
+	bptTotalSupply, invariant, swapFeePercentage *big.Int,
+) (*big.Int, *big.Int, error) {
+
+	feeAmountIn := big.NewInt(0)
+	sumBalances := big.NewInt(0)
+	for _, balance := range balances {
+		sumBalances.Add(sumBalances, balance)
+	}
+
+	balanceRatiosWithFee := make([]*big.Int, len(amountsIn))
+	invariantRatioWithFees := big.NewInt(0)
+	for i, balance := range balances {
+		currentWeight := DivDownFixed(balance, sumBalances)
+		balanceRatiosWithFee[i] = DivDownFixed(new(big.Int).Add(balance, amountsIn[i]), balance)
+		invariantRatioWithFees.Add(invariantRatioWithFees, MulDownFixed(balanceRatiosWithFee[i], currentWeight))
+	}
+
+	newBalances := make([]*big.Int, len(balances))
+	for i, balance := range balances {
+		var amountInWithoutFee *big.Int
+		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
+			nonTaxableAmount := MulDownFixed(balance, new(big.Int).Sub(invariantRatioWithFees, big.NewInt(ether)))
+			taxableAmount := new(big.Int).Sub(amountsIn[i], nonTaxableAmount)
+			amountInWithoutFee = new(big.Int).Add(
+				nonTaxableAmount,
+				MulDownFixed(
+					taxableAmount,
+					new(big.Int).Sub(big.NewInt(ether), swapFeePercentage),
+				),
+			)
+		} else {
+			amountInWithoutFee = amountsIn[i]
+		}
+		feeAmountIn = feeAmountIn.Add(feeAmountIn, new(big.Int).Sub(amountsIn[i], amountInWithoutFee))
+		newBalances[i] = new(big.Int).Add(balance, amountInWithoutFee)
+	}
+
+	newInvariant, err := _calculateInvariant(amp, newBalances, false)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	invariantRatio := DivDownFixed(newInvariant, invariant)
+	if invariantRatio.Cmp(big.NewInt(ether)) > 0 {
+		return MulDownFixed(bptTotalSupply, new(big.Int).Sub(invariantRatio, big.NewInt(ether))), feeAmountIn, nil
+	}
+	return big.NewInt(0), feeAmountIn, nil
+}
+
+// _calcTokenOutGivenExactBptIn implements same functionality with the following url:
+// https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L354
+func _calcTokenOutGivenExactBptIn(
+	amp *big.Int,
+	balances []*big.Int,
+	tokenIndex int,
+	bptAmountIn *big.Int,
+	bptTotalSupply, invariant, swapFeePercentage *big.Int,
+) (*big.Int, *big.Int, error) {
+
+	newInvariant := MulUpFixed(DivUpFixed(new(big.Int).Sub(bptTotalSupply, bptAmountIn), bptTotalSupply), invariant)
+	newBalanceTokenIndex, err := _getTokenBalanceGivenInvariantAndAllOtherBalances(amp, balances, newInvariant, tokenIndex)
+	if err != nil {
+		return nil, nil, err
+	}
+	amountOutWithoutFee := new(big.Int).Sub(balances[tokenIndex], newBalanceTokenIndex)
+
+	sumBalances := big.NewInt(0)
+	for _, balance := range balances {
+		sumBalances.Add(sumBalances, balance)
+	}
+
+	currentWeight := DivDownFixed(balances[tokenIndex], sumBalances)
+	taxablePercentage := ComplementFixed(currentWeight)
+
+	taxableAmount := MulUpFixed(amountOutWithoutFee, taxablePercentage)
+	nonTaxableAmount := new(big.Int).Sub(amountOutWithoutFee, taxableAmount)
+
+	feeOfTaxableAmount := MulDownFixed(
+		taxableAmount,
+		new(big.Int).Sub(big.NewInt(ether), swapFeePercentage),
+	)
+
+	feeAmount := new(big.Int).Sub(taxableAmount, feeOfTaxableAmount)
+	return new(big.Int).Add(nonTaxableAmount, feeOfTaxableAmount), feeAmount, nil
+}
+
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L399
-func getTokenBalanceGivenInvariantAndAllOtherBalances(
+func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 	a *big.Int,
 	balances []*big.Int,
 	invariant *big.Int,
@@ -154,7 +246,7 @@ func getTokenBalanceGivenInvariantAndAllOtherBalances(
 }
 
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L124
-func CalcOutGivenIn(
+func _calcOutGivenIn(
 	a *big.Int,
 	balances []*big.Int,
 	tokenIndexIn int,
@@ -164,7 +256,7 @@ func CalcOutGivenIn(
 ) (*big.Int, error) {
 
 	balances[tokenIndexIn] = new(big.Int).Add(balances[tokenIndexIn], tokenAmountIn)
-	var finalBalanceOut, err = getTokenBalanceGivenInvariantAndAllOtherBalances(a, balances, invariant, tokenIndexOut)
+	var finalBalanceOut, err = _getTokenBalanceGivenInvariantAndAllOtherBalances(a, balances, invariant, tokenIndexOut)
 	if err != nil {
 		return nil, err
 	}

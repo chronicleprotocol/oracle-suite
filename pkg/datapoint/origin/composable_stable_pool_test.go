@@ -157,7 +157,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 
 	for i, testcase := range testCases {
 		t.Run(fmt.Sprintf("testcase %d, tokenIn %s amountIn %s tokenOut %s amountOut %s", i, testcase.tokenIn.symbol, testcase.amountIn.String(), testcase.tokenOut.symbol, testcase.amountOut.String()), func(t *testing.T) {
-			amountOut, _, _ := p.CalcAmountOut(testcase.tokenIn, testcase.tokenOut, testcase.amountIn)
+			amountOut, _, _ := p.calcAmountOut(testcase.tokenIn, testcase.tokenOut, testcase.amountIn)
 			assert.Equal(t, testcase.amountOut, amountOut)
 		})
 	}
@@ -172,6 +172,6 @@ func TestCalculateInvariant(t *testing.T) {
 	balances := []*big.Int{
 		b1, b2, b3,
 	}
-	_, err := CalculateInvariant(a, balances, false)
+	_, err := _calculateInvariant(a, balances, false)
 	assert.Equal(t, err, fmt.Errorf("STABLE_INVARIANT_DIDNT_CONVERGE"))
 }
