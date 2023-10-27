@@ -2,6 +2,7 @@ package origin
 
 import (
 	"fmt"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
@@ -11,66 +12,19 @@ var bigIntTwo = bn.DecFloatPoint(2)
 var bigIntEther = bn.DecFloatPoint(ether)
 
 const AmpPrecision = 1e3
-const ComposableStablePrecision = 18
+const composableStablePrecision = 18
 
 var ampPrecision = bn.DecFloatPoint(AmpPrecision)
-
-func _mulDownFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	var ret = a.Mul(b)
-	return ret.Deflate(ComposableStablePrecision)
-}
-
-func _mulUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	var ret = a.Mul(b)
-	if ret.Cmp(bigIntZero) == 0 {
-		return ret
-	}
-	return ret.Sub(bigIntOne).Deflate(ComposableStablePrecision).Add(bigIntOne)
-}
-
-func _divRounding(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber, roundUp bool) *bn.DecFloatPointNumber {
-	if roundUp {
-		return _divUp(a, b)
-	}
-	return _divDown(a, b)
-}
-
-func _divDown(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	return a.Div(b)
-}
-
-func _divUp(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	if a.Cmp(bigIntZero) == 0 {
-		return bigIntZero
-	}
-	return a.Sub(bigIntOne).Div(b).Add(bigIntOne)
-}
-
-func _divUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	if a.Cmp(bigIntZero) == 0 {
-		return bigIntZero
-	}
-	aInflated := a.Inflate(ComposableStablePrecision)
-	return aInflated.Sub(bigIntOne).Div(b).Add(bigIntOne)
-}
-
-func _divDownFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	if a.Cmp(bigIntZero) == 0 {
-		return bigIntZero
-	}
-	var ret = a.Inflate(ComposableStablePrecision)
-	return ret.Div(b)
-}
 
 func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	if x.Cmp(bigIntEther) < 0 {
 		return bigIntEther.Sub(x)
 	}
-	return bn.DecFloatPoint(0)
+	return bigIntZero
 }
 
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L57
-func _calculateInvariant(amp *bn.DecFloatPointNumber, balances []*bn.DecFloatPointNumber, roundUp bool) ( //nolint:unparam
+func _calculateInvariant(amp *bn.DecFloatPointNumber, balances []*bn.DecFloatPointNumber) (
 	*bn.DecFloatPointNumber,
 	error,
 ) {
@@ -90,16 +44,14 @@ func _calculateInvariant(amp *bn.DecFloatPointNumber, balances []*bn.DecFloatPoi
 	for i := 0; i < 255; i++ {
 		var PD = balances[0].Mul(numTokensBi) // P_D
 		for j := 1; j < numTokens; j++ {
-			PD = _divRounding(PD.Mul(balances[j]).Mul(numTokensBi), invariant, roundUp)
+			PD = PD.Mul(balances[j]).Mul(numTokensBi).Div(invariant)
 		}
 		prevInvariant = invariant
-		invariant = _divRounding(
-			numTokensBi.Mul(invariant).Mul(invariant).Add(
-				_divRounding(ampTotal.Mul(sum).Mul(PD), ampPrecision, roundUp)),
-			numTokensBi.Add(bigIntOne).Mul(invariant).Add(
-				_divRounding(ampTotal.Sub(ampPrecision).Mul(PD), ampPrecision, !roundUp)),
-			roundUp,
-		)
+		numerator := numTokensBi.Mul(invariant).Mul(invariant).Add(
+			ampTotal.Mul(sum).Mul(PD).Div(ampPrecision))
+		denominator := numTokensBi.Add(bigIntOne).Mul(invariant).Add(
+			ampTotal.Sub(ampPrecision).Mul(PD).Div(ampPrecision))
+		invariant = numerator.Div(denominator)
 		if invariant.Cmp(prevInvariant) > 0 {
 			if invariant.Sub(prevInvariant).Cmp(bigIntOne) <= 0 {
 				return invariant, nil
@@ -129,22 +81,24 @@ func _calcBptOutGivenExactTokensIn(
 	balanceRatiosWithFee := make([]*bn.DecFloatPointNumber, len(amountsIn))
 	invariantRatioWithFees := bn.DecFloatPoint(0)
 	for i, balance := range balances {
-		currentWeight := _divDownFixed(balance, sumBalances)
-		balanceRatiosWithFee[i] = _divDownFixed(balance.Add(amountsIn[i]), balance)
-		invariantRatioWithFees = invariantRatioWithFees.Add(_mulDownFixed(balanceRatiosWithFee[i], currentWeight))
+		currentWeight := balance.DivDownFixed(sumBalances, composableStablePrecision)
+		balanceRatiosWithFee[i] = balance.Add(amountsIn[i]).DivDownFixed(balance, composableStablePrecision)
+		invariantRatioWithFees = invariantRatioWithFees.Add(
+			balanceRatiosWithFee[i].MulDownFixed(currentWeight, composableStablePrecision))
 	}
 
 	newBalances := make([]*bn.DecFloatPointNumber, len(balances))
 	for i, balance := range balances {
 		var amountInWithoutFee *bn.DecFloatPointNumber
 		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
-			nonTaxableAmount := _mulDownFixed(balance,
-				invariantRatioWithFees.Sub(bn.DecFloatPoint(ether)))
+			nonTaxableAmount :=
+				balance.MulDownFixed(
+					invariantRatioWithFees.Sub(bn.DecFloatPoint(ether)), composableStablePrecision)
 			taxableAmount := amountsIn[i].Sub(nonTaxableAmount)
-			amountInWithoutFee = nonTaxableAmount.Add(_mulDownFixed(
-				taxableAmount,
-				bn.DecFloatPoint(ether).Sub(swapFeePercentage),
-			))
+			amountInWithoutFee = nonTaxableAmount.Add(
+				taxableAmount.MulDownFixed(
+					bn.DecFloatPoint(ether).Sub(swapFeePercentage), composableStablePrecision),
+			)
 		} else {
 			amountInWithoutFee = amountsIn[i]
 		}
@@ -152,14 +106,16 @@ func _calcBptOutGivenExactTokensIn(
 		newBalances[i] = balance.Add(amountInWithoutFee)
 	}
 
-	newInvariant, err := _calculateInvariant(amp, newBalances, false)
+	newInvariant, err := _calculateInvariant(amp, newBalances)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	invariantRatio := _divDownFixed(newInvariant, invariant)
+	invariantRatio := newInvariant.DivDownFixed(invariant, composableStablePrecision)
 	if invariantRatio.Cmp(bn.DecFloatPoint(ether)) > 0 {
-		return _mulDownFixed(bptTotalSupply, invariantRatio.Sub(bn.DecFloatPoint(ether))), feeAmountIn, nil
+		return bptTotalSupply.MulDownFixed(invariantRatio.Sub(bn.DecFloatPoint(ether)), composableStablePrecision),
+			feeAmountIn,
+			nil
 	}
 	return bn.DecFloatPoint(0), feeAmountIn, nil
 }
@@ -174,7 +130,9 @@ func _calcTokenOutGivenExactBptIn(
 	bptTotalSupply, invariant, swapFeePercentage *bn.DecFloatPointNumber,
 ) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 
-	newInvariant := _mulUpFixed(_divUpFixed(bptTotalSupply.Sub(bptAmountIn), bptTotalSupply), invariant)
+	newInvariant :=
+		bptTotalSupply.Sub(bptAmountIn).DivUpFixed(bptTotalSupply, composableStablePrecision).MulUpFixed(
+			invariant, composableStablePrecision)
 	newBalanceTokenIndex, err := _getTokenBalanceGivenInvariantAndAllOtherBalances(amp, balances, newInvariant, tokenIndex)
 	if err != nil {
 		return nil, nil, err
@@ -186,16 +144,15 @@ func _calcTokenOutGivenExactBptIn(
 		sumBalances = sumBalances.Add(balance)
 	}
 
-	currentWeight := _divDownFixed(balances[tokenIndex], sumBalances)
+	currentWeight := balances[tokenIndex].DivDownFixed(sumBalances, composableStablePrecision)
 	taxablePercentage := _complementFixed(currentWeight)
 
-	taxableAmount := _mulUpFixed(amountOutWithoutFee, taxablePercentage)
+	taxableAmount := amountOutWithoutFee.MulUpFixed(taxablePercentage, composableStablePrecision)
 	nonTaxableAmount := amountOutWithoutFee.Sub(taxableAmount)
 
-	feeOfTaxableAmount := _mulDownFixed(
-		taxableAmount,
-		bn.DecFloatPoint(ether).Sub(swapFeePercentage),
-	)
+	feeOfTaxableAmount :=
+		taxableAmount.MulDownFixed(
+			bn.DecFloatPoint(ether).Sub(swapFeePercentage), composableStablePrecision)
 
 	feeAmount := taxableAmount.Sub(feeOfTaxableAmount)
 	return nonTaxableAmount.Add(feeOfTaxableAmount), feeAmount, nil
@@ -215,21 +172,20 @@ func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 	var sum = balances[0]
 	var PD = balances[0].Mul(nTokensBi) // P_D
 	for j := 1; j < nTokens; j++ {
-		PD = _divDown(PD.Mul(balances[j]).Mul(nTokensBi), invariant)
+		PD = PD.Mul(balances[j]).Mul(nTokensBi).Div(invariant)
 		sum = sum.Add(balances[j])
 	}
 	sum = sum.Sub(balances[tokenIndex])
 	var inv2 = invariant.Mul(invariant)
-	var c = _divUp(inv2, ampTotal.Mul(PD)).Mul(ampPrecision).Mul(balances[tokenIndex])
-	var b = sum.Add(_divDown(invariant, ampTotal).Mul(ampPrecision))
+	var c = inv2.DivUp(ampTotal.Mul(PD)).Mul(ampPrecision).Mul(balances[tokenIndex])
+	var b = sum.Add(invariant.Div(ampTotal).Mul(ampPrecision))
 	var prevTokenBalance *bn.DecFloatPointNumber
-	var tokenBalance = _divUp(inv2.Add(c), invariant.Add(b))
+	var tokenBalance = inv2.Add(c).DivUp(invariant.Add(b))
 	for i := 0; i < 255; i++ {
 		prevTokenBalance = tokenBalance
-		tokenBalance = _divUp(
-			tokenBalance.Mul(tokenBalance).Add(c),
-			tokenBalance.Mul(bigIntTwo).Add(b).Sub(invariant),
-		)
+		tokenBalance =
+			tokenBalance.Mul(tokenBalance).Add(c).DivUp(
+				tokenBalance.Mul(bigIntTwo).Add(b).Sub(invariant))
 		if tokenBalance.Cmp(prevTokenBalance) > 0 {
 			if tokenBalance.Sub(prevTokenBalance).Cmp(bigIntOne) <= 0 {
 				return tokenBalance, nil

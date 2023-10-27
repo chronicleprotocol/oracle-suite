@@ -175,6 +175,21 @@ func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
+// MulDownFixed multiplies the number y and deflates prec precision
+func (x *DecFloatPointNumber) MulDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	return x.Mul(y).Deflate(prec)
+}
+
+// MulUpFixed multiplies the number y up and deflates prec precision
+func (x *DecFloatPointNumber) MulUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	ret := x.Mul(y)
+	if ret.Sign() == 0 {
+		return ret
+	}
+	one := DecFloatPoint(intOne)
+	return ret.Sub(one).Deflate(prec).Add(one)
+}
+
 // Div divides the number by y and returns the result.
 //
 // Division by zero panics.
@@ -198,11 +213,11 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
+// DivUp divides the number y up and return the result.
 func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber {
 	if x.Sign() == 0 {
 		return x
 	}
-
 	one := DecFloatPoint(intOne)
 	// The traditional divUp formula is:
 	// divUp(x, y) := (x + y - 1) / y
@@ -210,6 +225,23 @@ func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber
 	// divUp(x, y) := (x - 1) / y + 1
 	// Note that this requires x != 0, if x == 0 then the result is zero
 	return x.Sub(one).Div(y).Add(one)
+}
+
+// DivUpFixed divides the number y up and deflates prec precision
+func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+	one := DecFloatPoint(intOne)
+	return x.Inflate(prec).Sub(one).Div(y).Add(one)
+}
+
+// DivDownFixed inflates prec precision and divides the number y down
+func (x *DecFloatPointNumber) DivDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.Inflate(prec).Div(y)
 }
 
 // Exp exponential function by y and return the x ^ y.

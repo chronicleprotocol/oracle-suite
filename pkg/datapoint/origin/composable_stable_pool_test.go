@@ -6,20 +6,20 @@ import (
 	"testing"
 
 	"github.com/defiweb/go-eth/types"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func string2BigInt(s string) *big.Int {
+func string2DecFloatPointNumber(s string) *bn.DecFloatPointNumber {
 	b, _ := new(big.Int).SetString(s, 10)
-	return b
+	return bn.DecFloatPoint(b)
 }
 
 func TestComposableStablePool_Swap(t *testing.T) {
-	var BoneFloat, _ = new(big.Float).SetString("1000000000000000000")
-	swapFee, _ := new(big.Float).Mul(big.NewFloat(0.000001), BoneFloat).Int(nil)
+	var BoneFloat = bn.DecFloatPoint("1000000000000000000")
+	swapFee := bn.DecFloatPoint(big.NewFloat(0.000001)).Mul(BoneFloat)
 	config := ComposableStablePoolFullConfig{
 		Pair: value.Pair{
 			Base:  "A",
@@ -39,37 +39,37 @@ func TestComposableStablePool_Swap(t *testing.T) {
 			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
 			types.MustAddressFromHex("0x7311e4bb8a72e7b300c5b8bde4de6cdaa822a5b1"),
 		},
-		Balances: []*big.Int{
-			string2BigInt("2518960237189623226641"),
-			string2BigInt("2596148429266323438822175768385755"),
-			string2BigInt("3457262534881651304610"),
+		Balances: []*bn.DecFloatPointNumber{
+			bn.DecFloatPoint("2518960237189623226641"),
+			bn.DecFloatPoint("2596148429266323438822175768385755"),
+			bn.DecFloatPoint("3457262534881651304610"),
 		},
-		TotalSupply:       string2BigInt("2596148429272429220684965023562161"),
+		TotalSupply:       bn.DecFloatPoint("2596148429272429220684965023562161"),
 		SwapFeePercentage: swapFee,
 		Extra: Extra{
 			AmplificationParameter: AmplificationParameter{
-				Value:      big.NewInt(700000),
+				Value:      bn.DecFloatPoint(700000),
 				IsUpdating: false,
-				Precision:  big.NewInt(1000),
+				Precision:  bn.DecFloatPoint(1000),
 			},
-			ScalingFactors: []*big.Int{
-				string2BigInt("1003649423771917631"),
-				string2BigInt("1000000000000000000"),
-				string2BigInt("1043680240732074966"),
+			ScalingFactors: []*bn.DecFloatPointNumber{
+				bn.DecFloatPoint("1003649423771917631"),
+				bn.DecFloatPoint("1000000000000000000"),
+				bn.DecFloatPoint("1043680240732074966"),
 			},
 			LastJoinExit: LastJoinExitData{
-				LastJoinExitAmplification: string2BigInt("700000"),
-				LastPostJoinExitInvariant: string2BigInt("6135006746648647084879"),
+				LastJoinExitAmplification: bn.DecFloatPoint("700000"),
+				LastPostJoinExitInvariant: bn.DecFloatPoint("6135006746648647084879"),
 			},
 			TokensExemptFromYieldProtocolFee: []bool{
 				false, false, false,
 			},
 			TokenRateCaches: []TokenRateCache{
 				{
-					Rate:     string2BigInt("1003649423771917631"),
-					OldRate:  string2BigInt("1003554274984131981"),
-					Duration: string2BigInt("21600"),
-					Expires:  string2BigInt("1689845039"),
+					Rate:     bn.DecFloatPoint("1003649423771917631"),
+					OldRate:  bn.DecFloatPoint("1003554274984131981"),
+					Duration: bn.DecFloatPoint("21600"),
+					Expires:  bn.DecFloatPoint("1689845039"),
 				},
 				{
 					Rate:     nil,
@@ -78,14 +78,14 @@ func TestComposableStablePool_Swap(t *testing.T) {
 					Expires:  nil,
 				},
 				{
-					Rate:     string2BigInt("1043680240732074966"),
-					OldRate:  string2BigInt("1043375386816533719"),
-					Duration: string2BigInt("21600"),
-					Expires:  string2BigInt("1689845039"),
+					Rate:     bn.DecFloatPoint("1043680240732074966"),
+					OldRate:  bn.DecFloatPoint("1043375386816533719"),
+					Duration: bn.DecFloatPoint("21600"),
+					Expires:  bn.DecFloatPoint("1689845039"),
 				},
 			},
-			ProtocolFeePercentageCacheSwapType:  big.NewInt(0),
-			ProtocolFeePercentageCacheYieldType: big.NewInt(0),
+			ProtocolFeePercentageCacheSwapType:  bn.DecFloatPoint(0),
+			ProtocolFeePercentageCacheYieldType: bn.DecFloatPoint(0),
 		},
 	}
 
@@ -93,9 +93,9 @@ func TestComposableStablePool_Swap(t *testing.T) {
 
 	testCases := []struct {
 		tokenIn   ERC20Details
-		amountIn  *big.Int
+		amountIn  *bn.DecFloatPointNumber
 		tokenOut  ERC20Details
-		amountOut *big.Int
+		amountOut *bn.DecFloatPointNumber
 	}{
 		{
 			tokenIn: ERC20Details{
@@ -103,13 +103,13 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "A",
 				decimals: 18,
 			},
-			amountIn: string2BigInt("12000000000000000000"),
+			amountIn: bn.DecFloatPoint("12000000000000000000"),
 			tokenOut: ERC20Details{
 				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountOut: string2BigInt("11545818036500154428"),
+			amountOut: bn.DecFloatPoint("11545818036500154428"),
 		},
 		{
 			tokenIn: ERC20Details{
@@ -117,13 +117,13 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "A",
 				decimals: 18,
 			},
-			amountIn: string2BigInt("1000000000000000000"),
+			amountIn: bn.DecFloatPoint("1000000000000000000"),
 			tokenOut: ERC20Details{
 				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountOut: string2BigInt("962157416748442610"),
+			amountOut: bn.DecFloatPoint("962157416748442610"),
 		},
 		{
 			tokenIn: ERC20Details{
@@ -131,13 +131,13 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "B",
 				decimals: 18,
 			},
-			amountIn: string2BigInt("1000000000000000000"),
+			amountIn: bn.DecFloatPoint("1000000000000000000"),
 			tokenOut: ERC20Details{
 				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountOut: string2BigInt("963168966727011371"),
+			amountOut: bn.DecFloatPoint("963168966727011371"),
 		},
 		{
 			tokenIn: ERC20Details{
@@ -145,13 +145,13 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountIn: string2BigInt("1000000000000000000"),
+			amountIn: bn.DecFloatPoint("1000000000000000000"),
 			tokenOut: ERC20Details{
 				address:  types.MustAddressFromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a5431"),
 				symbol:   "B",
 				decimals: 18,
 			},
-			amountOut: string2BigInt("1038238373919086616"),
+			amountOut: bn.DecFloatPoint("1038238373919086616"),
 		},
 	}
 
@@ -164,14 +164,18 @@ func TestComposableStablePool_Swap(t *testing.T) {
 }
 
 func TestCalculateInvariant(t *testing.T) {
-	a := big.NewInt(60000)
-	b1 := string2BigInt("50310513788381313281")
-	b2 := string2BigInt("19360701460293571158")
-	b3 := string2BigInt("58687814461000000000000")
+	a := bn.DecFloatPoint(60000)
+	b1 := string2DecFloatPointNumber("50310513788381313281")
+	b2 := string2DecFloatPointNumber("19360701460293571158")
+	b3 := string2DecFloatPointNumber("58687814461000000000000")
 
-	balances := []*big.Int{
+	fmt.Println(b1.String())
+	fmt.Println(b2.String())
+	fmt.Println(b3.String())
+
+	balances := []*bn.DecFloatPointNumber{
 		b1, b2, b3,
 	}
-	_, err := _calculateInvariant(a, balances, false)
+	_, err := _calculateInvariant(a, balances)
 	assert.Equal(t, err, fmt.Errorf("STABLE_INVARIANT_DIDNT_CONVERGE"))
 }

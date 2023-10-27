@@ -359,7 +359,7 @@ func (c *ComposableStablePool) _onRegularSwap(
 	// (uint256 currentAmp, ) = _getAmplificationParameter();
 	// uint256 invariant = StableMath._calculateInvariant(currentAmp, balances);
 	currentAmp := c.config.Extra.AmplificationParameter.Value
-	invariant, err := _calculateInvariant(currentAmp, droppedBalances, false)
+	invariant, err := _calculateInvariant(currentAmp, droppedBalances)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (c *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amount
 		return nil, nil, fmt.Errorf("INVALID_AMOUNT_OUT_CALCULATED")
 	}
 	// _downscaleDown(amountCalculated, scalingFactors[registeredIndexOut]) // Amount out, round down
-	return _divDownFixed(amountCalculated, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
+	return amountCalculated.DivDownFixed(c.config.Extra.ScalingFactors[indexOut], composableStablePrecision), feeAmount, nil
 }
 
 // _exitSwapExactBptInForTokenOut implements same functionality with the following url:
@@ -571,7 +571,7 @@ func (c *ComposableStablePool) _beforeJoinExit(registeredBalances []*bn.DecFloat
 	if currentAmp.Cmp(c.config.Extra.LastJoinExit.LastJoinExitAmplification) == 0 {
 		preJoinExitInvariant = oldAmpPreJoinExitInvariant
 	} else {
-		preJoinExitInvariant, err = _calculateInvariant(currentAmp, balances, false)
+		preJoinExitInvariant, err = _calculateInvariant(currentAmp, balances)
 	}
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -621,13 +621,13 @@ func (c *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*b
 	}
 
 	// swapFeeGrowthInvariantDelta/totalGrowthInvariant*getProtocolFeePercentageCache
-	protocolSwapFeePercentage := _mulDownFixed(
-		_divDownFixed(swapFeeGrowthInvariantDelta, totalGrowthInvariant),
-		c.config.Extra.ProtocolFeePercentageCacheSwapType)
+	protocolSwapFeePercentage :=
+		swapFeeGrowthInvariantDelta.DivDownFixed(totalGrowthInvariant, composableStablePrecision).MulDownFixed(
+			c.config.Extra.ProtocolFeePercentageCacheSwapType, composableStablePrecision)
 
-	protocolYieldPercentage := _mulDownFixed(
-		_divDownFixed(nonExemptYieldGrowthInvariantDelta, totalGrowthInvariant),
-		c.config.Extra.ProtocolFeePercentageCacheYieldType)
+	protocolYieldPercentage :=
+		nonExemptYieldGrowthInvariantDelta.DivDownFixed(totalGrowthInvariant, composableStablePrecision).MulDownFixed(
+			c.config.Extra.ProtocolFeePercentageCacheYieldType, composableStablePrecision)
 
 	// Calculate the total protocol ComposableStablePool ownership percentage
 	protocolPoolOwnershipPercentage := protocolSwapFeePercentage.Add(protocolYieldPercentage)
@@ -655,7 +655,7 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPoint
 	// https://github.com/balancer/balancer-v2-monorepo/blob/b46023f7c5deefaf58a0a42559a36df420e1639f/pkg/pool-stable/contracts/StableMath.sol#L96
 	swapFeeGrowthInvariant, err = _calculateInvariant(
 		c.config.Extra.LastJoinExit.LastJoinExitAmplification,
-		c._getAdjustedBalances(balances, true), false)
+		c._getAdjustedBalances(balances, true))
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -667,7 +667,7 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPoint
 		// If there are no tokens with fee-exempt yield, then the total non-exempt growth will equal the total
 		// growth: all yield growth is non-exempt. There's also no point in adjusting balances, since we
 		// already know none are exempt.
-		totalNonExemptGrowthInvariant, err = _calculateInvariant(c.config.Extra.LastJoinExit.LastJoinExitAmplification, balances, false)
+		totalNonExemptGrowthInvariant, err = _calculateInvariant(c.config.Extra.LastJoinExit.LastJoinExitAmplification, balances)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -677,7 +677,7 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPoint
 		// If no tokens are charged fees on yield, then the non-exempt growth is equal to the swap fee growth - no
 		// yield fees will be collected.
 		totalNonExemptGrowthInvariant = swapFeeGrowthInvariant
-		totalGrowthInvariant, err = _calculateInvariant(c.config.Extra.LastJoinExit.LastJoinExitAmplification, balances, false)
+		totalGrowthInvariant, err = _calculateInvariant(c.config.Extra.LastJoinExit.LastJoinExitAmplification, balances)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -688,7 +688,6 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPoint
 		totalNonExemptGrowthInvariant, err = _calculateInvariant(
 			c.config.Extra.LastJoinExit.LastJoinExitAmplification,
 			c._getAdjustedBalances(balances, false), // Only adjust non-exempt balances
-			false,
 		)
 		if err != nil {
 			return nil, nil, nil, err
@@ -696,8 +695,7 @@ func (c *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPoint
 
 		totalGrowthInvariant, err = _calculateInvariant(
 			c.config.Extra.LastJoinExit.LastJoinExitAmplification,
-			balances,
-			false)
+			balances)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -776,7 +774,7 @@ func (c *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFloatPoint
 // _adjustedBalance implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L242
 func (c *ComposableStablePool) _adjustedBalance(balance *bn.DecFloatPointNumber, cache *TokenRateCache) *bn.DecFloatPointNumber {
-	return _divDown(balance.Mul(cache.OldRate), cache.Rate)
+	return balance.Mul(cache.OldRate).Div(cache.Rate)
 }
 
 // _dropBptItem implements same functionality with the following url:
@@ -800,7 +798,7 @@ func (c *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolO
 	// `poolOwnershipPercentage = bptAmount / (totalSupply + bptAmount)`.
 	// Solving for `bptAmount`, we arrive at:
 	// `bptAmount = totalSupply * poolOwnershipPercentage / (1 - poolOwnershipPercentage)`.
-	return _divDown(totalSupply.Mul(poolOwnershipPercentage), _complementFixed(poolOwnershipPercentage))
+	return totalSupply.Mul(poolOwnershipPercentage).Div(_complementFixed(poolOwnershipPercentage))
 }
 
 // _skipBptIndex implements same functionality with the following url:
@@ -834,7 +832,7 @@ func (c *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.
 		return nil, nil, err
 	}
 
-	return _divDownFixed(amountOut, c.config.Extra.ScalingFactors[indexOut]), feeAmount, nil
+	return amountOut.DivDownFixed(c.config.Extra.ScalingFactors[indexOut], composableStablePrecision), feeAmount, nil
 }
 
 func (c *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage *bn.DecFloatPointNumber) (
@@ -842,18 +840,18 @@ func (c *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage 
 	*bn.DecFloatPointNumber,
 ) {
 
-	feeAmount := _mulUpFixed(amount, swapFeePercentage)
+	feeAmount := amount.MulUpFixed(swapFeePercentage, composableStablePrecision)
 	return amount.Sub(feeAmount), feeAmount
 }
 
 func (c *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*bn.DecFloatPointNumber) []*bn.DecFloatPointNumber {
 	result := make([]*bn.DecFloatPointNumber, len(amounts))
 	for i, amount := range amounts {
-		result[i] = _mulUpFixed(amount, scalingFactors[i])
+		result[i] = amount.MulUpFixed(scalingFactors[i], composableStablePrecision)
 	}
 	return result
 }
 
 func (c *ComposableStablePool) _upscale(amount, scalingFactor *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
-	return _mulUpFixed(amount, scalingFactor)
+	return amount.MulUpFixed(scalingFactor, composableStablePrecision)
 }
