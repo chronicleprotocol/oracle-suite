@@ -11,12 +11,13 @@ var bigIntTwo = bn.DecFloatPoint(2)
 var bigIntEther = bn.DecFloatPoint(ether)
 
 const AmpPrecision = 1e3
+const ComposableStablePrecision = 18
 
 var ampPrecision = bn.DecFloatPoint(AmpPrecision)
 
 func _mulDownFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	var ret = a.Mul(b)
-	return ret.Div(bigIntEther)
+	return ret.Deflate(ComposableStablePrecision)
 }
 
 func _mulUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
@@ -24,7 +25,7 @@ func _mulUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFl
 	if ret.Cmp(bigIntZero) == 0 {
 		return ret
 	}
-	return ret.Sub(bigIntOne).Div(bigIntEther).Add(bigIntOne)
+	return ret.Sub(bigIntOne).Deflate(ComposableStablePrecision).Add(bigIntOne)
 }
 
 func _divRounding(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber, roundUp bool) *bn.DecFloatPointNumber {
@@ -49,7 +50,7 @@ func _divUpFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.DecFl
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
-	aInflated := a.Mul(bigIntEther)
+	aInflated := a.Inflate(ComposableStablePrecision)
 	return aInflated.Sub(bigIntOne).Div(b).Add(bigIntOne)
 }
 
@@ -57,7 +58,7 @@ func _divDownFixed(a *bn.DecFloatPointNumber, b *bn.DecFloatPointNumber) *bn.Dec
 	if a.Cmp(bigIntZero) == 0 {
 		return bigIntZero
 	}
-	var ret = a.Mul(bigIntEther)
+	var ret = a.Inflate(ComposableStablePrecision)
 	return ret.Div(b)
 }
 

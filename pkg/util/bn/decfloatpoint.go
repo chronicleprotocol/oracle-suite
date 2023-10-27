@@ -198,15 +198,51 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
+func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+
+	one := DecFloatPoint(intOne)
+	// The traditional divUp formula is:
+	// divUp(x, y) := (x + y - 1) / y
+	// To avoid intermediate overflow in the addition, we distribute the division and get:
+	// divUp(x, y) := (x - 1) / y + 1
+	// Note that this requires x != 0, if x == 0 then the result is zero
+	return x.Sub(one).Div(y).Add(one)
+}
+
 // Exp exponential function by y and return the x ^ y.
 func (x *DecFloatPointNumber) Exp(y *DecFloatPointNumber) *DecFloatPointNumber {
 	if x.x.Sign() == 0 {
-		return DecFloatPoint(0)
+		return x
 	}
 	if x.Cmp(DecFloatPoint(1)) == 0 {
 		return DecFloatPoint(1)
 	}
 	z := new(big.Int).Exp(x.x.x, y.x.x, nil)
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
+	n.adjustPrec()
+	return n
+}
+
+// Inflate inflates the number by prec precision and return the result.
+// return = x * (10 ^ prec)
+// Do not change precision.
+func (x *DecFloatPointNumber) Inflate(prec uint8) *DecFloatPointNumber {
+	if prec == 0 {
+		return x
+	}
+	p := uint32(x.x.p) + uint32(prec)
+	z := bigIntSetPrec(x.x.x, uint32(x.x.p), p)
+	return &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
+}
+
+// Deflate deflates the number by prec precision and return the results.
+// return = x / (10 ^ prec)
+// Do not change precision. If x < 10 ^ prec, return 0
+func (x *DecFloatPointNumber) Deflate(prec uint8) *DecFloatPointNumber {
+	z := bigIntSetPrec(x.x.x, uint32(x.x.p+prec), uint32(x.x.p))
 	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
 	n.adjustPrec()
 	return n

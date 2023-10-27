@@ -223,7 +223,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 			avgPrice = bn.DecFloatPoint(1).Div(avgPrice)
 		}
 
-		tick := value.NewTick(pair, avgPrice, nil)
+		tick := value.NewTick(pair, avgPrice.SetPrec(ComposableStablePrecision), nil)
 		points[pair] = datapoint.Point{
 			Value: tick,
 			Time:  time.Now(),
