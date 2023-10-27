@@ -45,6 +45,13 @@ type median struct {
 	log            log.Logger
 }
 
+type medianState struct {
+	wat string
+	val *bn.DecFixedPointNumber
+	age time.Time
+	bar int
+}
+
 func (w *median) client() rpc.RPC {
 	return w.contract.Client()
 }
@@ -54,7 +61,7 @@ func (w *median) address() types.Address {
 }
 
 func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
-	wat, val, age, bar, err := w.currentState(ctx)
+	state, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
 			WithError(err).
@@ -63,7 +70,7 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			Error("Failed to call Median contract")
 		return 0, nil
 	}
-	if wat != w.dataModel {
+	if state.wat != w.dataModel {
 		w.log.
 			WithError(err).
 			WithFields(w.logFields()).
@@ -73,38 +80,38 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 	}
 
 	// Load data points from the store.
-	dataPoints, signatures, ok := w.findDataPoints(ctx, age, bar)
+	dataPoints, signatures, ok := w.findDataPoints(ctx, state.age, state.bar)
 	if !ok {
 		return 0, nil
 	}
 
 	prices := dataPointsToPrices(dataPoints)
 	median := calculateMedian(prices)
-	spread := calculateSpread(median, val.DecFloatPoint())
+	spread := calculateSpread(median, state.val.DecFloatPoint())
 
 	// Check if price on the Median contract needs to be updated.
 	// The price needs to be updated if:
 	// - Price is older than the interval specified in the expiration field.
 	// - Price differs from the current price by more than is specified in the
 	//   Spread field.
-	isExpired := time.Since(age) >= w.expiration
+	isExpired := time.Since(state.age) >= w.expiration
 	isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 	// Print logs.
 	w.log.
 		WithFields(w.logFields()).
 		WithFields(log.Fields{
-			"bar":              bar,
-			"age":              age,
-			"val":              val,
+			"bar":              state.bar,
+			"age":              state.age,
+			"val":              state.val,
 			"expired":          isExpired,
 			"stale":            isStale,
 			"expiration":       w.expiration,
 			"spread":           w.spread,
-			"timeToExpiration": time.Since(age).String(),
+			"timeToExpiration": time.Since(state.age).String(),
 			"currentSpread":    spread,
 		}).
-		Debug("Median ")
+		Debug("Median")
 
 	// If price is stale or expired, send update.
 	if isExpired || isStale {
@@ -136,10 +143,10 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 	return 0, nil
 }
 
-func (w *median) currentState(ctx context.Context) (wat string, val *bn.DecFixedPointNumber, age time.Time, bar int, err error) {
-	val, err = w.contract.Val(ctx)
+func (w *median) currentState(ctx context.Context) (state medianState, err error) {
+	state.val, err = w.contract.Val(ctx)
 	if err != nil {
-		return "", nil, time.Time{}, 0, err
+		return medianState{}, err
 	}
 	if err := multicall.AggregateCallables(
 		w.contract.Client(),
@@ -147,13 +154,13 @@ func (w *median) currentState(ctx context.Context) (wat string, val *bn.DecFixed
 		w.contract.Age(),
 		w.contract.Bar(),
 	).Call(ctx, types.LatestBlockNumber, []any{
-		&wat,
-		&age,
-		&bar,
+		&state.wat,
+		&state.age,
+		&state.bar,
 	}); err != nil {
-		return "", nil, time.Time{}, 0, err
+		return medianState{}, err
 	}
-	return wat, val, age, bar, nil
+	return state, nil
 }
 
 func (w *median) findDataPoints(ctx context.Context, after time.Time, quorum int) ([]datapoint.Point, []types.Signature, bool) {

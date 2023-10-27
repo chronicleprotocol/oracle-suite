@@ -83,11 +83,11 @@ func TestOpScribe(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
-			}, nil
+			}, true, nil
 		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
@@ -154,11 +154,11 @@ func TestOpScribe(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
-			}, nil
+			}, true, nil
 		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
@@ -231,11 +231,11 @@ func TestOpScribe(t *testing.T) {
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
-		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
-			}, nil
+			}, true, nil
 		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
@@ -297,11 +297,11 @@ func TestOpScribe(t *testing.T) {
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
-		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
-			}, nil
+			}, true, nil
 		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
@@ -431,11 +431,11 @@ func TestOpScribe(t *testing.T) {
 						Age: time.Now().Add(-1 * time.Minute),
 					}, nil
 				}
-				mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+				mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 					return chronicle.PokeData{
 						Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 						Age: time.Now().Add(-1 * time.Minute),
-					}, nil
+					}, true, nil
 				}
 				mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 					assert.Equal(t, "ETH/USD", model)
@@ -482,11 +482,11 @@ func TestOpScribe(t *testing.T) {
 				Age: time.Now().Add(-15 * time.Minute),
 			}, nil
 		}
-		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
-			}, nil
+			}, true, nil
 		}
 		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
 			assert.Equal(t, "ETH/USD", model)
@@ -535,11 +535,11 @@ func TestOpScribe(t *testing.T) {
 		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
 			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(chronicle.FeedsResult{}, errors.New("foo"))
 		}
-		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, error) {
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
-			}, nil
+			}, true, nil
 		}
 		errLogCalled := false
 		mockLogger.ErrorFn = func(args ...any) {

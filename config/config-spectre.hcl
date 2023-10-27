@@ -10,7 +10,6 @@ spectre {
       && v.chain == var.chain_name
       && try(v.IMedian, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
-      && try(v.poke, false) != false
     ]
     iterator = contract
     content {
@@ -27,10 +26,10 @@ spectre {
       data_model = replace(contract.value.wat, "/", "")
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.poke.spread
+      spread = try(contract.value.poke.spread, 1)
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.poke.expiration
+      expiration = try(contract.value.poke.expiration, 32400)
     }
   }
 
@@ -39,10 +38,8 @@ spectre {
       for v in var.contracts : v
       if v.env == var.environment
       && v.chain == var.chain_name
-      && try(v.IScribe, false)
-      && try(v.IScribeOptimistic, false) == false
+      && try(v.IScribe, false) && try(v.IScribeOptimistic, false) == false
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
-      && try(v.poke, false) != false
     ]
     iterator = contract
     content {
@@ -59,10 +56,10 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.poke.spread
+      spread = try(contract.value.poke.spread, 1)
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.poke.expiration
+      expiration = try(contract.value.poke.expiration, 32400)
     }
   }
 
@@ -71,10 +68,8 @@ spectre {
       for v in var.contracts : v
       if v.env == var.environment
       && v.chain == var.chain_name
-      && try(v.IScribeOptimistic, false)
+      && try(v.IScribe, false) && try(v.IScribeOptimistic, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
-      && try(v.poke, false) != false
-      && try(v.optimistic_poke, false) != false
     ]
     iterator = contract
     content {
@@ -91,16 +86,16 @@ spectre {
       data_model = contract.value.wat
 
       # Spread in percent points above which the price is considered stale.
-      spread = contract.value.poke.spread
+      spread = try(contract.value.poke.spread, 1)
 
       # Time in seconds after which the price is considered stale.
-      expiration = contract.value.poke.expiration
+      expiration = try(contract.value.poke.expiration, 32400)
 
       # Spread in percent points above which the price is considered stale.
-      optimistic_spread = contract.value.optimistic_poke.spread
+      optimistic_spread = try(contract.value.optimistic_poke.spread, 0.5)
 
       # Time in seconds after which the price is considered stale.
-      optimistic_expiration = contract.value.optimistic_poke.expiration
+      optimistic_expiration = try(contract.value.optimistic_poke.expiration, 28800)
     }
   }
 }

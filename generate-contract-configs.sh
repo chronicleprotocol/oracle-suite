@@ -45,7 +45,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 	{
 		findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
 		| jq -c \
-		--argjson p "$(jq -c '.' "$1/relays/params.json")" \
+		--argjson p "$(jq -c '.' "config/relays.json")" \
 		'{
 			env: .environment,
 			chain,
@@ -55,7 +55,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 			IScribeOptimistic: (.IScribeOptimistic != null),
 			address,
 			challenge_period:.IScribeOptimistic.opChallengePeriod,
-		} + ($p[(.environment + "-" + .chain + "-" + .address)] | del(.wat)) | del(..|nulls)'
+		} + ($p[(.environment + "-" + .chain + "-" + .IScribe.wat)]) | del(..|nulls)'
 		jq -c 'select(.enabled==true) | del(.enabled)' "$1/deployments/medians.jsonl"
 	} | sort | jq -s '.'
 

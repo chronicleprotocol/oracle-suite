@@ -57,6 +57,56 @@ contracts = [
     "chain": "eth",
     "chain_id": 1,
     "IScribe": true,
+    "wat": "BTC/USD",
+    "IScribeOptimistic": true,
+    "address": "0x9Af8fe1d0c9ED3f176Dd3559B6f4b6FeF3AAb83B",
+    "challenge_period": 1200,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "DAI/USD",
+    "IScribeOptimistic": true,
+    "address": "0xf2dc732221e2b374eBBfd0023EF794c4432E66d8",
+    "challenge_period": 1200
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "ETH/USD",
+    "IScribeOptimistic": true,
+    "address": "0x1174948681bb05748E3682398d9b7a6836B07554",
+    "challenge_period": 1200,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
     "wat": "ETH/USD",
     "IScribeOptimistic": true,
     "address": "0x5E16CA75000fb2B9d7B1184Fa24fF5D938a345Ef",
@@ -71,6 +121,16 @@ contracts = [
       "expiration": 28800,
       "interval": 120
     }
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "GNO/USD",
+    "IScribeOptimistic": true,
+    "address": "0x0b4d1660D9f28203a23C33808112FF44cA7bCE41",
+    "challenge_period": 1200
   },
   {
     "env": "prod",
@@ -97,10 +157,99 @@ contracts = [
     "chain": "eth",
     "chain_id": 1,
     "IScribe": true,
+    "wat": "MKR/USD",
+    "IScribeOptimistic": true,
+    "address": "0xc4962E0c282b52d00f995f5C70d4695e4Ac14F57",
+    "challenge_period": 1200,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "RETH/USD",
+    "IScribeOptimistic": true,
+    "address": "0x3Fcc752dc6Fb8acc80E3e0843C16ea080240b57F",
+    "challenge_period": 1200,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
     "wat": "RETH/USD",
     "IScribeOptimistic": true,
     "address": "0x608D9cD5aC613EBAC4549E6b8A73954eA64C3660",
     "challenge_period": 1200,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "SDAI/USD",
+    "IScribeOptimistic": true,
+    "address": "0xe53e78006d2c3E905d73cBdb31b8E43ec06F27A9",
+    "challenge_period": 1200
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "USDC/USD",
+    "IScribeOptimistic": true,
+    "address": "0x209186cd917dfaBd9529935dd7202C755a59f06F",
+    "challenge_period": 1200
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "WSTETH/ETH",
+    "IScribeOptimistic": true,
+    "address": "0x84A48F89D5844385C515f43797147D6aF61cE2AE",
+    "challenge_period": 1200
+  },
+  {
+    "env": "prod",
+    "chain": "eth",
+    "chain_id": 1,
+    "IScribe": true,
+    "wat": "WSTETH/USD",
+    "IScribeOptimistic": false,
+    "address": "0x12a8Ad45db5085e17aBabb3016bba67cc6Bac5Db",
     "poke": {
       "spread": 1,
       "expiration": 32400,
@@ -354,7 +503,12 @@ contracts = [
     "IScribe": true,
     "wat": "BTC/USD",
     "IScribeOptimistic": false,
-    "address": "0x9Af8fe1d0c9ED3f176Dd3559B6f4b6FeF3AAb83B"
+    "address": "0x9Af8fe1d0c9ED3f176Dd3559B6f4b6FeF3AAb83B",
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
   },
   {
     "env": "prod",
@@ -386,7 +540,12 @@ contracts = [
     "IScribe": true,
     "wat": "ETH/USD",
     "IScribeOptimistic": false,
-    "address": "0x1174948681bb05748E3682398d9b7a6836B07554"
+    "address": "0x1174948681bb05748E3682398d9b7a6836B07554",
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
   },
   {
     "env": "prod",
@@ -409,7 +568,12 @@ contracts = [
     "IScribe": true,
     "wat": "MATIC/USD",
     "IScribeOptimistic": false,
-    "address": "0xD8569712fc3d447004524896010d4a2FB98C0ef7"
+    "address": "0xD8569712fc3d447004524896010d4a2FB98C0ef7",
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
   },
   {
     "env": "prod",
@@ -924,37 +1088,7 @@ contracts = [
     "IScribe": true,
     "wat": "AAVE/USD",
     "IScribeOptimistic": true,
-    "address": "0xa38C2B5408Eb1DCeeDBEC5d61BeD580589C6e717",
-    "challenge_period": 3600,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    },
-    "optimistic_poke": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "AAVE/USD",
-    "IScribeOptimistic": true,
     "address": "0xED4C91FC28B48E2Cf98b59668408EAeE44665511",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "ARB/USD",
-    "IScribeOptimistic": true,
-    "address": "0x579BfD0581beD0d18fBb0Ebab099328d451552DD",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -975,16 +1109,6 @@ contracts = [
     "wat": "ARB/USD",
     "IScribeOptimistic": true,
     "address": "0x7dE6Df8E4c057eD9baE215F347A0339D603B09B2",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "AVAX/USD",
-    "IScribeOptimistic": true,
-    "address": "0x78C8260AF7C8D0d17Cf3BA91F251E9375A389688",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1005,16 +1129,6 @@ contracts = [
     "wat": "AVAX/USD",
     "IScribeOptimistic": true,
     "address": "0xD419f76594d411BD94c71FB0a78c80f71A2290Ce",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "BNB/USD",
-    "IScribeOptimistic": true,
-    "address": "0x26EE3E8b618227C1B735D8D884d52A852410019f",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1035,16 +1149,6 @@ contracts = [
     "wat": "BNB/USD",
     "IScribeOptimistic": true,
     "address": "0x6931FB9C54958f77873ceC4536EaC56F561d2dC4",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "BTC/USD",
-    "IScribeOptimistic": true,
-    "address": "0x4B5aBFC0Fe78233b97C80b8410681765ED9fC29c",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1065,7 +1169,17 @@ contracts = [
     "wat": "BTC/USD",
     "IScribeOptimistic": true,
     "address": "0xdD5232e76798BEACB69eC310d9b0864b56dD08dD",
-    "challenge_period": 3600
+    "challenge_period": 3600,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
   },
   {
     "env": "stage",
@@ -1075,16 +1189,6 @@ contracts = [
     "wat": "CRV/USD",
     "IScribeOptimistic": true,
     "address": "0x7B6E473f1CeB8b7100C9F7d58879e7211Bc48f32",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "CRV/USD",
-    "IScribeOptimistic": true,
-    "address": "0xf29a932ae56bB96CcACF8d1f2Da9028B01c8F030",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1105,36 +1209,6 @@ contracts = [
     "wat": "DAI/USD",
     "IScribeOptimistic": true,
     "address": "0x16984396EE0903782Ba8e6ebfA7DD356B0cA3841",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "DAI/USD",
-    "IScribeOptimistic": true,
-    "address": "0xa7aA6a860D17A89810dE6e6278c58EB21Fa00fc4",
-    "challenge_period": 3600,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    },
-    "optimistic_poke": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "ETH/BTC",
-    "IScribeOptimistic": true,
-    "address": "0x1804969b296E89C1ddB1712fA99816446956637e",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1155,26 +1229,6 @@ contracts = [
     "wat": "ETH/BTC",
     "IScribeOptimistic": true,
     "address": "0x4E866Ac929374096Afc2715C4e9c40D581A4067e",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "ETH/USD",
-    "IScribeOptimistic": true,
-    "address": "0x90430C5b8045a1E2A0Fc4e959542a0c75b576439",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "ETH/USD",
-    "IScribeOptimistic": true,
-    "address": "0xc8A1F9461115EF3C1E84Da6515A88Ea49CA97660",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1192,9 +1246,9 @@ contracts = [
     "chain": "sep",
     "chain_id": 11155111,
     "IScribe": true,
-    "wat": "GNO/USD",
+    "wat": "ETH/USD",
     "IScribeOptimistic": true,
-    "address": "0xA28dCaB66FD25c668aCC7f232aa71DA1943E04b8",
+    "address": "0x90430C5b8045a1E2A0Fc4e959542a0c75b576439",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1215,16 +1269,6 @@ contracts = [
     "wat": "GNO/USD",
     "IScribeOptimistic": true,
     "address": "0xBcC6BFFde7888A3008f17c88D5a5e5F0D7462cf9",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "IBTA/USD",
-    "IScribeOptimistic": true,
-    "address": "0x07487b0Bf28801ECD15BF09C13e32FBc87572e81",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1245,7 +1289,17 @@ contracts = [
     "wat": "IBTA/USD",
     "IScribeOptimistic": true,
     "address": "0xc52539EfbA58a521d69494D86fc47b9E71D32997",
-    "challenge_period": 3600
+    "challenge_period": 3600,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
   },
   {
     "env": "stage",
@@ -1255,16 +1309,6 @@ contracts = [
     "wat": "LDO/USD",
     "IScribeOptimistic": true,
     "address": "0x3aeF92049C9401094A9f75259430F4771143F0C3",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "LDO/USD",
-    "IScribeOptimistic": true,
-    "address": "0xa53dc5B100f0e4aB593f2D8EcD3c5932EE38215E",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1285,16 +1329,6 @@ contracts = [
     "wat": "LINK/USD",
     "IScribeOptimistic": true,
     "address": "0x4EDdF05CfAd20f1E39ed4CB067bdfa831dAeA9fE",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "LINK/USD",
-    "IScribeOptimistic": true,
-    "address": "0xecB89B57A60ac44E06ab1B767947c19b236760c3",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1315,36 +1349,6 @@ contracts = [
     "wat": "MATIC/USD",
     "IScribeOptimistic": true,
     "address": "0x06997AadB30d51eAdBAA7836f7a0F177474fc235",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "MATIC/USD",
-    "IScribeOptimistic": true,
-    "address": "0xa48c56e48A71966676d0D113EAEbe6BE61661F18",
-    "challenge_period": 3600,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    },
-    "optimistic_poke": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "MKR/USD",
-    "IScribeOptimistic": true,
-    "address": "0x67ffF0C6abD2a36272870B1E8FE42CC8E8D5ec4d",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1365,26 +1369,6 @@ contracts = [
     "wat": "MKR/USD",
     "IScribeOptimistic": true,
     "address": "0xE61A66f737c32d5Ac8cDea6982635B80447e9404",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "OP/USD",
-    "IScribeOptimistic": true,
-    "address": "0x1Ae491D618A667a44D48E0b0BE2Cc0cDBF269BC5",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "OP/USD",
-    "IScribeOptimistic": true,
-    "address": "0xfadF055f6333a4ab435D2D248aEe6617345A4782",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1402,9 +1386,9 @@ contracts = [
     "chain": "sep",
     "chain_id": 11155111,
     "IScribe": true,
-    "wat": "RETH/USD",
+    "wat": "OP/USD",
     "IScribeOptimistic": true,
-    "address": "0xEE02370baC10b3AC3f2e9eebBf8f3feA1228D263",
+    "address": "0x1Ae491D618A667a44D48E0b0BE2Cc0cDBF269BC5",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1425,7 +1409,17 @@ contracts = [
     "wat": "RETH/USD",
     "IScribeOptimistic": true,
     "address": "0xEff79d34f24Bb36eD8FB6c4CbaD5De293fdCf66F",
-    "challenge_period": 3600
+    "challenge_period": 3600,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
   },
   {
     "env": "stage",
@@ -1435,16 +1429,6 @@ contracts = [
     "wat": "SDAI/DAI",
     "IScribeOptimistic": true,
     "address": "0xB6EE756124e88e12585981DdDa9E6E3bf3C4487D",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "SDAI/DAI",
-    "IScribeOptimistic": true,
-    "address": "0xD93c56Aa71923228cDbE2be3bf5a83bF25B0C491",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1465,16 +1449,6 @@ contracts = [
     "wat": "SNX/USD",
     "IScribeOptimistic": true,
     "address": "0x6Ab51f7E684923CE051e784D382A470b0fa834Be",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "SNX/USD",
-    "IScribeOptimistic": true,
-    "address": "0xD20f1eC72bA46b6126F96c5a91b6D3372242cE98",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1495,36 +1469,6 @@ contracts = [
     "wat": "SOL/USD",
     "IScribeOptimistic": true,
     "address": "0x11ceEcca4d49f596E0Df781Af237CDE741ad2106",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "SOL/USD",
-    "IScribeOptimistic": true,
-    "address": "0x4D1e6f39bbfcce8b471171b8431609b83f3a096D",
-    "challenge_period": 3600,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    },
-    "optimistic_poke": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "UNI/USD",
-    "IScribeOptimistic": true,
-    "address": "0x2aFF768F5d6FC63fA456B062e02f2049712a1ED5",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1545,16 +1489,6 @@ contracts = [
     "wat": "UNI/USD",
     "IScribeOptimistic": true,
     "address": "0xfE051Bc90D3a2a825fA5172181f9124f8541838c",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "USDC/USD",
-    "IScribeOptimistic": true,
-    "address": "0x1173da1811a311234e7Ab0A33B4B7B646Ff42aEC",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1575,16 +1509,6 @@ contracts = [
     "wat": "USDC/USD",
     "IScribeOptimistic": true,
     "address": "0xfef7a1Eb17A095E1bd7723cBB1092caba34f9b1C",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "USDT/USD",
-    "IScribeOptimistic": true,
-    "address": "0x0bd446021Ab95a2ABd638813f9bDE4fED3a5779a",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1605,7 +1529,17 @@ contracts = [
     "wat": "USDT/USD",
     "IScribeOptimistic": true,
     "address": "0xF78A4e093Cd2D9F57Bb363Cc4edEBcf9bF3325ba",
-    "challenge_period": 3600
+    "challenge_period": 3600,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
   },
   {
     "env": "stage",
@@ -1615,16 +1549,6 @@ contracts = [
     "wat": "WBTC/USD",
     "IScribeOptimistic": true,
     "address": "0x39C899178F4310705b12888886884b361CeF26C7",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "WBTC/USD",
-    "IScribeOptimistic": true,
-    "address": "0xA7226d85CE5F0DE97DCcBDBfD38634D6391d0584",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1655,36 +1579,6 @@ contracts = [
     "wat": "WSTETH/USD",
     "IScribeOptimistic": true,
     "address": "0x8Ba43F8Fa2fC13D7EEDCeb9414CDbB6643483C34",
-    "challenge_period": 3600
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "WSTETH/USD",
-    "IScribeOptimistic": true,
-    "address": "0xc9Bb81d3668f03ec9109bBca77d32423DeccF9Ab",
-    "challenge_period": 3600,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    },
-    "optimistic_poke": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "sep",
-    "chain_id": 11155111,
-    "IScribe": true,
-    "wat": "YFI/USD",
-    "IScribeOptimistic": true,
-    "address": "0x0893EcE705639112C1871DcE88D87D81540D0199",
     "challenge_period": 3600,
     "poke": {
       "spread": 1,
@@ -1705,7 +1599,17 @@ contracts = [
     "wat": "YFI/USD",
     "IScribeOptimistic": true,
     "address": "0x16978358A8D6C7C8cA758F433685A5E8D988dfD4",
-    "challenge_period": 3600
+    "challenge_period": 3600,
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
   },
   {
     "env": "stage",

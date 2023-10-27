@@ -39,6 +39,13 @@ type scribe struct {
 	log        log.Logger
 }
 
+type scribeState struct {
+	wat      string
+	bar      int
+	feeds    chronicle.FeedsResult
+	pokeData chronicle.PokeData
+}
+
 func (w *scribe) client() rpc.RPC {
 	return w.contract.Client()
 }
@@ -48,7 +55,7 @@ func (w *scribe) address() types.Address {
 }
 
 func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
-	wat, bar, feeds, currPokeData, err := w.currentState(ctx)
+	state, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
 			WithError(err).
@@ -57,7 +64,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			Error("Failed to call Scribe contract")
 		return 0, nil
 	}
-	if wat != w.dataModel {
+	if state.wat != w.dataModel {
 		w.log.
 			WithError(err).
 			WithFields(w.logFields()).
@@ -79,7 +86,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		}
 
 		// If the signature is older than the current price, skip it.
-		if meta.Age.Before(currPokeData.Age) {
+		if meta.Age.Before(state.pokeData.Age) {
 			continue
 		}
 
@@ -89,14 +96,14 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		//   field.
 		// - Price differs from the current price by more than is specified in the
 		//   OracleSpread field.
-		spread := calculateSpread(currPokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
-		isExpired := time.Since(currPokeData.Age) >= w.expiration
+		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
+		isExpired := time.Since(state.pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 		// Generate signersBlob.
 		// If signersBlob returns an error, it means that some signers are not
 		// present in the feed list on the contract.
-		signersBlob, err := chronicle.SignersBlob(s.Signers, feeds.Feeds, feeds.FeedIndices)
+		signersBlob, err := chronicle.SignersBlob(s.Signers, state.feeds.Feeds, state.feeds.FeedIndices)
 		if err != nil {
 			w.log.
 				WithError(err).
@@ -108,16 +115,16 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		w.log.
 			WithFields(w.logFields()).
 			WithFields(log.Fields{
-				"bar":           bar,
-				"age":           currPokeData.Age,
-				"val":           currPokeData.Val,
+				"bar":           state.bar,
+				"age":           state.pokeData.Age,
+				"val":           state.pokeData.Val,
 				"expired":       isExpired,
 				"stale":         isStale,
 				"expiration":    w.expiration,
 				"spread":        w.spread,
 				"currentSpread": spread,
 			}).
-			Debug("Scribe ")
+			Debug("Scribe")
 
 		// If price is stale or expired, send update.
 		if isExpired || isStale {
@@ -149,10 +156,10 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 	return 0, nil
 }
 
-func (w *scribe) currentState(ctx context.Context) (wat string, bar int, feeds chronicle.FeedsResult, pokeData chronicle.PokeData, err error) {
-	pokeData, err = w.contract.Read(ctx)
+func (w *scribe) currentState(ctx context.Context) (state scribeState, err error) {
+	state.pokeData, err = w.contract.Read(ctx)
 	if err != nil {
-		return "", 0, chronicle.FeedsResult{}, chronicle.PokeData{}, err
+		return scribeState{}, err
 	}
 	if err := multicall.AggregateCallables(
 		w.contract.Client(),
@@ -160,13 +167,13 @@ func (w *scribe) currentState(ctx context.Context) (wat string, bar int, feeds c
 		w.contract.Bar(),
 		w.contract.Feeds(),
 	).Call(ctx, types.LatestBlockNumber, []any{
-		&wat,
-		&bar,
-		&feeds,
+		&state.wat,
+		&state.bar,
+		&state.feeds,
 	}); err != nil {
-		return "", 0, chronicle.FeedsResult{}, chronicle.PokeData{}, err
+		return scribeState{}, err
 	}
-	return wat, bar, feeds, pokeData, nil
+	return state, nil
 }
 
 func (w *scribe) logFields() log.Fields {

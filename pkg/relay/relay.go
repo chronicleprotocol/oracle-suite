@@ -78,7 +78,7 @@ type ScribeContract interface {
 
 type OpScribeContract interface {
 	ScribeContract
-	ReadNext(ctx context.Context) (chronicle.PokeData, error)
+	ReadNext(ctx context.Context, readTime time.Time) (chronicle.PokeData, bool, error)
 	OpPoke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller
 }
 
@@ -371,6 +371,8 @@ func (m *Relay) relayCalls() map[rpc.RPC][]contract.Callable {
 				mu.Lock()
 				defer mu.Unlock()
 				if g.Load() >= gasUsageSoftCap {
+					// Because this is a concurrent operation, we need to check
+					// gas usage again just before adding the call to the list.
 					return
 				}
 				calls[c] = append(calls[c], call)

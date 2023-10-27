@@ -1,0 +1,472 @@
+{
+  "prod-eth-BTC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "prod-eth-ETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "prod-eth-MKR/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "prod-eth-RETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "prod-eth-WSTETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-BTC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-DSR/RATE": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-ETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-MATIC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-SDAI/DAI": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-SDAI/ETH": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "prod-zkevm-SDAI/MATIC": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-sep-AAVE/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-ARB/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-AVAX/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-BNB/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-BTC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-CRV/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-DAI/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-ETH/BTC": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-ETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-GNO/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-IBTA/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-LDO/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-LINK/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-MATIC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-MKR/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-OP/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-RETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-SDAI/DAI": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-SNX/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-SOL/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-UNI/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-USDC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-USDT/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-WBTC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-WSTETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-sep-YFI/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    },
+    "optimistic_poke": {
+      "spread": 0.5,
+      "expiration": 28800,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-BTC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-DSR/RATE": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-ETH/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-MATIC/USD": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-SDAI/DAI": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-SDAI/ETH": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  },
+  "stage-zkevm-SDAI/MATIC": {
+    "poke": {
+      "spread": 1,
+      "expiration": 32400,
+      "interval": 120
+    }
+  }
+}
