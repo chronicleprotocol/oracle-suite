@@ -32,6 +32,7 @@ function findAllConfigs() {
 
 __medians="$(jq -c 'select(.enabled==true) | del(.enabled)' "$1/deployments/medians.jsonl")"
 __relays="$(jq -c '.' "config/relays.json")"
+__relays="$(jq -c '.' "config/relays-initial.json")"
 
 _CONTRACT_MAP="$({
 	findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog)$'
@@ -40,27 +41,27 @@ _CONTRACT_MAP="$({
 
 _CONTRACTS="$({
 	findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
-	| jq -c --argjson p "$__relays" \
+	| jq -c --argjson r "$__relays" \
 	'{
 		env: .environment,
 		chain,
 		wat: .IScribe.wat,
 		address,
 		chain_id:.chainId,
-		IScribe: (.IScribe != null),
-		IScribeOptimistic: (.IScribeOptimistic != null),
+		is_scribe: (.IScribe != null),
+		is_scribe_optimistic: (.IScribeOptimistic != null),
 		challenge_period:.IScribeOptimistic.opChallengePeriod,
-		poke:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")],
-		poke_optimistic:$p[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")],
-	} | del(..|nulls)'
+		poke:$r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")],
+		poke_optimistic:$r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")],
+	} | del(..|nulls) | del(..|select(type=="object" and length==0))'
 	jq <<<"$__medians" --argjson p "$__relays" -c '{
 		env,
 		chain,
 		wat,
 		address,
-		IMedian:true,
-		poke:$p[(.env+"-"+.chain+"-"+.wat+"-median-poke")],
-	} | del(..|nulls)'
+		is_median:true,
+		poke:$r[(.env+"-"+.chain+"-"+.wat+"-median-poke")],
+	} | del(..|nulls) | del(..|select(type=="object" and length==0))'
 } | sort | jq -s '.')"
 
 _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
@@ -87,19 +88,19 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 #		key: (.key+"-scribe-poke-optimistic"),
 #		value: .value.optimistic_poke,
 #	}'
-	jq <<<"$_CONTRACTS" -c '.[] | select(.IMedian) | {
+	jq <<<"$_CONTRACTS" -c '.[] | select(.is_median) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
-		value: (if .poke == null or (.poke | length) == 0 then {expiration:null,spread:null,interval:null} else .poke end),
+		value: (if .poke == null or (.poke | length) == 0 then {expiration:null,spread:null} else .poke end),
 	}'
-	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribe) | {
+	jq <<<"$_CONTRACTS" -c '.[] | select(.is_scribe) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke"),
-		value: (if .poke == null or (.poke | length) == 0 then {expiration:null,spread:null,interval:null} else .poke end),
+		value: (if .poke == null or (.poke | length) == 0 then {expiration:32400,spread:1} else .poke end),
 	}'
-	jq <<<"$_CONTRACTS" -c '.[] | select(.IScribeOptimistic) | {
+	jq <<<"$_CONTRACTS" -c '.[] | select(.is_scribe_optimistic) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
-		value: (if .poke_optimistic == null or (.poke_optimistic | length) == 0 then {expiration:null,spread:null,interval:null} else .poke_optimistic end),
+		value: (if .poke_optimistic == null or (.poke_optimistic | length) == 0 then {expiration:28800,spread:0.5} else .poke_optimistic end),
 	}'
-} | sort | jq -s 'from_entries' > config/relays.json
+} | sort | jq -s 'from_entries[]' > config/relays0.jsonl
 
 #TODO go through all contracts and make sure they are in the relay.json config with 0 values, so they can be easily fixed
 #todo write an adr

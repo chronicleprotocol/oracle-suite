@@ -1,0 +1,550 @@
+{
+  "prod-eth-BTC/USD-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-BTC/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-DAI/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "prod-eth-DAI/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-ETH/USD-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-ETH/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-GNO/USD-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-GNO/USD-scribe-poke-optimistic": {
+    "spread": 2,
+    "expiration": 43200
+  },
+  "prod-eth-MKR/USD-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-MKR/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-RETH/USD-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-RETH/USD-scribe-poke-optimistic": {
+    "spread": 2,
+    "expiration": 43200
+  },
+  "prod-eth-SDAI/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "prod-eth-SDAI/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-USDC/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "prod-eth-USDC/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-WSTETH/ETH-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-WSTETH/ETH-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-eth-WSTETH/USD-scribe-poke": {
+    "spread": 3,
+    "expiration": 86400
+  },
+  "prod-eth-WSTETH/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "prod-zkevm-BTC/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "prod-zkevm-DAI/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "prod-zkevm-ETH/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "prod-zkevm-MATIC/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "prod-zkevm-WSTETH/ETH-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "prod-gno-BTC/USD-scribe-poke": {
+    "spread": 0.25,
+    "expiration": 14400
+  },
+  "prod-gno-DAI/USD-scribe-poke": {
+    "spread": 0.25,
+    "expiration": 14400
+  },
+  "prod-gno-ETH/USD-scribe-poke": {
+    "spread": 0.25,
+    "expiration": 14400
+  },
+  "prod-gno-GNO/USD-scribe-poke": {
+    "spread": 0.25,
+    "expiration": 14400
+  },
+  "prod-gno-WSTETH/ETH-scribe-poke": {
+    "spread": 0.25,
+    "expiration": 14400
+  },
+  "stage-sep-AAVE/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-AAVE/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-ARB/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-ARB/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-AVAX/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-AVAX/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-BNB/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-BNB/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-BTC/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-BTC/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-CRV/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-CRV/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-DAI/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 86400
+  },
+  "stage-sep-DAI/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-ETH/BTC-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-ETH/BTC-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-ETH/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-ETH/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-GNO/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-GNO/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-IBTA/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-IBTA/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-LDO/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-LDO/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-LINK/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-LINK/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-MATIC/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-MATIC/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-MKR/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-MKR/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-OP/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-OP/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-RETH/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-RETH/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-SDAI/DAI-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 86400
+  },
+  "stage-sep-SDAI/DAI-scribe-poke-optimistic": {
+    "spread": 0.5,
+    "expiration": 43200
+  },
+  "stage-sep-SNX/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-SNX/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-SOL/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-SOL/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-UNI/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-UNI/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-USDC/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 86400
+  },
+  "stage-sep-USDC/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-USDT/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 86400
+  },
+  "stage-sep-USDT/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-WBTC/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-WBTC/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-WSTETH/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-WSTETH/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-WSTETH/ETH-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-WSTETH/ETH-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-sep-YFI/USD-scribe-poke": {
+    "spread": 2,
+    "expiration": 86400
+  },
+  "stage-sep-YFI/USD-scribe-poke-optimistic": {
+    "spread": 1,
+    "expiration": 43200
+  },
+  "stage-testnet-zkEVM-mango-AAVE/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-ARB/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-AVAX/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-BNB/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-BTC/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-CRV/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-DAI/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-ETH/BTC-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-ETH/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-GNO/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-IBTA/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-LDO/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-LINK/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-MATIC/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-MKR/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-OP/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-RETH/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-SDAI/DAI-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-SNX/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-SOL/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-UNI/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-USDC/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-USDT/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-WBTC/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-WSTETH/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-WSTETH/ETH-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-testnet-zkEVM-mango-YFI/USD-scribe-poke": {
+    "spread": 1,
+    "expiration": 21600
+  },
+  "stage-gno-AAVE/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-ARB/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-AVAX/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-BNB/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-BTC/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-CRV/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-DAI/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-ETH/BTC-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-ETH/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-GNO/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-IBTA/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-LDO/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-LINK/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-MATIC/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-MKR/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-OP/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-RETH/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-SDAI/DAI-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-SNX/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-SOL/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-UNI/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-USDC/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-USDT/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-WBTC/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-WSTETH/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  },
+  "stage-gno-YFI/USD-scribe-poke": {
+    "spread": 0.5,
+    "expiration": 21600
+  }
+}
