@@ -42,14 +42,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -62,14 +60,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -94,12 +90,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "expiration": 28800,
-      "spread": 0.5
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -124,14 +120,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -144,14 +138,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -176,12 +168,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "expiration": 28800,
-      "spread": 0.5
+      "spread": 2,
+      "expiration": 43200
     }
   },
   {
@@ -242,14 +234,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -262,14 +252,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -294,14 +282,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 2,
+      "expiration": 43200
     }
   },
   {
@@ -314,14 +300,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 2,
+      "expiration": 43200
     }
   },
   {
@@ -346,12 +330,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "expiration": 28800,
-      "spread": 0.5
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -364,12 +348,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "expiration": 28800,
-      "spread": 0.5
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -382,12 +366,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "expiration": 28800,
-      "spread": 0.5
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -400,14 +384,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -419,14 +401,12 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 3,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -462,8 +442,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.25,
+      "expiration": 14400
     }
   },
   {
@@ -475,8 +455,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.25,
+      "expiration": 14400
     }
   },
   {
@@ -488,8 +468,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.25,
+      "expiration": 14400
     }
   },
   {
@@ -501,8 +481,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.25,
+      "expiration": 14400
     }
   },
   {
@@ -514,8 +494,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.25,
+      "expiration": 14400
     }
   },
   {
@@ -552,8 +532,7 @@ contracts = [
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 21600
     }
   },
   {
@@ -566,8 +545,7 @@ contracts = [
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 21600
     }
   },
   {
@@ -579,8 +557,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -607,8 +585,7 @@ contracts = [
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 21600
     }
   },
   {
@@ -621,8 +598,7 @@ contracts = [
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 21600
     }
   },
   {
@@ -635,8 +611,7 @@ contracts = [
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 21600
     }
   },
   {
@@ -649,8 +624,7 @@ contracts = [
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 21600
     }
   },
   {
@@ -704,8 +678,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -741,8 +715,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -754,8 +728,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -767,8 +741,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -780,8 +754,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -793,8 +767,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -806,8 +780,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -819,8 +793,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -845,8 +819,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -858,8 +832,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -871,8 +845,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -884,8 +858,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -897,8 +871,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -910,8 +884,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -923,8 +897,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -936,8 +910,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -949,8 +923,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -962,8 +936,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -975,8 +949,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1014,8 +988,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1027,8 +1001,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1040,8 +1014,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1053,8 +1027,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1066,8 +1040,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1079,8 +1053,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1092,8 +1066,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1105,8 +1079,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1275,14 +1249,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1295,14 +1267,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1315,14 +1285,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1335,14 +1303,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1355,14 +1321,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1375,14 +1339,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1395,14 +1357,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 0.5,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1415,14 +1375,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1435,14 +1393,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1455,14 +1411,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1475,14 +1429,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1495,14 +1447,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1515,14 +1465,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1535,14 +1483,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1555,14 +1501,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1575,14 +1519,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1595,14 +1537,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1615,14 +1555,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 0.5,
+      "expiration": 86400
     },
     "poke_optimistic": {
       "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "expiration": 43200
     }
   },
   {
@@ -1635,14 +1573,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1655,14 +1591,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1675,14 +1609,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1695,14 +1627,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 0.5,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1715,14 +1645,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 0.5,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1735,14 +1663,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1755,12 +1681,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "expiration": 28800,
-      "spread": 0.5
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1773,14 +1699,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1793,14 +1717,12 @@ contracts = [
     "is_scribe_optimistic": true,
     "challenge_period": 3600,
     "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "spread": 2,
+      "expiration": 86400
     },
     "poke_optimistic": {
-      "spread": 0.5,
-      "expiration": 28800,
-      "interval": 120
+      "spread": 1,
+      "expiration": 43200
     }
   },
   {
@@ -1812,8 +1734,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1825,8 +1747,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1838,8 +1760,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1851,8 +1773,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1864,8 +1786,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1877,8 +1799,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1890,8 +1812,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -1903,8 +1825,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1916,8 +1838,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1929,8 +1851,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1942,8 +1864,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1955,8 +1877,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1968,8 +1890,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1981,8 +1903,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -1994,8 +1916,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2007,8 +1929,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2020,8 +1942,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2033,8 +1955,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -2046,8 +1968,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2059,8 +1981,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2072,8 +1994,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2085,8 +2007,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -2098,8 +2020,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 0.5,
+      "expiration": 21600
     }
   },
   {
@@ -2111,8 +2033,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2124,8 +2046,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2137,8 +2059,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
@@ -2150,8 +2072,8 @@ contracts = [
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
-      "expiration": 32400,
-      "spread": 1
+      "spread": 1,
+      "expiration": 21600
     }
   },
   {
