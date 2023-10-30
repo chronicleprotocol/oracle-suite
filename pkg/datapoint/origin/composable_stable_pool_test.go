@@ -109,7 +109,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountOut: bn.DecFloatPoint("11545818036500154428"),
+			amountOut: bn.DecFloatPoint("11545818036500155269"),
 		},
 		{
 			tokenIn: ERC20Details{
@@ -123,7 +123,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountOut: bn.DecFloatPoint("962157416748442610"),
+			amountOut: bn.DecFloatPoint("962157416748443460"),
 		},
 		{
 			tokenIn: ERC20Details{
@@ -137,7 +137,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "C",
 				decimals: 18,
 			},
-			amountOut: bn.DecFloatPoint("963168966727011371"),
+			amountOut: bn.DecFloatPoint("963168955346971740"),
 		},
 		{
 			tokenIn: ERC20Details{
@@ -151,7 +151,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				symbol:   "B",
 				decimals: 18,
 			},
-			amountOut: bn.DecFloatPoint("1038238373919086616"),
+			amountOut: bn.DecFloatPoint("1038238386186088886"),
 		},
 	}
 

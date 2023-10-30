@@ -224,7 +224,7 @@ func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber
 	// To avoid intermediate overflow in the addition, we distribute the division and get:
 	// divUp(x, y) := (x - 1) / y + 1
 	// Note that this requires x != 0, if x == 0 then the result is zero
-	return x.Sub(one).Div(y).Add(one)
+	return x.Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
 }
 
 // DivUpFixed divides the number y up and deflates prec precision
@@ -233,7 +233,7 @@ func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *De
 		return x
 	}
 	one := DecFloatPoint(intOne)
-	return x.Inflate(prec).Sub(one).Div(y).Add(one)
+	return x.Inflate(prec).Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
 }
 
 // DivDownFixed inflates prec precision and divides the number y down
@@ -241,7 +241,7 @@ func (x *DecFloatPointNumber) DivDownFixed(y *DecFloatPointNumber, prec uint8) *
 	if x.Sign() == 0 {
 		return x
 	}
-	return x.Inflate(prec).Div(y)
+	return x.Inflate(prec).DivPrec(y, uint32(x.x.p))
 }
 
 // Exp exponential function by y and return the x ^ y.

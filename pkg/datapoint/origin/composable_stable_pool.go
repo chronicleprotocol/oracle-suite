@@ -774,7 +774,7 @@ func (c *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFloatPoint
 // _adjustedBalance implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L242
 func (c *ComposableStablePool) _adjustedBalance(balance *bn.DecFloatPointNumber, cache *TokenRateCache) *bn.DecFloatPointNumber {
-	return balance.Mul(cache.OldRate).Div(cache.Rate)
+	return balance.Mul(cache.OldRate).DivPrec(cache.Rate, 0)
 }
 
 // _dropBptItem implements same functionality with the following url:
@@ -798,7 +798,7 @@ func (c *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolO
 	// `poolOwnershipPercentage = bptAmount / (totalSupply + bptAmount)`.
 	// Solving for `bptAmount`, we arrive at:
 	// `bptAmount = totalSupply * poolOwnershipPercentage / (1 - poolOwnershipPercentage)`.
-	return totalSupply.Mul(poolOwnershipPercentage).Div(_complementFixed(poolOwnershipPercentage))
+	return totalSupply.Mul(poolOwnershipPercentage).DivPrec(_complementFixed(poolOwnershipPercentage), 0)
 }
 
 // _skipBptIndex implements same functionality with the following url:

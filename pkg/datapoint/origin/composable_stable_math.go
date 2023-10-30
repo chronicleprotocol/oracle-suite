@@ -44,14 +44,14 @@ func _calculateInvariant(amp *bn.DecFloatPointNumber, balances []*bn.DecFloatPoi
 	for i := 0; i < 255; i++ {
 		var PD = balances[0].Mul(numTokensBi) // P_D
 		for j := 1; j < numTokens; j++ {
-			PD = PD.Mul(balances[j]).Mul(numTokensBi).Div(invariant)
+			PD = PD.Mul(balances[j]).Mul(numTokensBi).DivPrec(invariant, 0)
 		}
 		prevInvariant = invariant
 		numerator := numTokensBi.Mul(invariant).Mul(invariant).Add(
-			ampTotal.Mul(sum).Mul(PD).Div(ampPrecision))
+			ampTotal.Mul(sum).Mul(PD).DivPrec(ampPrecision, 0))
 		denominator := numTokensBi.Add(bigIntOne).Mul(invariant).Add(
-			ampTotal.Sub(ampPrecision).Mul(PD).Div(ampPrecision))
-		invariant = numerator.Div(denominator)
+			ampTotal.Sub(ampPrecision).Mul(PD).DivPrec(ampPrecision, 0))
+		invariant = numerator.DivPrec(denominator, 0)
 		if invariant.Cmp(prevInvariant) > 0 {
 			if invariant.Sub(prevInvariant).Cmp(bigIntOne) <= 0 {
 				return invariant, nil
