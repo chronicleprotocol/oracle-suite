@@ -67,32 +67,8 @@ func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
 	return pd, err
 }
 
-// ReadNext reads the next poke data from the contract without checking if the
-// latest optimistic poke is already finalized.
-//
-// The returned boolean indicates if the latest optimistic poke is finalized.
-func (s *OpScribe) ReadNext(ctx context.Context, readTime time.Time) (PokeData, bool, error) {
-	blockNumber, err := s.client.BlockNumber(ctx)
-	if err != nil {
-		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
-	}
-	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
-	if err != nil {
-		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
-	}
-	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
-	if err != nil {
-		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
-	}
-	opPokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
-	if err != nil {
-		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
-	}
-	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
-	if opPokeData.Age.After(pokeData.Age) {
-		return opPokeData, opPokeDataFinalized, nil
-	}
-	return pokeData, opPokeDataFinalized, nil
+func (s *OpScribe) ReadNext(ctx context.Context) (PokeData, bool, error) {
+	return s.ReadNextAt(ctx, time.Now())
 }
 
 // ReadAt reads the PokeData from the contract using the given readTime as the
@@ -123,6 +99,34 @@ func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, bo
 	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
 	if opPokeDataFinalized && opPokeData.Age.After(pokeData.Age) {
 		return opPokeData, true, nil
+	}
+	return pokeData, opPokeDataFinalized, nil
+}
+
+// ReadNextAt reads the next poke data from the contract without checking if
+// the latest optimistic poke is already finalized.
+//
+// The returned boolean indicates if the latest optimistic poke is finalized.
+func (s *OpScribe) ReadNextAt(ctx context.Context, readTime time.Time) (PokeData, bool, error) {
+	blockNumber, err := s.client.BlockNumber(ctx)
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	opPokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
+	if opPokeData.Age.After(pokeData.Age) {
+		return opPokeData, opPokeDataFinalized, nil
 	}
 	return pokeData, opPokeDataFinalized, nil
 }

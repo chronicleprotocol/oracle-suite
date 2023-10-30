@@ -84,7 +84,7 @@ func TestOpScribe(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
@@ -156,7 +156,7 @@ func TestOpScribe(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
@@ -228,7 +228,7 @@ func TestOpScribe(t *testing.T) {
 				nil,
 			)
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
@@ -306,7 +306,7 @@ func TestOpScribe(t *testing.T) {
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
@@ -373,7 +373,7 @@ func TestOpScribe(t *testing.T) {
 				Age: time.Now().Add(-1 * time.Minute),
 			}, nil
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-1 * time.Minute),
@@ -508,7 +508,7 @@ func TestOpScribe(t *testing.T) {
 						Age: time.Now().Add(-1 * time.Minute),
 					}, nil
 				}
-				mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+				mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 					return chronicle.PokeData{
 						Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 						Age: time.Now().Add(-1 * time.Minute),
@@ -560,7 +560,7 @@ func TestOpScribe(t *testing.T) {
 				Age: time.Now().Add(-15 * time.Minute),
 			}, nil
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),
@@ -614,7 +614,7 @@ func TestOpScribe(t *testing.T) {
 		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
 			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(chronicle.FeedsResult{}, errors.New("foo"))
 		}
-		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
 			return chronicle.PokeData{
 				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Now().Add(-15 * time.Minute),

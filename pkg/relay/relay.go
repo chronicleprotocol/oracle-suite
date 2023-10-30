@@ -78,7 +78,7 @@ type ScribeContract interface {
 
 type OpScribeContract interface {
 	ScribeContract
-	ReadNext(ctx context.Context, readTime time.Time) (chronicle.PokeData, bool, error)
+	ReadNext(ctx context.Context) (chronicle.PokeData, bool, error)
 	OpPoke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller
 }
 

@@ -180,7 +180,7 @@ func (w *scribe) currentState(ctx context.Context) (state scribeState, err error
 	//    spread.
 	switch c := w.contract.(type) {
 	case OpScribeContract:
-		state.pokeData, state.finalized, err = c.ReadNext(ctx, time.Now())
+		state.pokeData, state.finalized, err = c.ReadNext(ctx)
 	case ScribeContract:
 		state.pokeData, err = c.Read(ctx)
 		state.finalized = true
