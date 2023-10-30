@@ -106,17 +106,17 @@ func (a *AggregatedCallables) DecodeTo(data []byte, res any) error {
 	if len(a.calls) == 0 {
 		return nil
 	}
-	resRelf := reflect.ValueOf(res)
-	for resRelf.Kind() == reflect.Ptr {
-		resRelf = resRelf.Elem()
+	resRefl := reflect.ValueOf(res)
+	for resRefl.Kind() == reflect.Ptr {
+		resRefl = resRefl.Elem()
 	}
-	if resRelf.Kind() == reflect.Interface && resRelf.IsNil() {
+	if resRefl.Kind() == reflect.Interface && resRefl.IsNil() {
 		return nil
 	}
-	if resRelf.Kind() != reflect.Slice {
+	if resRefl.Kind() != reflect.Slice {
 		return fmt.Errorf("result must be a slice")
 	}
-	if resRelf.Len() == 0 {
+	if resRefl.Len() == 0 {
 		return nil
 	}
 	var multiCallRes []Result
@@ -131,7 +131,7 @@ func (a *AggregatedCallables) DecodeTo(data []byte, res any) error {
 	}
 	multiCallResIdx := 0
 	for i, call := range a.calls {
-		if i >= resRelf.Len() {
+		if i >= resRefl.Len() {
 			continue
 		}
 		dec, ok := call.(contract.Decoder)
@@ -139,14 +139,14 @@ func (a *AggregatedCallables) DecodeTo(data []byte, res any) error {
 			continue
 		}
 		if call.Address() == types.ZeroAddress {
-			if err := safeDecode(resRelf.Index(i), dec, nil); err != nil {
+			if err := safeDecode(resRefl.Index(i), dec, nil); err != nil {
 				return fmt.Errorf("unable to decode element %d: %w", i, err)
 			}
 		} else {
 			if multiCallResIdx >= len(multiCallRes) {
 				continue
 			}
-			if err := safeDecode(resRelf.Index(i), dec, multiCallRes[multiCallResIdx].Data); err != nil {
+			if err := safeDecode(resRefl.Index(i), dec, multiCallRes[multiCallResIdx].Data); err != nil {
 				return fmt.Errorf("unable to decode element %d: %w", i, err)
 			}
 			multiCallResIdx++

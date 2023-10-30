@@ -30,6 +30,10 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 )
 
+// stateCacheExpiration is the time after which the cached state is considered
+// stale and a new state is fetched from the contract.
+const stateCacheExpiration = 10 * time.Second
+
 type scribe struct {
 	contract   ScribeContract
 	muSigStore store.SignatureProvider
@@ -37,13 +41,17 @@ type scribe struct {
 	spread     float64
 	expiration time.Duration
 	log        log.Logger
+
+	cachedState scribeState
 }
 
 type scribeState struct {
-	wat      string
-	bar      int
-	feeds    chronicle.FeedsResult
-	pokeData chronicle.PokeData
+	wat       string
+	bar       int
+	feeds     chronicle.FeedsResult
+	pokeData  chronicle.PokeData
+	finalized bool      // If price is finalized (only for Scribe Optimistic contracts).
+	time      time.Time // Date and time when the state was fetched.
 }
 
 func (w *scribe) client() rpc.RPC {
@@ -95,7 +103,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		// - Price is older than the interval specified in the expiration
 		//   field.
 		// - Price differs from the current price by more than is specified in the
-		//   OracleSpread field.
+		//   spread field.
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
@@ -157,7 +165,26 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 }
 
 func (w *scribe) currentState(ctx context.Context) (state scribeState, err error) {
-	state.pokeData, err = w.contract.Read(ctx)
+	if time.Since(w.cachedState.time) <= stateCacheExpiration {
+		return w.cachedState, nil
+	}
+	// Always fetch the latest, non-finalized price from the contract. This is
+	// done for three reasons:
+	// 1. If a price movement is significant enough to trigger both poke and
+	//    opPoke, opPoke is sent first and immediately overwritten by poke.
+	//    Using a non-finalized price prevents this.
+	// 2. If the optimistic price is incorrect, poke will overwrite it.
+	// 3. During the challenge period, if the price changes significantly,
+	//    poke will update the optimistic price. Without this, updates would be
+	//    halted until the challenge period concludes, regardless of the price
+	//    spread.
+	switch c := w.contract.(type) {
+	case OpScribeContract:
+		state.pokeData, state.finalized, err = c.ReadNext(ctx, time.Now())
+	case ScribeContract:
+		state.pokeData, err = c.Read(ctx)
+		state.finalized = true
+	}
 	if err != nil {
 		return scribeState{}, err
 	}
@@ -173,6 +200,8 @@ func (w *scribe) currentState(ctx context.Context) (state scribeState, err error
 	}); err != nil {
 		return scribeState{}, err
 	}
+	state.time = time.Now()
+	w.cachedState = state
 	return state, nil
 }
 

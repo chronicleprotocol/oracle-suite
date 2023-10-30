@@ -44,7 +44,7 @@ func TestMedian(t *testing.T) {
 	mockTransport := newMockTransport(t)
 	mockStore := newMockDataPointProvider(t)
 
-	mw := &median{
+	median := &median{
 		contract:       mockContract,
 		dataPointStore: mockStore,
 		feedAddresses:  []types.Address{testFeed1, testFeed2, testFeed3},
@@ -102,7 +102,7 @@ func TestMedian(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -143,7 +143,7 @@ func TestMedian(t *testing.T) {
 			return store.StoredDataPoint{}, false, nil
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 	})
 
 	t.Run("expired", func(t *testing.T) {
@@ -189,7 +189,7 @@ func TestMedian(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -247,7 +247,7 @@ func TestMedian(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -315,7 +315,7 @@ func TestMedian(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -388,7 +388,7 @@ func TestMedian(t *testing.T) {
 				usedPrices[vals[0].Val.String()+vals[1].Val.String()]++
 				return mock.NewCaller(t).MockAllowAllCalls()
 			}
-			mw.createRelayCall(ctx)
+			median.createRelayCall(ctx)
 		}
 
 		// This tests verifies that the random data points are used. Because it's based on random
@@ -456,7 +456,7 @@ func TestMedian(t *testing.T) {
 			return store.StoredDataPoint{}, false, nil
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 	})
 
 	t.Run("not a tick", func(t *testing.T) {
@@ -498,7 +498,7 @@ func TestMedian(t *testing.T) {
 			return store.StoredDataPoint{}, false, nil
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 	})
 
 	t.Run("call error", func(t *testing.T) {
@@ -527,7 +527,7 @@ func TestMedian(t *testing.T) {
 			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
 
-		mw.createRelayCall(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, errLogCalled)
 	})
 }

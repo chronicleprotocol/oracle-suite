@@ -40,7 +40,7 @@ func TestScribe(t *testing.T) {
 	mockContract := newMockScribeContract(t)
 	mockMuSigStore := newMockSignatureProvider(t)
 
-	sw := &scribe{
+	scribe := &scribe{
 		log:        mockLogger,
 		muSigStore: mockMuSigStore,
 		contract:   mockContract,
@@ -50,6 +50,7 @@ func TestScribe(t *testing.T) {
 	}
 
 	t.Run("above spread", func(t *testing.T) {
+		scribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -110,11 +111,12 @@ func TestScribe(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.createRelayCall(ctx)
+		scribe.createRelayCall(ctx)
 		assert.True(t, pokeCalled)
 	})
 
 	t.Run("within spread", func(t *testing.T) {
+		scribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -165,10 +167,11 @@ func TestScribe(t *testing.T) {
 			}
 		}
 
-		sw.createRelayCall(ctx)
+		scribe.createRelayCall(ctx)
 	})
 
 	t.Run("expired", func(t *testing.T) {
+		scribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -229,11 +232,12 @@ func TestScribe(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.createRelayCall(ctx)
+		scribe.createRelayCall(ctx)
 		assert.True(t, pokeCalled)
 	})
 
 	t.Run("old signature", func(t *testing.T) {
+		scribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -284,7 +288,7 @@ func TestScribe(t *testing.T) {
 			}
 		}
 
-		sw.createRelayCall(ctx)
+		scribe.createRelayCall(ctx)
 	})
 
 	t.Run("broken message", func(t *testing.T) {
@@ -345,6 +349,7 @@ func TestScribe(t *testing.T) {
 
 		for i, m := range invalidMessages {
 			t.Run(fmt.Sprintf("msg-%d", i+1), func(t *testing.T) {
+				scribe.cachedState = scribeState{}
 				mockLogger.reset(t)
 				mockContract.reset(t)
 				mockMuSigStore.reset(t)
@@ -380,12 +385,13 @@ func TestScribe(t *testing.T) {
 					return []*messages.MuSigSignature{m}
 				}
 
-				sw.createRelayCall(ctx)
+				scribe.createRelayCall(ctx)
 			})
 		}
 	})
 
 	t.Run("call error", func(t *testing.T) {
+		scribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -413,7 +419,7 @@ func TestScribe(t *testing.T) {
 			errLogCalled = true
 		}
 
-		sw.createRelayCall(ctx)
+		scribe.createRelayCall(ctx)
 		assert.True(t, errLogCalled)
 	})
 }

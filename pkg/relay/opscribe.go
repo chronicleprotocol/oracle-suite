@@ -27,7 +27,6 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 )
 
@@ -37,14 +36,6 @@ type opScribe struct {
 	opContract   OpScribeContract
 	opSpread     float64
 	opExpiration time.Duration
-}
-
-type opScribeState struct {
-	wat       string
-	bar       int
-	feeds     chronicle.FeedsResult
-	pokeData  chronicle.PokeData
-	finalized bool
 }
 
 func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
@@ -66,7 +57,8 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		return 0, nil
 	}
 
-	// If the latest poke is not finalized, we cannot send optimistic update.
+	// If the latest poke is not finalized, we cannot send optimistic update,
+	// try to send regular update.
 	if !state.finalized {
 		return w.scribe.createRelayCall(ctx)
 	}
@@ -79,7 +71,7 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		}
 		meta := s.MsgMeta.TickV1()
 
-		// If signature is not optimistic, skip it.
+		// If signature does not contain optimistic signatures, skip it.
 		if len(meta.Optimistic) == 0 {
 			continue
 		}
@@ -91,10 +83,10 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 
 		// Check if price on ScribeOptimistic contract needs to be updated.
 		// The price needs to be updated if:
-		// - Price is older than the interval specified in the expiration
+		// - Price is older than the interval specified in the opExpiration
 		//   field.
 		// - Price differs from the current price by more than is specified in the
-		//   OracleSpread field.
+		//   opSpread field.
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.opExpiration
 		isStale := math.IsInf(spread, 0) || spread >= w.opSpread
@@ -124,16 +116,6 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			}).
 			Debug("ScribeOptimistic")
 
-		pokeData := chronicle.PokeData{
-			Val: meta.Val,
-			Age: meta.Age,
-		}
-		schnorrData := chronicle.SchnorrData{
-			Signature:   s.SchnorrSignature,
-			Commitment:  s.Commitment,
-			SignersBlob: signersBlob,
-		}
-
 		// If price is stale or expired, send optimistic update.
 		if isExpired || isStale {
 			for _, optimistic := range meta.Optimistic {
@@ -141,7 +123,18 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 				if !bytes.Equal(signersBlob, optimistic.SignerIndexes) {
 					continue
 				}
-				poke := w.opContract.OpPoke(pokeData, schnorrData, optimistic.ECDSASignature)
+				poke := w.opContract.OpPoke(
+					chronicle.PokeData{
+						Val: meta.Val,
+						Age: meta.Age,
+					},
+					chronicle.SchnorrData{
+						Signature:   s.SchnorrSignature,
+						Commitment:  s.Commitment,
+						SignersBlob: signersBlob,
+					},
+					optimistic.ECDSASignature,
+				)
 				gas, err := poke.Gas(ctx, types.LatestBlockNumber)
 				if err != nil {
 					w.handlePokeErr(err)
@@ -152,26 +145,6 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		}
 	}
 	return w.scribe.createRelayCall(ctx)
-}
-
-func (w *opScribe) currentState(ctx context.Context) (state opScribeState, err error) {
-	state.pokeData, state.finalized, err = w.opContract.ReadNext(ctx, time.Now())
-	if err != nil {
-		return opScribeState{}, err
-	}
-	if err := multicall.AggregateCallables(
-		w.opContract.Client(),
-		w.opContract.Wat(),
-		w.opContract.Bar(),
-		w.opContract.Feeds(),
-	).Call(ctx, types.LatestBlockNumber, []any{
-		&state.wat,
-		&state.bar,
-		&state.feeds,
-	}); err != nil {
-		return opScribeState{}, err
-	}
-	return state, nil
 }
 
 func (w *opScribe) handlePokeErr(err error) {

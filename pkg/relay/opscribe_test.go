@@ -40,7 +40,7 @@ func TestOpScribe(t *testing.T) {
 	mockContract := newMockOpScribeContract(t)
 	mockMuSigStore := newMockSignatureProvider(t)
 
-	sw := &opScribe{
+	opScribe := &opScribe{
 		scribe: scribe{
 			contract:   mockContract,
 			muSigStore: mockMuSigStore,
@@ -55,6 +55,7 @@ func TestOpScribe(t *testing.T) {
 	}
 
 	t.Run("above spread", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -121,11 +122,12 @@ func TestOpScribe(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.createRelayCall(ctx)
+		opScribe.createRelayCall(ctx)
 		assert.True(t, pokeCalled)
 	})
 
 	t.Run("expired", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -192,11 +194,84 @@ func TestOpScribe(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.createRelayCall(ctx)
+		opScribe.createRelayCall(ctx)
+		assert.True(t, pokeCalled)
+	})
+
+	t.Run("not finalized - regular poke", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
+		mockLogger.reset(t)
+		mockContract.reset(t)
+		mockMuSigStore.reset(t)
+
+		ctx := context.Background()
+		musigTime := time.Now()
+		musigCommitment := types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		musigSignature := big.NewInt(1234567890)
+		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
+		mockLogger.InfoFn = func(args ...any) {}
+		mockLogger.DebugFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
+		mockContract.AddressFn = func() types.Address { return types.Address{} }
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed},
+					FeedIndices: []uint8{1},
+				},
+				nil,
+			)
+		}
+		mockContract.ReadNextFn = func(ctx context.Context, _ time.Time) (chronicle.PokeData, bool, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-1 * time.Minute),
+			}, false, nil
+		}
+		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
+			assert.Equal(t, "ETH/USD", model)
+			return []*messages.MuSigSignature{
+				{
+					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
+						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+							Wat: "ETH/USD",
+							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
+							Age: musigTime,
+							Optimistic: []messages.MuSigMetaOptimistic{{
+								ECDSASignature: musigOpSignature,
+								SignerIndexes:  []uint8{1},
+							}},
+						}},
+					},
+					Commitment:       musigCommitment,
+					SchnorrSignature: musigSignature,
+				},
+			}
+		}
+
+		pokeCalled := false
+		mockContract.PokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller {
+			pokeCalled = true
+			assert.Equal(t, bn.DecFixedPoint(110, chronicle.ScribePricePrecision), pokeData.Val)
+			assert.Equal(t, musigTime, pokeData.Age)
+			assert.Equal(t, musigCommitment, schnorrData.Commitment)
+			assert.Equal(t, musigSignature, schnorrData.Signature)
+			return mock.NewCaller(t).MockAllowAllCalls()
+		}
+
+		opScribe.createRelayCall(ctx)
 		assert.True(t, pokeCalled)
 	})
 
 	t.Run("within spread", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -259,10 +334,11 @@ func TestOpScribe(t *testing.T) {
 			}
 		}
 
-		sw.createRelayCall(ctx)
+		opScribe.createRelayCall(ctx)
 	})
 
 	t.Run("old signature", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -325,7 +401,7 @@ func TestOpScribe(t *testing.T) {
 			}
 		}
 
-		sw.createRelayCall(ctx)
+		opScribe.createRelayCall(ctx)
 	})
 
 	t.Run("broken message", func(t *testing.T) {
@@ -401,6 +477,7 @@ func TestOpScribe(t *testing.T) {
 
 		for i, m := range invalidMessages {
 			t.Run(fmt.Sprintf("msg-%d", i+1), func(t *testing.T) {
+				opScribe.cachedState = scribeState{}
 				mockLogger.reset(t)
 				mockContract.reset(t)
 				mockMuSigStore.reset(t)
@@ -442,12 +519,13 @@ func TestOpScribe(t *testing.T) {
 					return []*messages.MuSigSignature{m}
 				}
 
-				sw.createRelayCall(ctx)
+				opScribe.createRelayCall(ctx)
 			})
 		}
 	})
 
 	t.Run("invalid signers blob", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -515,10 +593,11 @@ func TestOpScribe(t *testing.T) {
 			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		sw.createRelayCall(ctx)
+		opScribe.createRelayCall(ctx)
 	})
 
 	t.Run("call error", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockMuSigStore.reset(t)
@@ -546,7 +625,7 @@ func TestOpScribe(t *testing.T) {
 			errLogCalled = true
 		}
 
-		sw.createRelayCall(ctx)
+		opScribe.createRelayCall(ctx)
 		assert.True(t, errLogCalled)
 	})
 }

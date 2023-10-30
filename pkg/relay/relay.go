@@ -379,7 +379,7 @@ func (m *Relay) relayCalls() map[rpc.RPC][]contract.Callable {
 				if gas > baseGasUsage {
 					g.Add(gas - baseGasUsage)
 				} else {
-					g.Add(baseGasUsage)
+					g.Add(700) //nolint:gomnd // 700 is the minimum gas usage for a call
 				}
 			}(c, a, gasEstimate)
 		}

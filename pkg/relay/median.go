@@ -93,7 +93,7 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 	// The price needs to be updated if:
 	// - Price is older than the interval specified in the expiration field.
 	// - Price differs from the current price by more than is specified in the
-	//   Spread field.
+	//   spread field.
 	isExpired := time.Since(state.age) >= w.expiration
 	isStale := math.IsInf(spread, 0) || spread >= w.spread
 
