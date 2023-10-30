@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -28,8 +28,8 @@ import (
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
 const MedianPricePrecision = 18
@@ -52,6 +52,10 @@ func NewMedian(client rpc.RPC, address types.Address) *Median {
 		client:  client,
 		address: address,
 	}
+}
+
+func (m *Median) Client() rpc.RPC {
+	return m.client
 }
 
 func (m *Median) Address() types.Address {
@@ -81,52 +85,52 @@ func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 	), nil
 }
 
-func (m *Median) Age(ctx context.Context) (time.Time, error) {
-	res, _, err := m.client.Call(
-		ctx,
-		types.Call{
-			To:    &m.address,
-			Input: errutil.Must(abiMedian.Methods["age"].EncodeArgs()),
+func (m *Median) Age() contract.TypedSelfCaller[time.Time] {
+	method := abiMedian.Methods["age"]
+	return contract.NewTypedCall[time.Time](
+		contract.CallOpts{
+			Client:  m.client,
+			Address: m.address,
+			Encoder: contract.NewCallEncoder(method),
+			Decoder: func(data []byte, res any) error {
+				*res.(*time.Time) = time.Unix(new(big.Int).SetBytes(data).Int64(), 0)
+				return nil
+			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return time.Unix(0, 0), fmt.Errorf("median: age query failed: %w", err)
-	}
-	return time.Unix(new(big.Int).SetBytes(res).Int64(), 0), nil
 }
 
-func (m *Median) Wat(ctx context.Context) (string, error) {
-	res, _, err := m.client.Call(
-		ctx,
-		types.Call{
-			To:    &m.address,
-			Input: errutil.Must(abiMedian.Methods["wat"].EncodeArgs()),
+func (m *Median) Wat() contract.TypedSelfCaller[string] {
+	method := abiMedian.Methods["wat"]
+	return contract.NewTypedCall[string](
+		contract.CallOpts{
+			Client:  m.client,
+			Address: m.address,
+			Encoder: contract.NewCallEncoder(method),
+			Decoder: func(data []byte, res any) error {
+				*res.(*string) = bytes32ToString(data)
+				return nil
+			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return "", fmt.Errorf("median: wat query failed: %w", err)
-	}
-	return bytes32ToString(res), nil
 }
 
-func (m *Median) Bar(ctx context.Context) (int, error) {
-	res, _, err := m.client.Call(
-		ctx,
-		types.Call{
-			To:    &m.address,
-			Input: errutil.Must(abiMedian.Methods["bar"].EncodeArgs()),
+func (m *Median) Bar() contract.TypedSelfCaller[int] {
+	method := abiMedian.Methods["bar"]
+	return contract.NewTypedCall[int](
+		contract.CallOpts{
+			Client:       m.client,
+			Address:      m.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return 0, fmt.Errorf("median: bar query failed: %w", err)
-	}
-	return int(new(big.Int).SetBytes(res).Int64()), nil
 }
 
-func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *types.Transaction, error) {
+func (m *Median) Poke(vals []MedianVal) contract.SelfTransactableCaller {
 	sort.Slice(vals, func(i, j int) bool {
 		return vals[i].Val.Cmp(vals[j].Val) < 0
 	})
@@ -136,30 +140,20 @@ func (m *Median) Poke(ctx context.Context, vals []MedianVal) (*types.Hash, *type
 	rSlice := make([]*big.Int, len(vals))
 	sSlice := make([]*big.Int, len(vals))
 	for i, v := range vals {
-		if v.Val.Prec() != MedianPricePrecision {
-			return nil, nil, fmt.Errorf("median: poke failed: invalid precision: %d", v.Val.Prec())
-		}
-		valSlice[i] = v.Val.RawBigInt()
+		valSlice[i] = v.Val.SetPrec(MedianPricePrecision).RawBigInt()
 		ageSlice[i] = uint64(v.Age.Unix())
 		vSlice[i] = v.V
 		rSlice[i] = v.R
 		sSlice[i] = v.S
 	}
-	calldata, err := abiMedian.Methods["poke"].EncodeArgs(valSlice, ageSlice, vSlice, rSlice, sSlice)
-	if err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
-	}
-	tx := (&types.Transaction{}).
-		SetTo(m.address).
-		SetInput(calldata)
-	if err := simulateTransaction(ctx, m.client, abiMedian, *tx); err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
-	}
-	txHash, txCpy, err := m.client.SendTransaction(ctx, *tx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("median: poke failed: %w", err)
-	}
-	return txHash, txCpy, nil
+	return contract.NewTransactableCall(
+		contract.CallOpts{
+			Client:       m.client,
+			Address:      m.address,
+			Encoder:      contract.NewCallEncoder(abiMedian.Methods["poke"], valSlice, ageSlice, vSlice, rSlice, sSlice),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
+		},
+	)
 }
 
 // ConstructMedianPokeMessage returns the message expected to be signed via ECDSA for calling

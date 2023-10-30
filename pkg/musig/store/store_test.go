@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/local"
@@ -39,7 +39,7 @@ var (
 			Signers: []types.Address{types.MustAddressFromHex("0x1111111111111111111111111111111111111111")},
 			MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 				Wat: "AAA/BBB",
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Unix(100, 0),
 			}},
 		},
@@ -52,7 +52,7 @@ var (
 			Signers: []types.Address{types.MustAddressFromHex("0x1111111111111111111111111111111111111111")},
 			MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 				Wat: "AAA/BBB",
-				Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+				Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 				Age: time.Unix(90, 0),
 			}},
 		},
@@ -65,7 +65,7 @@ var (
 			Signers: []types.Address{types.MustAddressFromHex("0x1111111111111111111111111111111111111111")},
 			MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 				Wat: "XXX/YYY",
-				Val: bn.DecFixedPoint(100, contract.ScribePricePrecision),
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
 				Age: time.Unix(90, 0),
 			}},
 		},
@@ -78,7 +78,7 @@ var (
 			Signers: []types.Address{types.MustAddressFromHex("0x1111111111111111111111111111111111111111")},
 			MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 				Wat: "XXX/YYY",
-				Val: bn.DecFixedPoint(110, contract.ScribePricePrecision),
+				Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
 				Age: time.Unix(100, 0),
 			}},
 		},

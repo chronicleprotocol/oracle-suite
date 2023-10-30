@@ -13,14 +13,13 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"math/big"
 	"sort"
 	"time"
@@ -29,12 +28,17 @@ import (
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 const ScribePricePrecision = 18
+
+type FeedsResult struct {
+	Feeds       []types.Address `abi:"feeds"`
+	FeedIndices []uint8         `abi:"feedIndexes"`
+}
 
 type Scribe struct {
 	client  rpc.RPC
@@ -48,6 +52,10 @@ func NewScribe(client rpc.RPC, address types.Address) *Scribe {
 	}
 }
 
+func (s *Scribe) Client() rpc.RPC {
+	return s.client
+}
+
 func (s *Scribe) Address() types.Address {
 	return s.address
 }
@@ -56,76 +64,60 @@ func (s *Scribe) Read(ctx context.Context) (PokeData, error) {
 	return s.readPokeData(ctx, pokeStorageSlot, types.LatestBlockNumber)
 }
 
-func (s *Scribe) Wat(ctx context.Context) (string, error) {
-	res, _, err := s.client.Call(
-		ctx,
-		types.Call{
-			To:    &s.address,
-			Input: errutil.Must(abiScribe.Methods["wat"].EncodeArgs()),
+func (s *Scribe) Wat() contract.TypedSelfCaller[string] {
+	return contract.NewTypedCall[string](
+		contract.CallOpts{
+			Client:  s.client,
+			Address: s.address,
+			Encoder: contract.NewCallEncoder(abiScribe.Methods["wat"]),
+			Decoder: func(data []byte, res any) error {
+				*res.(*string) = bytes32ToString(data)
+				return nil
+			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return "", fmt.Errorf("scribe: wat query failed: %w", err)
-	}
-	return bytes32ToString(res), nil
 }
 
-func (s *Scribe) Bar(ctx context.Context) (int, error) {
-	res, _, err := s.client.Call(
-		ctx,
-		types.Call{
-			To:    &s.address,
-			Input: errutil.Must(abiScribe.Methods["bar"].EncodeArgs()),
+func (s *Scribe) Bar() contract.TypedSelfCaller[int] {
+	method := abiScribe.Methods["bar"]
+	return contract.NewTypedCall[int](
+		contract.CallOpts{
+			Client:       s.client,
+			Address:      s.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return 0, fmt.Errorf("scribe: bar query failed: %w", err)
-	}
-	var bar uint8
-	if err := abiScribe.Methods["bar"].DecodeValues(res, &bar); err != nil {
-		return 0, fmt.Errorf("scribe: bar query failed: %w", err)
-	}
-	return int(bar), nil
 }
 
-func (s *Scribe) Feeds(ctx context.Context) ([]types.Address, []uint8, error) {
-	res, _, err := s.client.Call(
-		ctx,
-		types.Call{
-			To:    &s.address,
-			Input: errutil.Must(abiScribe.Methods["feeds"].EncodeArgs()),
+func (s *Scribe) Feeds() contract.TypedSelfCaller[FeedsResult] {
+	method := abiScribe.Methods["feeds"]
+	return contract.NewTypedCall[FeedsResult](
+		contract.CallOpts{
+			Client:       s.client,
+			Address:      s.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return nil, nil, fmt.Errorf("scribe: feeds query failed: %w", err)
-	}
-	var feeds []types.Address
-	var feedIndices []uint8
-	if err := abiScribe.Methods["feeds"].DecodeValues(res, &feeds, &feedIndices); err != nil {
-		return nil, nil, fmt.Errorf("scribe: feeds query failed: %w", err)
-	}
-	return feeds, feedIndices, nil
 }
 
-func (s *Scribe) Poke(ctx context.Context, pokeData PokeData, schnorrData SchnorrData) (*types.Hash, *types.Transaction, error) {
-	calldata, err := abiScribe.Methods["poke"].EncodeArgs(toPokeDataStruct(pokeData), toSchnorrDataStruct(schnorrData))
-	if err != nil {
-		return nil, nil, fmt.Errorf("scribe: poke failed: %w", err)
-	}
-	tx := (&types.Transaction{}).
-		SetTo(s.address).
-		SetInput(calldata)
-	if err := simulateTransaction(ctx, s.client, abiScribe, *tx); err != nil {
-		return nil, nil, fmt.Errorf("scribe: poke failed: %w", err)
-	}
-	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("scribe: poke failed: %w", err)
-	}
-	return txHash, txCpy, nil
+func (s *Scribe) Poke(pokeData PokeData, schnorrData SchnorrData) contract.SelfTransactableCaller {
+	return contract.NewTransactableCall(
+		contract.CallOpts{
+			Client:  s.client,
+			Address: s.address,
+			Encoder: contract.NewCallEncoder(
+				abiScribe.Methods["poke"],
+				toPokeDataStruct(pokeData),
+				toSchnorrDataStruct(schnorrData),
+			),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
+		},
+	)
 }
 
 func (s *Scribe) readPokeData(ctx context.Context, storageSlot int, block types.BlockNumber) (PokeData, error) {

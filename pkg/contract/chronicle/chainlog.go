@@ -13,17 +13,19 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 )
+
+type TryGetResult struct {
+	Ok      bool          `abi:"ok"`
+	Address types.Address `abi:"address"`
+}
 
 type Chainlog struct {
 	client  rpc.RPC
@@ -41,20 +43,15 @@ func (w *Chainlog) Address() types.Address {
 	return w.address
 }
 
-func (w *Chainlog) TryGet(ctx context.Context, wat string) (ok bool, address types.Address, ere error) {
-	res, _, err := w.client.Call(
-		ctx,
-		types.Call{
-			To:    &w.address,
-			Input: errutil.Must(abiChainlog.Methods["tryGet"].EncodeArgs(stringToBytes32(wat))),
+func (w *Chainlog) TryGet(wat string) contract.TypedSelfCaller[TryGetResult] {
+	method := abiChainlog.Methods["tryGet"]
+	return contract.NewTypedCall[TryGetResult](
+		contract.CallOpts{
+			Client:       w.client,
+			Address:      w.address,
+			Encoder:      contract.NewCallEncoder(method, stringToBytes32(wat)),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiChainlog),
 		},
-		types.LatestBlockNumber,
 	)
-	if err != nil {
-		return false, types.ZeroAddress, fmt.Errorf("chainlog: tryGet query failed: %w", err)
-	}
-	if err := abiChainlog.Methods["tryGet"].DecodeValues(res, &ok, &address); err != nil {
-		return false, types.ZeroAddress, fmt.Errorf("chainlog: tryGet query failed: %w", err)
-	}
-	return ok, address, nil
 }

@@ -110,18 +110,10 @@ func IndexOf[T comparable](s []T, e T) int {
 	return -1
 }
 
-func Put[T comparable](s []T, e ...T) []T {
-	r := make([]T, 0, len(s))
-	seen := make(map[T]bool)
-	for _, x := range s {
-		seen[x] = true
-		r = append(r, x)
+// AppendUnique appends e to s if e is not already present in s.
+func AppendUnique[T comparable](s []T, e T) []T {
+	if Contains(s, e) {
+		return s
 	}
-
-	for _, x := range e {
-		if !seen[x] {
-			r = append(r, x)
-		}
-	}
-	return r
+	return append(s, e)
 }

@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -74,7 +74,7 @@ func TestMedian_Age(t *testing.T) {
 			nil,
 		)
 
-	age, err := median.Age(ctx)
+	age, err := median.Age().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1692913991), age.Unix())
 }
@@ -99,7 +99,7 @@ func TestMedian_Wat(t *testing.T) {
 			nil,
 		)
 
-	wat, err := median.Wat(ctx)
+	wat, err := median.Wat().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, "BTCUSD", wat)
 }
@@ -124,7 +124,7 @@ func TestMedian_Bar(t *testing.T) {
 			nil,
 		)
 
-	bar, err := median.Bar(ctx)
+	bar, err := median.Bar().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, 13, bar)
 }
@@ -207,7 +207,7 @@ func TestMedian_Poke(t *testing.T) {
 			nil,
 		)
 
-	_, _, err := median.Poke(ctx, vals)
+	_, _, err := median.Poke(vals).SendTransaction(ctx)
 	require.NoError(t, err)
 }
 

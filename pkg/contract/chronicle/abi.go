@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"math/big"
@@ -71,6 +71,7 @@ func init() {
 		`bar()(uint8 bar)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
 		`poke(PokeData pokeData, SchnorrData schnorrData)`,
+		`poke_optimized_7136211(PokeData pokeData, SchnorrData schnorrData)`,
 	)
 
 	abiOpScribe, _ = abi.ParseSignatures(
@@ -89,6 +90,7 @@ func init() {
 		`opChallengePeriod()(uint16 opChallengePeriod)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
 		`opPoke(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
+		`opPoke_optimized_397084999(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
 	)
 
 	abiWatRegistry, _ = abi.ParseSignatures(
@@ -97,8 +99,11 @@ func init() {
 	)
 
 	abiChainlog, _ = abi.ParseSignatures(
-		`tryGet(bytes32 key)(bool, address)`,
+		`tryGet(bytes32 key)(bool ok, address address)`,
 	)
+
+	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]
+	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
 }
 
 type PokeData struct {
@@ -134,7 +139,7 @@ type ECDSADataStruct struct {
 
 func toPokeDataStruct(p PokeData) PokeDataStruct {
 	return PokeDataStruct{
-		Val: p.Val.RawBigInt(),
+		Val: p.Val.SetPrec(ScribePricePrecision).RawBigInt(),
 		Age: uint32(p.Age.Unix()),
 	}
 }

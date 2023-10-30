@@ -22,17 +22,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/mock"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func TestMedianWorker(t *testing.T) {
+func TestMedian(t *testing.T) {
 	testFeed1 := types.MustAddressFromHex("0x1111111111111111111111111111111111111111")
 	testFeed2 := types.MustAddressFromHex("0x2222222222222222222222222222222222222222")
 	testFeed3 := types.MustAddressFromHex("0x3333333333333333333333333333333333333333")
@@ -41,14 +44,14 @@ func TestMedianWorker(t *testing.T) {
 	mockTransport := newMockTransport(t)
 	mockStore := newMockDataPointProvider(t)
 
-	mw := &medianWorker{
-		log:            mockLogger,
+	median := &median{
+		contract:       mockContract,
 		dataPointStore: mockStore,
 		feedAddresses:  []types.Address{testFeed1, testFeed2, testFeed3},
-		contract:       mockContract,
 		dataModel:      "ETH/USD",
 		spread:         5,
 		expiration:     10 * time.Minute,
+		log:            mockLogger,
 	}
 
 	t.Run("above spread", func(t *testing.T) {
@@ -57,12 +60,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-1 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 1, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 		mockStore.LatestFromFn = func(ctx context.Context, from types.Address, model string) (store.StoredDataPoint, bool, error) {
@@ -81,17 +92,17 @@ func TestMedianWorker(t *testing.T) {
 		}
 
 		pokeCalled := false
-		mockContract.PokeFn = func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
+		mockContract.PokeFn = func(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
 			pokeCalled = true
 			assert.Equal(t, 1, len(vals))
-			assert.Equal(t, bn.DecFixedPoint(110, contract.MedianPricePrecision).String(), vals[0].Val.String())
+			assert.Equal(t, bn.DecFixedPoint(110, chronicle.MedianPricePrecision).String(), vals[0].Val.String())
 			assert.Equal(t, uint8(27), vals[0].V)
 			assert.Equal(t, big.NewInt(1).String(), vals[0].R.String())
 			assert.Equal(t, big.NewInt(2).String(), vals[0].S.String())
-			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -101,12 +112,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-1 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 1, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 		mockStore.LatestFromFn = func(ctx context.Context, from types.Address, model string) (store.StoredDataPoint, bool, error) {
@@ -124,7 +143,7 @@ func TestMedianWorker(t *testing.T) {
 			return store.StoredDataPoint{}, false, nil
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 	})
 
 	t.Run("expired", func(t *testing.T) {
@@ -133,12 +152,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-15 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 1, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-15*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 		mockStore.LatestFromFn = func(ctx context.Context, from types.Address, model string) (store.StoredDataPoint, bool, error) {
@@ -157,12 +184,12 @@ func TestMedianWorker(t *testing.T) {
 		}
 
 		pokeCalled := false
-		mockContract.PokeFn = func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
+		mockContract.PokeFn = func(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
 			pokeCalled = true
-			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -172,12 +199,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-1 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 2, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(2, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 		mockStore.LatestFromFn = func(ctx context.Context, from types.Address, model string) (store.StoredDataPoint, bool, error) {
@@ -207,12 +242,12 @@ func TestMedianWorker(t *testing.T) {
 		}
 
 		pokeCalled := false
-		mockContract.PokeFn = func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
+		mockContract.PokeFn = func(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
 			pokeCalled = true
-			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -222,12 +257,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-1 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 2, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(2, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 		mockStore.LatestFromFn = func(ctx context.Context, from types.Address, model string) (store.StoredDataPoint, bool, error) {
@@ -267,12 +310,12 @@ func TestMedianWorker(t *testing.T) {
 		}
 
 		pokeCalled := false
-		mockContract.PokeFn = func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
+		mockContract.PokeFn = func(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
 			pokeCalled = true
-			return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+			return mock.NewCaller(t).MockAllowAllCalls()
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, pokeCalled, "poke should have been called")
 	})
 
@@ -282,12 +325,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-15 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 2, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-15*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(2, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 
@@ -330,14 +381,14 @@ func TestMedianWorker(t *testing.T) {
 		maxTries := 1000
 		usedPrices := make(map[string]int)
 		for i := 0; i < maxTries; i++ {
-			mockContract.PokeFn = func(ctx context.Context, vals []contract.MedianVal) (*types.Hash, *types.Transaction, error) {
+			mockContract.PokeFn = func(vals []chronicle.MedianVal) contract.SelfTransactableCaller {
 				if len(vals) != 2 {
 					t.Fatal("poke should have been called with 2 values")
 				}
 				usedPrices[vals[0].Val.String()+vals[1].Val.String()]++
-				return types.HashFromBigIntPtr(big.NewInt(1)), &types.Transaction{}, nil
+				return mock.NewCaller(t).MockAllowAllCalls()
 			}
-			mw.tryUpdate(ctx)
+			median.createRelayCall(ctx)
 		}
 
 		// This tests verifies that the random data points are used. Because it's based on random
@@ -354,12 +405,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-1 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 3, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(3, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.WarnFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
@@ -397,7 +456,7 @@ func TestMedianWorker(t *testing.T) {
 			return store.StoredDataPoint{}, false, nil
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 	})
 
 	t.Run("not a tick", func(t *testing.T) {
@@ -406,12 +465,20 @@ func TestMedianWorker(t *testing.T) {
 		mockTransport.reset(t)
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now().Add(-1 * time.Minute), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 1, nil }
+		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
+		}
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
 		mockLogger.InfoFn = func(args ...any) {}
 		mockLogger.DebugFn = func(args ...any) {}
 		mockLogger.WarnFn = func(args ...any) {}
@@ -431,10 +498,10 @@ func TestMedianWorker(t *testing.T) {
 			return store.StoredDataPoint{}, false, nil
 		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 	})
 
-	t.Run("val call error", func(t *testing.T) {
+	t.Run("call error", func(t *testing.T) {
 		mockLogger.reset(t)
 		mockContract.reset(t)
 		mockTransport.reset(t)
@@ -445,53 +512,22 @@ func TestMedianWorker(t *testing.T) {
 		mockLogger.ErrorFn = func(args ...any) { errLogCalled = true }
 
 		ctx := context.Background()
+		mockContract.ClientFn = func() rpc.RPC { return nil }
 		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) { return nil, errors.New("error") }
-
-		mw.tryUpdate(ctx)
-		assert.True(t, errLogCalled)
-	})
-
-	t.Run("age call error", func(t *testing.T) {
-		mockLogger.reset(t)
-		mockContract.reset(t)
-		mockTransport.reset(t)
-
-		errLogCalled := false
-		mockLogger.InfoFn = func(args ...any) {}
-		mockLogger.DebugFn = func(args ...any) {}
-		mockLogger.ErrorFn = func(args ...any) { errLogCalled = true }
-
-		ctx := context.Background()
-		mockContract.AddressFn = func() types.Address { return types.Address{} }
-		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("", errors.New("error"))
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Time{}, errors.New("error") }
-
-		mw.tryUpdate(ctx)
-		assert.True(t, errLogCalled)
-	})
-
-	t.Run("bar call error", func(t *testing.T) {
-		mockLogger.reset(t)
-		mockContract.reset(t)
-		mockTransport.reset(t)
-
-		errLogCalled := false
-		mockLogger.InfoFn = func(args ...any) {}
-		mockLogger.DebugFn = func(args ...any) {}
-		mockLogger.ErrorFn = func(args ...any) { errLogCalled = true }
-
-		ctx := context.Background()
-		mockContract.AddressFn = func() types.Address { return types.Address{} }
 		mockContract.ValFn = func(ctx context.Context) (*bn.DecFixedPointNumber, error) {
-			return bn.DecFixedPoint(100, contract.MedianPricePrecision), nil
+			return bn.DecFixedPoint(100, chronicle.MedianPricePrecision), nil
 		}
-		mockContract.AgeFn = func(ctx context.Context) (time.Time, error) { return time.Now(), nil }
-		mockContract.BarFn = func(ctx context.Context) (int, error) { return 0, errors.New("error") }
+		mockContract.AgeFn = func() contract.TypedSelfCaller[time.Time] {
+			return mock.NewTypedCaller[time.Time](t).MockResult(time.Now().Add(-1*time.Minute), nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(1, nil)
+		}
 
-		mw.tryUpdate(ctx)
+		median.createRelayCall(ctx)
 		assert.True(t, errLogCalled)
 	})
 }

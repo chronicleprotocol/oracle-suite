@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func TestChainlog_TryGet(t *testing.T) {
 	mockClient := new(mockRPC)
 	chainlog := NewChainlog(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
-	result := hexutil.MustHexToBytes(
+	data := hexutil.MustHexToBytes(
 		"0x" +
 			"0000000000000000000000000000000000000000000000000000000000000001" +
 			"0000000000000000000000001234567890123456789012345678901234567890",
@@ -46,13 +46,13 @@ func TestChainlog_TryGet(t *testing.T) {
 		types.LatestBlockNumber,
 	).
 		Return(
-			result,
+			data,
 			&types.Call{},
 			nil,
 		)
 
-	ok, address, err := chainlog.TryGet(ctx, "ETH/USD")
+	result, err := chainlog.TryGet("ETH/USD").Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
-	assert.Equal(t, true, ok)
-	assert.Equal(t, types.MustAddressFromHex("0x1234567890123456789012345678901234567890"), address)
+	assert.Equal(t, true, result.Ok)
+	assert.Equal(t, types.MustAddressFromHex("0x1234567890123456789012345678901234567890"), result.Address)
 }

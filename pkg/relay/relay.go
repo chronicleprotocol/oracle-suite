@@ -18,78 +18,92 @@ package relay
 import (
 	"context"
 	"errors"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	datapointStore "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	musigStore "github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 const LoggerTag = "RELAY"
 
+const (
+	// baseGasUsage is the base gas usage for an Ethereum transaction.
+	baseGasUsage = 21_000
+
+	// gasUsageSoftCap is the soft cap for gas usage for an Ethereum transaction.
+	// If the gas usage is above this value, no more transactions will be added
+	// to the aggregate transaction.
+	gasUsageSoftCap = 2_500_000
+
+	// maxParallelCallProviders is the maximum number of call providers that
+	// can be executed in parallel.
+	maxParallelCallProviders = 8
+)
+
 type MedianContract interface {
+	Client() rpc.RPC
 	Address() types.Address
 	Val(ctx context.Context) (*bn.DecFixedPointNumber, error)
-	Age(ctx context.Context) (time.Time, error)
-	Wat(ctx context.Context) (string, error)
-	Bar(ctx context.Context) (int, error)
-	Poke(
-		ctx context.Context,
-		vals []contract.MedianVal,
-	) (
-		*types.Hash,
-		*types.Transaction,
-		error,
-	)
+	Age() contract.TypedSelfCaller[time.Time]
+	Wat() contract.TypedSelfCaller[string]
+	Bar() contract.TypedSelfCaller[int]
+	Poke(vals []chronicle.MedianVal) contract.SelfTransactableCaller
 }
 
 type ScribeContract interface {
+	Client() rpc.RPC
 	Address() types.Address
-	Wat(ctx context.Context) (string, error)
-	Bar(ctx context.Context) (int, error)
-	Feeds(ctx context.Context) ([]types.Address, []uint8, error)
-	Read(ctx context.Context) (contract.PokeData, error)
-	Poke(
-		ctx context.Context,
-		pokeData contract.PokeData,
-		schnorrData contract.SchnorrData,
-	) (
-		*types.Hash,
-		*types.Transaction,
-		error,
-	)
+	Read(ctx context.Context) (chronicle.PokeData, error)
+	Wat() contract.TypedSelfCaller[string]
+	Bar() contract.TypedSelfCaller[int]
+	Feeds() contract.TypedSelfCaller[chronicle.FeedsResult]
+	Poke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller
 }
 
 type OpScribeContract interface {
 	ScribeContract
-	OpPoke(
-		ctx context.Context,
-		pokeData contract.PokeData,
-		schnorrData contract.SchnorrData,
-		ecdsaData types.Signature,
-	) (
-		*types.Hash,
-		*types.Transaction,
-		error,
-	)
+	ReadNext(ctx context.Context) (chronicle.PokeData, bool, error)
+	OpPoke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller
 }
 
-// Relay is a service that relays data points to the blockchain.
-type Relay struct {
-	ctx    context.Context
-	waitCh chan error
-	log    log.Logger
+// callProvider provides a contract call that can be used to relay data to the
+// contract.
+type callProvider interface {
+	// client returns that should be used to send the transaction.
+	client() rpc.RPC
 
-	medians   []*medianWorker
-	scribes   []*scribeWorker
-	opScribes []*opScribeWorker
+	// address returns the address of the contract to relay data to.
+	address() types.Address
+
+	// createRelayCall creates a callable that can be used to relay data to the
+	// contract. It returns the gas estimate for the transaction and the callable.
+	// If callable is nil, then there is no data to relay.
+	createRelayCall(ctx context.Context) (gasEstimate uint64, callable contract.Callable)
+}
+
+// Relay is a service that relays data to the blockchain.
+type Relay struct {
+	ctx       context.Context
+	waitCh    chan error
+	ticker    *timeutil.Ticker
+	providers []callProvider
+	log       log.Logger
 }
 
 // Config is the configuration for the Relay.
@@ -103,6 +117,9 @@ type Config struct {
 	// OptimisticScribes is the list of optimistic scribe contracts configured
 	// for the relay.
 	OptimisticScribes []ConfigOptimisticScribe
+
+	// Ticker notifies the relay to check if an update is required.
+	Ticker *timeutil.Ticker
 
 	// Logger is a current logger interface used by the Feed.
 	// If nil, null logger will be used.
@@ -135,9 +152,6 @@ type ConfigMedian struct {
 	// update on the Median contract and current time required to send
 	// update.
 	Expiration time.Duration
-
-	// Ticker notifies the relay to check if an update is required.
-	Ticker *timeutil.Ticker
 }
 
 type ConfigScribe struct {
@@ -162,12 +176,6 @@ type ConfigScribe struct {
 	// update on the Scribe contract and current time required to send
 	// update.
 	Expiration time.Duration
-
-	// Delay specifies the time to wait before sending an update.
-	Delay time.Duration
-
-	// Ticker notifies the relay to check if an update is required.
-	Ticker *timeutil.Ticker
 }
 
 type ConfigOptimisticScribe struct {
@@ -185,16 +193,23 @@ type ConfigOptimisticScribe struct {
 	ContractAddress types.Address
 
 	// Spread is the minimum calcSpread between the oracle price and new
-	// price required to send update.
+	// price required to send regular update.
 	Spread float64
 
 	// Expiration is the minimum time difference between the last oracle
 	// update on the Scribe contract and current time required to send
-	// update.
+	// regular update.
 	Expiration time.Duration
 
-	// Ticker notifies the relay to check if an update is required.
-	Ticker *timeutil.Ticker
+	// OptimisticSpread is the minimum time difference between the last oracle
+	// update on the Scribe contract and current time required to send
+	// optimistic update.
+	OptimisticSpread float64
+
+	// OptimisticExpiration is the minimum time difference between the last
+	// oracle update on the Scribe contract and current time required to send
+	// optimistic update.
+	OptimisticExpiration time.Duration
 }
 
 // New creates a new Relay instance.
@@ -205,41 +220,44 @@ func New(cfg Config) (*Relay, error) {
 	logger := cfg.Logger.WithField("tag", LoggerTag)
 	r := &Relay{
 		waitCh: make(chan error),
+		ticker: cfg.Ticker,
 		log:    logger,
 	}
-	for _, m := range cfg.Medians {
-		r.medians = append(r.medians, &medianWorker{
-			log:            logger,
-			dataPointStore: m.DataPointStore,
-			feedAddresses:  m.FeedAddresses,
-			contract:       contract.NewMedian(m.Client, m.ContractAddress),
-			dataModel:      m.DataModel,
-			spread:         m.Spread,
-			expiration:     m.Expiration,
-			ticker:         m.Ticker,
+	for _, s := range cfg.OptimisticScribes {
+		contract := chronicle.NewOpScribe(s.Client, s.ContractAddress)
+		r.providers = append(r.providers, &opScribe{
+			scribe: scribe{
+				contract:   contract,
+				muSigStore: s.MuSigStore,
+				dataModel:  s.DataModel,
+				spread:     s.Spread,
+				expiration: s.Expiration,
+				log:        logger,
+			},
+			opContract:   contract,
+			opSpread:     s.OptimisticSpread,
+			opExpiration: s.OptimisticExpiration,
 		})
 	}
 	for _, s := range cfg.Scribes {
-		r.scribes = append(r.scribes, &scribeWorker{
-			log:        logger,
+		r.providers = append(r.providers, &scribe{
+			contract:   chronicle.NewScribe(s.Client, s.ContractAddress),
 			muSigStore: s.MuSigStore,
-			contract:   contract.NewScribe(s.Client, s.ContractAddress),
 			dataModel:  s.DataModel,
 			spread:     s.Spread,
 			expiration: s.Expiration,
-			delay:      s.Delay,
-			ticker:     s.Ticker,
+			log:        logger,
 		})
 	}
-	for _, s := range cfg.OptimisticScribes {
-		r.opScribes = append(r.opScribes, &opScribeWorker{
-			log:        logger,
-			muSigStore: s.MuSigStore,
-			contract:   contract.NewOpScribe(s.Client, s.ContractAddress),
-			dataModel:  s.DataModel,
-			spread:     s.Spread,
-			expiration: s.Expiration,
-			ticker:     s.Ticker,
+	for _, m := range cfg.Medians {
+		r.providers = append(r.providers, &median{
+			contract:       chronicle.NewMedian(m.Client, m.ContractAddress),
+			dataPointStore: m.DataPointStore,
+			feedAddresses:  m.FeedAddresses,
+			dataModel:      m.DataModel,
+			spread:         m.Spread,
+			expiration:     m.Expiration,
+			log:            logger,
 		})
 	}
 	return r, nil
@@ -255,15 +273,7 @@ func (m *Relay) Start(ctx context.Context) error {
 	}
 	m.log.Info("Starting")
 	m.ctx = ctx
-	for _, w := range m.medians {
-		go w.workerRoutine(ctx)
-	}
-	for _, w := range m.scribes {
-		go w.workerRoutine(ctx)
-	}
-	for _, w := range m.opScribes {
-		go w.workerRoutine(ctx)
-	}
+	go m.relayRoutine()
 	go m.contextCancelHandler()
 	return nil
 }
@@ -273,8 +283,156 @@ func (m *Relay) Wait() <-chan error {
 	return m.waitCh
 }
 
+func (m *Relay) sendRelayTransactions() {
+	for client, calls := range m.relayCalls() {
+		// Note, that there is not need to create a separate branch for
+		// a single call because MultiCall internally handles this case.
+		call := multicall.AggregateCallables(client, calls...).AllowFail()
+		txHash, tx, err := call.SendTransaction(m.ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "nonce too low") || strings.Contains(err.Error(), "replacement transaction underpriced") {
+				m.log.
+					WithError(err).
+					WithFields(log.Fields{
+						"txTo":              call.Address(),
+						"txInput":           errutil.Ignore(call.CallData()),
+						"contractAddresses": addressesFromCalls(calls),
+					}).
+					Info("Unable to send transaction, previous transaction is still pending")
+				continue
+			}
+			m.log.
+				WithError(err).
+				WithFields(log.Fields{
+					"txTo":              call.Address(),
+					"txInput":           errutil.Ignore(call.CallData()),
+					"contractAddresses": addressesFromCalls(calls),
+				}).
+				WithAdvice("Ignore if it is related to temporary network issues").
+				Error("Failed to send transaction")
+			continue
+		}
+		m.log.
+			WithFields(log.Fields{
+				"txHash":                 txHash,
+				"txType":                 tx.Type,
+				"txFrom":                 tx.From,
+				"txTo":                   tx.To,
+				"txChainId":              tx.ChainID,
+				"txNonce":                tx.Nonce,
+				"txGasPrice":             tx.GasPrice,
+				"txGasLimit":             tx.GasLimit,
+				"txMaxFeePerGas":         tx.MaxFeePerGas,
+				"txMaxPriorityFeePerGas": tx.MaxPriorityFeePerGas,
+				"contractAddresses":      addressesFromCalls(calls),
+				"txInput":                hexutil.BytesToHex(tx.Input),
+			}).
+			Info("Relay transaction sent")
+	}
+}
+
+func (m *Relay) uniqueContracts() map[rpc.RPC][]types.Address {
+	contracts := make(map[rpc.RPC][]types.Address)
+	for _, p := range m.providers {
+		c := p.client()
+		a := p.address()
+		contracts[c] = sliceutil.AppendUnique(contracts[c], a)
+	}
+	return contracts
+}
+
+func (m *Relay) relayCalls() map[rpc.RPC][]contract.Callable {
+	// Relay can send only one transaction for one oracle contract, even though
+	// multiple call providers may exist for that contract. The code below uses
+	// the call from the first provider that returns a valid call. To improve
+	// the performance, the createRelayCallForContract function is executed in
+	// parallel for all unique contracts.
+	var (
+		mu      = sync.Mutex{}
+		wg      = sync.WaitGroup{}
+		calls   = make(map[rpc.RPC][]contract.Callable)
+		limiter = make(chan struct{}, maxParallelCallProviders)
+	)
+	for c, as := range m.uniqueContracts() {
+		gasEstimate := new(atomic.Uint64)
+		for _, a := range as {
+			wg.Add(1)
+			go func(c rpc.RPC, a types.Address, g *atomic.Uint64) {
+				defer wg.Done()
+				defer func() { <-limiter }()
+				limiter <- struct{}{}
+				if g.Load() >= gasUsageSoftCap {
+					return
+				}
+				gas, call := m.createRelayCallForContract(c, a)
+				if call == nil {
+					return
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				if g.Load() >= gasUsageSoftCap {
+					// Because this is a concurrent operation, we need to check
+					// gas usage again just before adding the call to the list.
+					return
+				}
+				calls[c] = append(calls[c], call)
+				if gas > baseGasUsage {
+					g.Add(gas - baseGasUsage)
+				} else {
+					g.Add(700) //nolint:gomnd // 700 is the minimum gas usage for a call
+				}
+			}(c, a, gasEstimate)
+		}
+	}
+	wg.Wait()
+	return calls
+}
+
+func (m *Relay) createRelayCallForContract(client rpc.RPC, addr types.Address) (gasEstimate uint64, call contract.Callable) {
+	defer func() {
+		if r := recover(); r != nil {
+			m.log.
+				WithFields(log.Fields{
+					"contractAddress": addr,
+					"panic":           r,
+				}).
+				WithAdvice("This is a critical bug and must be investigated").
+				Error("Panic during relay call creation")
+		}
+	}()
+	for _, u := range m.providers {
+		if u.client() != client || u.address() != addr {
+			continue
+		}
+		if gas, call := u.createRelayCall(m.ctx); call != nil {
+			return gas, call
+		}
+	}
+	return 0, nil
+}
+
+func (m *Relay) relayRoutine() {
+	m.ticker.Start(m.ctx)
+	for {
+		select {
+		case <-m.ctx.Done():
+			return
+		case <-m.ticker.TickCh():
+			m.sendRelayTransactions()
+		}
+	}
+}
+
 func (m *Relay) contextCancelHandler() {
 	defer func() { close(m.waitCh) }()
 	defer m.log.Info("Stopped")
 	<-m.ctx.Done()
+}
+
+func addressesFromCalls(calls []contract.Callable) []types.Address {
+	addresses := make([]types.Address, 0, len(calls))
+	for _, c := range calls {
+		addresses = append(addresses, c.Address())
+	}
+	return addresses
 }

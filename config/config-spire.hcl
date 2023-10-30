@@ -24,7 +24,7 @@ spire {
     # Limit the list only to a specific environment but take all chains
     if v.env == var.environment
     # Only Median compatible contracts
-    && try(v.IMedian, false)
+    && try(v.is_median, false)
     # If CFG_SPIRE_KEYS is set to a list of asset symbols
     && try(length(var.spire_keys) == 0 || contains(var.spire_keys, v.wat), false)
   ]))
