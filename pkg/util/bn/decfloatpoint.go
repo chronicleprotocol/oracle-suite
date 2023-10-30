@@ -274,7 +274,7 @@ func (x *DecFloatPointNumber) Inflate(prec uint8) *DecFloatPointNumber {
 // return = x / (10 ^ prec)
 // Do not change precision. If x < 10 ^ prec, return 0
 func (x *DecFloatPointNumber) Deflate(prec uint8) *DecFloatPointNumber {
-	z := bigIntSetPrec(x.x.x, uint32(x.x.p+prec), uint32(x.x.p))
+	z := bigIntSetPrec(x.x.x, uint32(x.x.p)+uint32(prec), uint32(x.x.p))
 	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
 	n.adjustPrec()
 	return n
