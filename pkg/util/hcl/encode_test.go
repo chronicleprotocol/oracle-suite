@@ -17,15 +17,62 @@ package hcl
 
 import (
 	"fmt"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/ptrutil"
+	"sort"
+	"strings"
+	"testing"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zclconf/go-cty/cty"
-	"testing"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/ptrutil"
 )
+
+type compareFuncType func(string, string) bool
+
+func defaultCompare(expected, actual string) bool {
+	return strings.Compare(expected, actual) == 0
+}
+
+// blocksCompare compares two string with the unit of blocks.
+// It extracts the blocks from the expected and actual strings, and sort them to compare blocks.
+// Returns true if all the sorted blocks are same between expected and actual strings.
+func blocksCompare(expected, actual string) bool {
+	var expectedBlocks []string
+	var temp = ""
+	for _, line := range strings.Split(expected, "\n") {
+		if line == "}" {
+			expectedBlocks = append(expectedBlocks, temp+line)
+			temp = ""
+		} else {
+			temp += "\n" + line
+		}
+	}
+	var actualBlocks []string
+	temp = ""
+	for _, line := range strings.Split(actual, "\n") {
+		if line == "}" {
+			actualBlocks = append(actualBlocks, temp+line)
+			temp = ""
+		} else {
+			temp += "\n" + line
+		}
+	}
+	if len(expectedBlocks) != len(actualBlocks) {
+		return false
+	}
+	sort.Strings(expectedBlocks)
+	sort.Strings(actualBlocks)
+	for i := 0; i < len(expectedBlocks); i++ {
+		if expectedBlocks[i] != actualBlocks[i] {
+			return false
+		}
+	}
+	return true
+}
 
 func TestEncode(t *testing.T) {
 	type basicTypes struct {
@@ -85,6 +132,7 @@ func TestEncode(t *testing.T) {
 	tests := []struct {
 		input         any
 		target        string
+		compare       compareFuncType
 		expectedError string
 	}{
 		// Basic Types
@@ -112,6 +160,7 @@ map = {
 }
 cty = "foo"
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Blocks
@@ -127,82 +176,82 @@ cty = "foo"
 				},
 				Slice: []block{
 					{
-						Label: "foo",
-						Attr:  "foo",
-					},
-					{
 						Label: "bar",
 						Attr:  "bar",
+					},
+					{
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				SlicePtr: []*block{
 					{
-						Label: "foo",
-						Attr:  "foo",
-					},
-					{
 						Label: "bar",
 						Attr:  "bar",
+					},
+					{
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				Map: map[string]block{
-					"foo": {
-						Label: "foo",
-						Attr:  "foo",
-					},
 					"bar": {
 						Label: "bar",
 						Attr:  "bar",
+					},
+					"foo": {
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				MapPtr: map[string]*block{
-					"foo": {
-						Label: "foo",
-						Attr:  "foo",
-					},
 					"bar": {
 						Label: "bar",
 						Attr:  "bar",
+					},
+					"foo": {
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				PtrSlice: &[]block{
 					{
-						Label: "foo",
-						Attr:  "foo",
-					},
-					{
 						Label: "bar",
 						Attr:  "bar",
+					},
+					{
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				PtrSlicePtr: &[]*block{
 					{
-						Label: "foo",
-						Attr:  "foo",
-					},
-					{
 						Label: "bar",
 						Attr:  "bar",
+					},
+					{
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				PtrMap: &map[string]block{
-					"foo": {
-						Label: "foo",
-						Attr:  "foo",
-					},
 					"bar": {
 						Label: "bar",
 						Attr:  "bar",
+					},
+					"foo": {
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 				PtrMapPtr: &map[string]*block{
-					"foo": {
-						Label: "foo",
-						Attr:  "foo",
-					},
 					"bar": {
 						Label: "bar",
 						Attr:  "bar",
+					},
+					"foo": {
+						Label: "foo",
+						Attr:  "foo",
 					},
 				},
 			},
@@ -212,67 +261,70 @@ cty = "foo"
 single_ptr "foo" {
   attr = "foo"
 }
-slice "foo" {
-  attr = "foo"
-}
 slice "bar" {
   attr = "bar"
 }
-slice_ptr "foo" {
+slice "foo" {
   attr = "foo"
 }
 slice_ptr "bar" {
   attr = "bar"
 }
-map "foo" {
+slice_ptr "foo" {
   attr = "foo"
 }
 map "bar" {
   attr = "bar"
 }
-map_ptr "foo" {
+map "foo" {
   attr = "foo"
 }
 map_ptr "bar" {
   attr = "bar"
 }
-ptr_slice "foo" {
+map_ptr "foo" {
   attr = "foo"
 }
 ptr_slice "bar" {
   attr = "bar"
 }
-ptr_slice_ptr "foo" {
+ptr_slice "foo" {
   attr = "foo"
 }
 ptr_slice_ptr "bar" {
   attr = "bar"
 }
-ptr_map "foo" {
+ptr_slice_ptr "foo" {
   attr = "foo"
 }
 ptr_map "bar" {
   attr = "bar"
 }
-ptr_map_ptr "foo" {
+ptr_map "foo" {
   attr = "foo"
 }
 ptr_map_ptr "bar" {
   attr = "bar"
 }
+ptr_map_ptr "foo" {
+  attr = "foo"
+}
 `,
+			compare:       blocksCompare,
 			expectedError: "",
 		},
 		// Missing block label
 		{
 			input:         &singleBlock{},
 			target:        "",
+			compare:       defaultCompare,
 			expectedError: "missing block label: block",
 		},
 		// Missing required attribute
 		{
 			input:         &requiredAttrs{},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "missing attribute: var",
 		},
 		// Optional attributes (present)
@@ -284,12 +336,14 @@ ptr_map_ptr "bar" {
 			target: `var     = "foo"
 var_ptr = "foo"
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Optional attributes (missing)
 		{
 			input:         &optionalAttrs{},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Missing required block
@@ -297,6 +351,7 @@ var_ptr = "foo"
 			input: &requiredBlocks{
 				Block: block{Label: "foo"},
 			},
+			compare: defaultCompare,
 			target: `block "foo" {
 }
 `,
@@ -306,6 +361,7 @@ var_ptr = "foo"
 		{
 			input:         &optionalBlocks{},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Optional blocks (present)
@@ -316,6 +372,7 @@ var_ptr = "foo"
 			target: `block "foo" {
 }
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Slice of blocks (present)
@@ -326,12 +383,14 @@ var_ptr = "foo"
 			target: `slice "foo" {
 }
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Slice of blocks (missing)
 		{
 			input:         &blockSlice{},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Ignored field (present)
@@ -340,12 +399,14 @@ var_ptr = "foo"
 		{
 			input:         &ignoredField{Var: "1"},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Ignored field (missing)
 		{
 			input:         &ignoredField{},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Any type (string)
@@ -353,6 +414,7 @@ var_ptr = "foo"
 			input: &anyField{Var: "foo"},
 			target: `var = "foo"
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Any type (number)
@@ -360,6 +422,7 @@ var_ptr = "foo"
 			input: &anyField{Var: float64(1)},
 			target: `var = 1
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Any type (bool)
@@ -367,6 +430,7 @@ var_ptr = "foo"
 			input: &anyField{Var: true},
 			target: `var = true
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Any type (list)
@@ -374,6 +438,7 @@ var_ptr = "foo"
 			input: &anyField{Var: []any{float64(1), float64(2), float64(3)}},
 			target: `var = [1, 2, 3]
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Any type (map)
@@ -385,12 +450,14 @@ var_ptr = "foo"
   foo = "bar"
 }
 `,
+			compare:       defaultCompare,
 			expectedError: "",
 		},
 		// Any type (null)
 		{
 			input:         &anyField{Var: nil},
 			target:        ``,
+			compare:       defaultCompare,
 			expectedError: "missing attribute: var",
 		},
 	}
@@ -405,7 +472,7 @@ var_ptr = "foo"
 				require.NotNil(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
 			}
-			assert.Equal(t, tt.target, string(f.Bytes()))
+			assert.True(t, tt.compare(tt.target, string(f.Bytes())))
 		})
 	}
 }

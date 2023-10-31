@@ -117,7 +117,7 @@ func (configSpire) DefaultEmbeds() [][]byte {
 	}
 }
 
-func TestConfigHcl_Contracts(t *testing.T) {
+func TestConfigHcl(t *testing.T) {
 	var ce configEthereum
 	var ct configTransport
 	var cf configGofer
