@@ -107,21 +107,25 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		// The price needs to be updated if:
 		// - Price is older than the interval specified in the expiration
 		//   field.
-		// - Price differs from the current price by more than is specified in the
-		//   spread field.
+		// - Price differs from the current price by more than is specified in
+		//   the spread field.
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
 
 		// Generate signersBlob.
-		// If signersBlob returns an error, it means that some signers are not
-		// present in the feed list on the contract.
+		//
+		// In theory, multiple signatures with different feeds and feed indices
+		// could exist for the same data model. However, in practice, we've
+		// decided not to allow this situation. Therefore, an error is logged
+		// in case of a mismatch.
 		signersBlob, err := chronicle.SignersBlob(s.Signers, state.feeds.Feeds, state.feeds.FeedIndices)
 		if err != nil {
 			w.log.
 				WithError(err).
-				WithFields(w.logFields()).
+				WithAdvice("Signature was generated with different list of feeds or feed indices; it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
 				Error("Failed to generate signersBlob")
+			continue
 		}
 
 		// Print logs.
@@ -139,7 +143,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			}).
 			Debug("Scribe")
 
-		// If price is stale or expired, send update.
+		// If price is stale or expired, return a poke transaction.
 		if isExpired || isStale {
 			poke := w.contract.Poke(
 				chronicle.PokeData{
@@ -172,7 +176,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 	if !hasValidSigns {
 		w.log.
 			WithFields(w.logFields()).
-			WithAdvice("Ignore if this occurs within the first few minutes after the relay starts; otherwise, it indicates a configuration bug, either in the relay or in the contract"). //nolint:lll
+			WithAdvice("Ignore if this occurs within the first few minutes after the relay starts; otherwise, it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
 			Warn("No valid signatures found for the current data model")
 	}
 
@@ -184,15 +188,13 @@ func (w *scribe) currentState(ctx context.Context) (state scribeState, err error
 		return w.cachedState, nil
 	}
 	// Always fetch the latest, non-finalized price from the contract. This is
-	// done for three reasons:
+	// done for two reasons:
 	// 1. If a price movement is significant enough to trigger both poke and
 	//    opPoke, opPoke is sent first and immediately overwritten by poke.
-	//    Using a non-finalized price prevents this.
-	// 2. If the optimistic price is incorrect, poke will overwrite it.
-	// 3. During the challenge period, if the price changes significantly,
-	//    poke will update the optimistic price. Without this, updates would be
-	//    halted until the challenge period concludes, regardless of the price
-	//    spread.
+	//    Using a non-finalized price prevents this because spread for regular
+	//	  poke will be calculated using the optimistic price.
+	// 2. If the optimistic price is incorrect, poke will overwrite it before
+	//    it is finalized.
 	switch c := w.contract.(type) {
 	case OpScribeContract:
 		state.pokeData, state.finalized, err = c.ReadNext(ctx)
