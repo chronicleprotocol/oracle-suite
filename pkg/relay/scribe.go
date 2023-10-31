@@ -83,8 +83,9 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 
 	// Iterate over all signatures to check if any of them can be used to update
 	// the price on the Scribe contract.
+	hasValidSigns := false
 	for _, s := range w.muSigStore.SignaturesByDataModel(w.dataModel) {
-		if s.Commitment.IsZero() || s.SchnorrSignature == nil {
+		if s.Commitment.IsZero() || s.SchnorrSignature == nil || len(s.Signers) != state.bar {
 			continue
 		}
 
@@ -92,6 +93,10 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		if meta == nil || meta.Val == nil {
 			continue
 		}
+
+		// hasValidSigns is used to check if there are at least one valid signature
+		// for the current data model.
+		hasValidSigns = true
 
 		// If the signature is older than the current price, skip it.
 		if meta.Age.Before(state.pokeData.Age) {
@@ -161,6 +166,16 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			return gas, poke
 		}
 	}
+
+	// If there are no valid signatures, this could mean a problem with the
+	// configuration.
+	if !hasValidSigns {
+		w.log.
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if this occurs within the first few minutes after the relay starts; otherwise, it indicates a configuration bug, either in the relay or in the contract"). //nolint:lll
+			Warn("No valid signatures found for the current data model")
+	}
+
 	return 0, nil
 }
 

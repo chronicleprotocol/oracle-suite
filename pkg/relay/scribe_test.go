@@ -36,6 +36,7 @@ import (
 
 func TestScribe(t *testing.T) {
 	testFeed := types.MustAddressFromHex("0x1111111111111111111111111111111111111111")
+	testFeed2 := types.MustAddressFromHex("0x2222222222222222222222222222222222222222")
 	mockLogger := newMockLogger(t)
 	mockContract := newMockScribeContract(t)
 	mockMuSigStore := newMockSignatureProvider(t)
@@ -89,6 +90,7 @@ func TestScribe(t *testing.T) {
 			return []*messages.MuSigSignature{
 				{
 					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
 							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
@@ -155,6 +157,7 @@ func TestScribe(t *testing.T) {
 			return []*messages.MuSigSignature{
 				{
 					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
 							Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
@@ -210,6 +213,7 @@ func TestScribe(t *testing.T) {
 			return []*messages.MuSigSignature{
 				{
 					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
 							Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
@@ -276,6 +280,7 @@ func TestScribe(t *testing.T) {
 			return []*messages.MuSigSignature{
 				{
 					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
 						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
 							Wat: "ETH/USD",
 							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
@@ -356,6 +361,7 @@ func TestScribe(t *testing.T) {
 
 				ctx := context.Background()
 				mockLogger.InfoFn = func(args ...any) {}
+				mockLogger.WarnFn = func(args ...any) {}
 				mockLogger.DebugFn = func(args ...any) {}
 				mockContract.ClientFn = func() rpc.RPC { return nil }
 				mockContract.AddressFn = func() types.Address { return types.Address{} }
@@ -388,6 +394,63 @@ func TestScribe(t *testing.T) {
 				scribe.createRelayCall(ctx)
 			})
 		}
+	})
+
+	t.Run("wrong singers count", func(t *testing.T) {
+		scribe.cachedState = scribeState{}
+		mockLogger.reset(t)
+		mockContract.reset(t)
+		mockMuSigStore.reset(t)
+
+		ctx := context.Background()
+		musigTime := time.Now()
+		musigCommitment := types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		musigSignature := big.NewInt(1234567890)
+		mockLogger.InfoFn = func(args ...any) {}
+		mockLogger.DebugFn = func(args ...any) {}
+		mockLogger.WarnFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
+		mockContract.AddressFn = func() types.Address { return types.Address{} }
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(2, nil)
+		}
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed, testFeed2},
+					FeedIndices: []uint8{1, 2},
+				},
+				nil,
+			)
+		}
+		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-15 * time.Minute),
+			}, nil
+		}
+		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
+			assert.Equal(t, "ETH/USD", model)
+			return []*messages.MuSigSignature{
+				{
+					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
+						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+							Wat: "ETH/USD",
+							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
+							Age: musigTime,
+						}},
+					},
+					Commitment:       musigCommitment,
+					SchnorrSignature: musigSignature,
+				},
+			}
+		}
+
+		scribe.createRelayCall(ctx)
 	})
 
 	t.Run("call error", func(t *testing.T) {

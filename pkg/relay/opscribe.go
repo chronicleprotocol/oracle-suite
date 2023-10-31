@@ -57,14 +57,15 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		return 0, nil
 	}
 
-	// If the latest poke is not finalized, we cannot send optimistic update,
-	// try to send regular update.
+	// If the latest poke is not finalized, we cannot send optimistic poke,
+	// try to send a regular poke.
 	if !state.finalized {
 		return w.scribe.createRelayCall(ctx)
 	}
 
 	// Iterate over all signatures to check if any of them can be used to update
 	// the price on the Scribe contract.
+	hasValidSigns := false
 	for _, s := range w.muSigStore.SignaturesByDataModel(w.dataModel) {
 		if s.Commitment.IsZero() || s.SchnorrSignature == nil {
 			continue
@@ -75,6 +76,11 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		if len(meta.Optimistic) == 0 {
 			continue
 		}
+
+		// hasValidSigns is used to check if there are at least one valid signature
+		// for the current data model. If there are no valid signatures, this could
+		// mean a problem with the configuration.
+		hasValidSigns = true
 
 		// If the signature is older than the current price, skip it.
 		if meta.Age.Before(state.pokeData.Age) {
@@ -144,6 +150,20 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			}
 		}
 	}
+
+	// If there are no valid signatures, this could mean a problem with the
+	// configuration.
+	if !hasValidSigns {
+		w.log.
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if this occurs within the first few minutes after the relay starts; otherwise, it indicates a configuration bug, either in the relay or in the contract"). //nolint:lll
+			Warn("No valid signatures found for the current data model")
+	}
+
+	// Typically, no poke will be sent at this point because an optimistic poke
+	// should have a lower spread and expiration than a regular poke. However,
+	// if there are no signatures with an additional optimistic signature for
+	// some reason, a regular poke may be sent.
 	return w.scribe.createRelayCall(ctx)
 }
 
