@@ -24,14 +24,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/cmd/common"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/chanutil"
 )
 
-func NewStreamCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewStreamCmd(c *spire.Config, f *common.ConfigFlags, l *common.LoggerFlags) *cobra.Command {
 	var raw bool
 	cc := &cobra.Command{
 		Use:   "stream [TOPIC...]",
@@ -133,7 +133,7 @@ func NewTopicsCmd() *cobra.Command {
 	return cc
 }
 
-func NewStreamPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewStreamPricesCmd(c *spire.Config, f *common.ConfigFlags, l *common.LoggerFlags) *cobra.Command {
 	var legacy bool
 	cc := &cobra.Command{
 		Use:   "prices",

@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/cmd/common"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
@@ -39,7 +39,7 @@ type BootstrapConfig struct {
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func NewBootstrapCmd(c *BootstrapConfig, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewBootstrapCmd(c *BootstrapConfig, f *common.ConfigFlags, l *common.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "bootstrap",
 		Args:    cobra.ExactArgs(0),

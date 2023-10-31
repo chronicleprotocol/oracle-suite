@@ -23,12 +23,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/cmd/common"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func NewPushCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPushCmd(c *spire.Config, f *common.ConfigFlags, l *common.LoggerFlags) *cobra.Command {
 	cc := &cobra.Command{
 		Use:   "push",
 		Args:  cobra.ExactArgs(1),
@@ -40,7 +40,7 @@ func NewPushCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.
 	return cc
 }
 
-func NewPushPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPushPriceCmd(c *spire.Config, f *common.ConfigFlags, l *common.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price",
 		Args:  cobra.MaximumNArgs(1),
