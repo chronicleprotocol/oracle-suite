@@ -24,7 +24,7 @@ import (
 
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -276,7 +276,7 @@ func (p *Store) handleLegacyPriceMessage(msg transport.ReceivedMessage) {
 		Point: datapoint.Point{
 			Value: value.Tick{
 				Pair:  findPairForLegacyPrice(price.Price.Wat),
-				Price: bn.DecFixedPointFromRawBigInt(price.Price.Val, contract.MedianPricePrecision).DecFloatPoint(),
+				Price: bn.DecFixedPointFromRawBigInt(price.Price.Val, chronicle.MedianPricePrecision).DecFloatPoint(),
 			},
 			Time:      price.Price.Age,
 			SubPoints: nil,

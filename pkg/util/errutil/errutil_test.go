@@ -73,6 +73,31 @@ func TestMultiError(t *testing.T) {
 	})
 }
 
+func TestIgnore(t *testing.T) {
+	tests := []struct {
+		fn    func() (int, error)
+		value int
+	}{
+		{
+			fn: func() (int, error) {
+				return 1, nil
+			},
+			value: 1,
+		},
+		{
+			fn: func() (int, error) {
+				return 1, fmt.Errorf("error")
+			},
+			value: 1,
+		},
+	}
+	for n, tt := range tests {
+		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
+			assert.Equal(t, tt.value, Ignore(tt.fn()))
+		})
+	}
+}
+
 func TestMust(t *testing.T) {
 	tests := []struct {
 		fn    func() (int, error)

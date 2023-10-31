@@ -68,6 +68,12 @@ func (m MultiError) Error() string {
 	return b.String()
 }
 
+// Ignore is a helper function that returns the first argument and ignores the
+// error.
+func Ignore[T any](v T, _ error) T {
+	return v
+}
+
 // Must is a helper function that panics when the error is not nil. Otherwise,
 // it returns the first argument. It is intended for use with functions that
 // should never return an error when called.

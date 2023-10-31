@@ -847,7 +847,7 @@ gofer {
       # Limit the list only to a specific environment but take all chains
       if v.env == var.environment
       # Only Median compatible contracts
-      && try(v.IMedian, false)
+      && try(v.is_median, false)
     ])
     iterator = symbol
     labels   = [replace(symbol.value, "/", "")]

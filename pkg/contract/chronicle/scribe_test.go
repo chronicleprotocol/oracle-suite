@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func TestScribe_Wat(t *testing.T) {
 			nil,
 		)
 
-	wat, err := scribe.Wat(ctx)
+	wat, err := scribe.Wat().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, "BTCUSD", wat)
 }
@@ -97,7 +97,7 @@ func TestScribe_Bar(t *testing.T) {
 			nil,
 		)
 
-	bar, err := scribe.Bar(ctx)
+	bar, err := scribe.Bar().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, 13, bar)
 }
@@ -141,10 +141,10 @@ func TestScribe_Feeds(t *testing.T) {
 			nil,
 		)
 
-	feeds, feedIndices, err := scribe.Feeds(ctx)
+	feeds, err := scribe.Feeds().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
-	assert.Equal(t, expectedFeeds, feeds)
-	assert.Equal(t, expectedFeedIndices, feedIndices)
+	assert.Equal(t, expectedFeeds, feeds.Feeds)
+	assert.Equal(t, expectedFeedIndices, feeds.FeedIndices)
 }
 
 func TestScribe_Poke(t *testing.T) {
@@ -165,7 +165,8 @@ func TestScribe_Poke(t *testing.T) {
 
 	calldata := hexutil.MustHexToBytes(
 		"0x" +
-			"2f529d73" +
+			// "2f529d73" +
+			"00000082" + // for optimized poke
 			"000000000000000000000000000000000000000000000584f61606acd0134800" +
 			"0000000000000000000000000000000000000000000000000000000064e7d147" +
 			"0000000000000000000000000000000000000000000000000000000000000060" +
@@ -207,7 +208,7 @@ func TestScribe_Poke(t *testing.T) {
 			nil,
 		)
 
-	_, _, err := scribe.Poke(ctx, pokeData, schnorrData)
+	_, _, err := scribe.Poke(pokeData, schnorrData).SendTransaction(ctx)
 	require.NoError(t, err)
 }
 

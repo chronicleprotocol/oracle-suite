@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
@@ -41,36 +42,93 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
-func (s *OpScribe) OpChallengePeriod(ctx context.Context) (time.Duration, error) {
-	return s.opChallengePeriod(ctx, types.LatestBlockNumber)
+func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
+	method := abiOpScribe.Methods["opChallengePeriod"]
+	return contract.NewTypedCall[time.Duration](
+		contract.CallOpts{
+			Client:  s.client,
+			Address: s.address,
+			Encoder: contract.NewCallEncoder(method),
+			Decoder: func(data []byte, res any) error {
+				var period uint16
+				if err := method.DecodeValues(data, &period); err != nil {
+					return fmt.Errorf("opScribe: query failed: %w", err)
+				}
+				*res.(*time.Duration) = time.Duration(period) * time.Second
+				return nil
+			},
+			ErrorDecoder: contract.NewContractErrorDecoder(abiOpScribe),
+		},
+	)
 }
 
 func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
-	return s.ReadAt(ctx, time.Now())
+	pd, _, err := s.ReadAt(ctx, time.Now())
+	return pd, err
 }
 
-func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, error) {
+func (s *OpScribe) ReadNext(ctx context.Context) (PokeData, bool, error) {
+	return s.ReadNextAt(ctx, time.Now())
+}
+
+// ReadAt reads the PokeData from the contract using the given readTime as the
+// reference time for determining if the latest optimistic poke is finalized.
+//
+// If the latest optimistic poke is finalized, the returned PokeData will be
+// the latest optimistic poke. Otherwise, the returned PokeData will be the
+// latest poke.
+//
+// The returned boolean indicates if the latest optimistic poke is finalized.
+func (s *OpScribe) ReadAt(ctx context.Context, readTime time.Time) (PokeData, bool, error) {
 	blockNumber, err := s.client.BlockNumber(ctx)
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
-	challengePeriod, err := s.opChallengePeriod(ctx, types.BlockNumberFromBigInt(blockNumber))
+	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	opPokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
-		return PokeData{}, fmt.Errorf("opScribe: read query failed: %w", err)
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
 	}
 	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
 	if opPokeDataFinalized && opPokeData.Age.After(pokeData.Age) {
-		return opPokeData, nil
+		return opPokeData, true, nil
 	}
-	return pokeData, nil
+	return pokeData, opPokeDataFinalized, nil
+}
+
+// ReadNextAt reads the next poke data from the contract without checking if
+// the latest optimistic poke is already finalized.
+//
+// The returned boolean indicates if the latest optimistic poke is finalized.
+func (s *OpScribe) ReadNextAt(ctx context.Context, readTime time.Time) (PokeData, bool, error) {
+	blockNumber, err := s.client.BlockNumber(ctx)
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	challengePeriod, err := s.OpChallengePeriod().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	opPokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return PokeData{}, false, fmt.Errorf("opScribe: read query failed: %w", err)
+	}
+	opPokeDataFinalized := opPokeData.Age.Add(challengePeriod).Before(readTime)
+	if opPokeData.Age.After(pokeData.Age) {
+		return opPokeData, opPokeDataFinalized, nil
+	}
+	return pokeData, opPokeDataFinalized, nil
 }
 
 func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
@@ -89,36 +147,20 @@ func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	return pokeData, nil
 }
 
-func (s *OpScribe) OpPoke(
-	ctx context.Context,
-	pokeData PokeData,
-	schnorrData SchnorrData,
-	ecdsaData types.Signature,
-) (
-	*types.Hash,
-	*types.Transaction,
-	error,
-) {
-
-	calldata, err := abiOpScribe.Methods["opPoke"].EncodeArgs(
-		toPokeDataStruct(pokeData),
-		toSchnorrDataStruct(schnorrData),
-		toECDSADataStruct(ecdsaData),
+func (s *OpScribe) OpPoke(pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
+	return contract.NewTransactableCall(
+		contract.CallOpts{
+			Client:  s.client,
+			Address: s.address,
+			Encoder: contract.NewCallEncoder(
+				abiOpScribe.Methods["opPoke"],
+				toPokeDataStruct(pokeData),
+				toSchnorrDataStruct(schnorrData),
+				toECDSADataStruct(ecdsaData),
+			),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiOpScribe),
+		},
 	)
-	if err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
-	}
-	tx := (&types.Transaction{}).
-		SetTo(s.address).
-		SetInput(calldata)
-	if err := simulateTransaction(ctx, s.client, abiOpScribe, *tx); err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
-	}
-	txHash, txCpy, err := s.client.SendTransaction(ctx, *tx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("opScribe: opPoke failed: %w", err)
-	}
-	return txHash, txCpy, nil
 }
 
 func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumber) (time.Duration, error) {

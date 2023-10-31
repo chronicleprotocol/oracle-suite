@@ -27,12 +27,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 	datapointStore "github.com/chronicleprotocol/oracle-suite/pkg/datapoint/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	musigStore "github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
 	"github.com/chronicleprotocol/oracle-suite/pkg/relay"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 type Services struct {
@@ -84,12 +83,8 @@ type configCommon struct {
 	Spread float64 `hcl:"spread"`
 
 	// Expiration is a time in seconds after which the price is considered
-	// expired. If the price is expired, the relay will update it.
+	// expired which triggers an update.
 	Expiration uint32 `hcl:"expiration"`
-
-	// Interval is a time interval in seconds between checking if the price
-	// needs to be updated.
-	Interval uint32 `hcl:"interval"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
@@ -105,13 +100,19 @@ type configMedian struct {
 
 type configScribe struct {
 	configCommon
-
-	// Delay is a time in seconds to wait before sending a poke transaction.
-	Delay uint32 `hcl:"delay,optional"`
 }
 
 type configOptimisticScribe struct {
 	configCommon
+
+	// OptimisticSpread is a minimum spread between the current price to
+	// trigger an optimistic update. A spread is represented as a percentage
+	// point, e.g. 1 means 1%.
+	OptimisticSpread float64 `hcl:"optimistic_spread"`
+
+	// OptimisticExpiration is a time in seconds after which the price is
+	// considered expired which triggers an optimistic update.
+	OptimisticExpiration uint32 `hcl:"optimistic_expiration"`
 }
 
 func configCommonFields(c configCommon) log.Fields {
@@ -121,7 +122,6 @@ func configCommonFields(c configCommon) log.Fields {
 		"dataModel":      c.DataModel,
 		"spread":         c.Spread,
 		"expiration":     c.Expiration,
-		"interval":       c.Interval,
 	}
 }
 
@@ -211,7 +211,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			DataPointStore:  priceStoreSrv,
 			Spread:          cfg.Spread,
 			Expiration:      time.Second * time.Duration(cfg.Expiration),
-			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
 		})
 	}
 	for _, cfg := range c.Scribe {
@@ -237,8 +236,6 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			MuSigStore:      musigStoreSrv,
 			Spread:          cfg.Spread,
 			Expiration:      time.Second * time.Duration(cfg.Expiration),
-			Delay:           time.Second * time.Duration(cfg.Delay),
-			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
 		})
 	}
 	for _, cfg := range c.OptimisticScribe {
@@ -258,13 +255,14 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 			Info("Contract")
 
 		opScribeCfgs = append(opScribeCfgs, relay.ConfigOptimisticScribe{
-			DataModel:       cfg.DataModel,
-			ContractAddress: cfg.ContractAddr,
-			Client:          client,
-			MuSigStore:      musigStoreSrv,
-			Spread:          cfg.Spread,
-			Expiration:      time.Second * time.Duration(cfg.Expiration),
-			Ticker:          timeutil.NewTicker(time.Second * time.Duration(cfg.Interval)),
+			DataModel:            cfg.DataModel,
+			ContractAddress:      cfg.ContractAddr,
+			Client:               client,
+			MuSigStore:           musigStoreSrv,
+			Spread:               cfg.Spread,
+			Expiration:           time.Second * time.Duration(cfg.Expiration),
+			OptimisticSpread:     cfg.OptimisticSpread,
+			OptimisticExpiration: time.Second * time.Duration(cfg.OptimisticExpiration),
 		})
 	}
 
@@ -273,6 +271,7 @@ func (c *Config) Relay(d Dependencies) (*Services, error) {
 		Scribes:           scribeCfgs,
 		OptimisticScribes: opScribeCfgs,
 		Logger:            d.Logger,
+		Ticker:            timeutil.NewTicker(time.Minute * 2),
 	})
 	if err != nil {
 		return nil, &hcl.Diagnostic{

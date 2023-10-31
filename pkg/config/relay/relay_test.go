@@ -25,7 +25,6 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, "ETH/USD", cfg.Median[0].DataModel)
 				assert.Equal(t, float64(1), cfg.Median[0].Spread)
 				assert.Equal(t, uint32(300), cfg.Median[0].Expiration)
-				assert.Equal(t, uint32(60), cfg.Median[0].Interval)
 				assert.Equal(t, []types.Address{
 					types.MustAddressFromHex("0x0011223344556677889900112233445566778899"),
 					types.MustAddressFromHex("0x1122334455667788990011223344556677889900"),
@@ -36,7 +35,6 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, "BTC/USD", cfg.Scribe[0].DataModel)
 				assert.Equal(t, float64(2), cfg.Scribe[0].Spread)
 				assert.Equal(t, uint32(400), cfg.Scribe[0].Expiration)
-				assert.Equal(t, uint32(120), cfg.Scribe[0].Interval)
 				assert.Equal(t, []types.Address{
 					types.MustAddressFromHex("0x2233445566778899001122334455667788990011"),
 					types.MustAddressFromHex("0x3344556677889900112233445566778899001122"),
@@ -47,7 +45,8 @@ func TestConfig(t *testing.T) {
 				assert.Equal(t, "MKR/USD", cfg.OptimisticScribe[0].DataModel)
 				assert.Equal(t, float64(3), cfg.OptimisticScribe[0].Spread)
 				assert.Equal(t, uint32(500), cfg.OptimisticScribe[0].Expiration)
-				assert.Equal(t, uint32(180), cfg.OptimisticScribe[0].Interval)
+				assert.Equal(t, float64(4), cfg.OptimisticScribe[0].OptimisticSpread)
+				assert.Equal(t, uint32(600), cfg.OptimisticScribe[0].OptimisticExpiration)
 				assert.Equal(t, []types.Address{
 					types.MustAddressFromHex("0x4455667788990011223344556677889900112233"),
 					types.MustAddressFromHex("0x5566778899001122334455667788990011223344"),

@@ -22,7 +22,7 @@ import (
 	"github.com/defiweb/go-eth/types"
 	"github.com/defiweb/go-eth/wallet"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
@@ -49,7 +49,7 @@ func (t *TickSigner) Supports(_ context.Context, data datapoint.Point) bool {
 //nolint:gomnd
 func (t *TickSigner) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
 	return t.signer.SignMessage(
-		contract.ConstructMedianPokeMessage(
+		chronicle.ConstructMedianPokeMessage(
 			model,
 			data.Value.(value.Tick).Price,
 			data.Time,
@@ -84,7 +84,7 @@ func (t *TickRecoverer) Recover(
 	signature types.Signature,
 ) (*types.Address, error) {
 	return t.recoverer.RecoverMessage(
-		contract.ConstructMedianPokeMessage(
+		chronicle.ConstructMedianPokeMessage(
 			model,
 			data.Value.(value.Tick).Price,
 			data.Time,

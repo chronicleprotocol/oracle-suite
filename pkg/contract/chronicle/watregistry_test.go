@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package contract
+package chronicle
 
 import (
 	"context"
@@ -45,7 +45,7 @@ func TestWatRegistry_Bar(t *testing.T) {
 			nil,
 		)
 
-	bar, err := watRegistry.Bar(ctx, "ETH/USD")
+	bar, err := watRegistry.Bar("ETH/USD").Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, 13, bar)
 }
@@ -84,7 +84,7 @@ func TestWatRegistry_Feeds(t *testing.T) {
 			nil,
 		)
 
-	feeds, err := watRegistry.Feeds(ctx, "ETH/USD")
+	feeds, err := watRegistry.Feeds("ETH/USD").Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
 	assert.Equal(t, expectedFeeds, feeds)
 }
