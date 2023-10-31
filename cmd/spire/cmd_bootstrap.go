@@ -46,7 +46,7 @@ func NewBootstrapCmd(c *BootstrapConfig, f *cmd.ConfigFlags, l *cmd.LoggerFlags)
 		Aliases: []string{"boot"},
 		Short:   "Starts bootstrap node",
 		RunE: func(cc *cobra.Command, _ []string) error {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return fmt.Errorf(`config error: %w`, err)
 			}
 			ll, err := c.Logger.Logger(logger.Dependencies{

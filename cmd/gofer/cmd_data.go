@@ -42,7 +42,7 @@ func NewDataCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *co
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "Return data points for given models",
 		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return err
 			}
 			services, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)

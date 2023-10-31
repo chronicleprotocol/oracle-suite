@@ -38,7 +38,7 @@ func NewStreamCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobr
 		Args:  cobra.MinimumNArgs(0),
 		Short: "Streams data from the network",
 		RunE: func(cc *cobra.Command, topics []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return err
 			}
 			logger := l.Logger()
@@ -140,7 +140,7 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags)
 		Args:  cobra.ExactArgs(0),
 		Short: "Prints price messages as they are received",
 		RunE: func(cc *cobra.Command, _ []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return err
 			}
 			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)

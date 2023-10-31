@@ -48,7 +48,7 @@ func NewPullPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *c
 		Args:  cobra.ExactArgs(2),
 		Short: "Pulls latest price for a given pair and feed",
 		RunE: func(cc *cobra.Command, args []string) error {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return fmt.Errorf(`config error: %w`, err)
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -94,7 +94,7 @@ func NewPullPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *
 		Args:  cobra.ExactArgs(0),
 		Short: "Pulls all prices",
 		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

@@ -39,10 +39,6 @@ func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error
 		return fmt.Errorf(diags.Error())
 	}
 
-	if blockType == "ethereum" {
-		fmt.Println("ethereum")
-	}
-
 	var labels []string
 	for _, lf := range meta.Labels {
 		fieldVal := rv.FieldByIndex(lf.Reflect.Index)

@@ -42,7 +42,7 @@ func NewModelsCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "List all supported models",
 		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return err
 			}
 			services, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)

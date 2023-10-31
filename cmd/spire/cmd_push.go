@@ -46,7 +46,7 @@ func NewPushPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *c
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Push a data point message to the network",
 		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if argued, err := f.Load(c); err != nil || argued {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)

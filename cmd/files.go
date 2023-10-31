@@ -18,14 +18,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
-
-	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/spf13/pflag"
 )
 
 func ConfigFlagsForConfig(d config.HasDefaults) ConfigFlags {
@@ -44,14 +43,14 @@ type ConfigFlags struct {
 }
 
 // Load loads the config files into the given config struct.
-func (ff *ConfigFlags) Load(c any) error {
+func (ff *ConfigFlags) Load(c any) (bool, error) {
 	if len(ff.paths) == 0 {
 		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
-			return err
+			return false, err
 		}
 	} else {
 		if err := config.LoadFiles(c, ff.paths); err != nil {
-			return err
+			return false, err
 		}
 	}
 	switch {
@@ -59,25 +58,25 @@ func (ff *ConfigFlags) Load(c any) error {
 		for _, v := range globals.EnvVars {
 			fmt.Println(v)
 		}
-		os.Exit(0)
+		return true, nil
 	case globals.RenderConfigJSON:
 		marshaled, err := json.Marshal(c)
 		if err != nil {
-			return err
+			return true, err
 		}
 		fmt.Println(string(marshaled))
-		os.Exit(0)
+		return true, nil
 	case globals.RenderConfigHCL:
 		f := hclwrite.NewFile()
 		body := f.Body()
 		err := hcl.Encode(c, body)
 		if err != nil {
-			return err
+			return true, err
 		}
 		fmt.Println(string(f.Bytes()))
-		os.Exit(0)
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 // FlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
