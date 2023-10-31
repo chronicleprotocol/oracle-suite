@@ -42,7 +42,7 @@ func NewRootCommand(name, version string, sets ...FlagSetter) *cobra.Command {
 }
 
 func NewRunCmd(c supervisor.Config, f *ConfigFlags, l *LoggerFlags) *cobra.Command {
-	return &cobra.Command{
+	cc := &cobra.Command{
 		Use:     "run",
 		Args:    cobra.NoArgs,
 		Short:   "Run the main service",
@@ -62,6 +62,10 @@ func NewRunCmd(c supervisor.Config, f *ConfigFlags, l *LoggerFlags) *cobra.Comma
 			return <-s.Wait()
 		},
 	}
+	flags := cc.Flags()
+	flags.AddFlagSet(f.FlagSet())
+	flags.AddFlagSet(l.FlagSet())
+	return cc
 }
 
 type FlagSetter interface {
