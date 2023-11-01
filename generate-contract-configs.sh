@@ -41,6 +41,7 @@ _CONTRACT_MAP="$({
 
 _CONTRACTS="$({
 	findAllConfigs "$1/deployments" '^Scribe(Optimistic)?$' \
+	| jq -s 'group_by(.environment + " " + .chain + " " + .name | sub("_\\d+$";""))[] | sort_by(.name)[-1]' \
 	| jq -c --argjson r "$__relays" --argjson ri "$__relays_initial" \
 	'{
 		env: .environment,
@@ -75,19 +76,6 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 } > config/config-contracts.hcl
 
 {
-# the commented code might still be useful
-#	jq <<<"$__medians" -c '{
-#		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
-#		value: (.poke // {expiration:null,spread:null,interval:null}),
-#	}'
-#	jq <<<"$__relays" -c 'to_entries | .[] | select(.value.poke != null) | {
-#		key: (.key+"-scribe-poke"),
-#		value: .value.poke,
-#	}'
-#	jq <<<"$__relays" -c 'to_entries | .[] | select(.value.optimistic_poke != null) | {
-#		key: (.key+"-scribe-poke-optimistic"),
-#		value: .value.optimistic_poke,
-#	}'
 	jq <<<"$_CONTRACTS" -c '.[] | select(.is_median) | {
 		key: (.env+"-"+.chain+"-"+.wat+"-median-poke"),
 		value: (if .poke == null or (.poke | length) == 0 then {spread:1,expiration:86400} else .poke end),
@@ -104,3 +92,4 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 
 #TODO go through all contracts and make sure they are in the relay.json config with 0 values, so they can be easily fixed
 #todo write an adr
+
