@@ -52,8 +52,8 @@ _CONTRACTS="$({
 		is_scribe: (.IScribe != null),
 		is_scribe_optimistic: (.IScribeOptimistic != null),
 		challenge_period:.IScribeOptimistic.opChallengePeriod,
-		poke:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")]),
-		poke_optimistic:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")]),
+		poke:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // {}),
+		poke_optimistic:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // {}),
 	} | del(..|nulls) | del(..|select(type=="object" and length==0))'
 	jq <<<"$__medians" --argjson r "$__relays" -c '{
 		env,
@@ -88,7 +88,7 @@ _MODELS="$(go run ./cmd/gofer models | grep '/' | jq -R '.' | sort | jq -s '.')"
 		key: (.env+"-"+.chain+"-"+.wat+"-scribe-poke-optimistic"),
 		value: (if .poke_optimistic == null or (.poke_optimistic | length) == 0 then {spread:0.5,expiration:28800} else .poke_optimistic end),
 	}'
-} | sort | jq -s 'from_entries | del(.[] .interval)' > config/relays.json
+} | sort | jq -s 'from_entries' > config/relays.json
 
 #TODO go through all contracts and make sure they are in the relay.json config with 0 values, so they can be easily fixed
 #todo write an adr
