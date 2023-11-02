@@ -118,12 +118,12 @@ func (configSpire) DefaultEmbeds() [][]byte {
 }
 
 func TestConfigHcl(t *testing.T) {
-	var ce configEthereum
-	var ct configTransport
-	var cf configGofer
-	var ch configGhost
-	var csc configSpectre
-	var csr configSpire
+	var ceProd, ceStage configEthereum
+	var ctProd, ctStage configTransport
+	var cfProd, cfStage configGofer
+	var chProd, chStage configGhost // todo, check stage
+	var cscProd, cscStage configSpectre
+	var csrProd, csrStage configSpire
 	tests := []struct {
 		name    string
 		config  config2.HasDefaults
@@ -131,39 +131,88 @@ func TestConfigHcl(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "ethereum",
-			config:  &ce,
+			name:    "ethereum-prod",
+			config:  &ceProd,
 			envVars: map[string]string{},
 			wantErr: false,
 		},
 		{
-			name:    "transport",
-			config:  &ct,
+			name:   "ethereum-stage",
+			config: &ceStage,
+			envVars: map[string]string{
+				"CFG_ENVIRONMENT": "stage",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "transport-prod",
+			config:  &ctProd,
 			envVars: map[string]string{},
 			wantErr: false,
 		},
 		{
-			name:    "gofer",
-			config:  &cf,
+			name:   "transport-stage",
+			config: &ctStage,
+			envVars: map[string]string{
+				"CFG_ENVIRONMENT": "stage",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "gofer-prod",
+			config:  &cfProd,
 			envVars: map[string]string{},
 			wantErr: false,
 		},
 		{
-			name:    "ghost",
-			config:  &ch,
+			name:   "gofer-stage",
+			config: &cfStage,
+			envVars: map[string]string{
+				"CFG_ENVIRONMENT": "stage",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "ghost-prod",
+			config:  &chProd,
 			envVars: map[string]string{},
 			wantErr: false,
 		},
 		{
-			name:    "spectre",
-			config:  &csc,
+			name:   "ghost-stage",
+			config: &chStage,
+			envVars: map[string]string{
+				"CFG_ENVIRONMENT": "stage",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "spectre-prod",
+			config:  &cscProd,
 			envVars: map[string]string{},
 			wantErr: false,
 		},
 		{
-			name:    "spire",
-			config:  &csr,
+			name:   "spectre-stage",
+			config: &cscStage,
+			envVars: map[string]string{
+				"CFG_ENVIRONMENT": "stage",
+				"CFG_CHAIN_NAME":  "sep",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "spire-prod",
+			config:  &csrProd,
 			envVars: map[string]string{},
+			wantErr: false,
+		},
+		{
+			name:   "spire-stage",
+			config: &csrStage,
+			envVars: map[string]string{
+				"CFG_ENVIRONMENT": "stage",
+			},
 			wantErr: false,
 		},
 	}

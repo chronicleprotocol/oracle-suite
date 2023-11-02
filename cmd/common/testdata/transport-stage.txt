@@ -1,0 +1,10 @@
+transport {
+  libp2p {
+    feeds              = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    listen_addrs       = ["/ip4/0.0.0.0/tcp/8000"]
+    bootstrap_addrs    = ["/dns/spire-bootstrap1.staging.chroniclelabs.io/tcp/8000/p2p/12D3KooWHoSyTgntm77sXShoeX9uNkqKNMhHxKtskaHqnA54SrSG", "/ip4/178.128.141.30/tcp/8000/p2p/12D3KooWLaMPReGaxFc6Z7BKWTxZRbxt3ievW8Np7fpA6y774W9T"]
+    direct_peers_addrs = []
+    blocked_addrs      = []
+    ethereum_key       = "default"
+  }
+}
