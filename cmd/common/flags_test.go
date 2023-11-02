@@ -1,13 +1,15 @@
 package common
 
 import (
-	"github.com/stretchr/testify/assert"
+	"bufio"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/config"
@@ -117,126 +119,110 @@ func (configSpire) DefaultEmbeds() [][]byte {
 	}
 }
 
-func TestConfigHcl(t *testing.T) {
-	var ceProd, ceStage configEthereum
-	var ctProd, ctStage configTransport
-	var cfProd, cfStage configGofer
-	var chProd, chStage configGhost // todo, check stage
-	var cscProd, cscStage configSpectre
-	var csrProd, csrStage configSpire
-	tests := []struct {
-		name    string
-		config  config2.HasDefaults
-		envVars map[string]string
-		wantErr bool
-	}{
-		{
-			name:    "ethereum-prod",
-			config:  &ceProd,
-			envVars: map[string]string{},
-			wantErr: false,
-		},
-		{
-			name:   "ethereum-stage",
-			config: &ceStage,
-			envVars: map[string]string{
-				"CFG_ENVIRONMENT": "stage",
-			},
-			wantErr: false,
-		},
-		{
-			name:    "transport-prod",
-			config:  &ctProd,
-			envVars: map[string]string{},
-			wantErr: false,
-		},
-		{
-			name:   "transport-stage",
-			config: &ctStage,
-			envVars: map[string]string{
-				"CFG_ENVIRONMENT": "stage",
-			},
-			wantErr: false,
-		},
-		{
-			name:    "gofer-prod",
-			config:  &cfProd,
-			envVars: map[string]string{},
-			wantErr: false,
-		},
-		{
-			name:   "gofer-stage",
-			config: &cfStage,
-			envVars: map[string]string{
-				"CFG_ENVIRONMENT": "stage",
-			},
-			wantErr: false,
-		},
-		{
-			name:    "ghost-prod",
-			config:  &chProd,
-			envVars: map[string]string{},
-			wantErr: false,
-		},
-		{
-			name:   "ghost-stage",
-			config: &chStage,
-			envVars: map[string]string{
-				"CFG_ENVIRONMENT": "stage",
-			},
-			wantErr: false,
-		},
-		{
-			name:    "spectre-prod",
-			config:  &cscProd,
-			envVars: map[string]string{},
-			wantErr: false,
-		},
-		{
-			name:   "spectre-stage",
-			config: &cscStage,
-			envVars: map[string]string{
-				"CFG_ENVIRONMENT": "stage",
-				"CFG_CHAIN_NAME":  "sep",
-			},
-			wantErr: false,
-		},
-		{
-			name:    "spire-prod",
-			config:  &csrProd,
-			envVars: map[string]string{},
-			wantErr: false,
-		},
-		{
-			name:   "spire-stage",
-			config: &csrStage,
-			envVars: map[string]string{
-				"CFG_ENVIRONMENT": "stage",
-			},
-			wantErr: false,
-		},
+// Mapping to seek expected string for given test case.
+// Key of map has the following format: [config type]:[ENV]=[VAL],[ENV2]=[VAL2] ...
+// i.e. spectre:CFG_ENVIRONMENT=prod;CFG_CHAIN_NAME=eth
+// Value of map is the expected string for given key.
+var completeExpectedHCLs = map[string]string{}
+
+func init() {
+	files := []string{
+		"./testdata/prod.txt",
+		"./testdata/stage.txt",
+		"./testdata/prod-eth.txt",
+		"./testdata/prod-gno.txt",
+		"./testdata/prod-oeth.txt",
+		"./testdata/prod-zkevm.txt",
+		"./testdata/stage-arb-goerli.txt",
+		"./testdata/stage-gno.txt",
+		"./testdata/stage-gor.txt",
+		"./testdata/stage-mango.txt",
+		"./testdata/stage-ogor.txt",
+		"./testdata/stage-sep.txt",
+		"./testdata/stage-zkevm.txt",
+	}
+	for _, file := range files {
+		readFile, err := os.Open(file)
+		if err != nil {
+			panic(err)
+		}
+		scanner := bufio.NewScanner(readFile)
+		scanner.Split(bufio.ScanLines)
+		testCase := ""
+		expected := strings.Builder{}
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "TestCase for ") {
+				if testCase != "" {
+					completeExpectedHCLs[testCase] = strings.Trim(expected.String(), "\n")
+					expected.Reset()
+				}
+				// i.e.: spectre:CFG_ENVIRONMENT=prod;CFG_CHAIN_NAME=eth
+				testCase = line[13:]
+				expected.Reset()
+				continue
+			}
+			expected.WriteString(line)
+			expected.WriteString("\n")
+		}
+		completeExpectedHCLs[testCase] = strings.Trim(expected.String(), "\n")
+		expected.Reset()
+		readFile.Close()
+	}
+}
+
+func TestConfigHCL_Env_Chain(t *testing.T) {
+	types := map[string]reflect.Type{
+		"ethereum":  reflect.TypeOf((*configEthereum)(nil)).Elem(),
+		"transport": reflect.TypeOf((*configTransport)(nil)).Elem(),
+		"gofer":     reflect.TypeOf((*configGofer)(nil)).Elem(),
+		"ghost":     reflect.TypeOf((*configGhost)(nil)).Elem(),
+		"spectre":   reflect.TypeOf((*configSpectre)(nil)).Elem(),
+		"spire":     reflect.TypeOf((*configSpire)(nil)).Elem(),
 	}
 
-	for _, tt := range tests {
+	for testCase, expected := range completeExpectedHCLs {
+		// testCase format: [config type]:ENV=VAL,ENV2=VAL2...
+		// spectre-prod-oeth:CFG_ENVIRONMENT=prod;CFG_CHAIN_NAME=eth
+		tokens := strings.Split(testCase, ":")
+		if len(tokens) < 2 {
+			continue
+		}
+		confType := tokens[0]
+		envStrings := strings.Join(tokens[1:], ":")
+
 		os.Clearenv()
-		for k, v := range tt.envVars {
-			require.NoError(t, os.Setenv(k, v))
+		for _, envStr := range strings.Split(envStrings, ";") {
+			if !strings.HasPrefix(envStr, "CFG_") {
+				continue
+			}
+			// envStr: CFG_ENVIRONMENT=prod
+			envs := strings.Split(envStr, "=")
+			if len(envs) != 2 {
+				continue
+			}
+			require.NoError(t, os.Setenv(envs[0], envs[1]))
 		}
 
-		t.Run(tt.name, func(t *testing.T) {
+		refType, ok := types[confType]
+		if !ok {
+			continue
+		}
+
+		t.Run(testCase, func(t *testing.T) {
 			stdout := os.Stdout
 			defer func() { os.Stdout = stdout }()
 
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			var cf = ConfigFlagsForConfig(tt.config)
+			// Create new Config instance per each test case
+			configRef := reflect.New(refType)
+			configInst := configRef.Interface().(config2.HasDefaults)
+
+			var cf = ConfigFlagsForConfig(configInst)
 			require.NoError(t, cf.FlagSet().Parse([]string{"--config.hcl"}))
-			argued, err := cf.Load(tt.config)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
+			argued, err := cf.Load(&configInst)
 			require.NoError(t, err)
 			require.True(t, argued)
 
@@ -244,8 +230,9 @@ func TestConfigHcl(t *testing.T) {
 			out, _ := io.ReadAll(r)
 			resp := strings.Trim(string(out), "\n")
 
-			expected, err := os.ReadFile("./testdata/" + tt.name + ".txt")
-			assert.Equal(t, string(expected), resp)
+			os.WriteFile("./test.hcl", []byte(resp), 0644)
+
+			assert.Equal(t, expected, resp)
 		})
 	}
 }

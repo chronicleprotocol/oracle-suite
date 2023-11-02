@@ -1,7 +1,0 @@
-spire {
-  rpc_listen_addr = ":9100"
-  rpc_agent_addr  = "127.0.0.1:9100"
-  pairs           = ["BTCUSD", "ETHUSD", "ETHBTC", "GNOUSD", "IBTAUSD", "LINKUSD", "MATICUSD", "MKRUSD", "RETHUSD", "WSTETHUSD", "YFIUSD"]
-  feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
-  ethereum_key    = "default"
-}

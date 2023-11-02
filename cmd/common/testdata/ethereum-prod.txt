@@ -1,8 +1,0 @@
-ethereum {
-  client "ethereum" {
-    rpc_urls     = ["https://eth.public-rpc.com"]
-    ethereum_key = "default"
-    chain_id     = 1
-  }
-  rand_keys = ["default"]
-}

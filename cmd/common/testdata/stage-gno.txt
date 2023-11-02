@@ -1,0 +1,235 @@
+TestCase for spectre:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=gno
+spectre {
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa38c2b5408eb1dceedbec5d61bed580589c6e717"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "AAVE/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x579bfd0581bed0d18fbb0ebab099328d451552dd"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "ARB/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x78c8260af7c8d0d17cf3ba91f251e9375a389688"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "AVAX/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x26ee3e8b618227c1b735d8d884d52a852410019f"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "BNB/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x4b5abfc0fe78233b97c80b8410681765ed9fc29c"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "BTC/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xf29a932ae56bb96ccacf8d1f2da9028b01c8f030"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "CRV/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa7aa6a860d17a89810de6e6278c58eb21fa00fc4"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "DAI/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x729af3a41ae9e707e7ae421569c4b9c632b66a0c"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "DSR/RATE"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x1804969b296e89c1ddb1712fa99816446956637e"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "ETH/BTC"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xc8a1f9461115ef3c1e84da6515a88ea49ca97660"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "ETH/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa28dcab66fd25c668acc7f232aa71da1943e04b8"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "GNO/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x07487b0bf28801ecd15bf09c13e32fbc87572e81"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "IBTA/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa53dc5b100f0e4ab593f2d8ecd3c5932ee38215e"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "LDO/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xecb89b57a60ac44e06ab1b767947c19b236760c3"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "LINK/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa48c56e48a71966676d0d113eaebe6be61661f18"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "MATIC/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x67fff0c6abd2a36272870b1e8fe42cc8e8d5ec4d"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "MKR/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xfadf055f6333a4ab435d2d248aee6617345a4782"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "OP/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xee02370bac10b3ac3f2e9eebbf8f3fea1228d263"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "RETH/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xd93c56aa71923228cdbe2be3bf5a83bf25b0c491"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SDAI/DAI"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x05ab94ed168b5d18b667cfcbba795789c750d893"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SDAI/ETH"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x2f0e0de1f8c11d2380de093ed15ca6ce07653cba"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SDAI/MATIC"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xd20f1ec72ba46b6126f96c5a91b6d3372242ce98"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SNX/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x4d1e6f39bbfcce8b471171b8431609b83f3a096d"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SOL/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x2aff768f5d6fc63fa456b062e02f2049712a1ed5"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "UNI/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x1173da1811a311234e7ab0a33b4b7b646ff42aec"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "USDC/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x0bd446021ab95a2abd638813f9bde4fed3a5779a"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "USDT/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa7226d85ce5f0de97dccbdbfd38634d6391d0584"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "WBTC/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xc9bb81d3668f03ec9109bbca77d32423deccf9ab"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "WSTETH/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x0893ece705639112c1871dce88d87d81540d0199"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "YFI/USD"
+    spread          = 0.5
+    expiration      = 21600
+  }
+}

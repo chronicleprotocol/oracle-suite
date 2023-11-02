@@ -1,3 +1,52 @@
+TestCase for ethereum:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth
+ethereum {
+  client "ethereum" {
+    rpc_urls     = ["https://eth.public-rpc.com"]
+    ethereum_key = "default"
+    chain_id     = 1
+  }
+  rand_keys = ["default"]
+}
+
+TestCase for ethereum:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth;CFG_ETH_FROM=0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd;CFG_ETH_KEYS=keys;CFG_ETH_PASS=pass;CFG_CHAIN_RPC_URLS=https://rpc.chroniclelabs.io/eth;CFG_CHAIN_ID=1;CFG_CHAIN_TX_TYPE=eip1559;CFG_CHAIN_GAS_FEE_MULTIPLIER=1.2;CFG_CHAIN_GAS_PRIORITY_FEE_MULTIPLIER=1.5;CFG_CHAIN_MAX_GAS_FEE=0;CFG_CHAIN_MAX_GAS_PRIORITY_FEE=0;CFG_CHAIN_MAX_GAS_LIMIT=0
+ethereum {
+  key "default" {
+    address         = "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd"
+    keystore_path   = "keys"
+    passphrase_file = "pass"
+  }
+  client "default" {
+    rpc_urls                    = ["https://rpc.chroniclelabs.io/eth"]
+    ethereum_key                = "default"
+    chain_id                    = 1
+    tx_type                     = "eip1559"
+    gas_fee_multiplier          = 1.5
+    gas_priority_fee_multiplier = 1.2
+    max_gas_fee                 = 0
+    max_gas_priority_fee        = 0
+    max_gas_limit               = 0
+  }
+  client "ethereum" {
+    rpc_urls     = ["https://eth.public-rpc.com"]
+    ethereum_key = "default"
+    chain_id     = 1
+  }
+  rand_keys = []
+}
+
+TestCase for transport:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth;CFG_ITEM_SEPARATOR=,;CFG_FEEDS=0x1111111111111111111111111111111111111111,0x2222222222222222222222222222222222222222,0x3333333333333333333333333333333333333333,0x4444444444444444444444444444444444444444;CFG_LIBP2P_LISTEN_ADDRS=listen_addr;CFG_LIBP2P_BOOTSTRAP_ADDRS=bootstrap_addr1,bootstrap_addr2;
+transport {
+  libp2p {
+    feeds              = ["0x1111111111111111111111111111111111111111", "0x2222222222222222222222222222222222222222", "0x3333333333333333333333333333333333333333", "0x4444444444444444444444444444444444444444"]
+    listen_addrs       = ["listen_addr"]
+    bootstrap_addrs    = ["bootstrap_addr1", "bootstrap_addr2"]
+    direct_peers_addrs = []
+    blocked_addrs      = []
+    ethereum_key       = "default"
+  }
+}
+
+TestCase for gofer:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth
 gofer {
   origin "balancerV2" {
     type = "balancerV2"
@@ -1288,4 +1337,27 @@ gofer {
       data_model = "YFI/USD"
     }
   }
+}
+
+TestCase for ghost:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth
+ghost {
+  ethereum_key = "default"
+  interval     = 60
+  data_models  = ["BTCUSD", "ETHUSD", "ETHBTC", "GNOUSD", "IBTAUSD", "LINKUSD", "MATICUSD", "MKRUSD", "RETHUSD", "WSTETHUSD", "YFIUSD", "AAVE/USD", "ARB/USD", "AVAX/USD", "BNB/USD", "BTC/USD", "CRV/USD", "DAI/USD", "DSR/RATE", "ETH/BTC", "ETH/USD", "FRAX/USD", "GNO/ETH", "GNO/USD", "IBTA/USD", "LDO/USD", "LINK/USD", "MATIC/USD", "MKR/ETH", "MKR/USD", "OP/USD", "RETH/ETH", "RETH/USD", "SDAI/DAI", "SDAI/ETH", "SDAI/MATIC", "SDAI/USD", "SNX/USD", "SOL/USD", "STETH/ETH", "STETH/USD", "UNI/USD", "USDC/USD", "USDT/USD", "WBTC/USD", "WSTETH/ETH", "WSTETH/USD", "XTZ/USD", "YFI/USD"]
+}
+
+TestCase for ghost:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth;CFG_ITEM_SEPARATOR=,;CFG_GHOST_PAIRS=ETH/USD,BTC/USD,ETH/BTC;CFG_GHOST_INTERVAL=10
+ghost {
+  ethereum_key = "default"
+  interval     = 10
+  data_models  = ["BTCUSD", "ETHUSD", "ETHBTC", "BTC/USD", "ETH/BTC", "ETH/USD"]
+}
+
+TestCase for spire:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=eth
+spire {
+  rpc_listen_addr = ":9100"
+  rpc_agent_addr  = "127.0.0.1:9100"
+  pairs           = ["BTCUSD", "ETHUSD", "ETHBTC", "GNOUSD", "IBTAUSD", "LINKUSD", "MATICUSD", "MKRUSD", "RETHUSD", "WSTETHUSD", "YFIUSD"]
+  feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+  ethereum_key    = "default"
 }

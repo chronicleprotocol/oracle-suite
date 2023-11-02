@@ -1,0 +1,59 @@
+TestCase for spectre:CFG_ENVIRONMENT=stage;CFG_CHAIN_NAME=zkevm
+spectre {
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x4b5abfc0fe78233b97c80b8410681765ed9fc29c"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "BTC/USD"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x729af3a41ae9e707e7ae421569c4b9c632b66a0c"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "DSR/RATE"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xc8a1f9461115ef3c1e84da6515a88ea49ca97660"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "ETH/USD"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xa48c56e48a71966676d0d113eaebe6be61661f18"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "MATIC/USD"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0xd93c56aa71923228cdbe2be3bf5a83bf25b0c491"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SDAI/DAI"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x05ab94ed168b5d18b667cfcbba795789c750d893"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SDAI/ETH"
+    spread          = 1
+    expiration      = 32400
+  }
+  scribe {
+    ethereum_client = "default"
+    contract_addr   = "0x2f0e0de1f8c11d2380de093ed15ca6ce07653cba"
+    feeds           = ["0x0c4fc7d66b7b6c684488c1f218caa18d4082da18", "0x5c01f0f08e54b85f4cab8c6a03c9425196fe66dd", "0x75fbd0aace74fb05ef0f6c0ac63d26071eb750c9", "0xc50df8b5dcb701abc0d6d1c7c99e6602171abbc4"]
+    data_model      = "SDAI/MATIC"
+    spread          = 1
+    expiration      = 32400
+  }
+}
