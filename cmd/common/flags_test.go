@@ -129,6 +129,7 @@ func init() {
 	files := []string{
 		"./testdata/prod.txt",
 		"./testdata/stage.txt",
+		"./testdata/prod-arb1.txt",
 		"./testdata/prod-eth.txt",
 		"./testdata/prod-gno.txt",
 		"./testdata/prod-oeth.txt",
@@ -229,8 +230,6 @@ func TestConfigHCL_Env_Chain(t *testing.T) {
 			_ = w.Close()
 			out, _ := io.ReadAll(r)
 			resp := strings.Trim(string(out), "\n")
-
-			os.WriteFile("./test.hcl", []byte(resp), 0644)
 
 			assert.Equal(t, expected, resp)
 		})
