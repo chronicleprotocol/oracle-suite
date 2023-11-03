@@ -10,7 +10,7 @@ ghost {
     # Limit the list only to a specific environment but take all chains
     if v.env == var.environment
     # Only Scribe compatible contracts
-    && try(v.IScribe, false)
+    && try(v.is_scribe, false)
     # If CFG_GHOST_PAIRS is set to a list of asset symbols, only for those assets will the signatures be created
     && try(length(var.ghost_pairs) == 0 || contains(var.ghost_pairs, v.wat), false)
   ], [
