@@ -232,6 +232,22 @@ func TestConfigHCL_Env_Chain(t *testing.T) {
 			resp := strings.Trim(string(out), "\n")
 
 			assert.Equal(t, expected, resp)
+
+			// Retry to load exported config again and check data integrity
+			r, w, _ = os.Pipe()
+			os.Stdout = w
+			alterRef := reflect.New(refType)
+			alterInst := alterRef.Interface().(config2.HasDefaults)
+			alterCf := ConfigFlagsWithEmbeds(out)
+			require.NoError(t, alterCf.FlagSet().Parse([]string{"--config.hcl"}))
+			alterArgued, err := alterCf.Load(&alterInst)
+			require.NoError(t, err)
+			require.True(t, alterArgued)
+			_ = w.Close()
+			out, _ = io.ReadAll(r)
+			alterResp := strings.Trim(string(out), "\n")
+
+			assert.Equal(t, resp, alterResp)
 		})
 	}
 }
