@@ -1,11 +1,13 @@
 package dump
 
 import (
+	"bytes"
 	"encoding"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 const dumpMaxDepth = 64
@@ -17,25 +19,20 @@ const dumpMaxDepth = 64
 // human-readable format.
 //
 //   - Simple types, like numbers and strings and booleans, are returned as-is.
-//   - For types that implement json.Marshaler, the result of MarshalJSON is
-//     returned.
+//   - For types that implement fmt.Stringer, the result of String is returned.
 //   - For types that implement encoding.TextMarshaler, the result of
 //     MarshalText is returned.
-//   - For types that implement fmt.Stringer, the result of String is returned.
+//   - For types that implement json.Marshaler, the result of MarshalJSON is
+//     returned. If the result is a JSON string, number, or boolean, it is
+//     converted to a Go type.
 //   - Byte slices and arrays are represented as hex strings.
 //   - For types that implement  error, the result of Error is returned.
-//   - In maps, slices, and arrays, each element is recursively normalized
+//   - In maps, slices, and arrays, each element is recursively converted
 //     according to these rules and then represented as a JSON.
+//
+// If a returned value is a JSON, it is returned as a json.RawMessage.
 func Dump(v any) any {
-	v = dump(v, dumpMaxDepth)
-	if isSimpleType(v) {
-		return v
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Sprintf("<error: %v>", err)
-	}
-	return json.RawMessage(b)
+	return dump(v, dumpMaxDepth)
 }
 
 //nolint:gocyclo,funlen
@@ -55,30 +52,24 @@ func dump(v any, depth int) (ret any) {
 		return v
 	}
 	switch t := v.(type) {
+	case fmt.Stringer:
+		return t.String()
 	case json.RawMessage:
-		return t
-	case json.Marshaler:
-		b, err := t.MarshalJSON()
-		if err != nil {
-			return fmt.Sprintf("<error: %v>", err)
-		}
-		return json.RawMessage(b)
+		return fromJSON(t)
 	case encoding.TextMarshaler:
 		b, err := t.MarshalText()
 		if err != nil {
 			return fmt.Sprintf("<error: %v>", err)
 		}
 		return string(b)
-	case fmt.Stringer:
-		return t.String()
+	case json.Marshaler:
+		return fromJSON(toJSON(t))
 	case error:
 		return t.Error()
-	case []byte:
-		return "0x" + hex.EncodeToString(t)
 	default:
 		rv := reflect.ValueOf(v)
-		if v == nil || rv.IsZero() {
-			return nil
+		if !rv.IsValid() {
+			return "<invalid value>"
 		}
 		rt := rv.Type()
 		switch rv.Kind() {
@@ -89,25 +80,60 @@ func dump(v any, depth int) (ret any) {
 					m[rt.Field(n).Name] = dump(rv.Field(n).Interface(), depth-1)
 				}
 			}
-			return m
+			return toJSON(m)
 		case reflect.Slice, reflect.Array:
+			if rt.Elem().Kind() == reflect.Uint8 {
+				if !rv.CanAddr() {
+					cpy := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(byte(0))), rv.Len(), rv.Len())
+					reflect.Copy(cpy, rv)
+					rv = cpy
+				}
+				return "0x" + hex.EncodeToString(rv.Bytes())
+			}
 			var m []any
 			for i := 0; i < rv.Len(); i++ {
 				m = append(m, dump(rv.Index(i).Interface(), depth-1))
 			}
-			return m
+			return toJSON(m)
 		case reflect.Map:
 			m := map[string]any{}
 			for _, k := range rv.MapKeys() {
 				m[fmt.Sprint(dump(k, depth-1))] = dump(rv.MapIndex(k).Interface(), depth-1)
 			}
-			return m
+			return toJSON(m)
 		case reflect.Ptr, reflect.Interface:
 			return dump(rv.Elem().Interface(), depth-1)
 		default:
 			return fmt.Sprintf("%v", v)
 		}
 	}
+}
+
+func toJSON(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return json.RawMessage(fmt.Sprintf("<error: %v>", err))
+	}
+	return b
+}
+
+func fromJSON(v json.RawMessage) any {
+	if bytes.HasPrefix(v, []byte{'"'}) {
+		if s, err := strconv.Unquote(string(v)); err == nil {
+			return s
+		}
+		return v
+	}
+	if i, err := strconv.ParseInt(string(v), 10, 64); err == nil {
+		return i
+	}
+	if f, err := strconv.ParseFloat(string(v), 64); err == nil {
+		return f
+	}
+	if b, err := strconv.ParseBool(string(v)); err == nil {
+		return b
+	}
+	return v
 }
 
 func isSimpleType(v any) bool {
