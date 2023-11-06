@@ -45,11 +45,11 @@ func dump(v any, depth int) (ret any) {
 	if depth <= 0 {
 		return "<max depth reached>"
 	}
-	if isNil(v) {
-		return nil
-	}
 	if isSimpleType(v) {
 		return v
+	}
+	if isNil(v) {
+		return nil
 	}
 	switch t := v.(type) {
 	case fmt.Stringer:
@@ -109,29 +109,34 @@ func dump(v any, depth int) (ret any) {
 	}
 }
 
-func toJSON(v any) json.RawMessage {
+func toJSON(v any) any {
 	b, err := json.Marshal(v)
 	if err != nil {
-		return json.RawMessage(fmt.Sprintf("<error: %v>", err))
+		return fmt.Sprintf("<error: %v>", err)
 	}
-	return b
+	return json.RawMessage(b)
 }
 
-func fromJSON(v json.RawMessage) any {
-	if bytes.HasPrefix(v, []byte{'"'}) {
-		if s, err := strconv.Unquote(string(v)); err == nil {
-			return s
+func fromJSON(v any) any {
+	if v == nil {
+		return nil
+	}
+	if b, ok := v.(json.RawMessage); ok {
+		if bytes.HasPrefix(b, []byte{'"'}) {
+			if s, err := strconv.Unquote(string(b)); err == nil {
+				return s
+			}
+			return v
 		}
-		return v
-	}
-	if i, err := strconv.ParseInt(string(v), 10, 64); err == nil {
-		return i
-	}
-	if f, err := strconv.ParseFloat(string(v), 64); err == nil {
-		return f
-	}
-	if b, err := strconv.ParseBool(string(v)); err == nil {
-		return b
+		if i, err := strconv.ParseInt(string(b), 10, 64); err == nil {
+			return i
+		}
+		if f, err := strconv.ParseFloat(string(b), 64); err == nil {
+			return f
+		}
+		if b, err := strconv.ParseBool(string(b)); err == nil {
+			return b
+		}
 	}
 	return v
 }

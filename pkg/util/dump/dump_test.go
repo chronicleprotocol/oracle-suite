@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSerialize(t *testing.T) {
+func TestDump(t *testing.T) {
 	tests := []struct {
 		arg  interface{}
 		want interface{}
@@ -19,12 +19,15 @@ func TestSerialize(t *testing.T) {
 		{arg: 1.1, want: 1.1},
 		{arg: true, want: true},
 		{arg: "foo", want: "foo"},
+		{arg: json.RawMessage(`"foo"`), want: "foo"},
 		{arg: stringer{}, want: "foo"},
-		{arg: textMarshaler{}, want: "foo"},
-		{arg: jsonMarshaler{`"foo"`}, want: "foo"},
-		{arg: jsonMarshaler{`42`}, want: int64(42)},
-		{arg: jsonMarshaler{`3.14`}, want: float64(3.14)},
-		{arg: jsonMarshaler{`true`}, want: true},
+		{arg: textMarshaler{v: "foo"}, want: "foo"},
+		{arg: textMarshaler{e: errors.New("foo")}, want: "<error: foo>"},
+		{arg: jsonMarshaler{v: `"foo"`}, want: "foo"},
+		{arg: jsonMarshaler{v: `42`}, want: int64(42)},
+		{arg: jsonMarshaler{v: `3.14`}, want: float64(3.14)},
+		{arg: jsonMarshaler{v: `true`}, want: true},
+		{arg: jsonMarshaler{e: errors.New("foo")}, want: "<error: json: error calling MarshalJSON for type dump.jsonMarshaler: foo>"},
 		{arg: errors.New("foo"), want: "foo"},
 		{arg: struct{ A int }{A: 1}, want: json.RawMessage(`{"A":1}`)},
 		{arg: &struct{ A int }{A: 1}, want: json.RawMessage(`{"A":1}`)},
@@ -34,6 +37,7 @@ func TestSerialize(t *testing.T) {
 		{arg: []string{"foo", "bar"}, want: json.RawMessage(`["foo","bar"]`)},
 		{arg: map[string]string{"foo": "bar"}, want: json.RawMessage(`{"foo":"bar"}`)},
 		{arg: emptyInterface(), want: nil},
+		{arg: panicer{}, want: "<panic: foo>"},
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n), func(t *testing.T) {
@@ -42,22 +46,44 @@ func TestSerialize(t *testing.T) {
 	}
 }
 
+func TestMaxDepth(t *testing.T) {
+	r := recursive{}
+	r.A = &r
+	assert.Contains(t, fmt.Sprintf("%s", Dump(r)), "max depth reached")
+}
+
 type stringer struct{}
 
 func (stringer) String() string {
 	return "foo"
 }
 
-type textMarshaler struct{}
-
-func (textMarshaler) MarshalText() ([]byte, error) {
-	return []byte("foo"), nil
+type textMarshaler struct {
+	v string
+	e error
 }
 
-type jsonMarshaler struct{ v string }
+func (t textMarshaler) MarshalText() ([]byte, error) {
+	return []byte(t.v), t.e
+}
+
+type jsonMarshaler struct {
+	v string
+	e error
+}
 
 func (j jsonMarshaler) MarshalJSON() ([]byte, error) {
-	return []byte(j.v), nil
+	return []byte(j.v), j.e
+}
+
+type recursive struct {
+	A *recursive
+}
+
+type panicer struct{}
+
+func (panicer) String() string {
+	panic("foo")
 }
 
 func emptyInterface() fmt.Stringer {
