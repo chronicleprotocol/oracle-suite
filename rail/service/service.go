@@ -49,9 +49,8 @@ func Railing(opts ...libp2p.Option) PostNodeFn {
 }
 
 type Rail struct {
-	opts []libp2p.Option
-
 	host  host.Host
+	opts  []libp2p.Option
 	ctx   context.Context
 	errCh chan error
 

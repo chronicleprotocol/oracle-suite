@@ -3,11 +3,11 @@ module github.com/chronicleprotocol/oracle-suite/rail
 go 1.21
 
 require (
-	github.com/chronicleprotocol/oracle-suite v0.22.7
+	github.com/chronicleprotocol/oracle-suite v0.22.9
 	github.com/ipfs/go-log/v2 v2.5.1
-	github.com/libp2p/go-libp2p v0.32.0
+	github.com/libp2p/go-libp2p v0.32.1
 	github.com/libp2p/go-libp2p-kad-dht v0.25.1
-	github.com/libp2p/go-libp2p-pubsub v0.9.3
+	github.com/libp2p/go-libp2p-pubsub v0.10.0
 	github.com/multiformats/go-multiaddr v0.12.0
 	github.com/prometheus/client_golang v1.17.0
 )
