@@ -1,4 +1,4 @@
-package common
+package test
 
 import (
 	"bufio"
@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/config"
 	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
 	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
@@ -221,7 +222,7 @@ func TestConfigHCL_Env_Chain(t *testing.T) {
 			configRef := reflect.New(refType)
 			configInst := configRef.Interface().(config2.HasDefaults)
 
-			var cf = ConfigFlagsForConfig(configInst)
+			var cf = cmd.ConfigFlagsForConfig(configInst)
 			require.NoError(t, cf.FlagSet().Parse([]string{"--config.hcl"}))
 			argued, err := cf.Load(&configInst)
 			require.NoError(t, err)
@@ -238,7 +239,7 @@ func TestConfigHCL_Env_Chain(t *testing.T) {
 			os.Stdout = w
 			alterRef := reflect.New(refType)
 			alterInst := alterRef.Interface().(config2.HasDefaults)
-			alterCf := ConfigFlagsWithEmbeds(out)
+			alterCf := cmd.ConfigFlagsWithEmbeds(out)
 			require.NoError(t, alterCf.FlagSet().Parse([]string{"--config.hcl"}))
 			alterArgued, err := alterCf.Load(&alterInst)
 			require.NoError(t, err)

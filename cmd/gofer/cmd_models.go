@@ -26,7 +26,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/chronicleprotocol/oracle-suite/cmd/common"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	gofer "github.com/chronicleprotocol/oracle-suite/pkg/config/gofernext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
@@ -34,7 +34,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-func NewModelsCmd(c supervisor.Config, f *common.ConfigFlags, l *common.LoggerFlags) *cobra.Command {
+func NewModelsCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
 	var format formatTypeValue
 	cc := &cobra.Command{
 		Use:     "models [MODEL...]",

@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
-	"github.com/chronicleprotocol/oracle-suite/cmd/common"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ghost "github.com/chronicleprotocol/oracle-suite/pkg/config/ghostnext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -57,7 +57,7 @@ func TestConfig_Ghost_Run(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			var cf = common.ConfigFlagsForConfig(tt.config.(config.HasDefaults))
+			var cf = cmd.ConfigFlagsForConfig(tt.config.(config.HasDefaults))
 			require.NoError(t, cf.FlagSet().Parse(tt.args))
 			argued, err := cf.Load(tt.config)
 			if len(tt.args) > 0 {

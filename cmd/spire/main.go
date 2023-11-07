@@ -19,19 +19,19 @@ import (
 	"os"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
-	"github.com/chronicleprotocol/oracle-suite/cmd/common"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 )
 
 func main() {
 	var config spire.Config
-	cf := common.ConfigFlagsForConfig(config)
+	cf := cmd.ConfigFlagsForConfig(config)
 
-	var lf common.LoggerFlags
-	c := common.NewRootCommand("spire", suite.Version, &cf, &lf)
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("spire", suite.Version, &cf, &lf)
 
 	c.AddCommand(
-		common.NewRunCmd(&config, &cf, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
 		NewStreamCmd(&config, &cf, &lf),
 		NewPullCmd(&config, &cf, &lf),
 		NewPushCmd(&config, &cf, &lf),

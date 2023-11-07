@@ -19,19 +19,19 @@ import (
 	"os"
 
 	suite "github.com/chronicleprotocol/oracle-suite"
-	"github.com/chronicleprotocol/oracle-suite/cmd/common"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	ghost "github.com/chronicleprotocol/oracle-suite/pkg/config/ghostnext"
 )
 
 func main() {
 	var config ghost.Config
-	cf := common.ConfigFlagsForConfig(config)
+	cf := cmd.ConfigFlagsForConfig(config)
 
-	var lf common.LoggerFlags
-	c := common.NewRootCommand("ghost", suite.Version, &cf, &lf)
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("ghost", suite.Version, &cf, &lf)
 
 	c.AddCommand(
-		common.NewRunCmd(&config, &cf, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
 	)
 
 	if err := c.Execute(); err != nil {
