@@ -16,9 +16,14 @@
 package env
 
 import (
+	"encoding/hex"
 	"os"
 	"strings"
+
+	logging "github.com/ipfs/go-log/v2"
 )
+
+var log = logging.Logger("rail/env")
 
 // String returns a string from the environment variable with the given key.
 // If the variable is not set, the default value is returned.
@@ -26,6 +31,7 @@ import (
 func String(key, def string) string {
 	v, ok := os.LookupEnv(key)
 	if !ok {
+		log.Debugw("env not set", "var", key)
 		return def
 	}
 	return v
@@ -43,6 +49,7 @@ var separator = String("CFG_ITEM_SEPARATOR", "\n")
 func Strings(key string, def []string) []string {
 	v, ok := os.LookupEnv(key)
 	if !ok {
+		log.Debugw("env not set", "var", key)
 		return def
 	}
 	if v == "" {
@@ -50,4 +57,26 @@ func Strings(key string, def []string) []string {
 	}
 	v = strings.Trim(v, separator)
 	return strings.Split(v, separator)
+}
+
+func HexBytes(key string, def []byte) []byte {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		log.Debugw("env not set", "var", key)
+		return def
+	}
+	b, err := hex.DecodeString(v)
+	if err != nil {
+		log.Warnw("unable to decode hex", "var", key, "err", err)
+		return def
+	}
+	return b
+}
+
+func HexBytesSize(key string, l int, def []byte) []byte {
+	b := HexBytes(key, def)
+	if len(b) != l {
+		log.Warnf("invalid bytes length - want: %d, got: %d", l, len(b))
+	}
+	return b
 }

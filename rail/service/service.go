@@ -34,10 +34,10 @@ func Railing(opts ...libp2p.Option) PostNodeFn {
 		return func(mesh ...Mesh) StartFn {
 			return func(ctx context.Context) error {
 				s := &Rail{
-					opts:     opts,
-					acts:     acts,
-					postMesh: mesh,
-					errCh:    make(chan error),
+					opts:  opts,
+					acts:  acts,
+					mesh:  mesh,
+					errCh: make(chan error),
 				}
 				if err := s.Start(ctx); err != nil {
 					return err
@@ -54,8 +54,8 @@ type Rail struct {
 	ctx   context.Context
 	errCh chan error
 
-	acts     []Action
-	postMesh []Mesh
+	acts []Action
+	mesh []Mesh
 }
 
 func (s *Rail) Start(ctx context.Context) (err error) {

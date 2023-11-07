@@ -20,17 +20,14 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 	"os"
 	"os/signal"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
-	cryptoPB "github.com/libp2p/go-libp2p/core/crypto/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -46,6 +43,7 @@ func main() {
 
 	// Options to configure libp2p node with
 	options := []libp2p.Option{
+		libp2p.Ping(false),
 		libp2p.ListenAddrStrings([]string{
 			"/ip4/0.0.0.0/tcp/8000",
 			"/ip4/0.0.0.0/udp/8000/quic-v1",
@@ -56,7 +54,10 @@ func main() {
 		}...),
 		libp2p.EnableNATService(),
 		libp2p.EnableHolePunching(),
-		libp2p.Ping(false),
+		libp2p.EnableRelay(),
+		libp2p.EnableRelayService(),
+		// libp2p.EnableAutoRelayWithStaticRelays(),
+		// libp2p.EnableAutoRelayWithPeerSource(),
 	}
 
 	// Things to do when libp2p node is ready
@@ -100,25 +101,21 @@ func main() {
 
 	{
 		seedReader := rand.Reader
-		if seed := os.Getenv("CFG_LIBP2P_PK_SEED"); seed != "" {
-			seed, err := hex.DecodeString(seed)
-			if err != nil {
-				log.Fatal(err)
-			}
+		if seed := env.HexBytes("CFG_LIBP2P_PK_SEED", nil); seed != nil {
 			if len(seed) != ed25519.SeedSize {
-				log.Fatal("invalid seed length - needs to be 32 bytes")
+				log.Fatalf("invalid seed size - want: %d, got: %d", ed25519.SeedSize, len(seed))
 			}
 			seedReader = bytes.NewReader(seed)
 		}
 		sk, _, err := crypto.GenerateEd25519Key(seedReader)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("unable to generate key: %v", err)
 		}
 		options = append(options, libp2p.Identity(sk))
 	}
 
 	if err := service.Railing(options...)(actions...)()(ctx); err != nil {
-		log.Error(err)
+		log.Errorf("service failed: %v", err)
 	}
 }
 
@@ -142,12 +139,4 @@ func addrInfos(addrs []string) []peer.AddrInfo {
 		list = append(list, *pi)
 	}
 	return list
-}
-
-// KeyTypeID uses the Ethereum keys to sign and verify messages.
-const KeyTypeID cryptoPB.KeyType = 10
-
-func init() {
-	crypto.PubKeyUnmarshallers[KeyTypeID] = ethkey.UnmarshalEthPublicKey
-	crypto.PrivKeyUnmarshallers[KeyTypeID] = ethkey.UnmarshalEthPrivateKey
 }
