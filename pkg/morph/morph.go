@@ -155,33 +155,33 @@ func (m *Morph) filterValue(v1, v2 any) bool {
 	refVal1, ok1 := v1.(reflect.Value)
 	refVal2, ok2 := v2.(reflect.Value)
 	if ok1 != ok2 {
-		return true
+		return false
 	}
 	if ok1 && ok2 {
 		if refVal1.Type() == hclRangeTy || refVal2.Type() == hclRangeTy {
-			return true
+			return false
 		}
 		if refVal1.Type() == hclBodyTy || refVal2.Type() == hclBodyTy {
-			return true
+			return false
 		}
 		if refVal1.Type() == hclBodyContentTy || refVal2.Type() == hclBodyContentTy {
-			return true
+			return false
 		}
 	}
 	refStruct1, ok1 := v1.(reflect.StructField)
 	refStruct2, ok2 := v1.(reflect.StructField)
 	if ok1 != ok2 {
-		return true
+		return false
 	}
 	if ok1 && ok2 {
 		if _, tagged := refStruct1.Tag.Lookup("hcl"); !tagged {
-			return true
+			return false
 		}
 		if _, tagged := refStruct2.Tag.Lookup("hcl"); !tagged {
-			return true
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (m *Morph) reloadRoutine() {

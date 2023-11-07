@@ -20,7 +20,7 @@ import (
 )
 
 // FilterFunc filter out to check if two values don't need to compare
-// Return true not to compare, false to compare
+// Return false not to compare, true to compare
 type FilterFunc func(any, any) bool
 
 // DeepEqual reports whether x and y are "deeply equal".
@@ -46,12 +46,15 @@ func deepEqual(v1, v2 reflect.Value, filter FilterFunc) bool { //nolint:gocyclo
 	if v1.Type() != v2.Type() {
 		return false
 	}
-	if filter != nil && filter(v1, v2) {
+	if filter != nil && !filter(v1, v2) {
 		return true
 	}
 
 	switch v1.Kind() {
 	case reflect.Struct:
+		if v1.NumField() != v2.NumField() {
+			return false
+		}
 		for i := 0; i < v1.NumField(); i++ {
 			fieldStruct1 := v1.Type().Field(i)
 			fieldStruct2 := v1.Type().Field(i)
@@ -92,6 +95,9 @@ func deepEqual(v1, v2 reflect.Value, filter FilterFunc) bool { //nolint:gocyclo
 		if v1.UnsafePointer() == v2.UnsafePointer() {
 			return true
 		}
+		if len(v1.MapKeys()) != len(v2.MapKeys()) {
+			return false
+		}
 		for _, k := range v1.MapKeys() {
 			val1 := v1.MapIndex(k)
 			val2 := v2.MapIndex(k)
@@ -99,6 +105,23 @@ func deepEqual(v1, v2 reflect.Value, filter FilterFunc) bool { //nolint:gocyclo
 				return false
 			}
 		}
+	case reflect.Func:
+		if v1.IsNil() && v2.IsNil() {
+			return true
+		}
+		return false
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v1.Int() == v2.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v1.Uint() == v2.Uint()
+	case reflect.String:
+		return v1.String() == v2.String()
+	case reflect.Bool:
+		return v1.Bool() == v2.Bool()
+	case reflect.Float32, reflect.Float64:
+		return v1.Float() == v2.Float()
+	case reflect.Complex64, reflect.Complex128:
+		return v1.Complex() == v2.Complex()
 	default:
 		return v1.Interface() == v2.Interface()
 	}
