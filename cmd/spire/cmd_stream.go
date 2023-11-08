@@ -76,11 +76,12 @@ func NewStreamCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobr
 				Data any            `json:"data"`
 				Meta transport.Meta `json:"meta"`
 			}
+			sinkCh := sink.Chan()
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
-				case msg, ok := <-sink.Chan():
+				case msg, ok := <-sinkCh:
 					if !ok {
 						return nil
 					}
