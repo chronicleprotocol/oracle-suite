@@ -169,10 +169,10 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags)
 			for {
 				select {
 				case <-ctx.Done():
-					return
+					return err
 				case msg, ok := <-msgCh:
 					if !ok {
-						return
+						return err
 					}
 					jsonMsg, err := json.Marshal(msg.Message)
 					if err != nil {
