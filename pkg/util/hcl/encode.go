@@ -1,6 +1,7 @@
 package hcl
 
 import (
+	"encoding"
 	"fmt"
 	"reflect"
 
@@ -44,8 +45,19 @@ func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error
 		fieldVal := rv.FieldByIndex(lf.Reflect.Index)
 
 		var label string
-		if err := mapper.Map(fieldVal.Interface(), &label); err != nil {
-			return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
+		switch t := fieldVal.Interface().(type) {
+		case encoding.TextMarshaler:
+			b, err := t.MarshalText()
+			if err != nil {
+				return fmt.Errorf("<error: %v>", err)
+			}
+			label = string(b)
+		case fmt.Stringer:
+			label = t.String()
+		case string:
+			label = fieldVal.String()
+		default:
+			return fmt.Errorf("cannot encode %T as HCL expression", fieldVal.Interface())
 		}
 		if !lf.Optional && label == "" {
 			return fmt.Errorf("missing block label: %s", blockType)

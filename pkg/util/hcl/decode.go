@@ -23,16 +23,9 @@ import (
 	"strings"
 
 	"github.com/defiweb/go-anymapper"
-	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 )
-
-type stringize interface {
-	String() string
-}
 
 // Marshaler marshals cty.Value.
 type Marshaler interface {
@@ -704,8 +697,6 @@ var (
 	ctyValTy      = reflect.TypeOf((*cty.Value)(nil)).Elem()
 	bigIntTy      = reflect.TypeOf((*big.Int)(nil)).Elem()
 	bigFloatTy    = reflect.TypeOf((*big.Float)(nil)).Elem()
-	addressTy     = reflect.TypeOf((*types.Address)(nil)).Elem()
-	pairTy        = reflect.TypeOf((*value.Pair)(nil)).Elem()
 	stringTy      = reflect.TypeOf("")
 	anyTy         = reflect.TypeOf((*any)(nil)).Elem()
 )
@@ -982,19 +973,6 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 		return nil
 	}
 
-	// types.Address -> cty.Value
-	if src == addressTy {
-		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			addr, ok := src.Interface().(types.Address)
-			if !ok {
-				return fmt.Errorf("cannot encode from types.Address %s", src.Type().Name())
-			}
-			ctyVal := cty.StringVal(addr.String())
-			dst.Set(reflect.ValueOf(ctyVal))
-			return nil
-		}
-	}
-
 	// cty.Value -> cty.Value
 	if src == ctyValTy {
 		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
@@ -1038,16 +1016,16 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
 		// Try to use marshaler interfaces.
 		if src.CanAddr() { // i.e. *config.URL
-			if u, ok := src.Addr().Interface().(Marshaler); ok {
-				ctyVal, err := u.MarshalHCL()
+			switch t := src.Addr().Interface().(type) {
+			case Marshaler:
+				ctyVal, err := t.MarshalHCL()
 				if err != nil {
 					return err
 				}
 				dst.Set(reflect.ValueOf(ctyVal))
 				return nil
-			}
-			if u, ok := src.Addr().Interface().(encoding.TextMarshaler); ok && src.Type() == stringTy {
-				text, err := u.MarshalText()
+			case encoding.TextMarshaler:
+				text, err := t.MarshalText()
 				if err != nil {
 					return err
 				}
@@ -1056,16 +1034,16 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 				return nil
 			}
 		} else { // i.e. origin.ContractAddresses
-			if u, ok := src.Interface().(Marshaler); ok {
-				ctyVal, err := u.MarshalHCL()
+			switch t := src.Interface().(type) {
+			case Marshaler:
+				ctyVal, err := t.MarshalHCL()
 				if err != nil {
 					return err
 				}
 				dst.Set(reflect.ValueOf(ctyVal))
 				return nil
-			}
-			if u, ok := src.Interface().(encoding.TextMarshaler); ok && src.Type() == stringTy {
-				text, err := u.MarshalText()
+			case encoding.TextMarshaler:
+				text, err := t.MarshalText()
 				if err != nil {
 					return err
 				}
@@ -1131,39 +1109,8 @@ func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
 	}
 }
 
-func strMapper(_ *anymapper.Mapper, _, dst reflect.Type) anymapper.MapFunc {
-	if dst != stringTy {
-		return nil
-	}
-
-	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-		val := src.Interface()
-		str, ok := val.(string)
-		if ok {
-			dst.Set(reflect.ValueOf(str))
-			return nil
-		}
-		if u, ok := val.(stringize); !ok {
-			str = u.String()
-			dst.Set(reflect.ValueOf(str))
-			return nil
-		}
-		if u, ok := val.(encoding.TextMarshaler); ok {
-			text, err := u.MarshalText()
-			if err != nil {
-				return err
-			}
-			dst.Set(reflect.ValueOf(string(text)))
-			return nil
-		}
-		return fmt.Errorf("unsupported type %s to String", src.Type())
-	}
-}
-
 func init() {
 	mapper = anymapper.New()
 	mapper.Context.StrictTypes = true
 	mapper.Mappers[ctyValTy] = ctyMapper
-	mapper.Mappers[stringTy] = strMapper
-	mapper.Mappers[pairTy] = strMapper
 }
