@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -41,6 +42,40 @@ func (t *testMsg) UnmarshallBinary(bytes []byte) error {
 	return nil
 }
 
+func TestLogger(t *testing.T) {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer ctxCancel()
+
+	var (
+		broadcastMessageLog bool
+		receivedMessageLog  bool
+	)
+
+	logger := callback.New(log.Debug, func(level log.Level, fields log.Fields, msg string) {
+		if level != log.Debug {
+			return
+		}
+		if msg == "Broadcast message" {
+			broadcastMessageLog = true
+		}
+		if msg == "Received message" {
+			receivedMessageLog = true
+		}
+	})
+	localTransport := local.New([]byte("test"), 1, map[string]transport.Message{"foo": (*testMsg)(nil)})
+	loggerTransport := New(localTransport, logger)
+	require.NoError(t, loggerTransport.Start(ctx))
+
+	msgCh := loggerTransport.Messages("foo")
+	msg := &testMsg{Val: "bar"}
+	require.NoError(t, loggerTransport.Broadcast("foo", msg))
+	recv := (<-msgCh).Message
+	require.NotNil(t, recv)
+	require.Equal(t, msg, recv.(*testMsg))
+	assert.True(t, broadcastMessageLog)
+	assert.True(t, receivedMessageLog)
+}
+
 func TestLogger_Bug_RandMessagesDrop(t *testing.T) {
 	// This test is a regression test for a bug that caused random messages to
 	// be dropped when using the logger middleware. The bug was caused by the
@@ -54,12 +89,12 @@ func TestLogger_Bug_RandMessagesDrop(t *testing.T) {
 	loggerTransport := New(localTransport, logger)
 	require.NoError(t, loggerTransport.Start(ctx))
 
-	msg := loggerTransport.Messages("foo")
+	msgCh := loggerTransport.Messages("foo")
 	for i := 0; i < 100; i++ {
-		send := &testMsg{Val: "bar"}
-		require.NoError(t, localTransport.Broadcast("foo", send))
-		recv := (<-msg).Message
+		msg := &testMsg{Val: "bar"}
+		require.NoError(t, loggerTransport.Broadcast("foo", msg))
+		recv := (<-msgCh).Message
 		require.NotNil(t, recv)
-		require.Equal(t, send, recv.(*testMsg))
+		require.Equal(t, msg, recv.(*testMsg))
 	}
 }

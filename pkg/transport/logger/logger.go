@@ -67,7 +67,7 @@ func (r *Logger) Broadcast(topic string, msg transport.Message) error {
 	if err != nil {
 		log.WithError(err)
 	}
-	log.Debug("Broadcasted message")
+	log.Debug("Broadcast message")
 	return err
 }
 
@@ -82,9 +82,9 @@ func (r *Logger) Messages(topic string) <-chan transport.ReceivedMessage {
 		// given topic. In such case, it will return nil.
 		return nil
 	}
-	fi := chanutil.NewFanOut(in)
+	fo := chanutil.NewFanOut(in)
 	go func() {
-		for msg := range fi.Chan() {
+		for msg := range fo.Chan() {
 			r.l.
 				WithFields(log.Fields{
 					"topic":   topic,
@@ -93,7 +93,7 @@ func (r *Logger) Messages(topic string) <-chan transport.ReceivedMessage {
 				Debug("Received message")
 		}
 	}()
-	return fi.Chan()
+	return fo.Chan()
 }
 
 // ServiceName implements the supervisor.WithName interface.
