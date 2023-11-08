@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	logrus2 "github.com/chronicleprotocol/oracle-suite/pkg/log/logrus"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/logrus/formatter"
@@ -53,10 +54,14 @@ func (lf *LoggerFlags) FlagSet() *pflag.FlagSet {
 }
 
 func (lf *LoggerFlags) Logger() log.Logger {
-	l := logrus.New()
-	l.SetLevel(lf.Verbosity())
-	l.SetFormatter(lf.Formatter())
-	return logrus2.New(l)
+	lr := logrus.New()
+	lr.SetLevel(lf.Verbosity())
+	lr.SetFormatter(lf.Formatter())
+	l := logrus2.New(lr)
+	if log.IsLevel(l, log.Debug) {
+		logger.EnableLibP2PLogs(l)
+	}
+	return l
 }
 
 const defaultVerbosity = logrus.InfoLevel
