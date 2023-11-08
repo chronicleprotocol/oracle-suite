@@ -225,7 +225,3 @@ func TestDeepEquals(t *testing.T) {
 		})
 	}
 }
-
-func TestDeepEqualsFull(t *testing.T) {
-
-}
