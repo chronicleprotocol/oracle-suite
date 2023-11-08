@@ -106,12 +106,12 @@ func (fi *FanIn[T]) Chan() <-chan T {
 // when the input channel is closed. The implementation is thread-safe.
 type FanOut[T any] struct {
 	mu  sync.Mutex
-	in  chan T
+	in  <-chan T
 	out []chan T
 }
 
 // NewFanOut creates a new FanOut instance.
-func NewFanOut[T any](ch chan T) *FanOut[T] {
+func NewFanOut[T any](ch <-chan T) *FanOut[T] {
 	fo := &FanOut[T]{in: ch}
 	go fo.worker()
 	return fo

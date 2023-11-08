@@ -49,11 +49,12 @@ func NewStreamCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobr
 			if err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
 			defer func() {
+				ctxCancel()
 				if sErr := <-services.Wait(); err == nil {
 					err = sErr
 				}
@@ -79,7 +80,10 @@ func NewStreamCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobr
 				select {
 				case <-ctx.Done():
 					return nil
-				case msg := <-sink.Chan():
+				case msg, ok := <-sink.Chan():
+					if !ok {
+						return nil
+					}
 					if raw {
 						m := mm{
 							Meta: msg.Meta,
@@ -143,8 +147,12 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags)
 			if err := f.Load(c); err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.StreamServices(l.Logger(), cc.Root().Use, cc.Root().Version)
+			topic := messages.DataPointV1MessageName
+			if legacy {
+				topic = messages.PriceV1MessageName //nolint:staticcheck
+			}
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			services, err := c.StreamServices(l.Logger(), cc.Root().Use, cc.Root().Version, topic)
 			if err != nil {
 				return err
 			}
@@ -152,21 +160,20 @@ func NewStreamPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags)
 				return err
 			}
 			defer func() {
+				ctxCancel()
 				if sErr := <-services.Wait(); err == nil {
 					err = sErr
 				}
 			}()
-			var msgCh <-chan transport.ReceivedMessage
-			if legacy {
-				msgCh = services.Transport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
-			} else {
-				msgCh = services.Transport.Messages(messages.DataPointV1MessageName)
-			}
+			msgCh := services.Transport.Messages(topic)
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case msg := <-msgCh:
+				case msg, ok := <-msgCh:
+					if !ok {
+						return
+					}
 					jsonMsg, err := json.Marshal(msg.Message)
 					if err != nil {
 						l.Logger().WithError(err).Error("Failed to marshal message")
