@@ -13,72 +13,75 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package node
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
-	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 )
 
-var log = logging.Logger("rail/service")
-
-type StartFn func(context.Context) error
-type PostNodeFn func(...Action) PostMeshFn
-type PostMeshFn func(...Mesh) StartFn
-
-func Railing(opts ...libp2p.Option) PostNodeFn {
-	return func(acts ...Action) PostMeshFn {
-		return func(mesh ...Mesh) StartFn {
-			return func(ctx context.Context) error {
-				s := &Rail{
-					opts:  opts,
-					acts:  acts,
-					mesh:  mesh,
-					errCh: make(chan error),
-				}
-				if err := s.Start(ctx); err != nil {
-					return err
-				}
-				return <-s.Wait()
-			}
+func NewNode(opts ...libp2p.Option) func(...Action) *Node {
+	return func(acts ...Action) *Node {
+		return &Node{
+			opts: opts,
+			acts: acts,
 		}
 	}
 }
 
-type Rail struct {
-	host  host.Host
-	opts  []libp2p.Option
-	ctx   context.Context
-	errCh chan error
+type Node struct {
+	ctx context.Context
+	wg  sync.WaitGroup
 
+	host host.Host
+	opts []libp2p.Option
 	acts []Action
 	mesh []Mesh
 }
 
-func (s *Rail) Start(ctx context.Context) (err error) {
-	log.Info("starting P2P")
+type Action func(*Node) error
+type Mesh func(sub *pubsub.PubSub) error
+
+func (s *Node) Start(ctx context.Context) error {
+	log.Debugf("starting %T", s)
+	if s.ctx != nil {
+		return fmt.Errorf("already started %T", s)
+	}
+	if ctx == nil {
+		return fmt.Errorf("nil context for %T", s)
+	}
 	s.ctx = ctx
+	var err error
 	s.host, err = libp2p.New(s.opts...)
 	if err != nil {
 		return err
 	}
-	go func() {
-		<-s.ctx.Done()
-		log.Info("stopping P2P")
-		s.errCh <- s.host.Close()
-		close(s.errCh)
-	}()
 	for _, act := range s.acts {
 		if err := act(s); err != nil {
 			return err
 		}
 	}
+	s.wg.Add(1)
+	go func() {
+		defer log.Debugf("stopped %T", s)
+
+		<-s.ctx.Done()
+		log.Debugf("closing %T", s.host)
+		if err := s.host.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
+	log.Debugf("startred %T", s)
 	return nil
 }
 
-func (s *Rail) Wait() <-chan error {
-	return s.errCh
+func (s *Node) Wait() {
+	defer log.Debugf("done %T", s)
+
+	s.wg.Wait()
 }

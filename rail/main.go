@@ -16,32 +16,29 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
-	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/chronicleprotocol/oracle-suite/rail/env"
-	"github.com/chronicleprotocol/oracle-suite/rail/service"
+	"github.com/chronicleprotocol/oracle-suite/rail/metrics"
+	"github.com/chronicleprotocol/oracle-suite/rail/node"
 )
 
 var log = logging.Logger("rail")
 
 func main() {
+	logging.SetLogLevel("rail", "DEBUG")
+	logging.SetLogLevel("rail/metrics", "DEBUG")
+	logging.SetLogLevel("rail/service", "DEBUG")
+	logging.SetLogLevel("rail/node", "DEBUG")
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
-	// Options to configure libp2p node with
 	options := []libp2p.Option{
 		libp2p.Ping(false),
 		libp2p.ListenAddrStrings([]string{
@@ -58,85 +55,54 @@ func main() {
 		libp2p.EnableRelayService(),
 		// libp2p.EnableAutoRelayWithStaticRelays(),
 		// libp2p.EnableAutoRelayWithPeerSource(),
+		node.Bootstraps(ctx, os.Args[1:]),
+		node.Seed(),
 	}
 
-	// Things to do when libp2p node is ready
-	actions := []service.Action{
-		service.LogListeningAddresses,
-		service.LogEvents,
+	actions := []node.Action{
+		node.LogListeningAddresses,
+		node.LogEvents,
+		node.Gossip(ctx),
 	}
 
+	// eventChan := make(chan any)
+	// defer close(eventChan)
 	{
-		addrs := os.Args[1:]
-		if len(addrs) == 0 {
-			addrs = env.Strings("CFG_LIBP2P_BOOTSTRAP_ADDRS", defaultBoots)
-		}
-		options = append(options, service.Bootstrap(ctx, addrInfos(addrs)...))
+		// idChan := make(chan peer.ID)
+		// defer close(idChan)
+		actions = append(actions) // node.Pinger(ctx, idChan),
+		// node.ExtractIDs(idChan),
+		// node.Events(eventChan),
 	}
 
-	{
-		var gSubOpts []pubsub.Option
-		if directPeers := env.Strings("CFG_LIBP2P_DIRECT_PEERS_ADDRS", nil); len(directPeers) > 0 {
-			gSubOpts = append(gSubOpts, pubsub.WithDirectPeers(addrInfos(directPeers)))
-		}
-		actions = append(actions, service.GossipSub(ctx, gSubOpts...))
-	}
-
-	{
-		idChan := make(chan peer.ID)
-		actions = append(actions,
-			service.Pinger(ctx, idChan),
-			service.ExtractIDs(idChan),
-		)
-	}
-
-	{
-		http.Handle("/metrics", promhttp.Handler())
-		go func() {
-			if err := http.ListenAndServe(":8080", nil); err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
-	{
-		seedReader := rand.Reader
-		if seed := env.HexBytes("CFG_LIBP2P_PK_SEED", nil); seed != nil {
-			if len(seed) != ed25519.SeedSize {
-				log.Fatalf("invalid seed size - want: %d, got: %d", ed25519.SeedSize, len(seed))
-			}
-			seedReader = bytes.NewReader(seed)
-		}
-		sk, _, err := crypto.GenerateEd25519Key(seedReader)
-		if err != nil {
-			log.Fatalf("unable to generate key: %v", err)
-		}
-		options = append(options, libp2p.Identity(sk))
-	}
-
-	if err := service.Railing(options...)(actions...)()(ctx); err != nil {
-		log.Errorf("service failed: %v", err)
-	}
+	runServices(
+		ctx,
+		&metrics.Prometheus{},
+		node.NewNode(options...)(actions...),
+	)
 }
 
-var defaultBoots = []string{
-	"/dns/spire-bootstrap1.chroniclelabs.io/tcp/8000/p2p/12D3KooWFYkJ1SghY4KfAkZY9Exemqwnh4e4cmJPurrQ8iqy2wJG",
-	"/dns/spire-bootstrap2.chroniclelabs.io/tcp/8000/p2p/12D3KooWD7eojGbXT1LuqUZLoewRuhNzCE2xQVPHXNhAEJpiThYj",
-	"/dns/spire-bootstrap1.staging.chroniclelabs.io/tcp/8000/p2p/12D3KooWHoSyTgntm77sXShoeX9uNkqKNMhHxKtskaHqnA54SrSG",
-	"/ip4/178.128.141.30/tcp/8000/p2p/12D3KooWLaMPReGaxFc6Z7BKWTxZRbxt3ievW8Np7fpA6y774W9T",
-	"/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
-	"/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR",
+func runServices(ctx context.Context, services ...service) {
+	for _, s := range services {
+		log.Debugf("start %T", s)
+		if err := s.Start(ctx); err != nil {
+			log.Fatal(err)
+		}
+	}
+	var wg sync.WaitGroup
+	wg.Add(len(services))
+	for _, s := range services {
+		go func(s service) {
+			s.Wait()
+			wg.Done()
+			log.Debugf("finished %T", s)
+		}(s)
+	}
+	wg.Wait()
+	log.Debug("all services finished")
 }
 
-func addrInfos(addrs []string) []peer.AddrInfo {
-	var list []peer.AddrInfo
-	for _, addr := range addrs {
-		pi, err := peer.AddrInfoFromString(addr)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		list = append(list, *pi)
-	}
-	return list
+type service interface {
+	Start(ctx context.Context) error
+	Wait()
 }

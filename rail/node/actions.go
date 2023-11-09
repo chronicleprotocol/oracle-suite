@@ -13,34 +13,31 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package node
 
 import (
 	"context"
-	"reflect"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/defiweb/go-eth/types"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/event"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
-	"github.com/multiformats/go-multiaddr"
+
+	"github.com/chronicleprotocol/oracle-suite/rail/env"
 )
 
-type Action func(*Rail) error
-
 func AddrInfoChan(infos chan<- peer.AddrInfo) Action {
-	return func(rail *Rail) error {
+	return func(rail *Node) error {
 		infos <- *host.InfoFromHost(rail.host)
 		return nil
 	}
 }
 
 func ConnectoPinger(ctx context.Context, infos <-chan peer.AddrInfo) Action {
-	return func(rail *Rail) error {
+	return func(rail *Node) error {
 		pingService := ping.NewPingService(rail.host)
 		go func() {
 			for id := range infos {
@@ -58,7 +55,7 @@ func ConnectoPinger(ctx context.Context, infos <-chan peer.AddrInfo) Action {
 }
 
 func Pinger(ctx context.Context, ids <-chan peer.ID) Action {
-	return func(rail *Rail) error {
+	return func(rail *Node) error {
 		pingService := ping.NewPingService(rail.host)
 		go func() {
 			for id := range ids {
@@ -70,7 +67,7 @@ func Pinger(ctx context.Context, ids <-chan peer.ID) Action {
 	}
 }
 
-func LogListeningAddresses(rail *Rail) error {
+func LogListeningAddresses(rail *Node) error {
 	addrs, err := peer.AddrInfoToP2pAddrs(host.InfoFromHost(rail.host))
 	if err != nil {
 		return err
@@ -80,19 +77,23 @@ func LogListeningAddresses(rail *Rail) error {
 }
 
 func ExtractIDs(ids chan<- peer.ID) Action {
-	return func(rail *Rail) error {
+	return func(rail *Node) error {
 		sub, err := rail.host.EventBus().Subscribe(new(event.EvtPeerIdentificationCompleted))
 		if err != nil {
 			return err
 		}
 		go func() {
-			<-rail.errCh
-			log.Debugw("closing subscription")
+			defer log.Debugw("done", "subscription", sub.Name())
+
+			<-rail.ctx.Done()
+			log.Debugw("closing subscription", "name", sub.Name())
 			if err := sub.Close(); err != nil {
 				log.Errorw("error closing subscription", "error", err)
 			}
 		}()
 		go func() {
+			defer log.Debugw("got out", "subscription", sub.Name())
+
 			for e := range sub.Out() {
 				t := e.(event.EvtPeerIdentificationCompleted)
 				ids <- t.Peer
@@ -102,57 +103,97 @@ func ExtractIDs(ids chan<- peer.ID) Action {
 	}
 }
 
-func LogEvents(rail *Rail) error {
-	ps := rail.host.Peerstore()
+func Events(ch chan<- any) Action {
+	return func(rail *Node) error {
+		sub, err := rail.host.EventBus().Subscribe(event.WildcardSubscription)
+		if err != nil {
+			return err
+		}
+		go func() {
+			defer log.Debugw("done", "subscription", sub.Name())
+
+			<-rail.ctx.Done()
+			log.Debugw("closing", "subscription", sub.Name())
+			if err := sub.Close(); err != nil {
+				log.Errorw("error closing subscription", "error", err)
+			}
+		}()
+		go func() {
+			defer log.Debugw("got out", "subscription", sub.Name())
+
+			for e := range sub.Out() {
+				ch <- e
+			}
+		}()
+		return nil
+	}
+}
+
+func LogEvents(rail *Node) error {
+	// ps := rail.host.Peerstore()
 	sub, err := rail.host.EventBus().Subscribe(event.WildcardSubscription)
 	if err != nil {
 		return err
 	}
 	go func() {
-		<-rail.errCh
-		log.Debugw("closing subscription")
-		if err := sub.Close(); err != nil {
-			log.Errorw("error closing subscription", "error", err)
+		defer log.Debugw("done", "subscription", sub.Name())
+
+		for e := range sub.Out() {
+			switch t := e.(type) {
+			// case event.EvtLocalAddressesUpdated:
+			// 	var mas []multiaddr.Multiaddr
+			// 	for _, ma := range t.Current {
+			// 		mas = append(mas, ma.Address)
+			// 	}
+			// 	list, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{Addrs: mas, ID: rail.host.ID()})
+			// 	if err != nil {
+			// 		log.Errorw("error converting addr info",
+			// 			"error", err,
+			// 		)
+			// 		continue
+			// 	}
+			// 	log.Infow("new listening", "addrs", list)
+			// case event.EvtPeerIdentificationCompleted:
+			// 	prots, err := ps.GetProtocols(t.Peer)
+			// 	if err != nil {
+			// 		log.Errorw("error getting protocols", "error", err)
+			// 		continue
+			// 	}
+			// 	log.Infow("protocols",
+			// 		t.Peer.String(), prots,
+			// 	)
+			// case event.EvtPeerConnectednessChanged:
+			// 	a := ethkey.PeerIDToAddress(t.Peer)
+			// 	log.Infow("connectedness",
+			// 		"state", t.Connectedness.String(),
+			// 		"peer", t.Peer.String(),
+			// 		"addr", a.String(),
+			// 		"net", feeds.net(a),
+			// 	)
+			// case event.EvtLocalReachabilityChanged:
+			// 	log.Infow("reachability",
+			// 		"state", t.Reachability.String(),
+			// 	)
+			// case event.EvtNATDeviceTypeChanged:
+			// 	log.Infow("NAT device",
+			// 		"type", t.NatDeviceType.String(),
+			// 		"proto", t.TransportProtocol.String(),
+			// 	)
+			default:
+				_ = t
+				// log.Debugw("event",
+				// 	reflect.TypeOf(t).String(), e,
+				// )
+			}
 		}
 	}()
 	go func() {
-		for e := range sub.Out() {
-			switch t := e.(type) {
-			case event.EvtLocalAddressesUpdated:
-				var mas []multiaddr.Multiaddr
-				for _, ma := range t.Current {
-					mas = append(mas, ma.Address)
-				}
-				list, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{Addrs: mas, ID: rail.host.ID()})
-				if err != nil {
-					log.Errorw("error converting addr info", "error", err)
-					continue
-				}
-				log.Infow("new listening", "addrs", list)
-			case event.EvtPeerIdentificationCompleted:
-				prots, err := ps.GetProtocols(t.Peer)
-				if err != nil {
-					log.Errorw("error getting protocols", "error", err)
-					continue
-				}
-				log.Infow("protocols", t.Peer.String(), prots)
-			case event.EvtPeerConnectednessChanged:
-				a := ethkey.PeerIDToAddress(t.Peer)
-				log.Infow(
-					"connectedness",
-					"state", t.Connectedness.String(),
-					"peer", t.Peer.String(),
-					"addr", a.String(),
-					"net", feeds.net(a),
-				)
-			case event.EvtLocalReachabilityChanged:
-				log.Infow(
-					"reachability",
-					"state", t.Reachability.String(),
-				)
-			default:
-				log.Debugw("event", reflect.TypeOf(t).String(), e)
-			}
+		defer log.Debugw("closed", "subscription", sub.Name())
+
+		<-rail.ctx.Done()
+		log.Debugw("closing", "subscription", sub.Name())
+		if err := sub.Close(); err != nil {
+			log.Errorw("error closing", "error", err, "subscription", sub.Name())
 		}
 	}()
 	return nil
@@ -209,13 +250,17 @@ func (f feedList) net(a types.Address) string {
 }
 
 func GossipSub(ctx context.Context, opts ...pubsub.Option) Action {
-	return func(rail *Rail) error {
+	return func(rail *Node) error {
 		ps, err := pubsub.NewGossipSub(ctx, rail.host, opts...)
 		if err != nil {
 			return err
 		}
 
-		var cancels []pubsub.RelayCancelFunc
+		type cancel struct {
+			cancel pubsub.RelayCancelFunc
+			topic  string
+		}
+		var cancels []cancel
 
 		for _, topic := range messages.AllMessagesMap.Keys() {
 			t, err := ps.Join(topic)
@@ -232,18 +277,27 @@ func GossipSub(ctx context.Context, opts ...pubsub.Option) Action {
 			}
 			log.Debugw("enabled relay", "topic", topic)
 
-			cancels = append(cancels, c)
+			cancels = append(cancels, cancel{c, topic})
 		}
 
 		go func() {
+			defer log.Debug("all topics canceled")
+
 			<-rail.ctx.Done()
-			log.Debug("canceling all topics")
 			for _, c := range cancels {
-				c()
+				log.Debugw("canceling", "topic", c.topic)
+				c.cancel()
 			}
-			log.Debug("all topics canceled")
 		}()
 
 		return nil
 	}
+}
+
+func Gossip(ctx context.Context) Action {
+	var gSubOpts []pubsub.Option
+	if directPeers := env.Strings("CFG_LIBP2P_DIRECT_PEERS_ADDRS", nil); len(directPeers) > 0 {
+		gSubOpts = append(gSubOpts, pubsub.WithDirectPeers(addrInfos(directPeers)))
+	}
+	return GossipSub(ctx, gSubOpts...)
 }
