@@ -28,13 +28,13 @@ import (
 
 var log = logging.Logger("rail/ui")
 
-func NewApp(eventChan chan any) *App {
-	return &App{
+func NewProgram(eventChan <-chan any) *Program {
+	return &Program{
 		events: eventChan,
 	}
 }
 
-type App struct {
+type Program struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -45,7 +45,7 @@ type App struct {
 	program *tea.Program
 }
 
-func (s *App) Start(ctx context.Context) error {
+func (s *Program) Start(ctx context.Context) error {
 	if s.ctx != nil {
 		return fmt.Errorf("already started %T", s)
 	}
@@ -86,14 +86,14 @@ func (s *App) Start(ctx context.Context) error {
 				return
 			case e := <-s.events:
 				log.Debugf("recv %T", e)
-				s.program.Send(e)
+				s.program.Send(PeerEvent(e))
 			}
 		}
 	}()
 	return nil
 }
 
-func (s *App) Wait() {
+func (s *Program) Wait() {
 	// Wait until the program exits
 	s.program.Wait()
 	log.Debugf("waited %T", s.program)

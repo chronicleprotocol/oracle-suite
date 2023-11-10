@@ -74,7 +74,7 @@ func main() {
 		idChan := make(chan peer.ID)
 		defer close(idChan)
 		actions = append(actions,
-			node.Pinger(ctx, idChan),
+			node.Pinger(ctx, idChan, eventChan),
 			node.ExtractIDs(idChan),
 		)
 	}
@@ -83,7 +83,7 @@ func main() {
 		ctx,
 		&metrics.Prometheus{},
 		node.NewNode(options...)(actions...),
-		ui.NewApp(eventChan),
+		ui.NewProgram(eventChan),
 	)
 }
 

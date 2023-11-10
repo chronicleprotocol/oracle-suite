@@ -18,6 +18,7 @@ package node
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -59,13 +60,20 @@ func ConnectoPinger(ctx context.Context, infos <-chan peer.AddrInfo) Action {
 	}
 }
 
-func Pinger(ctx context.Context, ids <-chan peer.ID) Action {
+type PingResult struct {
+	Peer  peer.ID
+	RTT   time.Duration
+	Error error
+}
+
+func Pinger(ctx context.Context, ids <-chan peer.ID, pings chan<- any) Action {
 	return func(rail *Node) error {
 		pingService := ping.NewPingService(rail.host)
 		go func() {
 			for id := range ids {
 				res := <-pingService.Ping(ctx, id)
 				log.Infow("ping", "id", id, "rtt", res.RTT.String())
+				pings <- PingResult{id, res.RTT, res.Error}
 			}
 		}()
 		return nil
@@ -173,7 +181,7 @@ func LogEvents(rail *Node) error {
 						"state", t.Connectedness.String(),
 						"peer", t.Peer.String(),
 						"addr", a.String(),
-						"net", feeds.net(a),
+						"net", Feeds.Net(a),
 					)
 				case event.EvtLocalReachabilityChanged:
 					log.Infow("reachability",
@@ -185,10 +193,7 @@ func LogEvents(rail *Node) error {
 						"proto", t.TransportProtocol.String(),
 					)
 				default:
-					_ = t
-					log.Debugw("event",
-						reflect.TypeOf(t).String(), e,
-					)
+					log.Debugw("event", reflect.TypeOf(t).String(), e)
 				}
 			}
 		}
@@ -211,7 +216,7 @@ func closeSub(sub event.Subscription) {
 	log.Debugw("closed", "subscription", sub.Name())
 }
 
-var feeds = feedList{
+var Feeds = FeedList{
 	"prod": {
 		"0x130431b4560Cd1d74A990AE86C337a33171FF3c6",
 		"0x16655369Eb59F3e1cAFBCfAC6D3Dd4001328f747",
@@ -248,9 +253,9 @@ var feeds = feedList{
 	},
 }
 
-type feedList map[string][]string
+type FeedList map[string][]string
 
-func (f feedList) net(a types.Address) string {
+func (f FeedList) Net(a types.Address) string {
 	for net, feeds := range f {
 		for _, feed := range feeds {
 			if feed == a.String() {

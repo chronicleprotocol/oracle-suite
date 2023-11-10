@@ -19,6 +19,8 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/chronicleprotocol/oracle-suite/rail/ui/queue"
 )
 
 type DoneMapper func(table.Model) tea.Cmd
@@ -55,22 +57,26 @@ func (m Model) Reset() Model {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
-	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
-			} else {
-				m.table.Focus()
-			}
+			return m, queue.Msg(Done{
+				Idx: m.table.Cursor(),
+				Row: m.table.SelectedRow(),
+			}).Bat()
 		case "enter":
-			return m, m.dm(m.table)
-		default:
-			if m.km != nil {
-				m.km(m.table)(msg.String())
+			if m.dm != nil {
+				return m, m.dm(m.table)
 			}
+			return m, queue.Msg(Done{
+				Idx: m.table.Cursor(),
+				Row: m.table.SelectedRow(),
+			}).Bat()
+			// default:
+			// 	if m.km != nil {
+			// 		m.km(m.table)(msg.String())
+			// 	}
 		}
 
 	case tea.WindowSizeMsg:
@@ -79,8 +85,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, nil
 
 	case Data:
-		m.dm = msg.Mapper
-		m.km = msg.Keys
+		// m.dm = msg.Mapper
+		// m.km = msg.Keys
+		l := len(m.table.Rows())
 		m.table.SetRows([]table.Row{}) //  because of the way table.Model works - len(rows) must be < len(cols)
 		for _, r := range msg.Rows {
 			for x, c := range r {
@@ -89,10 +96,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 		m.table.SetColumns(msg.Cols)
 		m.table.SetRows(msg.Rows)
-		m.table.SetCursor(0)
+		if l < m.table.Cursor() {
+			m.table.SetCursor(0)
+		}
 		return m, nil
 	}
 
+	var cmd tea.Cmd
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
 }

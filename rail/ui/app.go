@@ -56,6 +56,11 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		a.LogF("keypress: %s", msg)
 		switch msg.String() {
+		case "esc", "enter":
+			if a.State == state0 {
+				return a, a.Next(statePeers)
+			}
+			return a, a.Next(state0)
 		case "q", "ctrl+c":
 			return a, a.Next(stateQuit)
 		}
@@ -64,6 +69,12 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		var c tea.Cmd
 		a.table, c = a.table.Update(msg)
 		return a, c
+
+	case PeerEvent:
+		a.LogF("PeerEvent: %#v", msg)
+		a.peers.Add(msg)
+		message = mapPeers(a.peers)
+
 	default:
 		a.LogF("unknown message: %#v", msg)
 	}
@@ -74,9 +85,9 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (a app) update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch a.State {
 	case state0:
-		return a, a.Next(statePeers)
+		return a, nil
 	case statePeers:
-		return a.doValues(message)
+		return a.doPeers(message)
 	case stateQuit:
 		return a, queue.Cmd(tea.ExitAltScreen, tea.Quit).Seq()
 	}
