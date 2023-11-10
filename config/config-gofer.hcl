@@ -22,8 +22,8 @@ gofer {
 
   origin "bitfinex" {
     type = "tick_generic_jq"
-    url  = "https://api-pub.bitfinex.com/v2/tickers?symbols=ALL"
-    jq   = ".[] | select(.[0] == \"t\" + ($ucbase + $ucquote) or .[0] == \"t\" + ($ucbase + \":\" + $ucquote) ) | {price: .[7], time: now|round, volume: .[8]}"
+    url  = "https://api-pub.bitfinex.com/v2/tickers?symbols=t$${ucbase}$${ucquote}"
+    jq   = "{price: .[][7], time: now|round, volume: .[][8]}"
   }
 
   origin "bitstamp" {
@@ -801,10 +801,7 @@ gofer {
       }
       origin "coinbase" { query = "XTZ/USD" }
       origin "kraken" { query = "XTZ/USD" }
-      indirect {
-        origin "bitfinex" { query = "XTZ/BTC" }
-        reference { data_model = "BTC/USD" }
-      }
+      origin "bitfinex" { query = "XTZ/USD" }
     }
   }
 
