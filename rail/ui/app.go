@@ -85,8 +85,10 @@ func (a app) update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a app) View() string {
 	switch a.State {
-	case state0, statePeers, stateQuit:
+	case state0, stateQuit:
 		return a.String()
+	case statePeers:
+		return a.table.View()
 	}
 	return fmt.Sprintf("error: unknown state: %s", a.State)
 }

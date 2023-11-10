@@ -199,15 +199,15 @@ func LogEvents(rail *Node) error {
 func closeSub(sub event.Subscription) {
 	log.Debugw("closing", "subscription", sub.Name())
 	go func() {
+		log.Debugf("draining %T", sub.Out())
 		for e := range sub.Out() {
-			log.Debugf("drained event %T for %s", e, sub.Name())
+			log.Debugf("got %T for %s", e, sub.Name())
 		}
 	}()
 	if err := sub.Close(); err != nil {
 		log.Errorw("error closing", "error", err, "subscription", sub.Name())
 		return
 	}
-
 	log.Debugw("closed", "subscription", sub.Name())
 }
 

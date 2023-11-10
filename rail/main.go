@@ -27,6 +27,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/rail/metrics"
 	"github.com/chronicleprotocol/oracle-suite/rail/node"
+	"github.com/chronicleprotocol/oracle-suite/rail/ui"
 )
 
 var log = logging.Logger("rail")
@@ -35,7 +36,7 @@ func main() {
 	logging.SetLogLevel("rail", "DEBUG")
 	// logging.SetLogLevel("rail/metrics", "DEBUG")
 	// logging.SetLogLevel("rail/service", "DEBUG")
-	logging.SetLogLevel("rail/node", "DEBUG")
+	// logging.SetLogLevel("rail/node", "DEBUG")
 	// logging.SetLogLevel("rail/ui", "DEBUG")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
@@ -63,17 +64,11 @@ func main() {
 
 	eventChan := make(chan any, 100)
 	actions := []node.Action{
-		node.LogListeningAddresses,
-		node.LogEvents,
+		// node.LogListeningAddresses,
+		// node.LogEvents,
 		node.Gossip(ctx),
 		node.Events(eventChan),
 	}
-
-	go func() {
-		for e := range eventChan {
-			log.Debug(e)
-		}
-	}()
 
 	if false {
 		idChan := make(chan peer.ID)
@@ -88,26 +83,34 @@ func main() {
 		ctx,
 		&metrics.Prometheus{},
 		node.NewNode(options...)(actions...),
-		// ui.NewApp(eventChan),
+		ui.NewApp(eventChan),
 	)
 }
 
 func runServicesAndWait(ctx context.Context, services ...service) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	for _, s := range services {
 		log.Debugf("start %T", s)
 		if err := s.Start(ctx); err != nil {
 			log.Fatal(err)
 		}
+		log.Debugf("started %T", s)
 	}
+
 	var wg sync.WaitGroup
 	wg.Add(len(services))
 	for _, s := range services {
 		go func(s service) {
 			defer wg.Done()
+			log.Debugf("wait %T", s)
 			s.Wait()
+			cancel()
 			log.Debugf("done %T", s)
 		}(s)
 	}
+
 	wg.Wait()
 	log.Debug("all services finished")
 }

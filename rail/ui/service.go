@@ -31,17 +31,15 @@ var log = logging.Logger("rail/ui")
 func NewApp(eventChan chan any) *App {
 	return &App{
 		events: eventChan,
-		program: tea.NewProgram(app{
-			table: rowpick.NewModel(),
-		}),
 	}
 }
 
 type App struct {
-	ctx context.Context
-	wg  sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 
-	events chan any
+	events <-chan any
 
 	model   tea.Model
 	program *tea.Program
@@ -54,25 +52,55 @@ func (s *App) Start(ctx context.Context) error {
 	if ctx == nil {
 		return fmt.Errorf("nil context for %T", s)
 	}
-	s.ctx = ctx
+	s.ctx, s.cancel = context.WithCancel(ctx)
+
+	s.program = tea.NewProgram(app{
+		table: rowpick.NewModel(),
+	}, tea.WithContext(s.ctx))
+
 	go func() {
 		s.wg.Add(1)
 		defer s.wg.Done()
+		defer log.Debugf("gone %T", s.program)
+		defer s.cancel()
 
 		var err error
 		s.model, err = s.program.Run()
 		if err != nil {
 			log.Error(err)
 		}
-		close(s.events)
 	}()
-	for e := range s.events {
-		s.program.Send(e)
-	}
+
+	go func() {
+		s.wg.Add(1)
+		defer s.wg.Done()
+		defer log.Debugf("gone %T", s.program)
+		defer s.cancel()
+
+		for {
+			select {
+			case <-s.ctx.Done():
+				log.Debugf("kill %T", s.program)
+				s.program.Quit()
+				log.Debugf("killed %T", s.program)
+				return
+			case e := <-s.events:
+				log.Debugf("recv %T", e)
+				s.program.Send(e)
+			}
+		}
+	}()
 	return nil
 }
 
 func (s *App) Wait() {
+	// Wait until the program exits
 	s.program.Wait()
+	log.Debugf("waited %T", s.program)
+	// Cancel the context so that all goroutines exit
+	s.cancel()
+	log.Debugf("canceled %T", s.cancel)
+	// Wait for all goroutines to exit
 	s.wg.Wait()
+	log.Debugf("waited %T", s.wg)
 }
