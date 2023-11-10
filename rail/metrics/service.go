@@ -17,6 +17,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -25,46 +26,48 @@ import (
 )
 
 type Prometheus struct {
-	ctx    context.Context
-	wg     sync.WaitGroup
+	ctx context.Context
+	wg  sync.WaitGroup
+
 	server *http.Server
 }
 
 func (s *Prometheus) Start(ctx context.Context) error {
-	log.Debugf("starting %T", s)
 	if s.ctx != nil {
 		return fmt.Errorf("already started %T", s)
 	}
 	if ctx == nil {
 		return fmt.Errorf("nil context for %T", s)
 	}
-	sm := http.NewServeMux()
-	sm.Handle("/metrics", promhttp.Handler())
-	s.server = &http.Server{Addr: ":8080", Handler: sm}
+	{
+		sm := http.NewServeMux()
+		sm.Handle("/metrics", promhttp.Handler())
+		s.server = &http.Server{Addr: ":8080", Handler: sm}
+	}
 	go func() {
-		defer log.Debugf("stopped %T", s)
+		s.wg.Add(1)
+		defer s.wg.Done()
 
 		if err := s.server.ListenAndServe(); err != nil {
+			if errors.Is(err, http.ErrServerClosed) {
+				log.Debug(err)
+				return
+			}
 			log.Error(err)
 		}
 	}()
 	go func() {
-		<-ctx.Done()
+		s.wg.Add(1)
+		defer s.wg.Done()
 
+		<-ctx.Done()
 		if err := s.server.Shutdown(ctx); err != nil {
 			log.Error(err)
 		}
 	}()
-	s.wg.Add(1)
-	log.Debugf("started %T", s)
 	return nil
 }
 
 func (s *Prometheus) Wait() {
-	defer log.Debugf("done %T", s)
-
 	s.wg.Wait()
 }
-
-// 1223
-// 0103

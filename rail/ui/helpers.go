@@ -17,7 +17,6 @@ package ui
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"runtime"
 )

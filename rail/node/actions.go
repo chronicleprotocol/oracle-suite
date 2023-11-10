@@ -17,7 +17,9 @@ package node
 
 import (
 	"context"
+	"reflect"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 	"github.com/defiweb/go-eth/types"
 	"github.com/libp2p/go-libp2p-pubsub"
@@ -25,9 +27,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	"github.com/multiformats/go-multiaddr"
 
 	"github.com/chronicleprotocol/oracle-suite/rail/env"
 )
+
+type Action func(*Node) error
 
 func AddrInfoChan(infos chan<- peer.AddrInfo) Action {
 	return func(rail *Node) error {
@@ -83,20 +88,18 @@ func ExtractIDs(ids chan<- peer.ID) Action {
 			return err
 		}
 		go func() {
-			defer log.Debugw("done", "subscription", sub.Name())
+			rail.wg.Add(1)
+			defer rail.wg.Done()
 
-			<-rail.ctx.Done()
-			log.Debugw("closing subscription", "name", sub.Name())
-			if err := sub.Close(); err != nil {
-				log.Errorw("error closing subscription", "error", err)
-			}
-		}()
-		go func() {
-			defer log.Debugw("got out", "subscription", sub.Name())
-
-			for e := range sub.Out() {
-				t := e.(event.EvtPeerIdentificationCompleted)
-				ids <- t.Peer
+			for {
+				select {
+				case <-rail.ctx.Done():
+					closeSub(sub)
+					return
+				case e := <-sub.Out():
+					t := e.(event.EvtPeerIdentificationCompleted)
+					ids <- t.Peer
+				}
 			}
 		}()
 		return nil
@@ -110,19 +113,18 @@ func Events(ch chan<- any) Action {
 			return err
 		}
 		go func() {
-			defer log.Debugw("done", "subscription", sub.Name())
+			rail.wg.Add(1)
+			defer rail.wg.Done()
 
-			<-rail.ctx.Done()
-			log.Debugw("closing", "subscription", sub.Name())
-			if err := sub.Close(); err != nil {
-				log.Errorw("error closing subscription", "error", err)
-			}
-		}()
-		go func() {
-			defer log.Debugw("got out", "subscription", sub.Name())
-
-			for e := range sub.Out() {
-				ch <- e
+			for {
+				select {
+				case <-rail.ctx.Done():
+					closeSub(sub)
+					close(ch)
+					return
+				case e := <-sub.Out():
+					ch <- e
+				}
 			}
 		}()
 		return nil
@@ -130,73 +132,83 @@ func Events(ch chan<- any) Action {
 }
 
 func LogEvents(rail *Node) error {
-	// ps := rail.host.Peerstore()
+	ps := rail.host.Peerstore()
 	sub, err := rail.host.EventBus().Subscribe(event.WildcardSubscription)
 	if err != nil {
 		return err
 	}
 	go func() {
-		defer log.Debugw("done", "subscription", sub.Name())
-
-		for e := range sub.Out() {
-			switch t := e.(type) {
-			// case event.EvtLocalAddressesUpdated:
-			// 	var mas []multiaddr.Multiaddr
-			// 	for _, ma := range t.Current {
-			// 		mas = append(mas, ma.Address)
-			// 	}
-			// 	list, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{Addrs: mas, ID: rail.host.ID()})
-			// 	if err != nil {
-			// 		log.Errorw("error converting addr info",
-			// 			"error", err,
-			// 		)
-			// 		continue
-			// 	}
-			// 	log.Infow("new listening", "addrs", list)
-			// case event.EvtPeerIdentificationCompleted:
-			// 	prots, err := ps.GetProtocols(t.Peer)
-			// 	if err != nil {
-			// 		log.Errorw("error getting protocols", "error", err)
-			// 		continue
-			// 	}
-			// 	log.Infow("protocols",
-			// 		t.Peer.String(), prots,
-			// 	)
-			// case event.EvtPeerConnectednessChanged:
-			// 	a := ethkey.PeerIDToAddress(t.Peer)
-			// 	log.Infow("connectedness",
-			// 		"state", t.Connectedness.String(),
-			// 		"peer", t.Peer.String(),
-			// 		"addr", a.String(),
-			// 		"net", feeds.net(a),
-			// 	)
-			// case event.EvtLocalReachabilityChanged:
-			// 	log.Infow("reachability",
-			// 		"state", t.Reachability.String(),
-			// 	)
-			// case event.EvtNATDeviceTypeChanged:
-			// 	log.Infow("NAT device",
-			// 		"type", t.NatDeviceType.String(),
-			// 		"proto", t.TransportProtocol.String(),
-			// 	)
-			default:
-				_ = t
-				// log.Debugw("event",
-				// 	reflect.TypeOf(t).String(), e,
-				// )
+		rail.wg.Add(1)
+		defer rail.wg.Done()
+		for {
+			select {
+			case <-rail.ctx.Done():
+				closeSub(sub)
+				return
+			case e := <-sub.Out():
+				switch t := e.(type) {
+				case event.EvtLocalAddressesUpdated:
+					var mas []multiaddr.Multiaddr
+					for _, ma := range t.Current {
+						mas = append(mas, ma.Address)
+					}
+					list, err := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{Addrs: mas, ID: rail.host.ID()})
+					if err != nil {
+						log.Errorw("error converting addr info", "error", err)
+						continue
+					}
+					log.Infow("new listening", "addrs", list)
+				case event.EvtPeerIdentificationCompleted:
+					prots, err := ps.GetProtocols(t.Peer)
+					if err != nil {
+						log.Errorw("error getting protocols", "error", err)
+						continue
+					}
+					log.Infow("protocols",
+						t.Peer.String(), prots,
+					)
+				case event.EvtPeerConnectednessChanged:
+					a := ethkey.PeerIDToAddress(t.Peer)
+					log.Infow("connectedness",
+						"state", t.Connectedness.String(),
+						"peer", t.Peer.String(),
+						"addr", a.String(),
+						"net", feeds.net(a),
+					)
+				case event.EvtLocalReachabilityChanged:
+					log.Infow("reachability",
+						"state", t.Reachability.String(),
+					)
+				case event.EvtNATDeviceTypeChanged:
+					log.Infow("NAT device",
+						"type", t.NatDeviceType.String(),
+						"proto", t.TransportProtocol.String(),
+					)
+				default:
+					_ = t
+					log.Debugw("event",
+						reflect.TypeOf(t).String(), e,
+					)
+				}
 			}
 		}
 	}()
-	go func() {
-		defer log.Debugw("closed", "subscription", sub.Name())
+	return nil
+}
 
-		<-rail.ctx.Done()
-		log.Debugw("closing", "subscription", sub.Name())
-		if err := sub.Close(); err != nil {
-			log.Errorw("error closing", "error", err, "subscription", sub.Name())
+func closeSub(sub event.Subscription) {
+	log.Debugw("closing", "subscription", sub.Name())
+	go func() {
+		for e := range sub.Out() {
+			log.Debugf("drained event %T for %s", e, sub.Name())
 		}
 	}()
-	return nil
+	if err := sub.Close(); err != nil {
+		log.Errorw("error closing", "error", err, "subscription", sub.Name())
+		return
+	}
+
+	log.Debugw("closed", "subscription", sub.Name())
 }
 
 var feeds = feedList{
@@ -279,15 +291,15 @@ func GossipSub(ctx context.Context, opts ...pubsub.Option) Action {
 
 			cancels = append(cancels, cancel{c, topic})
 		}
-
+		rail.wg.Add(len(cancels))
 		go func() {
-			defer log.Debug("all topics canceled")
-
 			<-rail.ctx.Done()
 			for _, c := range cancels {
-				log.Debugw("canceling", "topic", c.topic)
+				log.Debugw("canceling relay", "topic", c.topic)
 				c.cancel()
+				rail.wg.Done()
 			}
+			log.Debugf("all relays canceled")
 		}()
 
 		return nil

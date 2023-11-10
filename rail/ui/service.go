@@ -17,6 +17,8 @@ package ui
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	logging "github.com/ipfs/go-log/v2"
@@ -26,7 +28,7 @@ import (
 
 var log = logging.Logger("rail/ui")
 
-func Appling(eventChan <-chan any) *App {
+func NewApp(eventChan chan any) *App {
 	return &App{
 		events: eventChan,
 		program: tea.NewProgram(app{
@@ -37,29 +39,40 @@ func Appling(eventChan <-chan any) *App {
 
 type App struct {
 	ctx context.Context
-	err error
+	wg  sync.WaitGroup
 
-	events <-chan any
+	events chan any
 
 	model   tea.Model
 	program *tea.Program
 }
 
-func (s *App) Start(ctx context.Context) {
-	log.Debugf("starting %#v", s)
+func (s *App) Start(ctx context.Context) error {
+	if s.ctx != nil {
+		return fmt.Errorf("already started %T", s)
+	}
+	if ctx == nil {
+		return fmt.Errorf("nil context for %T", s)
+	}
 	s.ctx = ctx
-	go s.eventLoop()
-	go func() { s.model, s.err = s.program.Run() }()
-}
+	go func() {
+		s.wg.Add(1)
+		defer s.wg.Done()
 
-func (s *App) Wait() error {
-	s.program.Wait()
-	log.Debugf("stopping %#v", s)
-	return s.err
-}
-
-func (s *App) eventLoop() {
+		var err error
+		s.model, err = s.program.Run()
+		if err != nil {
+			log.Error(err)
+		}
+		close(s.events)
+	}()
 	for e := range s.events {
 		s.program.Send(e)
 	}
+	return nil
+}
+
+func (s *App) Wait() {
+	s.program.Wait()
+	s.wg.Wait()
 }

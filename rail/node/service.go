@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 )
 
@@ -41,14 +40,9 @@ type Node struct {
 	host host.Host
 	opts []libp2p.Option
 	acts []Action
-	mesh []Mesh
 }
 
-type Action func(*Node) error
-type Mesh func(sub *pubsub.PubSub) error
-
 func (s *Node) Start(ctx context.Context) error {
-	log.Debugf("starting %T", s)
 	if s.ctx != nil {
 		return fmt.Errorf("already started %T", s)
 	}
@@ -66,22 +60,20 @@ func (s *Node) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	s.wg.Add(1)
 	go func() {
-		defer log.Debugf("stopped %T", s)
+		s.wg.Add(1)
+		defer s.wg.Done()
 
 		<-s.ctx.Done()
 		log.Debugf("closing %T", s.host)
 		if err := s.host.Close(); err != nil {
 			log.Error(err)
 		}
+		log.Debugf("closed %T", s.host)
 	}()
-	log.Debugf("startred %T", s)
 	return nil
 }
 
 func (s *Node) Wait() {
-	defer log.Debugf("done %T", s)
-
 	s.wg.Wait()
 }

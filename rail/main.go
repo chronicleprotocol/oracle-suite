@@ -23,6 +23,7 @@ import (
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/peer"
 
 	"github.com/chronicleprotocol/oracle-suite/rail/metrics"
 	"github.com/chronicleprotocol/oracle-suite/rail/node"
@@ -32,9 +33,10 @@ var log = logging.Logger("rail")
 
 func main() {
 	logging.SetLogLevel("rail", "DEBUG")
-	logging.SetLogLevel("rail/metrics", "DEBUG")
-	logging.SetLogLevel("rail/service", "DEBUG")
+	// logging.SetLogLevel("rail/metrics", "DEBUG")
+	// logging.SetLogLevel("rail/service", "DEBUG")
 	logging.SetLogLevel("rail/node", "DEBUG")
+	// logging.SetLogLevel("rail/ui", "DEBUG")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
@@ -59,30 +61,38 @@ func main() {
 		node.Seed(),
 	}
 
+	eventChan := make(chan any, 100)
 	actions := []node.Action{
 		node.LogListeningAddresses,
 		node.LogEvents,
 		node.Gossip(ctx),
+		node.Events(eventChan),
 	}
 
-	// eventChan := make(chan any)
-	// defer close(eventChan)
-	{
-		// idChan := make(chan peer.ID)
-		// defer close(idChan)
-		actions = append(actions) // node.Pinger(ctx, idChan),
-		// node.ExtractIDs(idChan),
-		// node.Events(eventChan),
+	go func() {
+		for e := range eventChan {
+			log.Debug(e)
+		}
+	}()
+
+	if false {
+		idChan := make(chan peer.ID)
+		defer close(idChan)
+		actions = append(actions,
+			node.Pinger(ctx, idChan),
+			node.ExtractIDs(idChan),
+		)
 	}
 
-	runServices(
+	runServicesAndWait(
 		ctx,
 		&metrics.Prometheus{},
 		node.NewNode(options...)(actions...),
+		// ui.NewApp(eventChan),
 	)
 }
 
-func runServices(ctx context.Context, services ...service) {
+func runServicesAndWait(ctx context.Context, services ...service) {
 	for _, s := range services {
 		log.Debugf("start %T", s)
 		if err := s.Start(ctx); err != nil {
@@ -93,9 +103,9 @@ func runServices(ctx context.Context, services ...service) {
 	wg.Add(len(services))
 	for _, s := range services {
 		go func(s service) {
+			defer wg.Done()
 			s.Wait()
-			wg.Done()
-			log.Debugf("finished %T", s)
+			log.Debugf("done %T", s)
 		}(s)
 	}
 	wg.Wait()
