@@ -40,7 +40,7 @@ import (
 
 // Config is the configuration for Ghost.
 type Config struct {
-	Morph     morphConfig.Config     `hcl:"morph,block,optional"`
+	Morph     morphConfig.Config     `hcl:"morph,block"`
 	Ghost     feedConfig.Config      `hcl:"ghost,block"`
 	Gofer     configGoferNext.Config `hcl:"gofer,block"`
 	Ethereum  ethereumConfig.Config  `hcl:"ethereum,block"`
@@ -60,6 +60,7 @@ func (Config) DefaultEmbeds() [][]byte {
 		config.Gofer,
 		config.Ethereum,
 		config.Transport,
+		config.Morph,
 	}
 }
 
@@ -115,8 +116,9 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 		return nil, err
 	}
 	morphService, err := c.Morph.ConfigureMorph(morphConfig.Dependencies{
-		Base:   reflect.ValueOf(c),
-		Logger: logger,
+		Clients: clients,
+		Base:    reflect.ValueOf(c),
+		Logger:  logger,
 	})
 	if err != nil {
 		return nil, err

@@ -42,3 +42,6 @@ var Spire []byte
 
 //go:embed config-transport.hcl
 var Transport []byte
+
+//go:embed config-morph.hcl
+var Morph []byte // todo, should import in spectre, spire when morph in ghost is stable

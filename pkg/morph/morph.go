@@ -19,12 +19,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"reflect"
 
+	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/reflectutil"
@@ -43,17 +48,20 @@ type Morph struct {
 	ctx    context.Context
 	waitCh chan error
 
-	morphFile string
-	interval  *timeutil.Ticker
-	base      reflect.Value
-	log       log.Logger
+	morphFile      string
+	configRegistry *chronicle.ConfigRegistry
+	interval       *timeutil.Ticker
+	base           reflect.Value
+	log            log.Logger
 }
 
 type Config struct {
-	MorphFile string
-	Interval  *timeutil.Ticker
-	Base      reflect.Value
-	Logger    log.Logger
+	MorphFile             string
+	Interval              *timeutil.Ticker
+	Client                rpc.RPC
+	ConfigRegistryAddress types.Address
+	Base                  reflect.Value
+	Logger                log.Logger
 }
 
 const LoggerTag = "MORPH"
@@ -62,12 +70,15 @@ const LoggerTag = "MORPH"
 // - Periodically pull the config/env from on-chain.
 // - Compares with previous one, if found difference, exit app.
 func NewMorphService(cfg Config) (*Morph, error) {
+	configRegistry := chronicle.NewConfigRegistry(cfg.Client, cfg.ConfigRegistryAddress)
+
 	m := &Morph{
-		waitCh:    make(chan error),
-		log:       cfg.Logger.WithField("tag", LoggerTag),
-		morphFile: cfg.MorphFile,
-		interval:  cfg.Interval,
-		base:      cfg.Base,
+		waitCh:         make(chan error),
+		log:            cfg.Logger.WithField("tag", LoggerTag),
+		morphFile:      cfg.MorphFile,
+		configRegistry: configRegistry,
+		interval:       cfg.Interval,
+		base:           cfg.Base,
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
@@ -99,12 +110,36 @@ func (m *Morph) Wait() <-chan error {
 }
 
 func (m *Morph) Monitor() error {
-	// todo, pull down from IPFS
-	var onChainConfig = m.base.Interface().(config.HasDefaults).DefaultEmbeds()
+	// Fetch latest IPFS from ConfigRegistry contract
+	latest, err := m.configRegistry.Latest().Call(m.ctx, types.LatestBlockNumber)
+	if err != nil {
+		m.log.WithError(err).Error("Failed fetching latest ipfs for on-chain config")
+		return err
+	}
+
+	// Pull down the content from IPFS
+	req, err := http.NewRequest(http.MethodGet, latest, nil)
+	if err != nil {
+		m.log.WithError(err).Error("Failed creating http request for ipfs")
+		return err
+	}
+	req = req.WithContext(m.ctx)
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		m.log.WithError(err).Error("Failed fetching ipfs content")
+		return err
+	}
+	defer res.Body.Close()
+	onChainConfig, err := io.ReadAll(res.Body)
+	if err != nil {
+		m.log.WithError(err).Error("Failed to read http for fetching ipfs content")
+		return err
+	}
 
 	// Load env variables from on-chain config
 	var vars EnvVarsConfig
-	err := config.LoadEmbeds(&vars, onChainConfig)
+	err = config.LoadEmbeds(&vars, [][]byte{onChainConfig})
 	if err != nil {
 		m.log.WithError(err).Error("Failed loading on-chain config for env vars")
 		return err
@@ -119,7 +154,7 @@ func (m *Morph) Monitor() error {
 	alternative := reflect.New(m.base.Type().Elem())
 	alternativeVal := alternative.Interface()
 	// Load again on-chain hcl config
-	err = config.LoadEmbeds(&alternativeVal, onChainConfig)
+	err = config.LoadEmbeds(&alternativeVal, [][]byte{onChainConfig})
 
 	// Cleanup OS ENV
 	for key := range vars.EnvVars {

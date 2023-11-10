@@ -20,8 +20,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	morphService "github.com/chronicleprotocol/oracle-suite/pkg/morph"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -30,8 +32,17 @@ import (
 const defaultInterval = 60 * 60
 
 type Config struct {
+	// MorphFile is a file path to cache the latest config
 	MorphFile string `hcl:"cache_path"`
-	Interval  uint32 `hcl:"interval"`
+
+	// EthereumClient is a name of an Ethereum client to use
+	EthereumClient string `hcl:"ethereum_client"`
+
+	// ConfigRegistryAddress is an address of ConfigRegistry contract.
+	ConfigRegistryAddress types.Address `hcl:"config_registry"`
+
+	// Interval is an interval of pulling on-chain config in seconds
+	Interval uint32 `hcl:"interval"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
@@ -39,8 +50,9 @@ type Config struct {
 }
 
 type Dependencies struct {
-	Base   reflect.Value
-	Logger log.Logger
+	Clients ethereum.ClientRegistry
+	Base    reflect.Value
+	Logger  log.Logger
 }
 
 func (c *Config) ConfigureMorph(d Dependencies) (*morphService.Morph, error) {
@@ -50,10 +62,12 @@ func (c *Config) ConfigureMorph(d Dependencies) (*morphService.Morph, error) {
 	}
 
 	cfg := morphService.Config{
-		MorphFile: c.MorphFile,
-		Interval:  timeutil.NewTicker(time.Second * time.Duration(interval)),
-		Base:      d.Base,
-		Logger:    d.Logger,
+		MorphFile:             c.MorphFile,
+		Client:                d.Clients[c.EthereumClient],
+		ConfigRegistryAddress: c.ConfigRegistryAddress,
+		Interval:              timeutil.NewTicker(time.Second * time.Duration(interval)),
+		Base:                  d.Base,
+		Logger:                d.Logger,
 	}
 	morph, err := morphService.NewMorphService(cfg)
 	if err != nil {
