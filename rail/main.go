@@ -37,6 +37,7 @@ func main() {
 	// logging.SetLogLevel("rail/metrics", "DEBUG")
 	// logging.SetLogLevel("rail/service", "DEBUG")
 	// logging.SetLogLevel("rail/node", "DEBUG")
+	// logging.SetLogLevel("rail/node.Pinger", "DEBUG")
 	// logging.SetLogLevel("rail/ui", "DEBUG")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
@@ -66,16 +67,16 @@ func main() {
 	actions := []node.Action{
 		// node.LogListeningAddresses,
 		// node.LogEvents,
-		node.Gossip(ctx),
+		node.Gossip(ctx, eventChan),
 		node.Events(eventChan),
 	}
 
-	if false {
+	{
 		idChan := make(chan peer.ID)
 		defer close(idChan)
 		actions = append(actions,
-			node.Pinger(ctx, idChan, eventChan),
 			node.ExtractIDs(idChan),
+			node.Pinger(ctx, idChan, eventChan),
 		)
 	}
 

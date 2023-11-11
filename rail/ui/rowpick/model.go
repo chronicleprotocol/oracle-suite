@@ -81,13 +81,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.table.SetWidth(msg.Width)
-		m.table.SetHeight(msg.Height - 5)
+		m.table.SetHeight(msg.Height - 4)
 		return m, nil
 
 	case Data:
 		// m.dm = msg.Mapper
 		// m.km = msg.Keys
-		l := len(m.table.Rows())
 		m.table.SetRows([]table.Row{}) //  because of the way table.Model works - len(rows) must be < len(cols)
 		for _, r := range msg.Rows {
 			for x, c := range r {
@@ -96,9 +95,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 		m.table.SetColumns(msg.Cols)
 		m.table.SetRows(msg.Rows)
-		if l < m.table.Cursor() {
-			m.table.SetCursor(0)
-		}
 		return m, nil
 	}
 
@@ -111,7 +107,7 @@ func (m Model) View() string {
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
-		Render(m.table.View()) + "\n"
+		Render(m.table.View())
 }
 
 func styles() table.Styles {

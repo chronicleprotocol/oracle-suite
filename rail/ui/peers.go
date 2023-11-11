@@ -23,111 +23,178 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/libp2p/crypto/ethkey"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
-	"github.com/defiweb/go-eth/types"
 	"github.com/libp2p/go-libp2p/core/event"
-	"github.com/libp2p/go-libp2p/core/network"
 	cp "github.com/libp2p/go-libp2p/core/peer"
 
 	"github.com/chronicleprotocol/oracle-suite/rail/node"
+	"github.com/chronicleprotocol/oracle-suite/rail/stats"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/model"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/queue"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/rowpick"
 )
 
-type Peer struct {
-	ID             cp.ID
-	Addr           types.Address
-	Connectedness  network.Connectedness
-	Reachability   network.Reachability
-	Network        string
-	Identification string
-	Ping           string
-}
-type PeerEvent any
-
 type peers struct {
-	list     map[cp.ID]Peer
+	list     map[cp.ID]stats.Peer
 	ordering []cp.ID
 }
 
-func (p *peers) Add(np PeerEvent) {
+func (p *peers) add(np stats.PeerEvent) {
 	if p.list == nil {
-		p.list = make(map[cp.ID]Peer)
+		p.list = make(map[cp.ID]stats.Peer)
 	}
 	switch t := np.(type) {
 	case event.EvtPeerIdentificationCompleted:
-		if old, ok := p.list[t.Peer]; ok {
+		pid := t.Peer
+		if old, ok := p.list[pid]; ok {
 			old.Identification = "completed"
-			p.list[t.Peer] = old
+
+			p.list[pid] = old
 			return
 		}
-		a := ethkey.PeerIDToAddress(t.Peer)
-		p.list[t.Peer] = Peer{
-			ID:             t.Peer,
-			Addr:           a,
-			Network:        node.Feeds.Net(a),
+		a := ethkey.PeerIDToAddress(pid)
+		p.list[pid] = stats.Peer{
+			ID:      pid,
+			Addr:    a,
+			Network: node.Net(a),
+			Name:    node.BootName(pid),
+
 			Identification: "completed",
 		}
-		p.ordering = sliceutil.AppendUnique(p.ordering, t.Peer)
-	case event.EvtPeerConnectednessChanged:
-		if old, ok := p.list[t.Peer]; ok {
-			old.Connectedness = t.Connectedness
-			p.list[t.Peer] = old
+		p.ordering = sliceutil.AppendUnique(p.ordering, pid)
+	case node.PeerConnectedness:
+		pid := t.Peer
+		if old, ok := p.list[pid]; ok {
+			old.Connectedness = t.Connectedness.String()
+			old.UserAgent = t.UserAgent
+
+			p.list[pid] = old
 			return
 		}
-		a := ethkey.PeerIDToAddress(t.Peer)
-		p.list[t.Peer] = Peer{
-			ID:            t.Peer,
-			Addr:          a,
-			Network:       node.Feeds.Net(a),
-			Connectedness: t.Connectedness,
+		a := ethkey.PeerIDToAddress(pid)
+		p.list[pid] = stats.Peer{
+			ID:      pid,
+			Addr:    a,
+			Network: node.Net(a),
+			Name:    node.BootName(pid),
+
+			Connectedness: t.Connectedness.String(),
+			UserAgent:     t.UserAgent,
 		}
-		p.ordering = sliceutil.AppendUnique(p.ordering, t.Peer)
+		p.ordering = sliceutil.AppendUnique(p.ordering, pid)
+	case node.LocalReachability:
+		pid := t.Peer
+		if old, ok := p.list[pid]; ok {
+			old.Connectedness = t.Reachability.String()
+
+			p.list[pid] = old
+			return
+		}
+		a := ethkey.PeerIDToAddress(pid)
+		p.list[pid] = stats.Peer{
+			ID:      pid,
+			Addr:    a,
+			Network: "local",
+			Name:    node.BootName(pid),
+
+			Connectedness: t.Reachability.String(),
+		}
+		p.ordering = sliceutil.AppendUnique(p.ordering, pid)
 	case node.PingResult:
 		rtt := t.RTT.String()
 		if t.Error != nil {
 			rtt = t.Error.Error()
 		}
-		if old, ok := p.list[t.Peer]; ok {
+		pid := t.Peer
+		if old, ok := p.list[pid]; ok {
 			old.Ping = rtt
-			p.list[t.Peer] = old
+			p.list[pid] = old
 			return
 		}
-		a := ethkey.PeerIDToAddress(t.Peer)
-		p.list[t.Peer] = Peer{
-			ID:      t.Peer,
+		a := ethkey.PeerIDToAddress(pid)
+		p.list[pid] = stats.Peer{
+			ID:      pid,
 			Addr:    a,
-			Network: node.Feeds.Net(a),
-			Ping:    rtt,
+			Network: node.Net(a),
+			Name:    node.BootName(pid),
+
+			Ping: rtt,
 		}
-		p.ordering = sliceutil.AppendUnique(p.ordering, t.Peer)
+		p.ordering = sliceutil.AppendUnique(p.ordering, pid)
+	case node.PeerMessage:
+		func(pid cp.ID) {
+			if old, ok := p.list[pid]; ok {
+				old.Counter++
+				old.Topic = *t.Msg.Topic
+
+				p.list[pid] = old
+				return
+			}
+			a := ethkey.PeerIDToAddress(pid)
+			p.list[pid] = stats.Peer{
+				ID:      pid,
+				Addr:    a,
+				Network: node.Net(a),
+				Name:    node.BootName(pid),
+
+				Topic: *t.Msg.Topic,
+			}
+			p.ordering = sliceutil.AppendUnique(p.ordering, pid)
+		}(t.Msg.GetFrom())
+
+		func(pid cp.ID) {
+			if old, ok := p.list[pid]; ok {
+				old.Counter++
+
+				p.list[pid] = old
+				return
+			}
+			a := ethkey.PeerIDToAddress(pid)
+			p.list[pid] = stats.Peer{
+				ID:      pid,
+				Addr:    a,
+				Network: node.Net(a),
+				Name:    node.BootName(pid),
+			}
+			p.ordering = sliceutil.AppendUnique(p.ordering, pid)
+		}(t.Msg.ReceivedFrom)
 	}
 }
 
 func mapPeers(peers peers) rowpick.Data {
 	cols := []table.Column{
 		{Title: "#"},
-		{Title: "ID"},
-		{Title: "Addr"},
-		{Title: "Connectedness"},
-		{Title: "Identification"},
-		{Title: "Ping"},
-		{Title: "Network"},
+		{Title: "Net"},
+		{Title: "Name"},
+		{Title: "UserAgent"},
+		{Title: "Status"},
+		// {Title: "Identification"},
+		// {Title: "Ping"},
+		{Title: "Counter"},
+		{Title: "Topic"},
 	}
 	for i := range cols {
-		cols[i].Width = len(cols[i].Title) + 2
+		cols[i].Width = len(cols[i].Title)
 	}
 
 	rows := make([]table.Row, 0, len(peers.ordering))
 	for i, p := range peers.ordering {
+		id := peers.list[p].ID.String()
+		if peers.list[p].Network != "" && peers.list[p].Network != "local" {
+			id = peers.list[p].Addr.String()
+		}
+		if peers.list[p].Name != "" {
+			id = peers.list[p].Name
+		}
 		rows = append(rows, table.Row{
 			fmt.Sprintf("%d", i+1),
-			peers.list[p].ID.String(),
-			peers.list[p].Addr.String(),
-			peers.list[p].Connectedness.String(),
-			peers.list[p].Identification,
-			peers.list[p].Ping,
 			peers.list[p].Network,
+			id,
+			peers.list[p].UserAgent,
+			peers.list[p].Connectedness,
+			// peers.list[p].Identification,
+			// peers.list[p].Ping,
+			fmt.Sprintf("%d", peers.list[p].Counter),
+			peers.list[p].Topic,
 		})
 	}
 

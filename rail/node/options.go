@@ -28,6 +28,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/routing"
+	"github.com/multiformats/go-multiaddr"
 
 	"github.com/chronicleprotocol/oracle-suite/rail/env"
 )
@@ -78,6 +79,21 @@ var defaultBoots = []string{
 	"/ip4/178.128.141.30/tcp/8000/p2p/12D3KooWLaMPReGaxFc6Z7BKWTxZRbxt3ievW8Np7fpA6y774W9T",
 	"/dns/spire-bootstrap1.makerops.services/tcp/8000/p2p/12D3KooWRfYU5FaY9SmJcRD5Ku7c1XMBRqV6oM4nsnGQ1QRakSJi",
 	"/dns/spire-bootstrap2.makerops.services/tcp/8000/p2p/12D3KooWBGqjW4LuHUoYZUhbWW1PnDVRUvUEpc4qgWE3Yg9z1MoR",
+}
+
+func BootName(pid peer.ID) string {
+	for _, addr := range defaultBoots {
+		a, err := multiaddr.NewMultiaddr(addr)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		ma, p := peer.SplitAddr(a)
+		if p == pid {
+			return ma.String()
+		}
+	}
+	return ""
 }
 
 func Seed() libp2p.Option {

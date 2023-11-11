@@ -23,6 +23,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/rail/stats"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/rowpick"
 )
 
@@ -86,7 +87,7 @@ func (s *Program) Start(ctx context.Context) error {
 				return
 			case e := <-s.events:
 				log.Debugf("recv %T", e)
-				s.program.Send(PeerEvent(e))
+				s.program.Send(stats.PeerEvent(e))
 			}
 		}
 	}()

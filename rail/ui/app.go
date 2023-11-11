@@ -20,6 +20,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/chronicleprotocol/oracle-suite/rail/stats"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/model"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/queue"
 	"github.com/chronicleprotocol/oracle-suite/rail/ui/rowpick"
@@ -27,6 +28,7 @@ import (
 
 const (
 	state0     model.State = ""
+	stateLog   model.State = "log"
 	statePeers model.State = "peers"
 	stateQuit  model.State = "quit"
 )
@@ -57,10 +59,10 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		a.LogF("keypress: %s", msg)
 		switch msg.String() {
 		case "esc", "enter":
-			if a.State == state0 {
+			if a.State == stateLog {
 				return a, a.Next(statePeers)
 			}
-			return a, a.Next(state0)
+			return a, a.Next(stateLog)
 		case "q", "ctrl+c":
 			return a, a.Next(stateQuit)
 		}
@@ -70,22 +72,18 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		a.table, c = a.table.Update(msg)
 		return a, c
 
-	case PeerEvent:
+	case stats.PeerEvent:
 		a.LogF("PeerEvent: %#v", msg)
-		a.peers.Add(msg)
+		a.peers.add(msg)
 		message = mapPeers(a.peers)
 
 	default:
 		a.LogF("unknown message: %#v", msg)
 	}
 
-	return a.update(message)
-}
-
-func (a app) update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch a.State {
 	case state0:
-		return a, nil
+		return a, a.Next(statePeers)
 	case statePeers:
 		return a.doPeers(message)
 	case stateQuit:
@@ -96,7 +94,7 @@ func (a app) update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a app) View() string {
 	switch a.State {
-	case state0, stateQuit:
+	case state0, stateLog, stateQuit:
 		return a.String()
 	case statePeers:
 		return a.table.View()
