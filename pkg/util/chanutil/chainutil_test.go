@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFanIn(t *testing.T) {
@@ -29,13 +30,15 @@ func TestFanIn(t *testing.T) {
 	ch3 := make(chan int)
 
 	fi := NewFanIn(ch1, ch2, ch3)
+	ch := fi.Chan()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		var v []int
+
 		for i := 0; i < 3; i++ {
-			v = append(v, <-fi.Chan())
+			v = append(v, <-ch)
 		}
 		assert.ElementsMatch(t, []int{1, 2, 3}, v)
 		wg.Done()
@@ -54,7 +57,7 @@ func TestFanIn(t *testing.T) {
 
 	// The output channel should be closed after closing all the input
 	// channels.
-	_, ok := <-fi.Chan()
+	_, ok := <-ch
 	assert.False(t, ok)
 
 	// Wait for the goroutine to finish.
@@ -105,6 +108,16 @@ func TestFanIn_AutoClose_AddAfterClose(t *testing.T) {
 
 	// Adding a new channel after closing the fan-in should return an error.
 	assert.Error(t, fi.Add(make(chan int)))
+}
+
+func TestFanIn_Chan_Panic(t *testing.T) {
+	ch := make(chan int)
+	fi := NewFanIn(ch)
+
+	require.NotNil(t, fi.Chan())
+
+	// Second call to Chan should panic.
+	assert.Panics(t, func() { fi.Chan() })
 }
 
 func TestFanOut(t *testing.T) {

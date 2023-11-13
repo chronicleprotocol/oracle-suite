@@ -36,6 +36,7 @@ import (
 
 func TestOpScribe(t *testing.T) {
 	testFeed := types.MustAddressFromHex("0x1111111111111111111111111111111111111111")
+	testFeed2 := types.MustAddressFromHex("0x2222222222222222222222222222222222222222")
 	mockLogger := newMockLogger(t)
 	mockContract := newMockOpScribeContract(t)
 	mockMuSigStore := newMockSignatureProvider(t)
@@ -484,6 +485,7 @@ func TestOpScribe(t *testing.T) {
 
 				ctx := context.Background()
 				mockLogger.InfoFn = func(args ...any) {}
+				mockLogger.WarnFn = func(args ...any) {}
 				mockLogger.DebugFn = func(args ...any) {}
 				mockContract.ClientFn = func() rpc.RPC { return nil }
 				mockContract.AddressFn = func() types.Address { return types.Address{} }
@@ -591,6 +593,68 @@ func TestOpScribe(t *testing.T) {
 		// If OpPoke cannot be called, revert to regular Poke.
 		mockContract.PokeFn = func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller {
 			return mock.NewCaller(t).MockAllowAllCalls()
+		}
+
+		opScribe.createRelayCall(ctx)
+	})
+
+	t.Run("wrong singers count", func(t *testing.T) {
+		opScribe.cachedState = scribeState{}
+		mockLogger.reset(t)
+		mockContract.reset(t)
+		mockMuSigStore.reset(t)
+
+		ctx := context.Background()
+		musigTime := time.Now()
+		musigCommitment := types.MustAddressFromHex("0x1234567890123456789012345678901234567890")
+		musigSignature := big.NewInt(1234567890)
+		musigOpSignature := types.SignatureFromVRS(big.NewInt(27), big.NewInt(1), big.NewInt(2))
+		mockLogger.InfoFn = func(args ...any) {}
+		mockLogger.DebugFn = func(args ...any) {}
+		mockLogger.WarnFn = func(args ...any) {}
+		mockContract.ClientFn = func() rpc.RPC { return nil }
+		mockContract.AddressFn = func() types.Address { return types.Address{} }
+		mockContract.WatFn = func() contract.TypedSelfCaller[string] {
+			return mock.NewTypedCaller[string](t).MockResult("ETH/USD", nil)
+		}
+		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
+			return mock.NewTypedCaller[int](t).MockResult(2, nil)
+		}
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
+				chronicle.FeedsResult{
+					Feeds:       []types.Address{testFeed, testFeed2},
+					FeedIndices: []uint8{1, 2},
+				},
+				nil,
+			)
+		}
+		mockContract.ReadNextFn = func(ctx context.Context) (chronicle.PokeData, bool, error) {
+			return chronicle.PokeData{
+				Val: bn.DecFixedPoint(100, chronicle.ScribePricePrecision),
+				Age: time.Now().Add(-15 * time.Minute),
+			}, true, nil
+		}
+		mockMuSigStore.SignaturesByDataModelFn = func(model string) []*messages.MuSigSignature {
+			assert.Equal(t, "ETH/USD", model)
+			return []*messages.MuSigSignature{
+				{
+					MuSigMessage: &messages.MuSigMessage{
+						Signers: []types.Address{testFeed},
+						MsgMeta: messages.MuSigMeta{Meta: messages.MuSigMetaTickV1{
+							Wat: "ETH/USD",
+							Val: bn.DecFixedPoint(110, chronicle.ScribePricePrecision),
+							Age: musigTime,
+							Optimistic: []messages.MuSigMetaOptimistic{{
+								ECDSASignature: musigOpSignature,
+								SignerIndexes:  []uint8{2},
+							}},
+						}},
+					},
+					Commitment:       musigCommitment,
+					SchnorrSignature: musigSignature,
+				},
+			}
 		}
 
 		opScribe.createRelayCall(ctx)

@@ -49,11 +49,12 @@ func NewStreamCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *
 			if err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
 			if err = services.Start(ctx); err != nil {
 				return err
 			}
 			defer func() {
+				ctxCancel()
 				if sErr := <-services.Wait(); err == nil {
 					err = sErr
 				}
@@ -75,11 +76,15 @@ func NewStreamCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *
 				Data any            `json:"data"`
 				Meta transport.Meta `json:"meta"`
 			}
+			sinkCh := sink.Chan()
 			for {
 				select {
 				case <-ctx.Done():
 					return nil
-				case msg := <-sink.Chan():
+				case msg, ok := <-sinkCh:
+					if !ok {
+						return nil
+					}
 					if raw {
 						m := mm{
 							Meta: msg.Meta,
@@ -142,8 +147,12 @@ func NewStreamPricesCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFl
 			if err := cf.Load(cfg); err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := cfg.StreamServices(lf.Logger(), cc.Root().Use, cc.Root().Version)
+			topic := messages.DataPointV1MessageName
+			if legacy {
+				topic = messages.PriceV1MessageName //nolint:staticcheck
+			}
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			services, err := c.StreamServices(lf.Logger(), cc.Root().Use, cc.Root().Version, topic)
 			if err != nil {
 				return err
 			}
@@ -151,21 +160,20 @@ func NewStreamPricesCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFl
 				return err
 			}
 			defer func() {
+				ctxCancel()
 				if sErr := <-services.Wait(); err == nil {
 					err = sErr
 				}
 			}()
-			var msgCh <-chan transport.ReceivedMessage
-			if legacy {
-				msgCh = services.Transport.Messages(messages.PriceV1MessageName) //nolint:staticcheck
-			} else {
-				msgCh = services.Transport.Messages(messages.DataPointV1MessageName)
-			}
+			msgCh := services.Transport.Messages(topic)
 			for {
 				select {
 				case <-ctx.Done():
-					return
-				case msg := <-msgCh:
+					return err
+				case msg, ok := <-msgCh:
+					if !ok {
+						return err
+					}
 					jsonMsg, err := json.Marshal(msg.Message)
 					if err != nil {
 						lf.Logger().WithError(err).Error("Failed to marshal message")

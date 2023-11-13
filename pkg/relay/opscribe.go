@@ -57,16 +57,17 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		return 0, nil
 	}
 
-	// If the latest poke is not finalized, we cannot send optimistic update,
-	// try to send regular update.
+	// If the latest poke is not finalized, we cannot send optimistic poke,
+	// try to send a regular poke.
 	if !state.finalized {
 		return w.scribe.createRelayCall(ctx)
 	}
 
 	// Iterate over all signatures to check if any of them can be used to update
-	// the price on the Scribe contract.
+	// the price on the Scribe Optimistic contract.
+	hasValidSigns := false
 	for _, s := range w.muSigStore.SignaturesByDataModel(w.dataModel) {
-		if s.Commitment.IsZero() || s.SchnorrSignature == nil {
+		if s.Commitment.IsZero() || s.SchnorrSignature == nil || len(s.Signers) != state.bar {
 			continue
 		}
 		meta := s.MsgMeta.TickV1()
@@ -75,6 +76,10 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		if len(meta.Optimistic) == 0 {
 			continue
 		}
+
+		// hasValidSigns is used to check if there are at least one valid signature
+		// for the current data model.
+		hasValidSigns = true
 
 		// If the signature is older than the current price, skip it.
 		if meta.Age.Before(state.pokeData.Age) {
@@ -85,20 +90,25 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		// The price needs to be updated if:
 		// - Price is older than the interval specified in the opExpiration
 		//   field.
-		// - Price differs from the current price by more than is specified in the
-		//   opSpread field.
+		// - Price differs from the current price by more than is specified in
+		//   the opSpread field.
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.opExpiration
 		isStale := math.IsInf(spread, 0) || spread >= w.opSpread
 
 		// Generate signersBlob.
-		// If signersBlob returns an error, it means that some signers are not
-		// present in the feed list on the contract.
+		//
+		// In theory, multiple signatures with different feeds and feed indices
+		// could exist for the same data model. However, in practice, we've
+		// decided not to allow this situation. Therefore, an error is logged
+		// in case of a mismatch.
 		signersBlob, err := chronicle.SignersBlob(s.Signers, state.feeds.Feeds, state.feeds.FeedIndices)
 		if err != nil {
 			w.log.
 				WithError(err).
+				WithAdvice("Signature was generated with different list of feeds or feed indices; it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
 				Error("Failed to generate signersBlob")
+			continue
 		}
 
 		// Print logs.
@@ -116,7 +126,7 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			}).
 			Debug("ScribeOptimistic")
 
-		// If price is stale or expired, send optimistic update.
+		// If price is stale or expired, return an optimistic poke transaction.
 		if isExpired || isStale {
 			for _, optimistic := range meta.Optimistic {
 				// Verify if signersBlob is same as provided in the message.
@@ -144,6 +154,20 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			}
 		}
 	}
+
+	// If there are no valid signatures, this could mean a problem with the
+	// configuration.
+	if !hasValidSigns {
+		w.log.
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if this occurs within the first few minutes after the relay starts; otherwise, it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
+			Warn("No valid signatures found for the current data model")
+	}
+
+	// Typically, no poke will be sent at this point because an optimistic poke
+	// should have a lower spread and expiration than a regular poke. However,
+	// if there are no signatures with an additional optimistic signature for
+	// some reason, a regular poke may be sent.
 	return w.scribe.createRelayCall(ctx)
 }
 
