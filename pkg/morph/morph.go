@@ -110,12 +110,11 @@ func (m *Morph) Monitor() error {
 	}
 
 	// Pull down the content from IPFS
-	req, err := http.NewRequest(http.MethodGet, latest, nil)
+	req, err := http.NewRequestWithContext(m.ctx, "GET", latest, nil)
 	if err != nil {
 		m.log.WithError(err).Error("Failed creating http request for ipfs")
 		return err
 	}
-	req = req.WithContext(m.ctx)
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -146,6 +145,7 @@ func (m *Morph) Monitor() error {
 
 	// todo, export to cache config file
 
+	res.Body.Close() // Close before os exit
 	os.Exit(1)
 	return nil
 }
