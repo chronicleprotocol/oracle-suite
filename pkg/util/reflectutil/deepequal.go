@@ -39,7 +39,7 @@ func DeepEqual(x, y any, filter FilterFunc) bool {
 
 // deepEqual tests for deep equality using reflected types recursively.
 // Do not test if filter function returns true for comparing two values.
-func deepEqual(v1, v2 reflect.Value, filter FilterFunc) bool { //nolint:gocyclo
+func deepEqual(v1, v2 reflect.Value, filter FilterFunc) bool { //nolint:gocyclo,funlen
 	if !v1.IsValid() || !v2.IsValid() {
 		return v1.IsValid() == v2.IsValid()
 	}
@@ -58,7 +58,7 @@ func deepEqual(v1, v2 reflect.Value, filter FilterFunc) bool { //nolint:gocyclo
 		for i := 0; i < v1.NumField(); i++ {
 			fieldStruct1 := v1.Type().Field(i)
 			fieldStruct2 := v1.Type().Field(i)
-			if filter != nil && filter(fieldStruct1, fieldStruct2) {
+			if filter != nil && !filter(fieldStruct1, fieldStruct2) {
 				continue
 			}
 			if !deepEqual(v1.Field(i), v2.Field(i), filter) {
