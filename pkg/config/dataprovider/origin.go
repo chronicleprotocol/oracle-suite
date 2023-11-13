@@ -22,7 +22,6 @@ import (
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 type configOrigin struct {
@@ -32,7 +31,9 @@ type configOrigin struct {
 	// Type is the type of the origin.
 	Type string `hcl:"type"`
 
-	OriginConfig any // Handled by PostDecodeBlock method.
+	// OriginConfig is the configuration of the origin.
+	// Handled by PostDecodeBlock method.
+	OriginConfig any
 
 	// HCL fields:
 	Content hcl.BodyContent `hcl:",content"`
@@ -164,7 +165,7 @@ func (c *configOrigin) PostDecodeBlock(
 	return nil
 }
 
-func (c configOrigin) PostEncodeBody(body *hclwrite.Body, _ interface{}) error {
+func (c configOrigin) OnEncodeBlock(body *utilHCL.Block) hcl.Diagnostics {
 	return utilHCL.Encode(c.OriginConfig, body)
 }
 

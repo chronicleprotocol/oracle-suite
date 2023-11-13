@@ -1,171 +1,189 @@
 package hcl
 
 import (
-	"encoding"
 	"fmt"
 	"reflect"
+	"sort"
 
-	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
 
-type PreEncodeBody interface {
-	PreEncodeBody(block *hclwrite.Body, val interface{}) error
+// OnEncodeBlock is called during encoding of a struct to HCL.
+type OnEncodeBlock interface {
+	OnEncodeBlock(block *Block) hcl.Diagnostics
 }
 
-type PostEncodeBody interface {
-	PostEncodeBody(block *hclwrite.Body, val interface{}) error
+// Encode encodes a struct to HCL.
+// The value must be a struct.
+func Encode(val any, block *Block) hcl.Diagnostics {
+	return encodeSingleBlock(reflect.ValueOf(val), block, "", nil)
 }
 
-func Encode(val interface{}, body *hclwrite.Body) error {
-	ptrVal := reflect.ValueOf(val)
-	rv := derefValue(ptrVal)
-	ty := rv.Type()
-	if ty.Kind() != reflect.Struct {
-		return fmt.Errorf("value is %s, not struct", ty.Kind())
+// EncodeBlock encodes a struct to HCL block and appends it to the given block.
+// The value must be a struct.
+//
+// The typeName argument specifies the block type name. Labels are specified
+// using the labels argument. If labels is nil, labels are read from the struct
+// tags.
+func EncodeBlock(val any, block *Block, typeName string, labels []string) hcl.Diagnostics {
+	if typeName == "" {
+		return hcl.Diagnostics{{
+			Severity: hcl.DiagError,
+			Summary:  "Encode error",
+			Detail:   "EncodeBlock requires a non-empty typeName",
+		}}
 	}
-	return populateBody(rv, body)
+	return encodeSingleBlock(reflect.ValueOf(val), block, typeName, labels)
 }
 
-func EncodeAsBlock(val interface{}, blockType string, body *hclwrite.Body) error {
-	ptrVal := reflect.ValueOf(val)
-	rv := derefValue(ptrVal)
-	ty := rv.Type()
-	if ty.Kind() != reflect.Struct {
-		return fmt.Errorf("value is %s, not struct", ty.Kind())
+// encodeSingleBlock encodes given struct value as HCL block.
+//
+//nolint:gocyclo
+func encodeSingleBlock(val reflect.Value, body *Block, typeName string, labels []string) hcl.Diagnostics {
+	val = derefValue(val)
+
+	if val.Kind() != reflect.Struct {
+		return hcl.Diagnostics{{
+			Severity: hcl.DiagError,
+			Summary:  "Encode error",
+			Detail:   fmt.Sprintf("Unable to encode %s as block; value must be a struct", val.Kind()),
+		}}
 	}
 
-	meta, diags := getStructMeta(ty)
+	// Decode struct tags.
+	meta, diags := getStructMeta(val.Type())
 	if diags.HasErrors() {
-		return fmt.Errorf(diags.Error())
+		return diags
 	}
 
-	var labels []string
-	for _, lf := range meta.Labels {
-		fieldVal := rv.FieldByIndex(lf.Reflect.Index)
-
-		var label string
-		switch t := fieldVal.Interface().(type) {
-		case encoding.TextMarshaler:
-			b, err := t.MarshalText()
-			if err != nil {
-				return fmt.Errorf("<error: %v>", err)
-			}
-			label = string(b)
-		case fmt.Stringer:
-			label = t.String()
-		case string:
-			label = fieldVal.String()
-		default:
-			return fmt.Errorf("cannot encode %T as HCL expression", fieldVal.Interface())
-		}
-		if !lf.Optional && label == "" {
-			return fmt.Errorf("missing block label: %s", blockType)
-		}
-		labels = append(labels, label)
-	}
-	if len(labels) != len(meta.Labels) {
-		return fmt.Errorf("missing block label")
-	}
-
-	newBlock := hclwrite.NewBlock(blockType, labels)
-	err := populateBody(rv, newBlock.Body())
-	if err != nil {
-		return err
-	}
-	body.AppendBlock(newBlock)
-	return nil
-}
-
-func populateBody(ptrVal reflect.Value, body *hclwrite.Body) error { //nolint:funlen,gocyclo
-	rv := derefValue(ptrVal)
-	ty := rv.Type()
-	meta, diags := getStructMeta(ty)
-	if diags.HasErrors() {
-		return fmt.Errorf(diags.Error())
-	}
-
-	if n, ok := rv.Interface().(PreEncodeBody); ok {
-		err := n.PreEncodeBody(body, rv.Interface())
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, block := range meta.Blocks {
-		if block.Ignore {
-			continue
-		}
-
-		fieldVal := rv.FieldByIndex(block.Reflect.Index)
-		if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
-			if !block.Optional {
-				return fmt.Errorf("missing block: %s", block.Name)
-			}
-			continue
-		}
-
-		fieldRv := derefValue(fieldVal)
-		if block.Multiple {
-			switch fieldRv.Kind() {
-			case reflect.Map:
-				for it := fieldRv.MapRange(); it.Next(); {
-					err := EncodeAsBlock(it.Value().Interface(), block.Name, body)
-					if err != nil {
-						return err
-					}
+	// If typeName is empty, we are encoding the root block, so there is no need
+	// to create a new block.
+	if typeName != "" {
+		// Encode labels from fields with `label` tag, but only if labels are not
+		// already set.
+		if labels == nil {
+			for _, label := range meta.Labels {
+				var labelVal cty.Value
+				fieldRef := val.FieldByIndex(label.Reflect.Index)
+				labelRef := reflect.ValueOf(&labelVal)
+				if err := mapper.MapRefl(fieldRef, labelRef); err != nil {
+					return hcl.Diagnostics{{
+						Severity: hcl.DiagError,
+						Summary:  "Decode error",
+						Detail:   fmt.Sprintf("Cannot encode label %q: %s", label.Name, err),
+					}}
 				}
-			case reflect.Slice:
-				for i := 0; i < fieldRv.Len(); i++ {
-					err := EncodeAsBlock(fieldRv.Index(i).Interface(), block.Name, body)
-					if err != nil {
-						return err
-					}
+				if labelVal.Type() != cty.String {
+					return hcl.Diagnostics{{
+						Severity: hcl.DiagError,
+						Summary:  "Decode error",
+						Detail:   fmt.Sprintf("Cannot encode label %q: value must be a string", label.Name),
+					}}
 				}
-			default:
-				return fmt.Errorf("unknown multiple blocks to encode %T as HCL expression", fieldVal.Interface())
-			}
-		} else {
-			err := EncodeAsBlock(fieldVal.Interface(), block.Name, body)
-			if err != nil {
-				return err
+				labels = append(labels, labelVal.AsString())
 			}
 		}
+		body = body.AppendBlock(typeName, labels)
 	}
 
+	// Encode attributes.
 	for _, attr := range meta.Attrs {
 		if attr.Ignore {
 			continue
 		}
-		fieldVal := rv.FieldByIndex(attr.Reflect.Index)
-
-		if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
-			if !attr.Optional {
-				return fmt.Errorf("missing attribute: %s", attr.Name)
-			}
+		field := val.FieldByIndex(attr.Reflect.Index)
+		if attr.Optional && canBeSkipped(field) {
 			continue
 		}
-
-		if fieldVal.IsZero() { // is null value or empty value
-			if !attr.Optional {
-				return fmt.Errorf("missing attribute: %s", attr.Name)
-			}
-			continue
-		}
-
-		var val cty.Value
-		if err := mapper.Map(fieldVal.Interface(), &val); err != nil {
-			return fmt.Errorf("cannot encode %T as HCL expression: %s", fieldVal.Interface(), err)
-		}
-		body.SetAttributeValue(attr.Name, val)
+		body.AppendAttribute(attr.Name, field.Interface())
 	}
 
-	if n, ok := rv.Interface().(PostEncodeBody); ok {
-		err := n.PostEncodeBody(body, rv.Interface())
-		if err != nil {
-			return err
+	// Encode blocks.
+	for _, block := range meta.Blocks {
+		if block.Ignore {
+			continue
+		}
+		field := val.FieldByIndex(block.Reflect.Index)
+		if block.Optional && canBeSkipped(field) {
+			continue
+		}
+		if block.Multiple {
+			diags := encodeMultipleBlocks(body, field, block.Name)
+			if diags.HasErrors() {
+				return diags
+			}
+		} else {
+			diags := encodeSingleBlock(field, body, block.Name, nil)
+			if diags.HasErrors() {
+				return diags
+			}
+		}
+	}
+
+	// Encode hook.
+	if n, ok := val.Interface().(OnEncodeBlock); ok {
+		diags := n.OnEncodeBlock(body)
+		if diags.HasErrors() {
+			return diags
 		}
 	}
 
 	return nil
+}
+
+// encodeMultipleBlocks encodes a map or slice value as HCL blocks.
+func encodeMultipleBlocks(body *Block, val reflect.Value, typeName string) hcl.Diagnostics {
+	val = derefValue(val)
+
+	switch val.Kind() {
+	case reflect.Map:
+		if val.Type().Key().Kind() != reflect.String {
+			return hcl.Diagnostics{{
+				Severity: hcl.DiagError,
+				Summary:  "Encode error",
+				Detail:   "Unable to encode value as HCL; map key is not a string",
+			}}
+		}
+		// Keys are sorted to ensure consistent output.
+		keys := val.MapKeys()
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i].String() < keys[j].String()
+		})
+		for _, key := range keys {
+			diags := encodeSingleBlock(val.MapIndex(key), body, typeName, []string{key.String()})
+			if diags.HasErrors() {
+				return diags
+			}
+		}
+		return nil
+	case reflect.Slice:
+		for i := 0; i < val.Len(); i++ {
+			diags := encodeSingleBlock(val.Index(i), body, typeName, nil)
+			if diags.HasErrors() {
+				return diags
+			}
+		}
+		return nil
+	}
+	return hcl.Diagnostics{{
+		Severity: hcl.DiagError,
+		Summary:  "Encode error",
+		Detail:   fmt.Sprintf("Unable to encode %s as block", val.Kind()),
+	}}
+}
+
+// canBeSkipped returns true if the given value can be skipped during encoding
+// to HCL if the field has the `optional` tag set.
+func canBeSkipped(v reflect.Value) bool {
+	if !v.IsValid() {
+		// Can this happen?
+		return true
+	}
+	if v.Type().PkgPath() != "" {
+		// Custom types may implement MarshalHCL or MarshalText, so we cannot
+		// skip them.
+		return false
+	}
+	return v.IsZero()
 }

@@ -59,12 +59,7 @@ func TestConfig_Ghost_Run(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var cf = cmd.ConfigFlagsForConfig(tt.config.(config.HasDefaults))
 			require.NoError(t, cf.FlagSet().Parse(tt.args))
-			argued, err := cf.Load(tt.config)
-			if len(tt.args) > 0 {
-				require.True(t, argued)
-			} else {
-				require.False(t, argued)
-			}
+			err := cf.Load(tt.config)
 			require.NoError(t, err)
 
 			s, err := tt.config.Services(null.New(), tt.name, suite.Version)

@@ -16,20 +16,15 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
 
 func ConfigFlagsForConfig(d config.HasDefaults) ConfigFlags {
 	return ConfigFlagsWithEmbeds(d.DefaultEmbeds()...)
 }
+
 func ConfigFlagsWithEmbeds(embeds ...[]byte) ConfigFlags {
 	return ConfigFlags{
 		embeds: embeds,
@@ -43,69 +38,28 @@ type ConfigFlags struct {
 }
 
 // Load loads the config files into the given config struct.
-func (ff *ConfigFlags) Load(c any) (bool, error) {
-	if len(ff.paths) == 0 {
-		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
-			return false, err
+func (cf *ConfigFlags) Load(cfg any) error {
+	if len(cf.paths) == 0 {
+		if err := config.LoadEmbeds(cfg, cf.embeds); err != nil {
+			return err
 		}
 	} else {
-		if err := config.LoadFiles(c, ff.paths); err != nil {
-			return false, err
+		if err := config.LoadFiles(cfg, cf.paths); err != nil {
+			return err
 		}
 	}
-	switch {
-	case globals.ShowEnvVarsUsedInConfig:
-		for _, v := range globals.EnvVars {
-			fmt.Println(v)
-		}
-		return true, nil
-	case globals.RenderConfigJSON:
-		marshaled, err := json.Marshal(c)
-		if err != nil {
-			return true, err
-		}
-		fmt.Println(string(marshaled))
-		return true, nil
-	case globals.RenderConfigHCL:
-		f := hclwrite.NewFile()
-		body := f.Body()
-		err := hcl.Encode(c, body)
-		if err != nil {
-			return true, err
-		}
-		fmt.Println(string(f.Bytes()))
-		return true, nil
-	}
-	return false, nil
+	return nil
 }
 
 // FlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
-func (ff *ConfigFlags) FlagSet() *pflag.FlagSet {
+func (cf *ConfigFlags) FlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
-		&ff.paths,
+		&cf.paths,
 		"config",
 		"c",
 		[]string{},
 		"config file",
-	)
-	fs.BoolVar(
-		&globals.ShowEnvVarsUsedInConfig,
-		"config.env",
-		false,
-		"show environment variables used in config files and exit",
-	)
-	fs.BoolVar(
-		&globals.RenderConfigJSON,
-		"config.json",
-		false,
-		"render config as JSON and exit",
-	)
-	fs.BoolVar(
-		&globals.RenderConfigHCL,
-		"config.hcl",
-		false,
-		"render config as HCL and exit",
 	)
 	return fs
 }

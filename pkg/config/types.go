@@ -16,7 +16,7 @@ func (u *URL) String() string {
 	return (*netURL.URL)(u).String()
 }
 
-func (u *URL) MarshalHCL() (cty.Value, error) {
+func (u URL) MarshalHCL() (cty.Value, error) {
 	return cty.StringVal(u.String()), nil
 }
 

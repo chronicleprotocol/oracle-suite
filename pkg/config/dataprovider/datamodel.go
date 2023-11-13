@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/graph"
@@ -111,35 +110,6 @@ func (c *configDataModel) configureDataModel(
 	return nodes[0], nil
 }
 
-func (c configNode) PostEncodeBody(body *hclwrite.Body, _ interface{}) error {
-	for _, node := range c.Nodes {
-		var blockType string
-		switch nodeType := node.(type) {
-		case *configNodeOrigin:
-			blockType = "origin"
-		case *configNodeReference:
-			blockType = "reference"
-		case *configNodeInvert:
-			blockType = "invert"
-		case *configNodeAlias:
-			blockType = "alias"
-		case *configNodeIndirect:
-			blockType = "indirect"
-		case *configNodeMedian:
-			blockType = "median"
-		case *DeviationCircuitBreaker:
-			blockType = "deviation_circuit_breaker"
-		default:
-			return fmt.Errorf("invalid config node type: %T", nodeType)
-		}
-		err := utilHCL.EncodeAsBlock(node, blockType, body)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 var nodeSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{Type: "origin", LabelNames: []string{"origin"}},
@@ -184,6 +154,39 @@ func (c *configNode) PostDecodeBlock(
 			return diags
 		}
 		c.Nodes = append(c.Nodes, node)
+	}
+	return nil
+}
+
+func (c configNode) OnEncodeBlock(block *utilHCL.Block) hcl.Diagnostics {
+	for _, node := range c.Nodes {
+		var blockType string
+		switch nodeType := node.(type) {
+		case *configNodeOrigin:
+			blockType = "origin"
+		case *configNodeReference:
+			blockType = "reference"
+		case *configNodeInvert:
+			blockType = "invert"
+		case *configNodeAlias:
+			blockType = "alias"
+		case *configNodeIndirect:
+			blockType = "indirect"
+		case *configNodeMedian:
+			blockType = "median"
+		case *DeviationCircuitBreaker:
+			blockType = "deviation_circuit_breaker"
+		default:
+			return hcl.Diagnostics{{
+				Severity: hcl.DiagError,
+				Summary:  "Encode error",
+				Detail:   fmt.Sprintf("Unsupported node type: %T", nodeType),
+			}}
+		}
+		err := utilHCL.EncodeBlock(node, block, blockType, nil)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

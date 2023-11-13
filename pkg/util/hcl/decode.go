@@ -105,7 +105,6 @@ func DecodeExpression(ctx *hcl.EvalContext, expr hcl.Expression, val any) hcl.Di
 //
 //nolint:funlen,gocyclo
 func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Value) hcl.Diagnostics {
-	// Dereference the pointer to get the struct value.
 	val := derefValue(ptrVal)
 
 	if !val.CanSet() || val.Kind() != reflect.Struct {
@@ -117,7 +116,7 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 		}}
 	}
 
-	// Build the schema for the given struct.
+	// Decode struct tags.
 	meta, diags := getStructMeta(val.Type())
 	if diags.HasErrors() {
 		return diags
@@ -227,9 +226,16 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 		if field.Ignore {
 			continue
 		}
-		diags := decodeBlock(ctx, block, val.FieldByIndex(field.Reflect.Index))
-		if diags.HasErrors() {
-			return diags
+		if field.Multiple {
+			diags := decodeMultipleBlocks(ctx, block, val.FieldByIndex(field.Reflect.Index))
+			if diags.HasErrors() {
+				return diags
+			}
+		} else {
+			diags := decodeSingleBlock(ctx, block, val.FieldByIndex(field.Reflect.Index))
+			if diags.HasErrors() {
+				return diags
+			}
 		}
 	}
 
@@ -259,29 +265,20 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 	return nil
 }
 
-// decodeBlock decodes a block into the given value.
+// decodeMultipleBlocks decodes a multiple blocks into the given value.
 //   - If a value is a slice, it will append a new element to the slice.
 //   - If a block is a map, it will append a new element to the map and label
 //     will be used as a key. Block must have only one label.
-//   - If a value is a pointer or interface, it will dereference the value.
-//   - If a value is a nil pointer, it will be allocated.
-func decodeBlock(ctx *hcl.EvalContext, block *hcl.Block, val reflect.Value) hcl.Diagnostics {
+func decodeMultipleBlocks(ctx *hcl.EvalContext, block *hcl.Block, val reflect.Value) hcl.Diagnostics {
+	val = derefValue(val)
+
 	switch val.Kind() {
-	case reflect.Struct:
-		return decodeSingleBlock(ctx, block, val.Addr())
-	case reflect.Ptr:
-		if val.IsNil() {
-			val.Set(reflect.New(val.Type().Elem()))
-		}
-		return decodeBlock(ctx, block, val.Elem())
-	case reflect.Interface:
-		return decodeBlock(ctx, block, val.Elem())
 	case reflect.Slice:
 		if val.IsNil() {
 			val.Set(reflect.MakeSlice(val.Type(), 0, 1))
 		}
 		elem := reflect.New(val.Type().Elem())
-		if diags := decodeBlock(ctx, block, elem); diags.HasErrors() {
+		if diags := decodeSingleBlock(ctx, block, elem); diags.HasErrors() {
 			return diags
 		}
 		val.Set(reflect.Append(val, elem.Elem()))
@@ -314,7 +311,7 @@ func decodeBlock(ctx *hcl.EvalContext, block *hcl.Block, val reflect.Value) hcl.
 			}}
 		}
 		elem := reflect.New(val.Type().Elem())
-		if diags := decodeBlock(ctx, block, elem); diags.HasErrors() {
+		if diags := decodeSingleBlock(ctx, block, elem); diags.HasErrors() {
 			return diags
 		}
 		val.SetMapIndex(key, elem.Elem())
