@@ -36,14 +36,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-type EnvVarsConfig struct {
-	EnvVars map[string]string `hcl:"env_vars"`
-
-	// HCL fields:
-	Range   hcl.Range       `hcl:",range"`
-	Content hcl.BodyContent `hcl:",content"`
-}
-
 type Morph struct {
 	ctx    context.Context
 	waitCh chan error
@@ -67,7 +59,7 @@ type Config struct {
 const LoggerTag = "MORPH"
 
 // NewMorphService creates Morph, which proceeds the following steps:
-// - Periodically pull the config/env from on-chain.
+// - Periodically pull the config from on-chain.
 // - Compares with previous one, if found difference, exit app.
 func NewMorphService(cfg Config) (*Morph, error) {
 	configRegistry := chronicle.NewConfigRegistry(cfg.Client, cfg.ConfigRegistryAddress)
@@ -137,36 +129,14 @@ func (m *Morph) Monitor() error {
 		return err
 	}
 
-	// Load env variables from on-chain config
-	var vars EnvVarsConfig
-	err = config.LoadEmbeds(&vars, [][]byte{onChainConfig})
-	if err != nil {
-		m.log.WithError(err).Error("Failed loading on-chain config for env vars")
-		return err
-	}
-
-	// Set env variables to OS ENV
-	for key, value := range vars.EnvVars {
-		os.Setenv(key, value)
-	}
-
 	// Create new instance with same type
 	alternative := reflect.New(m.base.Type().Elem())
 	alternativeVal := alternative.Interface()
 	// Load again on-chain hcl config
 	err = config.LoadEmbeds(&alternativeVal, [][]byte{onChainConfig})
 
-	// Cleanup OS ENV
-	for key := range vars.EnvVars {
-		os.Setenv(key, "")
-	}
-
 	if err != nil {
-		fields := log.Fields{}
-		for key, value := range vars.EnvVars {
-			fields[key] = value
-		}
-		m.log.WithError(err).WithFields(fields).Error("Failed loading on-chain config with env vars")
+		m.log.WithError(err).Error("Failed loading on-chain config")
 		return err
 	}
 
