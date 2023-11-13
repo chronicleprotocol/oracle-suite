@@ -48,6 +48,7 @@ func (c *ConfigRegistry) Latest() contract.TypedSelfCaller[string] {
 		contract.CallOpts{
 			Client:       c.client,
 			Address:      c.address,
+			Encoder:      contract.NewCallEncoder(method),
 			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiConfigRegistry),
 		},
