@@ -139,11 +139,11 @@ func NewTopicsCmd() *cobra.Command {
 
 func NewStreamPricesCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	var legacy bool
-	cc := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "prices",
 		Args:  cobra.ExactArgs(0),
 		Short: "Prints price messages as they are received",
-		RunE: func(cc *cobra.Command, _ []string) (err error) {
+		RunE: func(cmd *cobra.Command, _ []string) (err error) {
 			if err := cf.Load(cfg); err != nil {
 				return err
 			}
@@ -152,7 +152,7 @@ func NewStreamPricesCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFl
 				topic = messages.PriceV1MessageName //nolint:staticcheck
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.StreamServices(lf.Logger(), cc.Root().Use, cc.Root().Version, topic)
+			services, err := cfg.StreamServices(lf.Logger(), cmd.Root().Use, cmd.Root().Version, topic)
 			if err != nil {
 				return err
 			}
@@ -184,11 +184,11 @@ func NewStreamPricesCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFl
 			}
 		},
 	}
-	cc.Flags().BoolVar(
+	cmd.Flags().BoolVar(
 		&legacy,
 		"legacy",
 		false,
 		"legacy mode",
 	)
-	return cc
+	return cmd
 }
