@@ -60,6 +60,10 @@ func (Config) DefaultEmbeds() [][]byte {
 	}
 }
 
+func (Config) DefaultPaths() []string {
+	return nil
+}
+
 type ConfigSpire struct {
 	// RPCListenAddr is an address to listen for RPC requests.
 	RPCListenAddr string `hcl:"rpc_listen_addr"`

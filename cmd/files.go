@@ -27,7 +27,10 @@ import (
 )
 
 func ConfigFlagsForConfig(d config.HasDefaults) ConfigFlags {
-	return ConfigFlagsWithEmbeds(d.DefaultEmbeds()...)
+	return ConfigFlags{
+		embeds: d.DefaultEmbeds(),
+		paths:  d.DefaultPaths(),
+	}
 }
 func ConfigFlagsWithEmbeds(embeds ...[]byte) ConfigFlags {
 	return ConfigFlags{
@@ -43,12 +46,12 @@ type ConfigFlags struct {
 
 // Load loads the config files into the given config struct.
 func (ff *ConfigFlags) Load(c any) error {
-	if len(ff.paths) == 0 {
-		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
-			return err
-		}
-	} else {
-		if err := config.LoadFiles(c, ff.paths); err != nil {
+	var err error
+	if len(ff.paths) > 0 {
+		err = config.LoadFiles(c, ff.paths)
+	}
+	if err != nil || len(ff.paths) == 0 {
+		if err = config.LoadEmbeds(c, ff.embeds); err != nil {
 			return err
 		}
 	}
