@@ -21,6 +21,7 @@ import (
 
 	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +42,8 @@ func TestConfigRegistry_Latest(t *testing.T) {
 		"Call",
 		ctx,
 		types.Call{
-			To: &configRegistry.address,
+			To:    &configRegistry.address,
+			Input: hexutil.MustDecode("0x52bfe789"),
 		},
 		types.LatestBlockNumber,
 	).Return(

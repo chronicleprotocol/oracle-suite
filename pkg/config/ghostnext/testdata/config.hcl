@@ -37,3 +37,10 @@ transport {
     ethereum_key      = "key1"
   }
 }
+
+morph {
+  cache_path = "cache.hcl"
+  ethereum_client = "client1"
+  config_registry = "0x2345678901234567890123456789012345678901"
+  interval = 3600
+}
