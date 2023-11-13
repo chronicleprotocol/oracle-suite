@@ -288,7 +288,7 @@ func fromCtyMapper(_ *anymapper.Mapper, _, dst reflect.Type) anymapper.MapFunc {
 }
 
 // toCtyMapper returns a mapping function that maps any type to cty.Value.
-func toCtyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc { //nolint:gocyclo
+func toCtyMapper(_ *anymapper.Mapper, src, _ reflect.Type) anymapper.MapFunc { //nolint:gocyclo
 	// cty.Value -> cty.Value
 	if src == ctyValTy {
 		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
