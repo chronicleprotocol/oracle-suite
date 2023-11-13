@@ -90,7 +90,7 @@ func (m *Morph) Start(ctx context.Context) error {
 		WithFields(log.Fields{
 			"interval": m.interval.Duration(),
 		}).
-		Debug("Starting")
+		Info("Starting")
 	m.interval.Start(m.ctx)
 	go m.reloadRoutine()
 	go m.contextCancelHandler()
@@ -121,12 +121,12 @@ func (m *Morph) Monitor() error {
 		m.log.WithError(err).Error("Failed fetching ipfs content")
 		return err
 	}
-	defer res.Body.Close()
 	onChainConfig, err := io.ReadAll(res.Body)
 	if err != nil {
 		m.log.WithError(err).Error("Failed to read http for fetching ipfs content")
 		return err
 	}
+	res.Body.Close()
 
 	// Create new instance with same type
 	alternative := reflect.New(m.base.Type().Elem())
@@ -145,7 +145,8 @@ func (m *Morph) Monitor() error {
 
 	// todo, export to cache config file
 
-	res.Body.Close() // Close before os exit
+	m.log.Info("Found that on-chain configuration has been updated")
+
 	os.Exit(1)
 	return nil
 }
