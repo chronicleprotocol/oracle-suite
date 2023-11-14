@@ -44,8 +44,9 @@ func (s *Prometheus) Start(ctx context.Context) error {
 		sm.Handle("/metrics", promhttp.Handler())
 		s.server = &http.Server{Addr: ":8080", Handler: sm}
 	}
+
+	s.wg.Add(1)
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 
 		if err := s.server.ListenAndServe(); err != nil {
@@ -56,8 +57,9 @@ func (s *Prometheus) Start(ctx context.Context) error {
 			log.Error(err)
 		}
 	}()
+
+	s.wg.Add(1)
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 
 		<-ctx.Done()

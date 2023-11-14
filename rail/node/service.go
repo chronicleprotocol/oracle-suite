@@ -24,12 +24,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 )
 
-func NewNode(opts ...libp2p.Option) func(...Action) *Node {
-	return func(acts ...Action) *Node {
-		return &Node{
-			opts: opts,
-			acts: acts,
-		}
+func NewNode(ctx context.Context, boots []string, acts []Action) *Node {
+	return &Node{
+		opts: initialOptions(ctx, boots),
+		acts: acts,
 	}
 }
 
@@ -37,9 +35,10 @@ type Node struct {
 	ctx context.Context
 	wg  sync.WaitGroup
 
-	host host.Host
 	opts []libp2p.Option
 	acts []Action
+
+	host host.Host
 }
 
 func (s *Node) Start(ctx context.Context) error {
@@ -60,8 +59,9 @@ func (s *Node) Start(ctx context.Context) error {
 			return err
 		}
 	}
+
+	s.wg.Add(1)
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 
 		<-s.ctx.Done()

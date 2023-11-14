@@ -59,8 +59,8 @@ func (s *Program) Start(ctx context.Context) error {
 		table: rowpick.NewModel(),
 	}, tea.WithContext(s.ctx))
 
+	s.wg.Add(1)
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 		defer log.Debugf("gone %T", s.program)
 		defer s.cancel()
@@ -72,8 +72,8 @@ func (s *Program) Start(ctx context.Context) error {
 		}
 	}()
 
+	s.wg.Add(1)
 	go func() {
-		s.wg.Add(1)
 		defer s.wg.Done()
 		defer log.Debugf("gone %T", s.program)
 		defer s.cancel()

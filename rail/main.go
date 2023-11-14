@@ -22,8 +22,6 @@ import (
 	"sync"
 
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p/core/peer"
 
 	"github.com/chronicleprotocol/oracle-suite/rail/metrics"
 	"github.com/chronicleprotocol/oracle-suite/rail/node"
@@ -43,47 +41,26 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
-	options := []libp2p.Option{
-		libp2p.Ping(false),
-		libp2p.ListenAddrStrings([]string{
-			"/ip4/0.0.0.0/tcp/8000",
-			"/ip4/0.0.0.0/udp/8000/quic-v1",
-			"/ip4/0.0.0.0/udp/8000/quic-v1/webtransport",
-			"/ip6/::/tcp/8000",
-			"/ip6/::/udp/8000/quic-v1",
-			"/ip6/::/udp/8000/quic-v1/webtransport",
-		}...),
-		libp2p.EnableNATService(),
-		libp2p.EnableHolePunching(),
-		libp2p.EnableRelay(),
-		libp2p.EnableRelayService(),
-		// libp2p.EnableAutoRelayWithStaticRelays(),
-		// libp2p.EnableAutoRelayWithPeerSource(),
-		node.Bootstraps(ctx, os.Args[1:]),
-		node.Seed(),
-	}
-
 	eventChan := make(chan any, 100)
-	actions := []node.Action{
-		// node.LogListeningAddresses,
-		// node.LogEvents,
-		node.Gossip(ctx, eventChan),
-		node.Events(eventChan),
-	}
+	defer close(eventChan)
 
+	var actions []node.Action
 	{
-		idChan := make(chan peer.ID)
-		defer close(idChan)
-		actions = append(actions,
-			node.ExtractIDs(idChan),
-			node.Pinger(ctx, idChan, eventChan),
-		)
+		idExtractor, idChan := node.IDExtractor()
+		actions = []node.Action{
+			idExtractor,
+			node.PingIDsIntoChan(idChan, eventChan),
+			node.MessagesIntoChan(eventChan),
+			node.EventsIntoChan(eventChan),
+			// node.LogEvents,
+			// node.LogListeningAddresses,
+		}
 	}
 
 	runServicesAndWait(
 		ctx,
 		&metrics.Prometheus{},
-		node.NewNode(options...)(actions...),
+		node.NewNode(ctx, os.Args[1:], actions),
 		ui.NewProgram(eventChan),
 	)
 }

@@ -27,10 +27,11 @@ import (
 )
 
 const (
-	state0     model.State = ""
-	stateLog   model.State = "log"
-	statePeers model.State = "peers"
-	stateQuit  model.State = "quit"
+	state0        model.State = ""
+	stateLog      model.State = "log"
+	statePeers    model.State = "peers"
+	stateMessages model.State = "messages"
+	stateQuit     model.State = "quit"
 )
 
 type app struct {
@@ -39,7 +40,8 @@ type app struct {
 
 	table rowpick.Model
 
-	peers peers
+	matrix stats.Stats
+	net    string
 }
 
 func (a app) Init() tea.Cmd {
@@ -58,12 +60,22 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		a.LogF("keypress: %s", msg)
 		switch msg.String() {
-		case "esc", "enter":
-			if a.State == stateLog {
-				return a, a.Next(statePeers)
-			}
+		case "[":
+			return a, a.Next(statePeers)
+		case "]":
+			return a, a.Next(stateMessages)
+		case "0":
+			a.net = ""
+			return a, nil
+		case "-":
+			a.net = "stage"
+			return a, nil
+		case "=":
+			a.net = "prod"
+			return a, nil
+		case "esc":
 			return a, a.Next(stateLog)
-		case "q", "ctrl+c":
+		case "q":
 			return a, a.Next(stateQuit)
 		}
 
@@ -74,8 +86,13 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stats.PeerEvent:
 		a.LogF("PeerEvent: %#v", msg)
-		a.peers.add(msg)
-		message = mapPeers(a.peers)
+		a.matrix.Add(msg)
+		switch a.State {
+		case statePeers:
+			message = mapPeers(a.matrix, a.net)
+		case stateMessages:
+			message = mapModels(a.matrix, a.net)
+		}
 
 	default:
 		a.LogF("unknown message: %#v", msg)
@@ -83,8 +100,8 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch a.State {
 	case state0:
-		return a, a.Next(statePeers)
-	case statePeers:
+		return a, a.Next(stateLog)
+	case statePeers, stateMessages:
 		return a.doPeers(message)
 	case stateQuit:
 		return a, queue.Cmd(tea.ExitAltScreen, tea.Quit).Seq()
@@ -96,7 +113,7 @@ func (a app) View() string {
 	switch a.State {
 	case state0, stateLog, stateQuit:
 		return a.String()
-	case statePeers:
+	case statePeers, stateMessages:
 		return a.table.View()
 	}
 	return fmt.Sprintf("error: unknown state: %s", a.State)
