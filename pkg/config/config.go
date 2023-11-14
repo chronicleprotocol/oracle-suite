@@ -192,4 +192,5 @@ func LoadEmbeds(config any, embeds [][]byte) (err error) {
 
 type HasDefaults interface {
 	DefaultEmbeds() [][]byte
+	DefaultPaths() []string
 }

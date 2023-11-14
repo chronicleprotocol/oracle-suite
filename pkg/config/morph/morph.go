@@ -17,13 +17,16 @@ package morph
 
 import (
 	"fmt"
-	"reflect"
+	"os"
 	"time"
 
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	"github.com/chronicleprotocol/oracle-suite/config"
+	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
+	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
+	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	morphService "github.com/chronicleprotocol/oracle-suite/pkg/morph"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
@@ -32,6 +35,32 @@ import (
 const defaultInterval = 60 * 60
 
 type Config struct {
+	Ethereum ethereumConfig.Config `hcl:"ethereum,block"`
+	Morph    morphConfig           `hcl:"morph,block"`
+	Logger   *loggerConfig.Config  `hcl:"logger,block,optional"`
+
+	// HCL fields:
+	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
+	Content hcl.BodyContent `hcl:",content"`
+}
+
+func (Config) DefaultEmbeds() [][]byte {
+	return [][]byte{
+		config.Defaults,
+		config.Ethereum,
+		config.Contracts,
+		config.Morph,
+	}
+}
+
+func (Config) DefaultPaths() []string {
+	if cache := os.Getenv("CFG_CONFIG_CACHE"); cache != "" {
+		return []string{cache, "config/config-morph.hcl"}
+	}
+	return []string{config.ConfigCacheFile, "config/config-morph.hcl"}
+}
+
+type morphConfig struct {
 	// MorphFile is a file path to cache the latest config
 	MorphFile string `hcl:"cache_path"`
 
@@ -50,21 +79,21 @@ type Config struct {
 }
 
 type Dependencies struct {
-	Clients ethereum.ClientRegistry
-	Base    reflect.Value
+	Clients ethereumConfig.ClientRegistry
 	Logger  log.Logger
+	Base    config2.HasDefaults
 }
 
-func (c *Config) ConfigureMorph(d Dependencies) (*morphService.Morph, error) {
-	interval := c.Interval
+func (c *Config) Configure(d Dependencies) (*morphService.Morph, error) {
+	interval := c.Morph.Interval
 	if interval == 0 {
 		interval = defaultInterval
 	}
 
 	cfg := morphService.Config{
-		MorphFile:             c.MorphFile,
-		Client:                d.Clients[c.EthereumClient],
-		ConfigRegistryAddress: c.ConfigRegistryAddress,
+		MorphFile:             c.Morph.MorphFile,
+		Client:                d.Clients[c.Morph.EthereumClient],
+		ConfigRegistryAddress: c.Morph.ConfigRegistryAddress,
 		Interval:              timeutil.NewTicker(time.Second * time.Duration(interval)),
 		Base:                  d.Base,
 		Logger:                d.Logger,
@@ -75,7 +104,6 @@ func (c *Config) ConfigureMorph(d Dependencies) (*morphService.Morph, error) {
 			Severity: hcl.DiagError,
 			Summary:  "Runtime error",
 			Detail:   fmt.Sprintf("Failed to create the Morph service: %v", err),
-			Subject:  c.Range.Ptr(),
 		}
 	}
 	return morph, nil

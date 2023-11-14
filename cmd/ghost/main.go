@@ -31,7 +31,7 @@ func main() {
 	c := cmd.NewRootCommand("ghost", suite.Version, &cf, &lf)
 
 	c.AddCommand(
-		cmd.NewRunCmd(&config, &cf, &lf),
+		NewRunCmd(&config, &cf, &lf),
 	)
 
 	if err := c.Execute(); err != nil {

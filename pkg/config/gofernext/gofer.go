@@ -51,6 +51,10 @@ func (Config) DefaultEmbeds() [][]byte {
 	}
 }
 
+func (Config) DefaultPaths() []string {
+	return nil
+}
+
 // Services returns the services that are configured from the Config struct.
 type Services struct {
 	DataProvider datapoint.Provider

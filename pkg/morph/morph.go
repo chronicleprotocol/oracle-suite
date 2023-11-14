@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"reflect"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -37,13 +36,14 @@ import (
 )
 
 type Morph struct {
-	ctx    context.Context
-	waitCh chan error
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	waitCh    chan error
 
 	morphFile      string
 	configRegistry *chronicle.ConfigRegistry
 	interval       *timeutil.Ticker
-	base           reflect.Value
+	base           config.HasDefaults
 	log            log.Logger
 }
 
@@ -52,7 +52,7 @@ type Config struct {
 	Interval              *timeutil.Ticker
 	Client                rpc.RPC
 	ConfigRegistryAddress types.Address
-	Base                  reflect.Value
+	Base                  config.HasDefaults
 	Logger                log.Logger
 }
 
@@ -85,7 +85,7 @@ func (m *Morph) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	m.ctx = ctx
+	m.ctx, m.ctxCancel = context.WithCancel(ctx)
 	m.log.
 		WithFields(log.Fields{
 			"interval": m.interval.Duration(),
@@ -129,7 +129,7 @@ func (m *Morph) Monitor() error {
 	res.Body.Close()
 
 	// Create new instance with same type
-	alternative := reflect.New(m.base.Type().Elem())
+	alternative := reflect.New(reflect.TypeOf(m.base))
 	alternativeVal := alternative.Interface()
 	// Load again on-chain hcl config
 	err = config.LoadEmbeds(&alternativeVal, [][]byte{onChainConfig})
@@ -139,15 +139,14 @@ func (m *Morph) Monitor() error {
 		return err
 	}
 
-	if reflectutil.DeepEqual(m.base.Interface(), alternative.Interface(), m.filterValue) {
+	if reflectutil.DeepEqual(m.base, alternativeVal, m.filterValue) {
 		return nil
 	}
 
 	// todo, export to cache config file
 
 	m.log.Info("Found that on-chain configuration has been updated")
-
-	os.Exit(1)
+	m.ctxCancel()
 	return nil
 }
 
