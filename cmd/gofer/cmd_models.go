@@ -34,7 +34,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-func NewModelsCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewModelsCmd(cfg supervisor.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	var format formatTypeValue
 	cc := &cobra.Command{
 		Use:     "models [MODEL...]",
@@ -42,10 +42,10 @@ func NewModelsCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "List all supported models",
 		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+			if err := cf.Load(cfg); err != nil {
 				return err
 			}
-			services, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)
+			services, err := cfg.Services(lf.Logger(), cc.Root().Use, cc.Root().Version)
 			if err != nil {
 				return err
 			}

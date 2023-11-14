@@ -113,7 +113,7 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		}).
 		Debug("Median")
 
-	// If price is stale or expired, send update.
+	// If price is stale or expired, return a poke transaction.
 	if isExpired || isStale {
 		vals := make([]chronicle.MedianVal, len(prices))
 		for i := range dataPoints {

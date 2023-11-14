@@ -28,29 +28,29 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
 )
 
-func NewPushCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
-	cc := &cobra.Command{
+func NewPushCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "push",
 		Args:  cobra.ExactArgs(1),
 		Short: "Push a message to the network (require agent)",
 	}
-	cc.AddCommand(
-		NewPushPriceCmd(c, f, l),
+	cmd.AddCommand(
+		NewPushPriceCmd(cfg, cf, lf),
 	)
-	return cc
+	return cmd
 }
 
-func NewPushPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPushPriceCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Push a data point message to the network",
-		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			if err := cf.Load(cfg); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.ClientServices(l.Logger(), cc.Root().Use, cc.Root().Version)
+			services, err := cfg.ClientServices(lf.Logger(), cmd.Root().Use, cmd.Root().Version)
 			if err != nil {
 				return err
 			}

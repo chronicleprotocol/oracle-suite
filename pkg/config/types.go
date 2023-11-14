@@ -16,6 +16,10 @@ func (u *URL) String() string {
 	return (*netURL.URL)(u).String()
 }
 
+func (u URL) MarshalHCL() (cty.Value, error) {
+	return cty.StringVal(u.String()), nil
+}
+
 // UnmarshalHCL implements the hcl.Unmarshaler interface.
 func (u *URL) UnmarshalHCL(value cty.Value) error {
 	if !value.IsKnown() {

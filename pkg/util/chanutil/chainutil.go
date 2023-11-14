@@ -23,14 +23,15 @@ import (
 var ErrOutputClosed = errors.New("output channel closed")
 
 // FanIn is a fan-in channel multiplexer. It takes multiple input channels
-// and merges them into a single output channel. The Implementation is
+// and merges them into a single output channel. The implementation is
 // thread-safe.
 type FanIn[T any] struct {
-	mu     sync.Mutex
-	wg     sync.WaitGroup
-	once   sync.Once
-	closed bool
-	out    chan T
+	mu       sync.Mutex
+	wg       sync.WaitGroup
+	once     sync.Once
+	closed   bool
+	acquired bool
+	out      chan T
 }
 
 // NewFanIn creates a new FanIn instance.
@@ -96,7 +97,17 @@ func (fi *FanIn[T]) AutoClose() {
 }
 
 // Chan returns the output channel.
+//
+// Because there is only one output channel, this method can be called only
+// once to prevent using the same channel in multiple places which may lead
+// to unexpected results. Calling this method multiple times will panic.
 func (fi *FanIn[T]) Chan() <-chan T {
+	fi.mu.Lock()
+	defer fi.mu.Unlock()
+	if fi.acquired {
+		panic("output channel already acquired")
+	}
+	fi.acquired = true
 	return fi.out
 }
 
@@ -106,12 +117,12 @@ func (fi *FanIn[T]) Chan() <-chan T {
 // when the input channel is closed. The implementation is thread-safe.
 type FanOut[T any] struct {
 	mu  sync.Mutex
-	in  chan T
+	in  <-chan T
 	out []chan T
 }
 
 // NewFanOut creates a new FanOut instance.
-func NewFanOut[T any](ch chan T) *FanOut[T] {
+func NewFanOut[T any](ch <-chan T) *FanOut[T] {
 	fo := &FanOut[T]{in: ch}
 	go fo.worker()
 	return fo

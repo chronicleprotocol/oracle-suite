@@ -58,25 +58,28 @@ func ParseFile(path string, subject *hcl.Range) (hcl.Body, hcl.Diagnostics) {
 			Subject:  subject,
 		}}
 	}
-	return parseBytes(path, src)
+	return ParseSource(path, src)
 }
 
-func parseBytes(name string, src []byte) (hcl.Body, hcl.Diagnostics) {
-	file, diags := hclsyntax.ParseConfig(src, name, hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		return nil, diags
-	}
-	return file.Body, nil
-}
-
-func ParseBytesList(embeds [][]byte) (hcl.Body, hcl.Diagnostics) {
-	bodies := make([]hcl.Body, len(embeds))
-	for n := 0; n < len(embeds); n++ {
-		body, diags := parseBytes(fmt.Sprintf("embeded #%d", n), embeds[n])
+// ParseSources parses the HCL configuration sources. It returns a merged
+// hcl.Body.
+func ParseSources(srcs [][]byte) (hcl.Body, hcl.Diagnostics) {
+	bodies := make([]hcl.Body, len(srcs))
+	for n := 0; n < len(srcs); n++ {
+		body, diags := ParseSource(fmt.Sprintf("embeded #%d", n), srcs[n])
 		if diags.HasErrors() {
 			return nil, diags
 		}
 		bodies[n] = body
 	}
 	return hcl.MergeBodies(bodies), nil
+}
+
+// ParseSource parses the given source into a hcl.File.
+func ParseSource(name string, src []byte) (hcl.Body, hcl.Diagnostics) {
+	file, diags := hclsyntax.ParseConfig(src, name, hcl.Pos{Line: 1, Column: 1})
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	return file.Body, nil
 }

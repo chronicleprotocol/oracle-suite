@@ -158,6 +158,39 @@ func (c *configNode) PostDecodeBlock(
 	return nil
 }
 
+func (c configNode) OnEncodeBlock(block *utilHCL.Block) hcl.Diagnostics {
+	for _, node := range c.Nodes {
+		var blockType string
+		switch nodeType := node.(type) {
+		case *configNodeOrigin:
+			blockType = "origin"
+		case *configNodeReference:
+			blockType = "reference"
+		case *configNodeInvert:
+			blockType = "invert"
+		case *configNodeAlias:
+			blockType = "alias"
+		case *configNodeIndirect:
+			blockType = "indirect"
+		case *configNodeMedian:
+			blockType = "median"
+		case *DeviationCircuitBreaker:
+			blockType = "deviation_circuit_breaker"
+		default:
+			return hcl.Diagnostics{{
+				Severity: hcl.DiagError,
+				Summary:  "Encode error",
+				Detail:   fmt.Sprintf("Unsupported node type: %T", nodeType),
+			}}
+		}
+		err := utilHCL.EncodeBlock(node, block, blockType, nil)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *configNode) hclRange() hcl.Range {
 	return c.Range
 }

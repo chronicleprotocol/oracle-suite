@@ -29,12 +29,10 @@ import (
 
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/include"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/ext/variables"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl/funcs"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 var hclContext = &hcl.EvalContext{
@@ -93,17 +91,9 @@ var envFunc = function.New(&function.Spec{
 	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 		key := args[0].AsString()
 		def := args[1].AsString()
-		suf := " # default: " + def
 		val, ok := os.LookupEnv(key)
 		if !ok {
 			val = def
-			suf = " # default"
-		}
-		if globals.ShowEnvVarsUsedInConfig {
-			s := fmt.Sprintf("%s=%s%s", key, val, suf)
-			if !sliceutil.Contains[string](globals.EnvVars, s) {
-				globals.EnvVars = append(globals.EnvVars, s)
-			}
 		}
 		return cty.StringVal(val), nil
 	},
@@ -178,7 +168,7 @@ func LoadEmbeds(config any, embeds [][]byte) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
-	if body, diags = utilHCL.ParseBytesList(embeds); diags.HasErrors() {
+	if body, diags = utilHCL.ParseSources(embeds); diags.HasErrors() {
 		return diags
 	}
 	if body, diags = variables.Variables(hclContext, body); diags.HasErrors() {

@@ -16,21 +16,13 @@
 package hcl
 
 import (
-	"encoding"
 	"fmt"
-	"math/big"
 	"reflect"
 	"strings"
 
-	"github.com/defiweb/go-anymapper"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
-
-// Unmarshaler unmarshals a value from cty.Value.
-type Unmarshaler interface {
-	UnmarshalHCL(cty.Value) error
-}
 
 // PreDecodeAttribute is called before an attribute is decoded.
 type PreDecodeAttribute interface {
@@ -113,7 +105,6 @@ func DecodeExpression(ctx *hcl.EvalContext, expr hcl.Expression, val any) hcl.Di
 //
 //nolint:funlen,gocyclo
 func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Value) hcl.Diagnostics {
-	// Dereference the pointer to get the struct value.
 	val := derefValue(ptrVal)
 
 	if !val.CanSet() || val.Kind() != reflect.Struct {
@@ -125,7 +116,7 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 		}}
 	}
 
-	// Build the schema for the given struct.
+	// Decode struct tags.
 	meta, diags := getStructMeta(val.Type())
 	if diags.HasErrors() {
 		return diags
@@ -235,9 +226,16 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 		if field.Ignore {
 			continue
 		}
-		diags := decodeBlock(ctx, block, val.FieldByIndex(field.Reflect.Index))
-		if diags.HasErrors() {
-			return diags
+		if field.Multiple {
+			diags := decodeMultipleBlocks(ctx, block, val.FieldByIndex(field.Reflect.Index))
+			if diags.HasErrors() {
+				return diags
+			}
+		} else {
+			diags := decodeSingleBlock(ctx, block, val.FieldByIndex(field.Reflect.Index))
+			if diags.HasErrors() {
+				return diags
+			}
 		}
 	}
 
@@ -267,29 +265,20 @@ func decodeSingleBlock(ctx *hcl.EvalContext, block *hcl.Block, ptrVal reflect.Va
 	return nil
 }
 
-// decodeBlock decodes a block into the given value.
+// decodeMultipleBlocks decodes a multiple blocks into the given value.
 //   - If a value is a slice, it will append a new element to the slice.
 //   - If a block is a map, it will append a new element to the map and label
 //     will be used as a key. Block must have only one label.
-//   - If a value is a pointer or interface, it will dereference the value.
-//   - If a value is a nil pointer, it will be allocated.
-func decodeBlock(ctx *hcl.EvalContext, block *hcl.Block, val reflect.Value) hcl.Diagnostics {
+func decodeMultipleBlocks(ctx *hcl.EvalContext, block *hcl.Block, val reflect.Value) hcl.Diagnostics {
+	val = derefValue(val)
+
 	switch val.Kind() {
-	case reflect.Struct:
-		return decodeSingleBlock(ctx, block, val.Addr())
-	case reflect.Ptr:
-		if val.IsNil() {
-			val.Set(reflect.New(val.Type().Elem()))
-		}
-		return decodeBlock(ctx, block, val.Elem())
-	case reflect.Interface:
-		return decodeBlock(ctx, block, val.Elem())
 	case reflect.Slice:
 		if val.IsNil() {
 			val.Set(reflect.MakeSlice(val.Type(), 0, 1))
 		}
 		elem := reflect.New(val.Type().Elem())
-		if diags := decodeBlock(ctx, block, elem); diags.HasErrors() {
+		if diags := decodeSingleBlock(ctx, block, elem); diags.HasErrors() {
 			return diags
 		}
 		val.Set(reflect.Append(val, elem.Elem()))
@@ -322,7 +311,7 @@ func decodeBlock(ctx *hcl.EvalContext, block *hcl.Block, val reflect.Value) hcl.
 			}}
 		}
 		elem := reflect.New(val.Type().Elem())
-		if diags := decodeBlock(ctx, block, elem); diags.HasErrors() {
+		if diags := decodeSingleBlock(ctx, block, elem); diags.HasErrors() {
 			return diags
 		}
 		val.SetMapIndex(key, elem.Elem())
@@ -680,279 +669,4 @@ func (s *structFieldsMeta) has(name string) bool {
 		}
 	}
 	return false
-}
-
-var mapper *anymapper.Mapper
-
-var (
-	bodyTy        = reflect.TypeOf((*hcl.Body)(nil)).Elem()
-	bodyContentTy = reflect.TypeOf((*hcl.BodyContent)(nil)).Elem()
-	bodySchemaTy  = reflect.TypeOf((*hcl.BodySchema)(nil)).Elem()
-	rangeTy       = reflect.TypeOf((*hcl.Range)(nil)).Elem()
-	ctyValTy      = reflect.TypeOf((*cty.Value)(nil)).Elem()
-	bigIntTy      = reflect.TypeOf((*big.Int)(nil)).Elem()
-	bigFloatTy    = reflect.TypeOf((*big.Float)(nil)).Elem()
-	anyTy         = reflect.TypeOf((*any)(nil)).Elem()
-)
-
-// derefType dereferences the given type until it is not a pointer or an
-// interface.
-func derefType(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Interface {
-		t = t.Elem()
-	}
-	return t
-}
-
-// derefValue dereferences the given value until it is not a pointer or an
-// interface. If the value is a nil pointer, it is initialized.
-func derefValue(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		if v.Kind() == reflect.Ptr && v.IsNil() && v.CanSet() {
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-		v = v.Elem()
-	}
-	return v
-}
-
-// ctyMapper is a mapping function that maps cty.Value to other types.
-//
-//nolint:funlen,gocyclo
-func ctyMapper(_ *anymapper.Mapper, src, dst reflect.Type) anymapper.MapFunc {
-	if src != ctyValTy {
-		return nil
-	}
-
-	// cty.Value -> any
-	// To be able to reuse the existing mapping functions defined below, we
-	// create an auxiliary variable based on the cty.Value type, and we use
-	// that variable as the destination.
-	if dst == anyTy {
-		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			typ := src.Interface().(cty.Value).Type()
-			switch {
-			case typ == cty.String:
-				var aux string
-				if err := m.MapRefl(src, reflect.ValueOf(&aux)); err != nil {
-					return err
-				}
-				dst.Set(reflect.ValueOf(aux))
-			case typ == cty.Number:
-				var aux float64
-				if err := m.MapRefl(src, reflect.ValueOf(&aux)); err != nil {
-					return err
-				}
-				dst.Set(reflect.ValueOf(aux))
-			case typ == cty.Bool:
-				var aux bool
-				if err := m.MapRefl(src, reflect.ValueOf(&aux)); err != nil {
-					return err
-				}
-				dst.Set(reflect.ValueOf(aux))
-			case typ.IsListType() || typ.IsSetType() || typ.IsTupleType():
-				var aux []any
-				if err := m.MapRefl(src, reflect.ValueOf(&aux)); err != nil {
-					return err
-				}
-				dst.Set(reflect.ValueOf(aux))
-			case typ.IsMapType() || typ.IsObjectType():
-				var aux map[string]any
-				if err := m.MapRefl(src, reflect.ValueOf(&aux)); err != nil {
-					return err
-				}
-				dst.Set(reflect.ValueOf(aux))
-			case typ == cty.DynamicPseudoType:
-				dst.Set(reflect.Zero(dst.Type()))
-			default:
-				dst.Set(src)
-			}
-			return nil
-		}
-	}
-
-	// cty.Value -> cty.Value
-	if dst == ctyValTy {
-		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			dst.Set(src)
-			return nil
-		}
-	}
-
-	// cty.Value -> big.Int
-	if dst == bigIntTy {
-		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			val := src.Interface().(cty.Value)
-			if val.Type() != cty.Number {
-				return fmt.Errorf("cannot decode %s into big.Int", val.Type().FriendlyName())
-			}
-			if !val.AsBigFloat().IsInt() {
-				return fmt.Errorf("cannot decode a float number into big.Int")
-			}
-			bi, acc := val.AsBigFloat().Int(nil)
-			if acc != big.Exact {
-				return fmt.Errorf("cannot decode a float number into big.Int")
-			}
-			dst.Set(reflect.ValueOf(bi).Elem())
-			return nil
-		}
-	}
-
-	// cty.Value -> big.Float
-	if dst == bigFloatTy {
-		return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-			val := src.Interface().(cty.Value)
-			if val.Type() != cty.Number {
-				return fmt.Errorf("cannot decode %s into big.Float", val.Type().FriendlyName())
-			}
-			dst.Set(reflect.ValueOf(val.AsBigFloat()).Elem())
-			return nil
-		}
-	}
-
-	// cty.Value -> Unmarshaler
-	// cty.Value -> TextUnmarshaler
-	// cty.Value -> string
-	// cty.Value -> bool
-	// cty.Value -> int*
-	// cty.Value -> uint*
-	// cty.Value -> float*
-	// cty.Value -> slice
-	// cty.Value -> map
-	return func(m *anymapper.Mapper, _ *anymapper.Context, src, dst reflect.Value) error {
-		ctyVal := src.Interface().(cty.Value)
-
-		// Try to use unmarshaler interfaces.
-		if dst.CanAddr() {
-			if u, ok := dst.Addr().Interface().(Unmarshaler); ok {
-				return u.UnmarshalHCL(ctyVal)
-			}
-			if u, ok := dst.Addr().Interface().(encoding.TextUnmarshaler); ok && ctyVal.Type() == cty.String {
-				return u.UnmarshalText([]byte(ctyVal.AsString()))
-			}
-		}
-
-		// Try to map the cty.Value to the basic types.
-		switch dst.Kind() {
-		case reflect.String:
-			if ctyVal.Type() != cty.String {
-				return fmt.Errorf(
-					"cannot decode %s type into a string",
-					ctyVal.Type().FriendlyName(),
-				)
-			}
-			dst.SetString(ctyVal.AsString())
-		case reflect.Bool:
-			if ctyVal.Type() != cty.Bool {
-				return fmt.Errorf(
-					"cannot decode %s type into a bool",
-					ctyVal.Type().FriendlyName(),
-				)
-			}
-			dst.SetBool(ctyVal.True())
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			if ctyVal.Type() != cty.Number {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type",
-					ctyVal.Type().FriendlyName(), dst.Kind(),
-				)
-			}
-			if !ctyVal.AsBigFloat().IsInt() {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type: not an integer",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			i64, acc := ctyVal.AsBigFloat().Int64()
-			if acc != big.Exact {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type: too large",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			return m.MapReflContext(m.Context.WithStrictTypes(false), reflect.ValueOf(i64), dst)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			if ctyVal.Type() != cty.Number {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			if !ctyVal.AsBigFloat().IsInt() {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type: not an integer",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			u64, acc := ctyVal.AsBigFloat().Uint64()
-			if acc != big.Exact {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type: too large",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			return m.MapReflContext(m.Context.WithStrictTypes(false), reflect.ValueOf(u64), dst)
-		case reflect.Float32, reflect.Float64:
-			if ctyVal.Type() != cty.Number {
-				return fmt.Errorf(
-					"cannot decode %s type into a %s type",
-					ctyVal.Type().FriendlyName(),
-					dst.Kind(),
-				)
-			}
-			return m.MapReflContext(m.Context.WithStrictTypes(false), reflect.ValueOf(ctyVal.AsBigFloat()), dst)
-		case reflect.Slice:
-			if !ctyVal.Type().IsListType() && !ctyVal.Type().IsSetType() && !ctyVal.Type().IsTupleType() {
-				return fmt.Errorf(
-					"cannot decode %s type into a slice",
-					ctyVal.Type().FriendlyName(),
-				)
-			}
-			dstSlice := reflect.MakeSlice(dst.Type(), 0, ctyVal.LengthInt())
-			for it := ctyVal.ElementIterator(); it.Next(); {
-				_, v := it.Element()
-				elem := reflect.New(dst.Type().Elem())
-				if err := m.MapRefl(reflect.ValueOf(v), elem); err != nil {
-					return err
-				}
-				dstSlice = reflect.Append(dstSlice, elem.Elem())
-			}
-			dst.Set(dstSlice)
-		case reflect.Map:
-			if !ctyVal.Type().IsMapType() && !ctyVal.Type().IsObjectType() {
-				return fmt.Errorf(
-					"cannot decode %s type into a map",
-					ctyVal.Type().FriendlyName(),
-				)
-			}
-			dstMap := reflect.MakeMap(dst.Type())
-			for it := ctyVal.ElementIterator(); it.Next(); {
-				k, v := it.Element()
-				key := reflect.New(dst.Type().Key())
-				if err := m.MapRefl(reflect.ValueOf(k), key); err != nil {
-					return err
-				}
-				val := reflect.New(dst.Type().Elem())
-				if err := m.MapRefl(reflect.ValueOf(v), val); err != nil {
-					return err
-				}
-				dstMap.SetMapIndex(key.Elem(), val.Elem())
-			}
-			dst.Set(dstMap)
-		default:
-			return fmt.Errorf("unsupported type %s", dst.Type())
-		}
-		return nil
-	}
-}
-
-func init() {
-	mapper = anymapper.New()
-	mapper.Context.StrictTypes = true
-	mapper.Mappers[ctyValTy] = ctyMapper
 }
