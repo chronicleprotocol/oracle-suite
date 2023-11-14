@@ -47,6 +47,8 @@ type Morph struct {
 	interval       *timeutil.Ticker
 	base           config.HasDefaults
 	log            log.Logger
+
+	lastIPFS string
 }
 
 type Config struct {
@@ -104,11 +106,20 @@ func (m *Morph) Wait() <-chan error {
 }
 
 func (m *Morph) fetchOnChainConfig() ([]byte, error) {
+	m.log.Debug("Fetching latest on-chain config")
+
 	// Fetch latest IPFS from ConfigRegistry contract
 	latest, err := m.configRegistry.Latest().Call(m.ctx, types.LatestBlockNumber)
 	if err != nil {
 		m.log.WithError(err).Error("Failed fetching latest ipfs for on-chain config")
 		return nil, err
+	}
+
+	m.log.WithField("ipfs", latest).Info("Found latest on-chain config")
+
+	if latest == m.lastIPFS { // Do not fetch the ipfs content if nothing changed
+		m.log.Info("There are no updated configuration")
+		return nil, nil
 	}
 
 	// Pull down the content from IPFS
@@ -130,17 +141,19 @@ func (m *Morph) fetchOnChainConfig() ([]byte, error) {
 	}
 	res.Body.Close()
 
+	m.lastIPFS = latest
+
 	return onChainConfig, nil
 }
 
 func (m *Morph) Monitor() error {
 	onChainConfig, err := m.fetchOnChainConfig()
-	if err != nil {
+	if onChainConfig == nil {
 		return err
 	}
 
 	// Create new instance with same type
-	alternative := reflect.New(reflect.TypeOf(m.base))
+	alternative := reflect.New(reflect.TypeOf(m.base).Elem())
 	alternativeVal := alternative.Interface()
 	// Load again on-chain hcl config
 	err = config.LoadEmbeds(&alternativeVal, [][]byte{onChainConfig})
@@ -151,6 +164,7 @@ func (m *Morph) Monitor() error {
 	}
 
 	if reflectutil.DeepEqual(m.base, alternativeVal, m.filterValue) {
+		m.log.Info("There are no updated configuration")
 		return nil
 	}
 
@@ -229,7 +243,6 @@ func (m *Morph) reloadRoutine() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			return
 		}
 	}
 }
