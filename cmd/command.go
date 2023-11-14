@@ -73,7 +73,7 @@ func NewRunCmd(cfg supervisor.Config, cf *ConfigFlags, lf *LoggerFlags) *cobra.C
 
 func NewRenderConfigCmd(cfg supervisor.Config, cf *ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "render-config",
+		Use:   "config",
 		Args:  cobra.NoArgs,
 		Short: "Render the config file",
 		RunE: func(cmd *cobra.Command, _ []string) error {
