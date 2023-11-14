@@ -16,7 +16,6 @@
 package morph
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,10 +37,10 @@ func TestConfig(t *testing.T) {
 			name: "valid",
 			path: "config.hcl",
 			test: func(t *testing.T, cfg *Config) {
-				assert.Equal(t, "config-cache.hcl", cfg.MorphFile)
-				assert.Equal(t, "default", cfg.EthereumClient)
-				assert.Equal(t, "0x1234567890123456789012345678901234567890", cfg.ConfigRegistryAddress.String())
-				assert.Equal(t, uint32(3600), cfg.Interval)
+				assert.Equal(t, "config-cache.hcl", cfg.Morph.MorphFile)
+				assert.Equal(t, "default", cfg.Morph.EthereumClient)
+				assert.Equal(t, "0x1234567890123456789012345678901234567890", cfg.Morph.ConfigRegistryAddress.String())
+				assert.Equal(t, uint32(3600), cfg.Morph.Interval)
 			},
 		},
 		{
@@ -52,9 +51,9 @@ func TestConfig(t *testing.T) {
 					"default": new(ethereumMocks.RPC),
 				}
 				var base Config
-				morph, err := cfg.ConfigureMorph(Dependencies{
+				morph, err := cfg.Configure(Dependencies{
 					Clients: clients,
-					Base:    reflect.ValueOf(base),
+					Base:    base,
 					Logger:  null.New(),
 				})
 				require.NoError(t, err)
