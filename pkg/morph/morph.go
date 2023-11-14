@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -31,6 +32,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	hcl2 "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/reflectutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
@@ -101,32 +103,41 @@ func (m *Morph) Wait() <-chan error {
 	return m.waitCh
 }
 
-func (m *Morph) Monitor() error {
+func (m *Morph) fetchOnChainConfig() ([]byte, error) {
 	// Fetch latest IPFS from ConfigRegistry contract
 	latest, err := m.configRegistry.Latest().Call(m.ctx, types.LatestBlockNumber)
 	if err != nil {
 		m.log.WithError(err).Error("Failed fetching latest ipfs for on-chain config")
-		return err
+		return nil, err
 	}
 
 	// Pull down the content from IPFS
 	req, err := http.NewRequestWithContext(m.ctx, "GET", latest, nil)
 	if err != nil {
 		m.log.WithError(err).Error("Failed creating http request for ipfs")
-		return err
+		return nil, err
 	}
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
 		m.log.WithError(err).Error("Failed fetching ipfs content")
-		return err
+		return nil, err
 	}
 	onChainConfig, err := io.ReadAll(res.Body)
 	if err != nil {
-		m.log.WithError(err).Error("Failed to read http for fetching ipfs content")
-		return err
+		m.log.WithError(err).Error("Failed reading http for fetching ipfs content")
+		return nil, err
 	}
 	res.Body.Close()
+
+	return onChainConfig, nil
+}
+
+func (m *Morph) Monitor() error {
+	onChainConfig, err := m.fetchOnChainConfig()
+	if err != nil {
+		return err
+	}
 
 	// Create new instance with same type
 	alternative := reflect.New(reflect.TypeOf(m.base))
@@ -143,9 +154,28 @@ func (m *Morph) Monitor() error {
 		return nil
 	}
 
-	// todo, export to cache config file
-
 	m.log.Info("Found that on-chain configuration has been updated")
+
+	// Export in-memory config to cache hcl file, so app can load it at the next booting
+	block := &hcl2.Block{}
+	if diags := hcl2.Encode(alternativeVal, block); diags.HasErrors() {
+		m.log.WithError(diags).Error("Failed exporting in-memory config")
+		return err
+	}
+	bytes, _ := block.Bytes()
+	file, err := os.Create(m.morphFile)
+	if err != nil {
+		m.log.WithError(err).Error("Failed creating in-memory config to the file:" + m.morphFile)
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write(bytes)
+	if err != nil {
+		m.log.WithError(err).Error("Failed writing in-memory config to the file:" + m.morphFile)
+		return err
+	}
+
+	// Force to exit the app to load the latest config and let Kubernetes starts app.
 	m.ctxCancel()
 	return nil
 }
