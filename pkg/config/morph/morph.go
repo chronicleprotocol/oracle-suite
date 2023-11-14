@@ -24,11 +24,11 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/config"
+	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	morphService "github.com/chronicleprotocol/oracle-suite/pkg/morph"
-	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
@@ -78,21 +78,13 @@ type morphConfig struct {
 	Content hcl.BodyContent `hcl:",content"`
 }
 
-func (c *Config) Configure(base pkgSupervisor.Config, baseLogger log.Logger, appName string, appVersion string) (*morphService.Morph, error) {
-	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
-		AppName:    appName,
-		AppVersion: appVersion,
-		BaseLogger: baseLogger,
-	})
-	if err != nil {
-		return nil, err
-	}
+type Dependencies struct {
+	Clients ethereumConfig.ClientRegistry
+	Logger  log.Logger
+	Base    config2.HasDefaults
+}
 
-	clients, err := c.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
-	if err != nil {
-		return nil, err
-	}
-
+func (c *Config) Configure(d Dependencies) (*morphService.Morph, error) {
 	interval := c.Morph.Interval
 	if interval == 0 {
 		interval = defaultInterval
@@ -100,11 +92,11 @@ func (c *Config) Configure(base pkgSupervisor.Config, baseLogger log.Logger, app
 
 	cfg := morphService.Config{
 		MorphFile:             c.Morph.MorphFile,
-		Client:                clients[c.Morph.EthereumClient],
+		Client:                d.Clients[c.Morph.EthereumClient],
 		ConfigRegistryAddress: c.Morph.ConfigRegistryAddress,
 		Interval:              timeutil.NewTicker(time.Second * time.Duration(interval)),
-		Base:                  base,
-		Logger:                logger,
+		Base:                  d.Base,
+		Logger:                d.Logger,
 	}
 	morph, err := morphService.NewMorphService(cfg)
 	if err != nil {

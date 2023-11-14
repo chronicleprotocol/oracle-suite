@@ -31,7 +31,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/reflectutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
@@ -44,7 +43,7 @@ type Morph struct {
 	morphFile      string
 	configRegistry *chronicle.ConfigRegistry
 	interval       *timeutil.Ticker
-	base           pkgSupervisor.Config
+	base           config.HasDefaults
 	log            log.Logger
 }
 
@@ -53,7 +52,7 @@ type Config struct {
 	Interval              *timeutil.Ticker
 	Client                rpc.RPC
 	ConfigRegistryAddress types.Address
-	Base                  pkgSupervisor.Config
+	Base                  config.HasDefaults
 	Logger                log.Logger
 }
 

@@ -47,7 +47,11 @@ func NewRunCmd(c *ghost.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.C
 			if err := cf.Load(&morph); err != nil {
 				return err
 			}
-			morphService, err := morph.Configure(c, l.Logger(), cc.Root().Use, cc.Root().Version)
+			morphService, err := morph.Configure(morphConfig.Dependencies{
+				Clients: services.Clients,
+				Logger:  services.Logger,
+				Base:    c,
+			})
 			if err != nil {
 				return err
 			}

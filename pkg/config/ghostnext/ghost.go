@@ -67,7 +67,7 @@ func (Config) DefaultPaths() []string {
 }
 
 // Services returns the services configured for Lair.
-func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (pkgSupervisor.Service, error) {
+func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (*Services, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    appName,
 		AppVersion: appVersion,
@@ -119,6 +119,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 	}
 
 	return &Services{
+		Clients:   clients,
 		Feed:      feedService,
 		Transport: transport,
 		Logger:    logger,
@@ -127,6 +128,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
+	Clients   ethereumConfig.ClientRegistry
 	Feed      *feed.Feed
 	Transport pkgTransport.Service
 	Logger    log.Logger
