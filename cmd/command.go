@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
@@ -72,7 +71,7 @@ func NewRunCmd(cfg supervisor.Config, cf *ConfigFlags, lf *LoggerFlags) *cobra.C
 	return cmd
 }
 
-func NewRenderConfigCmd(cfg config.HasDefaults, cf *ConfigFlags) *cobra.Command {
+func NewRenderConfigCmd(cfg supervisor.Config, cf *ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Args:  cobra.NoArgs,
