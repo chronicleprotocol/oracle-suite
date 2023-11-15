@@ -24,16 +24,18 @@ import (
 
 	suite "github.com/chronicleprotocol/oracle-suite"
 	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ghost "github.com/chronicleprotocol/oracle-suite/pkg/config/ghostnext"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 )
 
 func TestConfig_Ghost_Run(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     []string
-		config   *ghost.Config
-		services *ghost.Services
+		config   supervisor.Config
+		services supervisor.Service
 		envVars  map[string]string
 		wantErr  bool
 	}{
@@ -55,7 +57,7 @@ func TestConfig_Ghost_Run(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			var cf = cmd.ConfigFlagsForConfig(tt.config)
+			var cf = cmd.ConfigFlagsForConfig(tt.config.(config.HasDefaults))
 			require.NoError(t, cf.FlagSet().Parse(tt.args))
 			err := cf.Load(tt.config)
 			require.NoError(t, err)

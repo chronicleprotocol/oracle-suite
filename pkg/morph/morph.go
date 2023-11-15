@@ -24,7 +24,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config"
+	"github.com/defiweb/go-eth/rpc"
+	"github.com/defiweb/go-eth/types"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -32,14 +34,12 @@ import (
 )
 
 type Morph struct {
-	ctx       context.Context
-	ctxCancel context.CancelFunc
-	waitCh    chan error
+	ctx    context.Context
+	waitCh chan error
 
 	morphFile      string
 	configRegistry *chronicle.ConfigRegistry
 	interval       *timeutil.Ticker
-	base           config.HasDefaults
 	log            log.Logger
 
 	lastIPFS string
@@ -50,7 +50,6 @@ type Config struct {
 	Interval              *timeutil.Ticker
 	Client                rpc.RPC
 	ConfigRegistryAddress types.Address
-	Base                  config.HasDefaults
 	Logger                log.Logger
 }
 
@@ -68,7 +67,6 @@ func NewMorphService(cfg Config) (*Morph, error) {
 		morphFile:      cfg.MorphFile,
 		configRegistry: configRegistry,
 		interval:       cfg.Interval,
-		base:           cfg.Base,
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
@@ -83,7 +81,7 @@ func (m *Morph) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	m.ctx, m.ctxCancel = context.WithCancel(ctx)
+	m.ctx = ctx
 	m.log.
 		WithFields(log.Fields{
 			"interval": m.interval.Duration(),
@@ -158,6 +156,8 @@ func (m *Morph) Monitor() error {
 	}
 
 	m.log.Info("Found that on-chain configuration has been updated")
+	// Send error to Wait channel, so that all the services in supervisor should exit
+	m.waitCh <- fmt.Errorf("on-chain config has been updated")
 
 	return nil
 }

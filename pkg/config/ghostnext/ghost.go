@@ -22,14 +22,17 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/cmd"
 	"github.com/chronicleprotocol/oracle-suite/config"
 	configGoferNext "github.com/chronicleprotocol/oracle-suite/pkg/config/dataprovider"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	feedConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/feednext"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
+	morphConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/morph"
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	morphService "github.com/chronicleprotocol/oracle-suite/pkg/morph"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -67,7 +70,7 @@ func (Config) DefaultPaths() []string {
 }
 
 // Services returns the services configured for Lair.
-func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (*Services, error) {
+func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (pkgSupervisor.Service, error) {
 	logger, err := c.Logger.Logger(loggerConfig.Dependencies{
 		AppName:    appName,
 		AppVersion: appVersion,
@@ -118,19 +121,32 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 		return nil, err
 	}
 
+	var morph morphConfig.Config
+	cf := cmd.ConfigFlagsForConfig(morph)
+	if err := cf.Load(&morph); err != nil {
+		return nil, err
+	}
+	morphService, err := morph.Configure(morphConfig.Dependencies{
+		Clients: clients,
+		Logger:  logger,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &Services{
-		Clients:   clients,
 		Feed:      feedService,
 		Transport: transport,
+		Morph:     morphService,
 		Logger:    logger,
 	}, nil
 }
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	Clients   ethereumConfig.ClientRegistry
 	Feed      *feed.Feed
 	Transport pkgTransport.Service
+	Morph     *morphService.Morph
 	Logger    log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
@@ -142,7 +158,7 @@ func (s *Services) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Transport, s.Feed)
+	s.supervisor.Watch(s.Transport, s.Feed, s.Morph)
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}

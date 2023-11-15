@@ -50,10 +50,8 @@ func TestConfig(t *testing.T) {
 				clients := ethereum.ClientRegistry{
 					"default": new(ethereumMocks.RPC),
 				}
-				var base Config
 				morph, err := cfg.Configure(Dependencies{
 					Clients: clients,
-					Base:    base,
 					Logger:  null.New(),
 				})
 				require.NoError(t, err)

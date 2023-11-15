@@ -24,7 +24,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/config"
-	config2 "github.com/chronicleprotocol/oracle-suite/pkg/config"
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
@@ -81,7 +80,6 @@ type morphConfig struct {
 type Dependencies struct {
 	Clients ethereumConfig.ClientRegistry
 	Logger  log.Logger
-	Base    config2.HasDefaults
 }
 
 func (c *Config) Configure(d Dependencies) (*morphService.Morph, error) {
@@ -95,7 +93,6 @@ func (c *Config) Configure(d Dependencies) (*morphService.Morph, error) {
 		Client:                d.Clients[c.Morph.EthereumClient],
 		ConfigRegistryAddress: c.Morph.ConfigRegistryAddress,
 		Interval:              timeutil.NewTicker(time.Second * time.Duration(interval)),
-		Base:                  d.Base,
 		Logger:                d.Logger,
 	}
 	morph, err := morphService.NewMorphService(cfg)
