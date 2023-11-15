@@ -22,18 +22,12 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"reflect"
-
-	"github.com/defiweb/go-eth/rpc"
-	"github.com/defiweb/go-eth/types"
-	"github.com/hashicorp/hcl/v2"
+	"strings"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
-	hcl2 "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/reflectutil"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
@@ -105,132 +99,67 @@ func (m *Morph) Wait() <-chan error {
 	return m.waitCh
 }
 
-func (m *Morph) fetchOnChainConfig() ([]byte, error) {
+func (m *Morph) Monitor() error {
 	m.log.Debug("Fetching latest on-chain config")
 
 	// Fetch latest IPFS from ConfigRegistry contract
 	latest, err := m.configRegistry.Latest().Call(m.ctx, types.LatestBlockNumber)
 	if err != nil {
 		m.log.WithError(err).Error("Failed fetching latest ipfs for on-chain config")
-		return nil, err
+		return err
 	}
 
 	m.log.WithField("ipfs", latest).Info("Found latest on-chain config")
 
 	if latest == m.lastIPFS { // Do not fetch the ipfs content if nothing changed
 		m.log.Info("There are no updated configuration")
-		return nil, nil
+		return nil
 	}
 
 	// Pull down the content from IPFS
 	req, err := http.NewRequestWithContext(m.ctx, "GET", latest, nil)
 	if err != nil {
 		m.log.WithError(err).Error("Failed creating http request for ipfs")
-		return nil, err
+		return err
 	}
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
 		m.log.WithError(err).Error("Failed fetching ipfs content")
-		return nil, err
+		return err
 	}
 	onChainConfig, err := io.ReadAll(res.Body)
 	if err != nil {
 		m.log.WithError(err).Error("Failed reading http for fetching ipfs content")
-		return nil, err
+		return err
 	}
 	res.Body.Close()
 
 	m.lastIPFS = latest
 
-	return onChainConfig, nil
-}
+	// Read morphFile
+	cacheConfig, _ := os.ReadFile(m.morphFile)
 
-func (m *Morph) Monitor() error {
-	onChainConfig, err := m.fetchOnChainConfig()
-	if onChainConfig == nil {
-		return err
-	}
-
-	// Create new instance with same type
-	alternative := reflect.New(reflect.TypeOf(m.base).Elem())
-	alternativeVal := alternative.Interface()
-	// Load again on-chain hcl config
-	err = config.LoadEmbeds(&alternativeVal, [][]byte{onChainConfig})
-
-	if err != nil {
-		m.log.WithError(err).Error("Failed loading on-chain config")
-		return err
-	}
-
-	if reflectutil.DeepEqual(m.base, alternativeVal, m.filterValue) {
+	if strings.Compare(string(onChainConfig), string(cacheConfig)) == 0 {
 		m.log.Info("There are no updated configuration")
 		return nil
 	}
 
-	m.log.Info("Found that on-chain configuration has been updated")
-
-	// Export in-memory config to cache hcl file, so app can load it at the next booting
-	block := &hcl2.Block{}
-	if diags := hcl2.Encode(alternativeVal, block); diags.HasErrors() {
-		m.log.WithError(diags).Error("Failed exporting in-memory config")
-		return err
-	}
-	bytes, _ := block.Bytes()
 	file, err := os.Create(m.morphFile)
 	if err != nil {
 		m.log.WithError(err).Error("Failed creating in-memory config to the file:" + m.morphFile)
 		return err
 	}
 	defer file.Close()
-	_, err = file.Write(bytes)
+	_, err = file.Write(onChainConfig)
 	if err != nil {
 		m.log.WithError(err).Error("Failed writing in-memory config to the file:" + m.morphFile)
 		return err
 	}
 
-	// Force to exit the app to load the latest config and let Kubernetes starts app.
-	m.ctxCancel()
+	m.log.Info("Found that on-chain configuration has been updated")
+
 	return nil
-}
-
-var (
-	hclRangeTy       = reflect.TypeOf((*hcl.Range)(nil)).Elem()
-	hclBodyTy        = reflect.TypeOf((*hcl.Body)(nil)).Elem()
-	hclBodyContentTy = reflect.TypeOf((*hcl.BodyContent)(nil)).Elem()
-)
-
-func (m *Morph) filterValue(v1, v2 any) bool {
-	refVal1, ok1 := v1.(reflect.Value)
-	refVal2, ok2 := v2.(reflect.Value)
-	if ok1 != ok2 {
-		return false
-	}
-	if ok1 && ok2 {
-		if refVal1.Type() == hclRangeTy || refVal2.Type() == hclRangeTy {
-			return false
-		}
-		if refVal1.Type() == hclBodyTy || refVal2.Type() == hclBodyTy {
-			return false
-		}
-		if refVal1.Type() == hclBodyContentTy || refVal2.Type() == hclBodyContentTy {
-			return false
-		}
-	}
-	refStruct1, ok1 := v1.(reflect.StructField)
-	refStruct2, ok2 := v1.(reflect.StructField)
-	if ok1 != ok2 {
-		return false
-	}
-	if ok1 && ok2 {
-		if _, tagged := refStruct1.Tag.Lookup("hcl"); !tagged {
-			return false
-		}
-		if _, tagged := refStruct2.Tag.Lookup("hcl"); !tagged {
-			return false
-		}
-	}
-	return true
 }
 
 func (m *Morph) reloadRoutine() {
