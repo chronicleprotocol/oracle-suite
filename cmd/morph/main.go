@@ -13,35 +13,29 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package config
+package main
 
 import (
-	_ "embed"
+	"os"
+
+	suite "github.com/chronicleprotocol/oracle-suite"
+	"github.com/chronicleprotocol/oracle-suite/cmd"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/morph"
 )
 
-//go:embed config-contracts.hcl
-var Contracts []byte
+func main() {
+	var config morph.Config
+	cf := cmd.ConfigFlagsForConfig(config)
 
-//go:embed config-defaults.hcl
-var Defaults []byte
+	var lf cmd.LoggerFlags
+	c := cmd.NewRootCommand("morph", suite.Version, &cf, &lf)
 
-//go:embed config-ethereum.hcl
-var Ethereum []byte
+	c.AddCommand(
+		NewRunCmd(&config, &cf, &lf),
+		cmd.NewRenderConfigCmd(&config, &cf),
+	)
 
-//go:embed config-ghost.hcl
-var Ghost []byte
-
-//go:embed config-gofer.hcl
-var Gofer []byte
-
-//go:embed config-spectre.hcl
-var Spectre []byte
-
-//go:embed config-spire.hcl
-var Spire []byte
-
-//go:embed config-transport.hcl
-var Transport []byte
-
-//go:embed config-morph.hcl
-var Morph []byte
+	if err := c.Execute(); err != nil {
+		os.Exit(1)
+	}
+}

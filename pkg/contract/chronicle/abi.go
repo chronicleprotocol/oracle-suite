@@ -33,11 +33,12 @@ const (
 var (
 	abi = goethABI.NewABI()
 
-	abiMedian      *goethABI.Contract
-	abiScribe      *goethABI.Contract
-	abiOpScribe    *goethABI.Contract
-	abiWatRegistry *goethABI.Contract
-	abiChainlog    *goethABI.Contract
+	abiMedian         *goethABI.Contract
+	abiScribe         *goethABI.Contract
+	abiOpScribe       *goethABI.Contract
+	abiWatRegistry    *goethABI.Contract
+	abiChainlog       *goethABI.Contract
+	abiConfigRegistry *goethABI.Contract
 )
 
 func init() {
@@ -104,6 +105,12 @@ func init() {
 
 	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]
 	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
+
+	abiConfigRegistry, _ = abi.ParseSignatures(
+		`latest()(string memory)`,
+		`get(uint256)(string memory, uint32)`,
+		`latestIndex()(uint256)`,
+	)
 }
 
 type PokeData struct {
