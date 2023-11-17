@@ -18,6 +18,7 @@ package morph
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/types"
@@ -66,21 +67,32 @@ type ConfigMorph struct {
 	// Interval is an interval of pulling on-chain config in seconds
 	Interval uint32 `hcl:"interval"`
 
-	// WorkDir is a working directory where run application
-	WorkDir string `hcl:"work_dir"`
-
-	// ExecutableBinary is a path to executable binary that morph service initiates the app running.
-	ExecutableBinary string `hcl:"executable_binary"`
-
-	// Time duration waiting for app running in second
-	WaitDurationForAppRunning uint32 `hcl:"waiting_app_running"`
-
-	// Time duration waiting for app quiting in second
-	WaitDurationForAppQuiting uint32 `hcl:"waiting_app_quiting"`
+	// Config for running application
+	AppConfig configApp `hcl:"app,block"`
 
 	// HCL fields:
 	Range   hcl.Range       `hcl:",range"`
 	Content hcl.BodyContent `hcl:",content"`
+}
+
+type configApp struct {
+	// WorkDir is a working directory where run application
+	WorkDir string `hcl:"work_dir,optional"`
+
+	// ExecutableBinary is a path to executable binary that morph service initiates the app running.
+	ExecutableBinary string `hcl:"bin"`
+
+	// Main arguments that indicates the use case of application
+	Use string `hcl:"use"`
+
+	// Concatenated string of arguments, with a format of `--x1 y1 --x2 y2 --x3 y3`
+	Args string `hcl:"args,optional"`
+
+	// Time duration waiting for app running in second
+	WaitDurationForAppRunning uint32 `hcl:"waiting_running"`
+
+	// Time duration waiting for app quiting in second
+	WaitDurationForAppQuiting uint32 `hcl:"waiting_quiting"`
 }
 
 func (c *Config) Services(baseLogger log.Logger, appName string, appVersion string) (pkgSupervisor.Service, error) {
@@ -139,15 +151,22 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 		interval = defaultInterval
 	}
 
+	var args []string
+	if len(c.AppConfig.Args) > 0 {
+		args = strings.Split(c.AppConfig.Args, " ")
+	}
+
 	cfg := pkgMorph.Config{
 		MorphFile:                 c.MorphFile,
 		Client:                    clients[c.EthereumClient],
 		ConfigRegistryAddress:     c.ConfigRegistryAddress,
 		Interval:                  timeutil.NewTicker(time.Second * time.Duration(interval)),
-		WorkDir:                   c.WorkDir,
-		ExecutableBinary:          c.ExecutableBinary,
-		WaitDurationForAppRunning: time.Duration(c.WaitDurationForAppRunning) * time.Second,
-		WaitDurationForAppQuiting: time.Duration(c.WaitDurationForAppQuiting) * time.Second,
+		WorkDir:                   c.AppConfig.WorkDir,
+		ExecutableBinary:          c.AppConfig.ExecutableBinary,
+		Use:                       c.AppConfig.Use,
+		Args:                      args,
+		WaitDurationForAppRunning: time.Duration(c.AppConfig.WaitDurationForAppRunning) * time.Second,
+		WaitDurationForAppQuiting: time.Duration(c.AppConfig.WaitDurationForAppQuiting) * time.Second,
 		Logger:                    baseLogger,
 	}
 	morph, err := pkgMorph.NewMorphService(cfg)
