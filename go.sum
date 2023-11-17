@@ -88,12 +88,12 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0/go.mod h1:v57UDF4pDQJcEfFUCRop3
 github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0tEMk218=
 github.com/defiweb/go-anymapper v0.3.0 h1:sWbTvhpdBaCHQGn+kuKYDnb+mPmeDNzzEXnC+CPhe6k=
 github.com/defiweb/go-anymapper v0.3.0/go.mod h1:EeQDyOsFd63Pt2uu9Yb8NFrChuZ9JBChjGKbDhRPHAQ=
-github.com/defiweb/go-eth v0.4.5 h1:bX8FLb5TMLxOJl1s9FHgPxt1EIMej6IiW9nQ4/83iW8=
-github.com/defiweb/go-eth v0.4.5/go.mod h1:b1O58iI9/RLA2tabu+9+F0NiItKYbE4/N44tvnmkq+U=
+github.com/defiweb/go-eth v0.5.0 h1:TF0LTL+7r6FHghJ0Dto9eU/Xk235/XH88VqA7LKgyNE=
+github.com/defiweb/go-eth v0.5.0/go.mod h1:DPSh0trAj/rSPtbte67IzIhJ/EsBF0P3JFVAA+KQkVU=
 github.com/defiweb/go-rlp v0.3.0 h1:0q+EuR5SdSDu7XLx5Cu68EwVSaNA+CkRCFcE+17HNxA=
 github.com/defiweb/go-rlp v0.3.0/go.mod h1:nLGzk10jAgynPvN2hL+tLnnyZ5Fcshv0wmpWDRtV0PA=
-github.com/defiweb/go-sigparser v0.4.0 h1:ptnckqnzAj58s7zAWg4GE/wnKXAL2eXNHCLfhdOI6Zw=
-github.com/defiweb/go-sigparser v0.4.0/go.mod h1:R1wkfsnASR2M38ZupKHoqqIfv+8HgRbZaFQI9Inr4k8=
+github.com/defiweb/go-sigparser v0.5.0 h1:77qTaA9JF/MAcBkgk+x6wiCFqu5oIC8TdmCPXAchuPo=
+github.com/defiweb/go-sigparser v0.5.0/go.mod h1:R1wkfsnASR2M38ZupKHoqqIfv+8HgRbZaFQI9Inr4k8=
 github.com/docker/go-units v0.4.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
