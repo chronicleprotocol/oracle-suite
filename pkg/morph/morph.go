@@ -34,16 +34,28 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
+// Morph service is working as app initializer, is responsible for
+// - keeping the local config up-to-dated
+// - running the main application with the latest up-to-dated config
+// - quiting the main application when quit itself
 type Morph struct {
 	ctx    context.Context
 	waitCh chan error
 	log    log.Logger
 
-	morphFile      string
-	configRegistry *chronicle.ConfigRegistry
-	interval       *timeutil.Ticker
-	am             *supervisor.AppManager
+	// File path to the local cache config file, will be replaced with downloaded on-chain config
+	morphFile string
 
+	// Contract to ConfigRegistry smart contract, where config's IPFS url stores
+	configRegistry *chronicle.ConfigRegistry
+
+	// Interval in seconds to check if on-chain config has been updated
+	interval *timeutil.Ticker
+
+	// AppManager instance to restart the main application
+	am *supervisor.AppManager
+
+	// Temporary variable to cache last ipfs url downloaded
 	lastIPFS string
 }
 
@@ -63,7 +75,7 @@ const LoggerTag = "MORPH"
 
 // NewMorphService creates Morph, which proceeds the following steps:
 // - Periodically pull the config from on-chain.
-// - Compares with previous one, if found difference, exit app.
+// - Compares with previous one, if found difference, restart app.
 func NewMorphService(cfg Config) (*Morph, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
@@ -96,6 +108,11 @@ func NewMorphService(cfg Config) (*Morph, error) {
 	return m, nil
 }
 
+// Start starts running main application and monitoring the changes of on-chain config.
+//   - download the latest on-chain config first and update local config file if newly updated
+//   - execute command to run main application with local config file
+//     ./ghost run --config config-cache.hcl
+//     After executing command, morph will wait for app to run for a while (CFG_RUN_APP_DURATION in seconds)
 func (m *Morph) Start(ctx context.Context) error {
 	if m.ctx != nil {
 		return errors.New("service can be started only once")
@@ -110,16 +127,18 @@ func (m *Morph) Start(ctx context.Context) error {
 		}).
 		Info("Starting")
 
+	// Download the latest on-chain config if it has been updated
 	if _, err := m.Monitor(); err != nil {
 		m.log.
 			WithError(err).
-			Info("Monitoring latest config was failed")
+			Error("Monitoring latest config was failed")
 		return err
 	}
+	// Make sure that the main application is running at the beginning
 	if err := m.am.Start(ctx); err != nil {
 		m.log.
 			WithError(err).
-			Info("Running app with latest config was failed")
+			Error("Running app with latest config was failed")
 		return err
 	}
 
@@ -202,7 +221,7 @@ func (m *Morph) RestartApp() error {
 	}
 
 	// Wait for app quiting
-	if err := m.am.WaitForAppQuitting(); err != nil {
+	if _, err := m.am.WaitForAppQuiting(); err != nil {
 		return err
 	}
 
@@ -212,7 +231,10 @@ func (m *Morph) RestartApp() error {
 	}
 
 	// Wait for app running
-	return m.am.WaitForAppRunning()
+	if _, err := m.am.WaitForAppRunning(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *Morph) reloadRoutine() {
@@ -240,13 +262,14 @@ func (m *Morph) reloadRoutine() {
 func (m *Morph) contextCancelHandler() {
 	defer func() { close(m.waitCh) }()
 	defer m.log.Info("Stopped")
+	<-m.ctx.Done()
+	// When context has been cancelled, send interrupt signal to app to quit and wait for app to quit.
 	if err := m.am.QuitApp(); err != nil {
 		m.waitCh <- err
 		return
 	}
-	if err := m.am.WaitForAppQuitting(); err != nil {
+	if _, err := m.am.WaitForAppQuiting(); err != nil {
 		m.waitCh <- err
 		return
 	}
-	<-m.ctx.Done()
 }
