@@ -19,13 +19,13 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"sync"
 
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/chronicleprotocol/oracle-suite/rail/com"
 	"github.com/chronicleprotocol/oracle-suite/rail/metrics"
 	"github.com/chronicleprotocol/oracle-suite/rail/node"
-	"github.com/chronicleprotocol/oracle-suite/rail/ui"
+	"github.com/chronicleprotocol/oracle-suite/rail/ssh"
 )
 
 var log = logging.Logger("rail")
@@ -57,43 +57,11 @@ func main() {
 		}
 	}
 
-	runServicesAndWait(
+	com.RunServicesAndWait(
 		ctx,
 		&metrics.Prometheus{},
 		node.NewNode(ctx, os.Args[1:], actions),
-		ui.NewProgram(eventChan),
+		// ui.NewProgram(eventChan),
+		ssh.NewServer(eventChan),
 	)
-}
-
-func runServicesAndWait(ctx context.Context, services ...service) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	for _, s := range services {
-		log.Debugf("start %T", s)
-		if err := s.Start(ctx); err != nil {
-			log.Fatal(err)
-		}
-		log.Debugf("started %T", s)
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(len(services))
-	for _, s := range services {
-		go func(s service) {
-			defer wg.Done()
-			log.Debugf("wait %T", s)
-			s.Wait()
-			cancel()
-			log.Debugf("done %T", s)
-		}(s)
-	}
-
-	wg.Wait()
-	log.Debug("all services finished")
-}
-
-type service interface {
-	Start(ctx context.Context) error
-	Wait()
 }

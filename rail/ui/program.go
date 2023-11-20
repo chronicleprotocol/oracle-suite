@@ -21,6 +21,9 @@ import (
 	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/ssh"
+	"github.com/charmbracelet/wish"
+	"github.com/charmbracelet/wish/bubbletea"
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/rail/stats"
@@ -29,9 +32,27 @@ import (
 
 var log = logging.Logger("rail/ui")
 
-func NewProgram(eventChan <-chan any) *Program {
+func NewProgram(eventChan <-chan any, opts ...tea.ProgramOption) *Program {
 	return &Program{
-		events: eventChan,
+		events:      eventChan,
+		programOpts: opts,
+	}
+}
+
+func ProgramHandler(eventChan <-chan any) bubbletea.ProgramHandler {
+	return func(s ssh.Session) *tea.Program {
+		_, _, active := s.Pty()
+		if !active {
+			wish.Fatalln(s, "no active terminal, skipping")
+			return nil
+		}
+		p := NewProgram(eventChan, tea.WithInput(s), tea.WithOutput(s), tea.WithAltScreen())
+		err := p.Start(s.Context())
+		if err != nil {
+			wish.Fatalln(s, "could not start program, skipping")
+			return nil
+		}
+		return p.program
 	}
 }
 
@@ -42,8 +63,9 @@ type Program struct {
 
 	events <-chan any
 
-	model   tea.Model
-	program *tea.Program
+	model       tea.Model
+	program     *tea.Program
+	programOpts []tea.ProgramOption
 }
 
 func (s *Program) Start(ctx context.Context) error {
@@ -57,7 +79,7 @@ func (s *Program) Start(ctx context.Context) error {
 
 	s.program = tea.NewProgram(app{
 		table: rowpick.NewModel(),
-	}, tea.WithContext(s.ctx))
+	}, append(s.programOpts, tea.WithContext(s.ctx))...)
 
 	s.wg.Add(1)
 	go func() {
@@ -98,9 +120,11 @@ func (s *Program) Wait() {
 	// Wait until the program exits
 	s.program.Wait()
 	log.Debugf("waited %T", s.program)
+
 	// Cancel the context so that all goroutines exit
 	s.cancel()
 	log.Debugf("canceled %T", s.cancel)
+
 	// Wait for all goroutines to exit
 	s.wg.Wait()
 	log.Debugf("waited %T", s.wg)

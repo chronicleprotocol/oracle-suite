@@ -13,27 +13,42 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package model
+package com
 
 import (
-	"strings"
+	"context"
+	"sync"
 )
 
-type Logs []string
-
-// LogF appends log message with formatting
-func (l *Logs) LogF(format string, a ...any) {
-	// *l = append(*l, fmt.Sprintf(format, a...))
+type Service interface {
+	Start(context.Context) error
+	Wait()
 }
 
-// Log appends log message
-func (l *Logs) Log(s string) {
-	// *l = append(*l, s)
-}
+func RunServicesAndWait(ctx context.Context, services ...Service) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-func (l Logs) String() string {
-	if len(l) == 0 {
-		return ""
+	for _, s := range services {
+		log.Debugf("start %T", s)
+		if err := s.Start(ctx); err != nil {
+			log.Fatal(err)
+		}
+		log.Debugf("started %T", s)
 	}
-	return " ❇ " + strings.Join(l, "\n ❇ ") + "\n"
+
+	var wg sync.WaitGroup
+	wg.Add(len(services))
+	for _, s := range services {
+		go func(s Service) {
+			defer wg.Done()
+			log.Debugf("wait %T", s)
+			s.Wait()
+			cancel()
+			log.Debugf("done %T", s)
+		}(s)
+	}
+
+	wg.Wait()
+	log.Debug("all services finished")
 }

@@ -13,27 +13,10 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package model
+package com
 
 import (
-	"strings"
+	logging "github.com/ipfs/go-log/v2"
 )
 
-type Logs []string
-
-// LogF appends log message with formatting
-func (l *Logs) LogF(format string, a ...any) {
-	// *l = append(*l, fmt.Sprintf(format, a...))
-}
-
-// Log appends log message
-func (l *Logs) Log(s string) {
-	// *l = append(*l, s)
-}
-
-func (l Logs) String() string {
-	if len(l) == 0 {
-		return ""
-	}
-	return " ❇ " + strings.Join(l, "\n ❇ ") + "\n"
-}
+var log = logging.Logger("rail/com")

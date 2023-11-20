@@ -60,17 +60,17 @@ func (a app) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		a.LogF("keypress: %s", msg)
 		switch msg.String() {
-		case "[":
+		case "k":
 			return a, a.Next(statePeers)
-		case "]":
+		case "l":
 			return a, a.Next(stateMessages)
-		case "0":
+		case "i":
 			a.net = ""
 			return a, nil
-		case "-":
+		case "o":
 			a.net = "stage"
 			return a, nil
-		case "=":
+		case "p":
 			a.net = "prod"
 			return a, nil
 		case "esc":
