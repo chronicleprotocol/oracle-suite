@@ -159,11 +159,8 @@ func (am *AppManager) QuitApp() error {
 		}
 
 		// Wait for the process to exit after sending SIGTERM
-		select {
-		case err := <-done:
-			if err != nil {
-				return fmt.Errorf("error waiting for app to quit after sending SIGTERM: %w", err)
-			}
+		if err = <-done; err != nil {
+			return fmt.Errorf("error waiting for app to quit after sending SIGTERM: %w", err)
 		}
 		return fmt.Errorf("app quited within specified timeout")
 	}
