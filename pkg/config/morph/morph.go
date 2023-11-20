@@ -88,9 +88,6 @@ type configApp struct {
 	// Concatenated string of arguments, with a format of `--x1 y1 --x2 y2 --x3 y3`
 	Args string `hcl:"args,optional"`
 
-	// Time duration waiting for app running in second
-	WaitDurationForAppRunning uint32 `hcl:"waiting_running"`
-
 	// Time duration waiting for app quiting in second
 	WaitDurationForAppQuiting uint32 `hcl:"waiting_quiting"`
 }
@@ -165,7 +162,6 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 		ExecutableBinary:          c.AppConfig.ExecutableBinary,
 		Use:                       c.AppConfig.Use,
 		Args:                      args,
-		WaitDurationForAppRunning: time.Duration(c.AppConfig.WaitDurationForAppRunning) * time.Second,
 		WaitDurationForAppQuiting: time.Duration(c.AppConfig.WaitDurationForAppQuiting) * time.Second,
 		Logger:                    baseLogger,
 	}

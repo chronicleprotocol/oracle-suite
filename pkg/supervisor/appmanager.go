@@ -25,8 +25,6 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-ps"
-
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 const WaitCheckInterval = 1000 // in second
@@ -42,7 +40,6 @@ type AppManager struct {
 	wd                     string
 	bin                    string
 	arguments              []string
-	waitDurationForRunning time.Duration
 	waitDurationForQuiting time.Duration
 
 	// Process instance that indicates to the process which AppManager handles
@@ -59,12 +56,8 @@ type AppManagerConfig struct {
 	// Executable binary to execute
 	Bin string
 
-	// List of arguments to be passed when execute commmand
+	// List of arguments to be passed when execute a command
 	Arguments []string
-
-	// Time duration to wait for app seamlessly running for a while
-	// App should not be crashed itself before expiration of WaitDurationForRunning
-	WaitDurationForRunning time.Duration
 
 	// Time duration to wait for app seamlessly to quit within a time
 	// App should quit itself before expiration of WaitDurationForQuiting
@@ -77,7 +70,6 @@ func NewAppManager(cfg AppManagerConfig) (*AppManager, error) {
 		wd:                     cfg.WorkDir,
 		bin:                    cfg.Bin,
 		arguments:              cfg.Arguments,
-		waitDurationForRunning: cfg.WaitDurationForRunning,
 		waitDurationForQuiting: cfg.WaitDurationForQuiting,
 	}, nil
 }
@@ -102,9 +94,6 @@ func (am *AppManager) Start(ctx context.Context) error {
 	if am.process == nil {
 		// Make sure we start from running
 		if err := am.RunApp(); err != nil {
-			return err
-		}
-		if _, err := am.WaitForAppRunning(); err != nil {
 			return err
 		}
 	}
@@ -134,69 +123,51 @@ func (am *AppManager) RunApp() error {
 	return nil
 }
 
-// WaitForAppRunning waits for app to run, expecting app not crashed until the expiration of waitDurationForRunning
-// If detected that app is not running until waitDurationForRunning, returns false and error.
-// Returns true if app is running for a while, time of waitDurationForRunning.
-func (am *AppManager) WaitForAppRunning() (bool, error) {
-	startTime := time.Now()
-	ticker := timeutil.NewTicker(WaitCheckInterval * time.Millisecond)
-	ticker.Start(am.ctx)
-	for {
+// QuitApp send interrupt signal to exit process and waits for app to quit
+// App should quit within a time of waitDurationForQuiting.
+// If detected that app was quited, return nil.
+// If app is still running with expiration of waitDurationForQuiting, return error.
+func (am *AppManager) QuitApp() error {
+	if am.process == nil {
+		return fmt.Errorf("unknown process to quit")
+	}
+	err := am.process.Signal(syscall.SIGINT)
+	if err != nil {
+		return fmt.Errorf("error sending SIGINT for app to quit: %w", err)
+	}
+
+	// Wait for app to quit within a time of waitDurationForQuiting
+	done := make(chan error, 1)
+	go func() {
+		_, err := am.process.Wait()
+		am.process = nil
+		done <- err
+	}()
+
+	select {
+	case <-am.ctx.Done():
+		return fmt.Errorf("context was cancelled while waiting for app to quit")
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("error waiting for app to quit: %w", err)
+		}
+	case <-time.After(am.waitDurationForQuiting):
+		// if timeout elapsed, kill the process again and return timeout error
+		err := am.process.Signal(syscall.SIGTERM)
+		if err != nil {
+			return fmt.Errorf("sending sigterm signal failed: %w", err)
+		}
+
+		// Wait for the process to exit after sending SIGTERM
 		select {
-		case <-am.ctx.Done():
-			return false, fmt.Errorf("context was cancelled while waiting for app to run")
-		case <-ticker.TickCh():
-			if !am.isAppRunning() {
-				return false, fmt.Errorf("app is not running for some reason")
-			}
-			if time.Since(startTime) >= am.waitDurationForRunning {
-				return true, nil
+		case err := <-done:
+			if err != nil {
+				return fmt.Errorf("error waiting for app to quit after sending SIGTERM: %w", err)
 			}
 		}
-	}
-}
-
-// QuitApp send interrupt signal to exit process
-func (am *AppManager) QuitApp() error {
-	if am.process != nil {
-		err := am.process.Signal(syscall.SIGINT)
-		return err
+		return fmt.Errorf("app quited within specified timeout")
 	}
 	return nil
-}
-
-// WaitForAppQuiting waits for app to quit, app should quit within a time of waitDurationForQuiting.
-// If detected that app was quited, return true.
-// If app is still running with expiration of waitDurationForQuiting, return false and error.
-func (am *AppManager) WaitForAppQuiting() (bool, error) {
-	startTime := time.Now()
-	ticker := timeutil.NewTicker(WaitCheckInterval * time.Millisecond)
-	ticker.Start(am.ctx)
-	for {
-		select {
-		case <-am.ctx.Done():
-			return false, fmt.Errorf("context was cancelled while waiting for app to quit")
-		case <-ticker.TickCh():
-			running := am.isAppRunning()
-			if !running {
-				return true, nil
-			}
-			if time.Since(startTime) >= am.waitDurationForQuiting {
-				return false, fmt.Errorf("app is still running that should quit")
-			}
-		}
-	}
-}
-
-// isAppRunning checks if the application is still running.
-func (am *AppManager) isAppRunning() bool {
-	if am.process == nil {
-		return false
-	}
-
-	// Send a signal of 0 to check if the process is still alive.
-	err := am.process.Signal(syscall.Signal(0))
-	return err == nil
 }
 
 // isProcessRunning finds the process which has a process name of given parameter

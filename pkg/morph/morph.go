@@ -68,7 +68,6 @@ type Config struct {
 	ExecutableBinary          string
 	Use                       string
 	Args                      []string
-	WaitDurationForAppRunning time.Duration
 	WaitDurationForAppQuiting time.Duration
 	Logger                    log.Logger
 }
@@ -92,7 +91,6 @@ func NewMorphService(cfg Config) (*Morph, error) {
 		Arguments: append([]string{
 			cfg.Use, "--config", cfg.MorphFile,
 		}, cfg.Args...),
-		WaitDurationForRunning: cfg.WaitDurationForAppRunning,
 		WaitDurationForQuiting: cfg.WaitDurationForAppQuiting,
 	})
 	if err != nil {
@@ -222,18 +220,8 @@ func (m *Morph) RestartApp() error {
 		return err
 	}
 
-	// Wait for app quiting
-	if _, err := m.am.WaitForAppQuiting(); err != nil {
-		return err
-	}
-
 	// Run the app
 	if err := m.am.RunApp(); err != nil {
-		return err
-	}
-
-	// Wait for app running
-	if _, err := m.am.WaitForAppRunning(); err != nil {
 		return err
 	}
 	return nil
@@ -267,10 +255,6 @@ func (m *Morph) contextCancelHandler() {
 	<-m.ctx.Done()
 	// When context has been cancelled, send interrupt signal to app to quit and wait for app to quit.
 	if err := m.am.QuitApp(); err != nil {
-		m.waitCh <- err
-		return
-	}
-	if _, err := m.am.WaitForAppQuiting(); err != nil {
 		m.waitCh <- err
 		return
 	}
