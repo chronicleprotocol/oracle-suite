@@ -694,33 +694,5 @@
   "stage-testnet-zkEVM-mango-YFI/USD-scribe-poke": {
     "spread": 1,
     "expiration": 21600
-  },
-  "stage-zkevm-BTC/USD-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
-  },
-  "stage-zkevm-DSR/RATE-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
-  },
-  "stage-zkevm-ETH/USD-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
-  },
-  "stage-zkevm-MATIC/USD-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
-  },
-  "stage-zkevm-SDAI/DAI-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
-  },
-  "stage-zkevm-SDAI/ETH-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
-  },
-  "stage-zkevm-SDAI/MATIC-scribe-poke": {
-    "spread": 1,
-    "expiration": 32400
   }
 }
