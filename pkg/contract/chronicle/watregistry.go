@@ -22,6 +22,11 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 )
 
+type ConfigResult struct {
+	Bar   int       `abi:"bar"`
+	Bloom FeedBloom `abi:"bloom"`
+}
+
 type WatRegistry struct {
 	client  rpc.RPC
 	address types.Address
@@ -34,30 +39,60 @@ func NewWatRegistry(client rpc.RPC, address types.Address) *WatRegistry {
 	}
 }
 
+func (w *WatRegistry) Client() rpc.RPC {
+	return w.client
+}
+
 func (w *WatRegistry) Address() types.Address {
 	return w.address
 }
 
-func (w *WatRegistry) Bar(wat string) contract.TypedSelfCaller[int] {
-	method := abiWatRegistry.Methods["bar"]
-	return contract.NewTypedCall[int](
+func (w *WatRegistry) Wats() contract.TypedSelfCaller[[]string] {
+	method := abiWatRegistry.Methods["wats"]
+	return contract.NewTypedCall[[]string](
 		contract.CallOpts{
 			Client:       w.client,
 			Address:      w.address,
-			Encoder:      contract.NewCallEncoder(method, stringToBytes32(wat)),
+			Encoder:      contract.NewCallEncoder(method),
 			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiWatRegistry),
 		},
 	)
 }
 
-func (w *WatRegistry) Feeds(wat string) contract.TypedSelfCaller[[]types.Address] {
-	method := abiWatRegistry.Methods["feeds"]
-	return contract.NewTypedCall[[]types.Address](
+func (w *WatRegistry) Exists(wat string) contract.TypedSelfCaller[bool] {
+	method := abiWatRegistry.Methods["exists"]
+	return contract.NewTypedCall[bool](
 		contract.CallOpts{
 			Client:       w.client,
 			Address:      w.address,
-			Encoder:      contract.NewCallEncoder(method, stringToBytes32(wat)),
+			Encoder:      contract.NewCallEncoder(method, wat),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiWatRegistry),
+		},
+	)
+}
+
+func (w *WatRegistry) Config(wat string) contract.TypedSelfCaller[ConfigResult] {
+	method := abiWatRegistry.Methods["config"]
+	return contract.NewTypedCall[ConfigResult](
+		contract.CallOpts{
+			Client:       w.client,
+			Address:      w.address,
+			Encoder:      contract.NewCallEncoder(method, wat),
+			Decoder:      contract.NewCallDecoder(method),
+			ErrorDecoder: contract.NewContractErrorDecoder(abiWatRegistry),
+		},
+	)
+}
+
+func (w *WatRegistry) Deployment(wat string, chainID uint64) contract.TypedSelfCaller[types.Address] {
+	method := abiWatRegistry.Methods["deployment"]
+	return contract.NewTypedCall[types.Address](
+		contract.CallOpts{
+			Client:       w.client,
+			Address:      w.address,
+			Encoder:      contract.NewCallEncoder(method, wat, chainID),
 			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiWatRegistry),
 		},

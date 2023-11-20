@@ -65,15 +65,13 @@ func (s *Scribe) Read(ctx context.Context) (PokeData, error) {
 }
 
 func (s *Scribe) Wat() contract.TypedSelfCaller[string] {
+	method := abiScribe.Methods["wat"]
 	return contract.NewTypedCall[string](
 		contract.CallOpts{
-			Client:  s.client,
-			Address: s.address,
-			Encoder: contract.NewCallEncoder(abiScribe.Methods["wat"]),
-			Decoder: func(data []byte, res any) error {
-				*res.(*string) = bytes32ToString(data)
-				return nil
-			},
+			Client:       s.client,
+			Address:      s.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
 	)

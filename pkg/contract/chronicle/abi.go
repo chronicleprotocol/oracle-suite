@@ -33,22 +33,31 @@ const (
 var (
 	abi = goethABI.NewABI()
 
-	abiMedian      *goethABI.Contract
-	abiScribe      *goethABI.Contract
-	abiOpScribe    *goethABI.Contract
-	abiWatRegistry *goethABI.Contract
-	abiChainlog    *goethABI.Contract
+	abiMedian       *goethABI.Contract
+	abiScribe       *goethABI.Contract
+	abiOpScribe     *goethABI.Contract
+	abiWatRegistry  *goethABI.Contract
+	abiFeedRegistry *goethABI.Contract
+	abiChainlog     *goethABI.Contract
 )
 
 func init() {
-	// Types for Scribe and Optimistic Scribe
-	abi.Types["PokeData"], _ = abi.ParseType("(uint128 val, uint32 age)")
-	abi.Types["SchnorrData"], _ = abi.ParseType("(bytes32 signature, address commitment, bytes signersBlob)")
-	abi.Types["ECDSAData"], _ = abi.ParseType("(uint8 v, bytes32 r, bytes32 s)")
+	// The bytes32_string type is a null-terminated string represented as a bytes32.
+	abi.Types["bytes32_string"] = bytes32StringType{}
 
-	abiMedian, _ = abi.ParseSignatures(
+	// The uint256_feedBloom type is a 256-bit bitfield, where n-th bit is set if
+	// the feed with first byte of its address equal to n is present in the bloom
+	// filter.
+	abi.Types["uint256_feedBloom"] = uint256FeedBloomType{}
+
+	// Types for Scribe and Optimistic Scribe.
+	abi.Types["PokeData"] = abi.MustParseType("(uint128 val, uint32 age)")
+	abi.Types["SchnorrData"] = abi.MustParseType("(bytes32 signature, address commitment, bytes signersBlob)")
+	abi.Types["ECDSAData"] = abi.MustParseType("(uint8 v, bytes32 r, bytes32 s)")
+
+	abiMedian = abi.MustParseSignatures(
 		`age()(uint256 age)`,
-		`wat()(bytes32 wat)`,
+		`wat()(bytes32_string wat)`,
 		`bar()(uint8 bar)`,
 		`poke(
 			uint256[] calldata val_, 
@@ -59,7 +68,7 @@ func init() {
 		)`,
 	)
 
-	abiScribe, _ = abi.ParseSignatures(
+	abiScribe = abi.MustParseSignatures(
 		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
 		`error FutureMessage(uint32 givenAge, uint32 currentTimestamp)`,
 		`error BarNotReached(uint8 numberSigners, uint8 bar)`,
@@ -67,14 +76,14 @@ func init() {
 		`error SignersNotOrdered()`,
 		`error SchnorrSignatureInvalid()`,
 
-		`wat()(bytes32 wat)`,
+		`wat()(bytes32_string wat)`,
 		`bar()(uint8 bar)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
 		`poke(PokeData pokeData, SchnorrData schnorrData)`,
 		`poke_optimized_7136211(PokeData pokeData, SchnorrData schnorrData)`,
 	)
 
-	abiOpScribe, _ = abi.ParseSignatures(
+	abiOpScribe = abi.MustParseSignatures(
 		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
 		`error FutureMessage(uint32 givenAge, uint32 currentTimestamp)`,
 		`error BarNotReached(uint8 numberSigners, uint8 bar)`,
@@ -85,7 +94,7 @@ func init() {
 		`error NoOpPokeToChallenge()`,
 		`error SchnorrDataMismatch(uint160 gotHash, uint160 wantHash)`,
 
-		`wat()(bytes32 wat)`,
+		`wat()(bytes32_string wat)`,
 		`bar()(uint8 bar)`,
 		`opChallengePeriod()(uint16 opChallengePeriod)`,
 		`feeds()(address[] feeds, uint[] feedIndexes)`,
@@ -93,17 +102,26 @@ func init() {
 		`opPoke_optimized_397084999(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
 	)
 
-	abiWatRegistry, _ = abi.ParseSignatures(
-		`bar(bytes32 wat)(uint8 bar)`,
-		`feeds(bytes32 wat)(address[] feeds)`,
+	abiFeedRegistry = abi.MustParseSignatures(
+		`function feeds() external view returns (address[] memory)`, // Returns all of Chronicle Protocol's feeds.
+		`function feeds(address feed) external view returns (bool)`, // Returns whether address `feed` is a feed.
 	)
 
-	abiChainlog, _ = abi.ParseSignatures(
+	abiWatRegistry = abi.MustParseSignatures(
+		`wats() external view returns (bytes32_string[] memory)`,                                // Returns all of Chronicle Protocol's wat identifiers.
+		`exists(bytes32_string wat) external view returns (bool)`,                               // Returns whether wat `wat` exists in registry.
+		`config(bytes32_string wat) external view returns (uint8 bar, uint256_feedBloom bloom)`, // Returns wat `wat`'s configuration (returns bar, bloom).
+		`chains(bytes32_string wat) external view returns (uint[] memory)`,                      // Returns wat `wat`'s list of chain ids its deployed to.
+		`deployment(bytes32_string wat, uint chainId) external view returns (address)`,          // Returns wat `wat`'s deployment address for chain `chainId`.
+	)
+
+	abiChainlog = abi.MustParseSignatures(
 		`tryGet(bytes32 key)(bool ok, address address)`,
 	)
 
 	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]
 	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
+	abiFeedRegistry.Methods["feeds(address)"] = abiFeedRegistry.Methods["feeds2"]
 }
 
 type PokeData struct {

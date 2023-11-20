@@ -34,20 +34,12 @@ func TestOpScribe_OpChallengePeriod(t *testing.T) {
 	mockClient := new(mockRPC)
 	scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &scribe.address,
-			Input: hexutil.MustHexToBytes("0x646edb68"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000012c"),
-			&types.Call{},
-			nil,
-		)
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &scribe.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0x646edb68"), call.Input)
+		return hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000012c"), &types.Call{}, nil
+	}
 
 	challengePeriod, err := scribe.OpChallengePeriod().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
@@ -102,53 +94,34 @@ func TestOpScribe_ReadAt(t *testing.T) {
 			mockClient := new(mockRPC)
 			scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
-			mockClient.On(
-				"BlockNumber",
-				ctx,
-			).
-				Return(
-					big.NewInt(42),
-					nil,
-				)
+			mockClient.blockNumberFn = func(ctx context.Context) (*big.Int, error) {
+				return big.NewInt(42), nil
+			}
 
-			mockClient.On(
-				"Call",
-				ctx,
-				types.Call{
-					To:    &scribe.address,
-					Input: hexutil.MustHexToBytes("0x646edb68"),
-				},
-				types.BlockNumberFromUint64(42),
-			).
-				Return(
-					hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000012c"),
-					&types.Call{},
-					nil,
-				)
+			mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+				assert.Equal(t, types.BlockNumberFromUint64(42), blockNumber)
+				assert.Equal(t, &scribe.address, call.To)
+				assert.Equal(t, hexutil.MustHexToBytes("0x646edb68"), call.Input)
+				return hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000012c"), &types.Call{}, nil
+			}
 
-			mockClient.On(
-				"GetStorageAt",
-				ctx,
-				scribe.address,
-				types.MustHashFromBigInt(big.NewInt(4)),
-				types.BlockNumberFromUint64(42),
-			).
-				Return(
-					types.MustHashFromHexPtr(tt.pokeSlot, types.PadNone),
-					nil,
-				)
-
-			mockClient.On(
-				"GetStorageAt",
-				ctx,
-				scribe.address,
-				types.MustHashFromBigInt(big.NewInt(8)),
-				types.BlockNumberFromUint64(42),
-			).
-				Return(
-					types.MustHashFromHexPtr(tt.opPokeSlot, types.PadNone),
-					nil,
-				)
+			getStorageAtCall := 0
+			mockClient.getStorageAtFn = func(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
+				getStorageAtCall++
+				switch getStorageAtCall {
+				case 1:
+					assert.Equal(t, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"), account)
+					assert.Equal(t, types.MustHashFromBigInt(big.NewInt(4)), key)
+					assert.Equal(t, types.BlockNumberFromUint64(42), block)
+					return types.MustHashFromHexPtr(tt.pokeSlot, types.PadNone), nil
+				case 2:
+					assert.Equal(t, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"), account)
+					assert.Equal(t, types.MustHashFromBigInt(big.NewInt(8)), key)
+					assert.Equal(t, types.BlockNumberFromUint64(42), block)
+					return types.MustHashFromHexPtr(tt.opPokeSlot, types.PadNone), nil
+				}
+				return nil, nil
+			}
 
 			pokeData, _, err := scribe.ReadAt(ctx, time.Unix(tt.readTime, 0))
 			require.NoError(t, err)
@@ -192,36 +165,20 @@ func TestOpScribe_OpPoke(t *testing.T) {
 			"0102030400000000000000000000000000000000000000000000000000000000",
 	)
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &scribe.address, call.To)
+		assert.Equal(t, calldata, call.Input)
+		return []byte{}, &types.Call{}, nil
+	}
+
+	mockClient.sendTransactionFn = func(ctx context.Context, tx types.Transaction) (*types.Hash, *types.Transaction, error) {
+		assert.Equal(t, types.Call{
 			To:    &scribe.address,
 			Input: calldata,
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			[]byte{},
-			&types.Call{},
-			nil,
-		)
-
-	mockClient.On(
-		"SendTransaction",
-		ctx,
-		types.Transaction{
-			Call: types.Call{
-				To:    &scribe.address,
-				Input: calldata,
-			},
-		},
-	).
-		Return(
-			&types.Hash{},
-			&types.Transaction{},
-			nil,
-		)
+		}, tx.Call)
+		return &types.Hash{}, &types.Transaction{}, nil
+	}
 
 	_, _, err := scribe.OpPoke(pokeData, schnorrData, ecdsaData).SendTransaction(ctx)
 	require.NoError(t, err)

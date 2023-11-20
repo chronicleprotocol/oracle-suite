@@ -105,13 +105,10 @@ func (m *Median) Wat() contract.TypedSelfCaller[string] {
 	method := abiMedian.Methods["wat"]
 	return contract.NewTypedCall[string](
 		contract.CallOpts{
-			Client:  m.client,
-			Address: m.address,
-			Encoder: contract.NewCallEncoder(method),
-			Decoder: func(data []byte, res any) error {
-				*res.(*string) = bytes32ToString(data)
-				return nil
-			},
+			Client:       m.client,
+			Address:      m.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
 	)
