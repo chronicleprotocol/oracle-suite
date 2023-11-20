@@ -145,8 +145,8 @@ func (am *AppManager) QuitApp() error {
 	}()
 
 	select {
-	case <-am.ctx.Done():
-		return fmt.Errorf("context was cancelled while waiting for app to quit")
+	// case <-am.ctx.Done():
+	//	return fmt.Errorf("context was cancelled while waiting for app to quit")
 	case err := <-done:
 		if err != nil {
 			return fmt.Errorf("error waiting for app to quit: %w", err)
@@ -159,7 +159,8 @@ func (am *AppManager) QuitApp() error {
 		}
 
 		// Wait for the process to exit after sending SIGTERM
-		if err = <-done; err != nil {
+		err = <-done
+		if err != nil {
 			return fmt.Errorf("error waiting for app to quit after sending SIGTERM: %w", err)
 		}
 		return fmt.Errorf("app quited within specified timeout")

@@ -82,11 +82,9 @@ type configApp struct {
 	// ExecutableBinary is a path to executable binary that morph service initiates the app running.
 	ExecutableBinary string `hcl:"bin"`
 
-	// Main arguments that indicates the use case of application
-	Use string `hcl:"use"`
-
-	// Concatenated string of arguments, with a format of `--x1 y1 --x2 y2 --x3 y3`
-	Args string `hcl:"args,optional"`
+	// Concatenated string of arguments, with a format of `run --x1 y1 --x2 y2 --x3 y3`
+	// It includes command and additional arguments of key and value.
+	Args string `hcl:"args"`
 
 	// Time duration waiting for app quiting in second
 	WaitDurationForAppQuiting uint32 `hcl:"waiting_quiting"`
@@ -101,6 +99,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 	if err != nil {
 		return nil, err
 	}
+
 	clients, err := c.Ethereum.ClientRegistry(ethereumConfig.Dependencies{Logger: logger})
 	if err != nil {
 		return nil, err
@@ -152,6 +151,10 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 	if len(c.AppConfig.Args) > 0 {
 		args = strings.Split(c.AppConfig.Args, " ")
 	}
+	if len(args) < 1 {
+		// args should include command at least, set run by default
+		return nil, fmt.Errorf("args should include command")
+	}
 
 	cfg := pkgMorph.Config{
 		MorphFile:                 c.MorphFile,
@@ -160,7 +163,6 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 		Interval:                  timeutil.NewTicker(time.Second * time.Duration(interval)),
 		WorkDir:                   c.AppConfig.WorkDir,
 		ExecutableBinary:          c.AppConfig.ExecutableBinary,
-		Use:                       c.AppConfig.Use,
 		Args:                      args,
 		WaitDurationForAppQuiting: time.Duration(c.AppConfig.WaitDurationForAppQuiting) * time.Second,
 		Logger:                    baseLogger,

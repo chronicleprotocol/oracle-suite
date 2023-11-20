@@ -66,7 +66,6 @@ type Config struct {
 	Interval                  *timeutil.Ticker
 	WorkDir                   string
 	ExecutableBinary          string
-	Use                       string
 	Args                      []string
 	WaitDurationForAppQuiting time.Duration
 	Logger                    log.Logger
@@ -89,7 +88,7 @@ func NewMorphService(cfg Config) (*Morph, error) {
 		WorkDir: cfg.WorkDir,
 		Bin:     cfg.ExecutableBinary,
 		Arguments: append([]string{
-			cfg.Use, "--config", cfg.MorphFile,
+			"--config", cfg.MorphFile,
 		}, cfg.Args...),
 		WaitDurationForQuiting: cfg.WaitDurationForAppQuiting,
 	})
