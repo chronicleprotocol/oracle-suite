@@ -22,11 +22,13 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 )
 
+// FeedRegistry allows interacting with the FeedRegistry contract.
 type FeedRegistry struct {
 	client  rpc.RPC
 	address types.Address
 }
 
+// NewFeedRegistry creates a new FeedRegistry instance.
 func NewFeedRegistry(client rpc.RPC, address types.Address) *FeedRegistry {
 	return &FeedRegistry{
 		client:  client,
@@ -34,14 +36,17 @@ func NewFeedRegistry(client rpc.RPC, address types.Address) *FeedRegistry {
 	}
 }
 
+// Client returns the RPC client used to interact with the FeedRegistry.
 func (w *FeedRegistry) Client() rpc.RPC {
 	return w.client
 }
 
+// Address returns the address of the FeedRegistry contract.
 func (w *FeedRegistry) Address() types.Address {
 	return w.address
 }
 
+// Feeds returns all of Chronicle Protocol's feeds.
 func (w *FeedRegistry) Feeds() contract.TypedSelfCaller[[]types.Address] {
 	method := abiFeedRegistry.Methods["feeds"]
 	return contract.NewTypedCall[[]types.Address](
@@ -55,6 +60,7 @@ func (w *FeedRegistry) Feeds() contract.TypedSelfCaller[[]types.Address] {
 	)
 }
 
+// FeedExists returns whether address `feed` is a feed.
 func (w *FeedRegistry) FeedExists(feed types.Address) contract.TypedSelfCaller[bool] {
 	method := abiFeedRegistry.Methods["feeds(address)"]
 	return contract.NewTypedCall[bool](

@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	pokeStorageSlot   = 4
-	opPokeStorageSlot = 8
+	pokeStorageSlot   = 4 // storage slot where the poke data is stored in Scribe and OpScribe contracts
+	opPokeStorageSlot = 8 // storage slot where the optimistic poke data is stored in OpScribe contract
 )
 
 var (
@@ -103,16 +103,16 @@ func init() {
 	)
 
 	abiFeedRegistry = abi.MustParseSignatures(
-		`function feeds() external view returns (address[] memory)`, // Returns all of Chronicle Protocol's feeds.
-		`function feeds(address feed) external view returns (bool)`, // Returns whether address `feed` is a feed.
+		`function feeds() external view returns (address[] memory)`,
+		`function feeds(address feed) external view returns (bool)`,
 	)
 
 	abiWatRegistry = abi.MustParseSignatures(
-		`wats() external view returns (bytes32_string[] memory)`,                                // Returns all of Chronicle Protocol's wat identifiers.
-		`exists(bytes32_string wat) external view returns (bool)`,                               // Returns whether wat `wat` exists in registry.
-		`config(bytes32_string wat) external view returns (uint8 bar, uint256_feedBloom bloom)`, // Returns wat `wat`'s configuration (returns bar, bloom).
-		`chains(bytes32_string wat) external view returns (uint[] memory)`,                      // Returns wat `wat`'s list of chain ids its deployed to.
-		`deployment(bytes32_string wat, uint chainId) external view returns (address)`,          // Returns wat `wat`'s deployment address for chain `chainId`.
+		`wats() external view returns (bytes32_string[] memory)`,
+		`exists(bytes32_string wat) external view returns (bool)`,
+		`config(bytes32_string wat) external view returns (uint8 bar, uint256_feedBloom bloom)`,
+		`chains(bytes32_string wat) external view returns (uint[] memory)`,
+		`deployment(bytes32_string wat, uint chainId) external view returns (address)`,
 	)
 
 	abiChainlog = abi.MustParseSignatures(

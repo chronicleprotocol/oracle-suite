@@ -93,6 +93,30 @@ func TestWatRegistry_Config(t *testing.T) {
 	assert.Equal(t, expectedConfig, config)
 }
 
+func TestWatRegistry_Chains(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes(
+			"0x" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000002" +
+				"0000000000000000000000000000000000000000000000000000000000000001" +
+				"0000000000000000000000000000000000000000000000000000000000000002",
+		)
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &watRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0xc18de0ef4441492f55534400000000000000000000000000000000000000000000000000"), call.Input)
+		return data, &types.Call{}, nil
+	}
+
+	chains, err := watRegistry.Chains("DAI/USD").Call(ctx, types.LatestBlockNumber)
+	require.NoError(t, err)
+	assert.Equal(t, []uint64{1, 2}, chains)
+}
+
 func TestWatRegistry_Deployment(t *testing.T) {
 	ctx := context.Background()
 	mockClient := new(mockRPC)
