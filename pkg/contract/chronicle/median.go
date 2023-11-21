@@ -32,6 +32,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
+// MedianPricePrecision is the precision of the price value in the Median contract
+// as a number of decimal places after the decimal point.
 const MedianPricePrecision = 18
 
 type MedianVal struct {
@@ -42,11 +44,13 @@ type MedianVal struct {
 	S   *big.Int
 }
 
+// Median allows interacting with the Median contract.
 type Median struct {
 	client  rpc.RPC
 	address types.Address
 }
 
+// NewMedian creates a new Median instance.
 func NewMedian(client rpc.RPC, address types.Address) *Median {
 	return &Median{
 		client:  client,
@@ -54,14 +58,17 @@ func NewMedian(client rpc.RPC, address types.Address) *Median {
 	}
 }
 
+// Client returns the RPC client used to interact with the Median.
 func (m *Median) Client() rpc.RPC {
 	return m.client
 }
 
+// Address returns the address of the Median contract.
 func (m *Median) Address() types.Address {
 	return m.address
 }
 
+// Val returns the current median price value.
 func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 	const (
 		offset = 16
@@ -85,6 +92,7 @@ func (m *Median) Val(ctx context.Context) (*bn.DecFixedPointNumber, error) {
 	), nil
 }
 
+// Age returns the current median price age.
 func (m *Median) Age() contract.TypedSelfCaller[time.Time] {
 	method := abiMedian.Methods["age"]
 	return contract.NewTypedCall[time.Time](
@@ -101,22 +109,21 @@ func (m *Median) Age() contract.TypedSelfCaller[time.Time] {
 	)
 }
 
+// Wat returns the median price asset name.
 func (m *Median) Wat() contract.TypedSelfCaller[string] {
 	method := abiMedian.Methods["wat"]
 	return contract.NewTypedCall[string](
 		contract.CallOpts{
-			Client:  m.client,
-			Address: m.address,
-			Encoder: contract.NewCallEncoder(method),
-			Decoder: func(data []byte, res any) error {
-				*res.(*string) = bytes32ToString(data)
-				return nil
-			},
+			Client:       m.client,
+			Address:      m.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiMedian),
 		},
 	)
 }
 
+// Bar returns the median price bar.
 func (m *Median) Bar() contract.TypedSelfCaller[int] {
 	method := abiMedian.Methods["bar"]
 	return contract.NewTypedCall[int](
@@ -130,6 +137,7 @@ func (m *Median) Bar() contract.TypedSelfCaller[int] {
 	)
 }
 
+// Poke updates the median price value.
 func (m *Median) Poke(vals []MedianVal) contract.SelfTransactableCaller {
 	sort.Slice(vals, func(i, j int) bool {
 		return vals[i].Val.Cmp(vals[j].Val) < 0

@@ -33,6 +33,8 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
+// ScribePricePrecision is the precision of the price value in the Scribe contract
+// as a number of decimal places after the decimal point.
 const ScribePricePrecision = 18
 
 type FeedsResult struct {
@@ -40,11 +42,13 @@ type FeedsResult struct {
 	FeedIndices []uint8         `abi:"feedIndexes"`
 }
 
+// Scribe allows interacting with the Scribe contract.
 type Scribe struct {
 	client  rpc.RPC
 	address types.Address
 }
 
+// NewScribe creates a new Scribe instance.
 func NewScribe(client rpc.RPC, address types.Address) *Scribe {
 	return &Scribe{
 		client:  client,
@@ -52,33 +56,36 @@ func NewScribe(client rpc.RPC, address types.Address) *Scribe {
 	}
 }
 
+// Client returns the RPC client used to interact with the Scribe.
 func (s *Scribe) Client() rpc.RPC {
 	return s.client
 }
 
+// Address returns the address of the Scribe contract.
 func (s *Scribe) Address() types.Address {
 	return s.address
 }
 
+// Read reads the poke data from the contract.
 func (s *Scribe) Read(ctx context.Context) (PokeData, error) {
 	return s.readPokeData(ctx, pokeStorageSlot, types.LatestBlockNumber)
 }
 
+// Wat returns the wat value from the contract.
 func (s *Scribe) Wat() contract.TypedSelfCaller[string] {
+	method := abiScribe.Methods["wat"]
 	return contract.NewTypedCall[string](
 		contract.CallOpts{
-			Client:  s.client,
-			Address: s.address,
-			Encoder: contract.NewCallEncoder(abiScribe.Methods["wat"]),
-			Decoder: func(data []byte, res any) error {
-				*res.(*string) = bytes32ToString(data)
-				return nil
-			},
+			Client:       s.client,
+			Address:      s.address,
+			Encoder:      contract.NewCallEncoder(method),
+			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiScribe),
 		},
 	)
 }
 
+// Bar returns the bar value from the contract.
 func (s *Scribe) Bar() contract.TypedSelfCaller[int] {
 	method := abiScribe.Methods["bar"]
 	return contract.NewTypedCall[int](
@@ -92,6 +99,7 @@ func (s *Scribe) Bar() contract.TypedSelfCaller[int] {
 	)
 }
 
+// Feeds returns Chronicle Protocol's feeds that are lifted in the contract.
 func (s *Scribe) Feeds() contract.TypedSelfCaller[FeedsResult] {
 	method := abiScribe.Methods["feeds"]
 	return contract.NewTypedCall[FeedsResult](
@@ -105,6 +113,7 @@ func (s *Scribe) Feeds() contract.TypedSelfCaller[FeedsResult] {
 	)
 }
 
+// Poke updates the poke data in the contract.
 func (s *Scribe) Poke(pokeData PokeData, schnorrData SchnorrData) contract.SelfTransactableCaller {
 	return contract.NewTransactableCall(
 		contract.CallOpts{

@@ -27,11 +27,13 @@ type TryGetResult struct {
 	Address types.Address `abi:"address"`
 }
 
+// Chainlog allows interacting with the Chainlog contract.
 type Chainlog struct {
 	client  rpc.RPC
 	address types.Address
 }
 
+// NewChainlog creates a new Chainlog instance.
 func NewChainlog(client rpc.RPC, address types.Address) *Chainlog {
 	return &Chainlog{
 		client:  client,
@@ -39,10 +41,17 @@ func NewChainlog(client rpc.RPC, address types.Address) *Chainlog {
 	}
 }
 
+// Client returns the RPC client used to interact with the Chainlog.
+func (w *Chainlog) Client() rpc.RPC {
+	return w.client
+}
+
+// Address returns the address of the Chainlog contract.
 func (w *Chainlog) Address() types.Address {
 	return w.address
 }
 
+// TryGet returns the address of the contract that implements the given wat.
 func (w *Chainlog) TryGet(wat string) contract.TypedSelfCaller[TryGetResult] {
 	method := abiChainlog.Methods["tryGet"]
 	return contract.NewTypedCall[TryGetResult](

@@ -25,66 +25,111 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWatRegistry_Bar(t *testing.T) {
+func TestWatRegistry_Wats(t *testing.T) {
 	ctx := context.Background()
 	mockClient := new(mockRPC)
 	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &watRegistry.address,
-			Input: hexutil.MustHexToBytes("0xbeaf3edc4554482f55534400000000000000000000000000000000000000000000000000"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d"),
-			&types.Call{},
-			nil,
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes(
+			"0x" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000002" +
+				"4254432f55534400000000000000000000000000000000000000000000000000" +
+				"4441492f55534400000000000000000000000000000000000000000000000000",
 		)
 
-	bar, err := watRegistry.Bar("ETH/USD").Call(ctx, types.LatestBlockNumber)
-	require.NoError(t, err)
-	assert.Equal(t, 13, bar)
-}
-
-func TestWatRegistry_Feeds(t *testing.T) {
-	ctx := context.Background()
-	mockClient := new(mockRPC)
-	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
-
-	// Mocked data for the test
-	expectedFeeds := []types.Address{
-		types.MustAddressFromHex("0x1234567890123456789012345678901234567890"),
-		types.MustAddressFromHex("0x3456789012345678901234567890123456789012"),
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &watRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0xef293ea1"), call.Input)
+		return data, &types.Call{}, nil
 	}
 
-	feedData := hexutil.MustHexToBytes(
-		"0x" +
-			"0000000000000000000000000000000000000000000000000000000000000020" +
-			"0000000000000000000000000000000000000000000000000000000000000002" +
-			"0000000000000000000000001234567890123456789012345678901234567890" +
-			"0000000000000000000000003456789012345678901234567890123456789012",
-	)
-
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &watRegistry.address,
-			Input: hexutil.MustHexToBytes("0xe90f1a434554482f55534400000000000000000000000000000000000000000000000000"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			feedData,
-			&types.Call{},
-			nil,
-		)
-
-	feeds, err := watRegistry.Feeds("ETH/USD").Call(ctx, types.LatestBlockNumber)
+	wats, err := watRegistry.Wats().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
-	assert.Equal(t, expectedFeeds, feeds)
+	assert.Equal(t, []string{"BTC/USD", "DAI/USD"}, wats)
+}
+
+func TestWatRegistry_Exists(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes("0x0000000000000000000000000000000000000000000000000000000000000001")
+
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &watRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0x38a699a44441492f55534400000000000000000000000000000000000000000000000000"), call.Input)
+		return data, &types.Call{}, nil
+	}
+
+	exists, err := watRegistry.Exists("DAI/USD").Call(ctx, types.LatestBlockNumber)
+	require.NoError(t, err)
+	assert.Equal(t, true, exists)
+}
+
+func TestWatRegistry_Config(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d0420000000000000000000000000000000000000000000000000000000000000")
+
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &watRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0xcc718f764441492f55534400000000000000000000000000000000000000000000000000"), call.Input)
+		return data, &types.Call{}, nil
+	}
+
+	expectedConfig := ConfigResult{
+		Bar:   13,
+		Bloom: FeedBloom{0x02: true, 0x0d: true},
+	}
+
+	config, err := watRegistry.Config("DAI/USD").Call(ctx, types.LatestBlockNumber)
+	require.NoError(t, err)
+	assert.Equal(t, expectedConfig, config)
+}
+
+func TestWatRegistry_Chains(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes(
+			"0x" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000002" +
+				"0000000000000000000000000000000000000000000000000000000000000001" +
+				"0000000000000000000000000000000000000000000000000000000000000002",
+		)
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &watRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0xc18de0ef4441492f55534400000000000000000000000000000000000000000000000000"), call.Input)
+		return data, &types.Call{}, nil
+	}
+
+	chains, err := watRegistry.Chains("DAI/USD").Call(ctx, types.LatestBlockNumber)
+	require.NoError(t, err)
+	assert.Equal(t, []uint64{1, 2}, chains)
+}
+
+func TestWatRegistry_Deployment(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(mockRPC)
+	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
+
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &watRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0x888039bc4441492f555344000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"), call.Input)
+		return hexutil.MustHexToBytes("0x0000000000000000000000001234567890123456789012345678901234567890"), &types.Call{}, nil
+	}
+
+	config, err := watRegistry.Deployment("DAI/USD", 1).Call(ctx, types.LatestBlockNumber)
+	require.NoError(t, err)
+	assert.Equal(t, types.MustAddressFromHex("0x1234567890123456789012345678901234567890"), config)
 }

@@ -29,10 +29,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
+// OpScribe allows interacting with the OpScribe contract.
 type OpScribe struct {
 	Scribe
 }
 
+// NewOpScribe creates a new OpScribe instance.
 func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	return &OpScribe{
 		Scribe: Scribe{
@@ -42,6 +44,17 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
+// Client returns the RPC client used to interact with the OpScribe.
+func (s *OpScribe) Client() rpc.RPC {
+	return s.client
+}
+
+// Address returns the address of the OpScribe contract.
+func (s *OpScribe) Address() types.Address {
+	return s.address
+}
+
+// OpChallengePeriod returns the challenge period for the OpScribe contract.
 func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
 	method := abiOpScribe.Methods["opChallengePeriod"]
 	return contract.NewTypedCall[time.Duration](
@@ -62,11 +75,15 @@ func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
 	)
 }
 
+// Read reads the PokeData from the contract using the current time as the
+// reference time for determining if the latest optimistic poke is finalized.
 func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
 	pd, _, err := s.ReadAt(ctx, time.Now())
 	return pd, err
 }
 
+// ReadNext reads the next poke data from the contract without checking if
+// the latest optimistic poke is already finalized.
 func (s *OpScribe) ReadNext(ctx context.Context) (PokeData, bool, error) {
 	return s.ReadNextAt(ctx, time.Now())
 }
@@ -131,6 +148,7 @@ func (s *OpScribe) ReadNextAt(ctx context.Context, readTime time.Time) (PokeData
 	return pokeData, opPokeDataFinalized, nil
 }
 
+// ReadPokeData reads the PokeData from the last non-optimistic poke.
 func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
 	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.LatestBlockNumber)
 	if err != nil {
@@ -139,6 +157,7 @@ func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
 	return pokeData, nil
 }
 
+// ReadOpPokeData reads the PokeData from the last optimistic poke.
 func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	pokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.LatestBlockNumber)
 	if err != nil {
@@ -147,6 +166,7 @@ func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	return pokeData, nil
 }
 
+// OpPoke updates the optimistic poke data in the contract.
 func (s *OpScribe) OpPoke(pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
 	return contract.NewTransactableCall(
 		contract.CallOpts{

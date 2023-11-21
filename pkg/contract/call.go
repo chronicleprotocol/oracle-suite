@@ -17,12 +17,10 @@ package contract
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	goethABI "github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/rpc"
-	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
 )
 
@@ -88,11 +86,6 @@ type Transactor interface {
 
 	// Gas returns the estimated gas usage of the transaction.
 	Gas(ctx context.Context, number types.BlockNumber) (uint64, error)
-}
-
-type DecodeCallable interface {
-	Callable
-	Decoder
 }
 
 // SelfCaller is a Callable that can perform a call by itself.
@@ -213,13 +206,7 @@ func NewCallDecoder(method *goethABI.Method) func(data []byte, res any) error {
 //
 // It can be used to create a CallOpts.ErrorDecoder.
 func NewContractErrorDecoder(contract *goethABI.Contract) func(err error) error {
-	return func(err error) error {
-		data := errorData(err)
-		if data == nil {
-			return err
-		}
-		return contract.ToError(data)
-	}
+	return contract.HandleError
 }
 
 // NewCall creates a new Call instance.
@@ -364,33 +351,13 @@ func (t *TypedTransactableCall[T]) Call(ctx context.Context, number types.BlockN
 var defEncoder = func() ([]byte, error) { return nil, nil }
 var defDecoder = func([]byte, any) error { return nil }
 var defErrorDecoder = func(err error) error {
-	data := errorData(err)
-	if data == nil {
+	if err := goethABI.Panic.HandleError(err); err != nil {
 		return err
 	}
-	if goethABI.IsRevert(data) {
-		return goethABI.RevertError{Reason: goethABI.DecodeRevert(data)}
-	}
-	if goethABI.IsPanic(data) {
-		return goethABI.PanicError{Code: goethABI.DecodePanic(data)}
+	if err := goethABI.Revert.HandleError(err); err != nil {
+		return err
 	}
 	return err
-}
-
-func errorData(err error) []byte {
-	if err == nil {
-		return nil
-	}
-	var data []byte
-	rpcError := &transport.RPCError{}
-	if errors.As(err, &rpcError) {
-		data, _ = rpcError.Data.([]byte)
-	}
-	var rpcErrorData interface{ RPCErrorData() any }
-	if errors.As(err, &rpcErrorData) {
-		data, _ = rpcErrorData.RPCErrorData().([]byte)
-	}
-	return data
 }
 
 // Create private aliases to allow embedding without exposing the methods:

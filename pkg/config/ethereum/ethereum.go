@@ -371,8 +371,13 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 	opts := []rpc.ClientOptions{
 		rpc.WithTransport(rpcTransport),
 		rpc.WithTXModifiers(
-			txmodifier.NewGasLimitEstimator(defaultGasLimitMultiplier, 0, 0),
-			txmodifier.NewNonceProvider(false),
+			txmodifier.NewGasLimitEstimator(txmodifier.GasLimitEstimatorOptions{
+				Multiplier: defaultGasLimitMultiplier,
+			}),
+			txmodifier.NewNonceProvider(txmodifier.NonceProviderOptions{
+				UsePendingBlock: false,
+				Replace:         false,
+			}),
 		),
 	}
 	if c.EthereumKey != "" {
@@ -417,25 +422,27 @@ func (c *ConfigClient) Client(logger log.Logger, keys KeyRegistry) (rpc.RPC, err
 		opts = append(
 			opts,
 			rpc.WithTXModifiers(
-				txmodifier.NewLegacyGasFeeEstimator(
-					c.GasFeeMultiplier,
-					nil,
-					c.MaxGasFee,
-				),
+				txmodifier.NewLegacyGasFeeEstimator(txmodifier.LegacyGasFeeEstimatorOptions{
+					Multiplier:  c.GasFeeMultiplier,
+					MinGasPrice: nil,
+					MaxGasPrice: c.MaxGasFee,
+					Replace:     false,
+				}),
 			),
 		)
 	case "eip1559":
 		opts = append(
 			opts,
 			rpc.WithTXModifiers(
-				txmodifier.NewEIP1559GasFeeEstimator(
-					c.GasFeeMultiplier,
-					c.GasPriorityFeeMultiplier,
-					nil,
-					c.MaxGasFee,
-					nil,
-					c.MaxGasPriorityFee,
-				),
+				txmodifier.NewEIP1559GasFeeEstimator(txmodifier.EIP1559GasFeeEstimatorOptions{
+					GasPriceMultiplier:          c.GasFeeMultiplier,
+					PriorityFeePerGasMultiplier: c.GasPriorityFeeMultiplier,
+					MinGasPrice:                 nil,
+					MaxGasPrice:                 c.MaxGasFee,
+					MinPriorityFeePerGas:        nil,
+					MaxPriorityFeePerGas:        c.MaxGasPriorityFee,
+					Replace:                     false,
+				}),
 			),
 		)
 	case "":

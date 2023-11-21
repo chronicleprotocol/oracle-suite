@@ -24,32 +24,56 @@ import (
 	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 type mockRPC struct {
 	rpc.Client
-	mock.Mock
+
+	blockNumberFn     func(ctx context.Context) (*big.Int, error)
+	getStorageAtFn    func(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error)
+	callFn            func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error)
+	sendTransactionFn func(ctx context.Context, tx types.Transaction) (*types.Hash, *types.Transaction, error)
+}
+
+func newMockRPC(t *testing.T) *mockRPC {
+	m := &mockRPC{}
+	m.reset(t)
+	return m
+}
+
+func (m *mockRPC) reset(t *testing.T) {
+	m.blockNumberFn = func(ctx context.Context) (*big.Int, error) {
+		assert.FailNow(t, "unexpected call to BlockNumber")
+		return nil, nil
+	}
+	m.getStorageAtFn = func(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
+		assert.FailNow(t, "unexpected call to GetStorageAt")
+		return nil, nil
+	}
+	m.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.FailNow(t, "unexpected call to Call")
+		return nil, nil, nil
+	}
+	m.sendTransactionFn = func(ctx context.Context, tx types.Transaction) (*types.Hash, *types.Transaction, error) {
+		assert.FailNow(t, "unexpected call to SendTransaction")
+		return nil, nil, nil
+	}
 }
 
 func (m *mockRPC) BlockNumber(ctx context.Context) (*big.Int, error) {
-	args := m.Called(ctx)
-	return args.Get(0).(*big.Int), args.Error(1)
+	return m.blockNumberFn(ctx)
 }
 
 func (m *mockRPC) GetStorageAt(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
-	args := m.Called(ctx, account, key, block)
-	return args.Get(0).(*types.Hash), args.Error(1)
+	return m.getStorageAtFn(ctx, account, key, block)
 }
 
 func (m *mockRPC) Call(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
-	args := m.Called(ctx, call, blockNumber)
-	return args.Get(0).([]byte), args.Get(1).(*types.Call), args.Error(2)
+	return m.callFn(ctx, call, blockNumber)
 }
 
 func (m *mockRPC) SendTransaction(ctx context.Context, tx types.Transaction) (*types.Hash, *types.Transaction, error) {
-	args := m.Called(ctx, tx)
-	return args.Get(0).(*types.Hash), args.Get(1).(*types.Transaction), args.Error(2)
+	return m.sendTransactionFn(ctx, tx)
 }
 
 func TestBytesToString(t *testing.T) {
