@@ -33,12 +33,12 @@ const (
 var (
 	abi = goethABI.NewABI()
 
-	abiMedian       *goethABI.Contract
-	abiScribe       *goethABI.Contract
-	abiOpScribe     *goethABI.Contract
-	abiWatRegistry  *goethABI.Contract
-	abiFeedRegistry *goethABI.Contract
-	abiChainlog     *goethABI.Contract
+	abiMedian         *goethABI.Contract
+	abiScribe         *goethABI.Contract
+	abiOpScribe       *goethABI.Contract
+	abiWatRegistry    *goethABI.Contract
+	abiFeedRegistry   *goethABI.Contract
+	abiChainlog       *goethABI.Contract
 	abiConfigRegistry *goethABI.Contract
 )
 
@@ -124,7 +124,7 @@ func init() {
 	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
 
 	abiFeedRegistry.Methods["feeds(address)"] = abiFeedRegistry.Methods["feeds2"]
-  
+
 	abiConfigRegistry, _ = abi.ParseSignatures(
 		`latest()(string memory)`,
 		`get(uint256)(string memory, uint32)`,
