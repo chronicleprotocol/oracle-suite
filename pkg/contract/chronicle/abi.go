@@ -123,7 +123,7 @@ func init() {
 	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]
 	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
 
-  abiFeedRegistry.Methods["feeds(address)"] = abiFeedRegistry.Methods["feeds2"]
+	abiFeedRegistry.Methods["feeds(address)"] = abiFeedRegistry.Methods["feeds2"]
   
 	abiConfigRegistry, _ = abi.ParseSignatures(
 		`latest()(string memory)`,
