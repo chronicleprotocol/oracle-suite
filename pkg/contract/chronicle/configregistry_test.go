@@ -19,9 +19,8 @@ import (
 	"context"
 	"testing"
 
-	goethABI "github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,24 +32,19 @@ func TestConfigRegistry_Latest(t *testing.T) {
 
 	ipfsExpected := "ipfs://sample"
 
-	stringAbi := goethABI.MustParseType("(string memory)")
-	stringMap := make(map[string]string)
-	stringMap["arg0"] = ipfsExpected
-	ipfsBytes := goethABI.MustEncodeValue(stringAbi, stringMap)
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes(
+			"0x" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"000000000000000000000000000000000000000000000000000000000000000d" +
+				"697066733a2f2f73616d706c6500000000000000000000000000000000000000",
+		)
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &configRegistry.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0x52bfe789"), call.Input)
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &configRegistry.address,
-			Input: hexutil.MustDecode("0x52bfe789"),
-		},
-		types.LatestBlockNumber,
-	).Return(
-		ipfsBytes,
-		&types.Call{},
-		nil,
-	)
+		return data, &types.Call{}, nil
+	}
 
 	ipfs, err := configRegistry.Latest().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)

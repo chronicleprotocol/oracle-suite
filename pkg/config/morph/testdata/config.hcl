@@ -17,7 +17,7 @@ morph {
   app {
     work_dir = ""
     bin = "./ghost"
-    args = ""
+    args = "run"
     waiting_quiting = 60
   }
 }
