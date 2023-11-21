@@ -18,6 +18,7 @@ package morph
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -220,10 +221,7 @@ func (m *Morph) RestartApp() error {
 	}
 
 	// Run the app
-	if err := m.am.RunApp(); err != nil {
-		return err
-	}
-	return nil
+	return m.am.RunApp()
 }
 
 func (m *Morph) reloadRoutine() {
@@ -233,6 +231,10 @@ func (m *Morph) reloadRoutine() {
 		case <-m.ctx.Done():
 			return
 		case <-m.interval.TickCh():
+			if !m.am.IsAppRunning() {
+				m.waitCh <- fmt.Errorf("service app was exited already for some reason")
+				return
+			}
 			updated, err := m.Monitor()
 			if err != nil {
 				m.waitCh <- err

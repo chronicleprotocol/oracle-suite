@@ -35,7 +35,9 @@ const WaitCheckInterval = 1000 // in second
 // - wait for app to run for a while
 // - wait for app to quit within a time
 type AppManager struct {
-	ctx                    context.Context
+	ctx    context.Context
+	waitCh chan error
+
 	envs                   []string
 	wd                     string
 	bin                    string
@@ -66,6 +68,7 @@ type AppManagerConfig struct {
 
 func NewAppManager(cfg AppManagerConfig) (*AppManager, error) {
 	return &AppManager{
+		waitCh:                 make(chan error, 1),
 		envs:                   cfg.Envs,
 		wd:                     cfg.WorkDir,
 		bin:                    cfg.Bin,
@@ -96,9 +99,14 @@ func (am *AppManager) Start(ctx context.Context) error {
 		if err := am.RunApp(); err != nil {
 			return err
 		}
+	} else {
+		go am.waitProcess()
 	}
-
 	return nil
+}
+
+func (am *AppManager) IsAppRunning() bool {
+	return am.process != nil
 }
 
 // RunApp executes command to run application by setting environment variables and passing arguments
@@ -120,6 +128,8 @@ func (am *AppManager) RunApp() error {
 	}
 
 	am.process = cmd.Process
+	go am.waitProcess()
+
 	return nil
 }
 
@@ -129,7 +139,7 @@ func (am *AppManager) RunApp() error {
 // If app is still running with expiration of waitDurationForQuiting, return error.
 func (am *AppManager) QuitApp() error {
 	if am.process == nil {
-		return fmt.Errorf("unknown process to quit")
+		return nil
 	}
 	err := am.process.Signal(syscall.SIGINT)
 	if err != nil {
@@ -137,17 +147,10 @@ func (am *AppManager) QuitApp() error {
 	}
 
 	// Wait for app to quit within a time of waitDurationForQuiting
-	done := make(chan error, 1)
-	go func() {
-		_, err := am.process.Wait()
-		am.process = nil
-		done <- err
-	}()
-
 	select {
 	// case <-am.ctx.Done():
 	//	return fmt.Errorf("context was cancelled while waiting for app to quit")
-	case err := <-done:
+	case err := <-am.waitCh:
 		if err != nil {
 			return fmt.Errorf("error waiting for app to quit: %w", err)
 		}
@@ -159,13 +162,23 @@ func (am *AppManager) QuitApp() error {
 		}
 
 		// Wait for the process to exit after sending SIGTERM
-		err = <-done
+		err = <-am.waitCh
 		if err != nil {
 			return fmt.Errorf("error waiting for app to quit after sending SIGTERM: %w", err)
 		}
 		return fmt.Errorf("app quited within specified timeout")
 	}
 	return nil
+}
+
+func (am *AppManager) waitProcess() {
+	if am.process == nil {
+		return
+	}
+
+	_, err := am.process.Wait()
+	am.process = nil
+	am.waitCh <- err
 }
 
 // isProcessRunning finds the process which has a process name of given parameter
