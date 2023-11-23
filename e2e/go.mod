@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/chronicleprotocol/infestor v0.2.14-0.20230913203939-62cd93702970
 	github.com/defiweb/go-eth v0.4.3
+	github.com/mitchellh/go-ps v1.0.0
 	github.com/stretchr/testify v1.8.4
 )
 

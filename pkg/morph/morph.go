@@ -92,6 +92,7 @@ func NewMorphService(cfg Config) (*Morph, error) {
 			"--config", cfg.MorphFile,
 		}, cfg.Args...),
 		WaitDurationForQuiting: cfg.WaitDurationForAppQuiting,
+		Logger:                 cfg.Logger,
 	})
 	if err != nil {
 		return nil, err
@@ -231,7 +232,7 @@ func (m *Morph) reloadRoutine() {
 		case <-m.ctx.Done():
 			return
 		case <-m.interval.TickCh():
-			if !m.am.IsAppRunning() {
+			if !m.am.IsAppRunning() { // morph checks if app is running per every interval
 				m.waitCh <- fmt.Errorf("service app was exited already for some reason")
 				return
 			}

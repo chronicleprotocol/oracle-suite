@@ -18,6 +18,7 @@ package morph
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -156,12 +157,21 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 		return nil, fmt.Errorf("args should include command")
 	}
 
+	var workDir = c.AppConfig.WorkDir
+	if workDir == "" {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		workDir = currentDir
+	}
+
 	cfg := pkgMorph.Config{
 		MorphFile:                 c.MorphFile,
 		Client:                    clients[c.EthereumClient],
 		ConfigRegistryAddress:     c.ConfigRegistryAddress,
 		Interval:                  timeutil.NewTicker(time.Second * time.Duration(interval)),
-		WorkDir:                   c.AppConfig.WorkDir,
+		WorkDir:                   workDir,
 		ExecutableBinary:          c.AppConfig.ExecutableBinary,
 		Args:                      args,
 		WaitDurationForAppQuiting: time.Duration(c.AppConfig.WaitDurationForAppQuiting) * time.Second,

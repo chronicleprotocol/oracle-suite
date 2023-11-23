@@ -25,9 +25,12 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-ps"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
 )
 
-const WaitCheckInterval = 1000 // in second
+const AppManagerLoggerTag = "APPMANAGER"
 
 // AppManager is a service which has functionalities of
 // - run app with environment variables, arguments
@@ -37,6 +40,7 @@ const WaitCheckInterval = 1000 // in second
 type AppManager struct {
 	ctx    context.Context
 	waitCh chan error
+	log    log.Logger
 
 	envs                   []string
 	wd                     string
@@ -64,9 +68,14 @@ type AppManagerConfig struct {
 	// Time duration to wait for app seamlessly to quit within a time
 	// App should quit itself before expiration of WaitDurationForQuiting
 	WaitDurationForQuiting time.Duration
+
+	Logger log.Logger
 }
 
 func NewAppManager(cfg AppManagerConfig) (*AppManager, error) {
+	if cfg.Logger == nil {
+		cfg.Logger = null.New()
+	}
 	return &AppManager{
 		waitCh:                 make(chan error, 1),
 		envs:                   cfg.Envs,
@@ -74,6 +83,7 @@ func NewAppManager(cfg AppManagerConfig) (*AppManager, error) {
 		bin:                    cfg.Bin,
 		arguments:              cfg.Arguments,
 		waitDurationForQuiting: cfg.WaitDurationForQuiting,
+		log:                    cfg.Logger.WithField("tag", AppManagerLoggerTag),
 	}, nil
 }
 
@@ -87,22 +97,28 @@ func (am *AppManager) Start(ctx context.Context) error {
 	ext := filepath.Ext(am.bin)
 	processName := filename[0 : len(filename)-len(ext)]
 
+	am.log.
+		WithField("processName", processName).
+		Info("Starting process")
+
 	// Find the process running of which process name is given name
 	process, err := isProcessRunning(processName)
 	if err != nil {
 		return err
 	}
-	am.process = process
-
-	if am.process == nil {
-		// Make sure we start from running
-		if err := am.RunApp(); err != nil {
+	// If process running, force quit process
+	if process != nil {
+		if err = process.Signal(syscall.SIGINT); err != nil {
+			am.log.
+				WithField("processName", processName).
+				WithField("processId", process.Pid).
+				Error("Failed interrupting process")
 			return err
 		}
-	} else {
-		go am.waitProcess()
 	}
-	return nil
+
+	// Make sure we start from running
+	return am.RunApp()
 }
 
 func (am *AppManager) IsAppRunning() bool {
@@ -112,6 +128,7 @@ func (am *AppManager) IsAppRunning() bool {
 // RunApp executes command to run application by setting environment variables and passing arguments
 func (am *AppManager) RunApp() error {
 	if am.process != nil { // already running
+		go am.waitProcess()
 		return nil
 	}
 
@@ -124,10 +141,22 @@ func (am *AppManager) RunApp() error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
+		am.log.WithFields(log.Fields{
+			"env":     am.envs,
+			"workdir": am.wd,
+			"bin":     am.bin,
+			"args":    am.arguments,
+		}).Error("Failed to run app")
 		return err
 	}
 
 	am.process = cmd.Process
+	am.log.WithFields(log.Fields{
+		"env":     am.envs,
+		"workdir": am.wd,
+		"bin":     am.bin,
+		"args":    am.arguments,
+	}).Debug("Process started: ", am.process.Pid)
 	go am.waitProcess()
 
 	return nil
@@ -141,6 +170,7 @@ func (am *AppManager) QuitApp() error {
 	if am.process == nil {
 		return nil
 	}
+
 	err := am.process.Signal(syscall.SIGINT)
 	if err != nil {
 		return fmt.Errorf("error sending SIGINT for app to quit: %w", err)
@@ -155,6 +185,8 @@ func (am *AppManager) QuitApp() error {
 			return fmt.Errorf("error waiting for app to quit: %w", err)
 		}
 	case <-time.After(am.waitDurationForQuiting):
+		am.log.Error("Waiting timeout to quit", am.process.Pid)
+
 		// if timeout elapsed, kill the process again and return timeout error
 		err := am.process.Signal(syscall.SIGTERM)
 		if err != nil {
@@ -168,6 +200,7 @@ func (am *AppManager) QuitApp() error {
 		}
 		return fmt.Errorf("app quited within specified timeout")
 	}
+	am.log.Info("Process exited: ", am.wd, am.bin)
 	return nil
 }
 

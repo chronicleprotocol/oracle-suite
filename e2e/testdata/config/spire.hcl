@@ -25,5 +25,6 @@ spire {
   pairs           = [
     "BTC/USD",
     "ETH/BTC",
+    "BTC/ETH",
   ]
 }

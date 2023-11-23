@@ -109,7 +109,7 @@ func validateArgs(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid function call")
 	}
 	if len(options.rpcURL) > 0 {
-		if len(options.rpcURL) < 8 || !strings.HasPrefix(options.rpcURL, "https://") {
+		if len(options.rpcURL) < 7 || (!strings.HasPrefix(options.rpcURL, "https://") && !strings.HasPrefix(options.rpcURL, "http://")) {
 			return fmt.Errorf("--config-rpc should start with https://")
 		}
 	}

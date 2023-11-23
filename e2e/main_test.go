@@ -39,6 +39,9 @@ func TestMain(m *testing.M) {
 	if err := goBuild(ctx, "..", "./cmd/spire/...", "spire"); err != nil {
 		panic(err)
 	}
+	if err := goBuild(ctx, "..", "./cmd/morph/...", "morph"); err != nil {
+		panic(err)
+	}
 	os.Exit(m.Run())
 }
 
