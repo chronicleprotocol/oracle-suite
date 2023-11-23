@@ -146,7 +146,7 @@ func initializeMock(t *testing.T, ctx context.Context, s *smocker.API, ipfs stri
 	require.NoError(t, s.AddMocks(ctx, mocks))
 }
 
-func TodoTest_Morph_Run_Ghost(t *testing.T) { // todo
+func Test_Morph_Run_Ghost(t *testing.T) {
 	// Scenario:
 	// 1. run morph, then morph will execute ghost with `run` command
 	// 2. run spire without morph
@@ -167,7 +167,15 @@ func TodoTest_Morph_Run_Ghost(t *testing.T) { // todo
 		ctxCancel()
 		_ = morphCmd.Wait()
 		_ = spireCmd.Wait()
+
+		p, err := isProcessRunning("ghost")
+		assert.NoError(t, err)
+		assert.Nil(t, p)
 	}()
+
+	// 2. run spire without morph
+	require.NoError(t, spireCmd.Start())
+	waitForPort(ctx, "localhost", 30100)
 
 	// 1. run morph, then morph will execute ghost with `run` command
 	require.NoError(t, morphCmd.Start())
@@ -175,10 +183,7 @@ func TodoTest_Morph_Run_Ghost(t *testing.T) { // todo
 
 	// wait for morph to run
 	require.NoError(t, waitForAppRun(ctx, "morph"))
-
-	// 2. run spire without morph
-	require.NoError(t, spireCmd.Start())
-	waitForPort(ctx, "localhost", 30100)
+	waitForPort(ctx, "localhost", 30101)
 
 	// 3. wait for 5 seconds
 	time.Sleep(5 * time.Second)
@@ -193,6 +198,12 @@ func TodoTest_Morph_Run_Ghost(t *testing.T) { // todo
 	assert.Equal(t, "1", btcusdPrice.Point.Value.Price)
 	assert.InDelta(t, time.Now().Unix(), btcusdPrice.Point.Time.Unix(), 10)
 	assert.Equal(t, "BTC/USD", btcusdPrice.Point.Value.Pair)
+
+	// force quit morph, so ghost as child process will be exited smoothly
+	err = morphCmd.Process.Signal(syscall.SIGINT)
+	assert.NoError(t, err)
+	err = morphCmd.Wait()
+	assert.NoError(t, err)
 }
 
 func Test_Morph_SelfExit(t *testing.T) {
@@ -232,7 +243,7 @@ func Test_Morph_SelfExit(t *testing.T) {
 	assert.Nil(t, p)
 }
 
-func TodoTest_Morph_Restart_Ghost(t *testing.T) { // todo
+func Test_Morph_Restart_Ghost(t *testing.T) {
 	// Scenario:
 	// 1. set few seconds of interval and run morph, then ghost will be executed.
 	// 2. pull price via spire
@@ -256,16 +267,21 @@ func TodoTest_Morph_Restart_Ghost(t *testing.T) { // todo
 		ctxCancel()
 		_ = morphCmd.Wait()
 		_ = spireCmd.Wait()
+
+		p, err := isProcessRunning("ghost")
+		assert.NoError(t, err)
+		assert.Nil(t, p)
 	}()
+
+	// 2. pull price via spire
+	require.NoError(t, spireCmd.Start())
+	waitForPort(ctx, "localhost", 30100)
 
 	// 1. set few seconds of interval and run morph, then ghost will be executed.
 	require.NoError(t, morphCmd.Start())
 	time.Sleep(5 * time.Second)
 	require.NoError(t, waitForAppRun(ctx, "morph"))
-
-	// 2. pull price via spire
-	require.NoError(t, spireCmd.Start())
-	waitForPort(ctx, "localhost", 30100)
+	waitForPort(ctx, "localhost", 30101)
 
 	time.Sleep(5 * time.Second)
 	btcusdMessage, err := execCommand(ctx, "..", nil, "./spire", "-c", "./e2e/testdata/config/spire.hcl", "pull", "price", "BTC/USD", "0x2D800d93B065CE011Af83f316ceF9F0d005B0AA4")
@@ -296,6 +312,12 @@ func TodoTest_Morph_Restart_Ghost(t *testing.T) { // todo
 	assert.Equal(t, "2", btcethPrice.Point.Value.Price)
 	//assert.InDelta(t, time.Now().Unix(), btcethPrice.Point.Time.Unix(), 10)
 	assert.Equal(t, "BTC/ETH", btcethPrice.Point.Value.Pair)
+
+	// force quit morph, so ghost as child process will be exited smoothly
+	err = morphCmd.Process.Signal(syscall.SIGINT)
+	assert.NoError(t, err)
+	err = morphCmd.Wait()
+	assert.NoError(t, err)
 }
 
 func Test_Morph_ForceExit(t *testing.T) {

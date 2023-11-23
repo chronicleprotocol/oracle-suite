@@ -40,9 +40,10 @@ import (
 // - running the main application with the latest up-to-dated config
 // - quiting the main application when quit itself
 type Morph struct {
-	ctx    context.Context
-	waitCh chan error
-	log    log.Logger
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	waitCh    chan error
+	log       log.Logger
 
 	// File path to the local cache config file, will be replaced with downloaded on-chain config
 	morphFile string
@@ -121,12 +122,13 @@ func (m *Morph) Start(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("context must not be nil")
 	}
-	m.ctx = ctx
 	m.log.
 		WithFields(log.Fields{
 			"interval": m.interval.Duration(),
 		}).
 		Info("Starting")
+
+	m.ctx, m.ctxCancel = context.WithCancel(ctx)
 
 	// Download the latest on-chain config if it has been updated
 	if _, err := m.Monitor(); err != nil {
@@ -136,7 +138,8 @@ func (m *Morph) Start(ctx context.Context) error {
 		return err
 	}
 	// Make sure that the main application is running at the beginning
-	if err := m.am.Start(ctx); err != nil {
+	if err := m.am.Start(m.ctx); err != nil {
+		m.ctxCancel()
 		m.log.
 			WithError(err).
 			Error("Running app with latest config was failed")

@@ -200,7 +200,7 @@ func (am *AppManager) QuitApp() error {
 		}
 		return fmt.Errorf("app quited within specified timeout")
 	}
-	am.log.Info("Process exited: ", am.wd, am.bin)
+	am.log.WithField("workdir", am.wd).WithField("bin", am.bin).Info("Process exited")
 	return nil
 }
 
