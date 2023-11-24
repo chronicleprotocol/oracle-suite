@@ -66,6 +66,19 @@ func IsUnique[T comparable](s []T) bool {
 	return true
 }
 
+// HasEqualElements returns true if s1 and s2 have the same elements.
+func HasEqualElements[T comparable](s1, s2 []T) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	for _, e1 := range s1 {
+		if !Contains(s2, e1) {
+			return false
+		}
+	}
+	return true
+}
+
 // Intersect returns a new slice with the elements that are present in all
 // slices.
 func Intersect[T comparable](slices ...[]T) []T {

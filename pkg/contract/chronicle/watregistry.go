@@ -23,8 +23,8 @@ import (
 )
 
 type ConfigResult struct {
-	Bar   int       `abi:"bar"`
-	Bloom FeedBloom `abi:"bloom"`
+	Bar   int     `abi:"bar"`
+	Bloom FeedIDs `abi:"bloom"`
 }
 
 // WatRegistry allows interacting with the WatRegistry contract.

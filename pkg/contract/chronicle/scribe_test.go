@@ -91,31 +91,25 @@ func TestScribe_Feeds(t *testing.T) {
 		types.MustAddressFromHex("0x1234567890123456789012345678901234567890"),
 		types.MustAddressFromHex("0x3456789012345678901234567890123456789012"),
 	}
-	expectedFeedIndices := []uint8{1, 2}
-
-	feedData := hexutil.MustHexToBytes(
-		"0x" +
-			"0000000000000000000000000000000000000000000000000000000000000040" +
-			"00000000000000000000000000000000000000000000000000000000000000a0" +
-			"0000000000000000000000000000000000000000000000000000000000000002" +
-			"0000000000000000000000001234567890123456789012345678901234567890" +
-			"0000000000000000000000003456789012345678901234567890123456789012" +
-			"0000000000000000000000000000000000000000000000000000000000000002" +
-			"0000000000000000000000000000000000000000000000000000000000000001" +
-			"0000000000000000000000000000000000000000000000000000000000000002",
-	)
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes(
+			"0x" +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000002" +
+				"0000000000000000000000001234567890123456789012345678901234567890" +
+				"0000000000000000000000003456789012345678901234567890123456789012",
+		)
+
 		assert.Equal(t, types.LatestBlockNumber, blockNumber)
 		assert.Equal(t, &scribe.address, call.To)
 		assert.Equal(t, hexutil.MustHexToBytes("0xd63605b8"), call.Input)
-		return feedData, &types.Call{}, nil
+		return data, &types.Call{}, nil
 	}
 
 	feeds, err := scribe.Feeds().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
-	assert.Equal(t, expectedFeeds, feeds.Feeds)
-	assert.Equal(t, expectedFeedIndices, feeds.FeedIndices)
+	assert.Equal(t, expectedFeeds, feeds)
 }
 
 func TestScribe_Poke(t *testing.T) {
@@ -129,9 +123,9 @@ func TestScribe_Poke(t *testing.T) {
 		Age: time.Unix(1692913991, 0),
 	}
 	schnorrData := SchnorrData{
-		Signature:   new(big.Int).SetBytes(hexutil.MustHexToBytes("0x1234567890123456789012345678901234567890123456789012345678901234")),
-		Commitment:  types.MustAddressFromHex("0x1234567890123456789012345678901234567890"),
-		SignersBlob: []byte{0x01, 0x02, 0x03, 0x04},
+		Signature:  new(big.Int).SetBytes(hexutil.MustHexToBytes("0x1234567890123456789012345678901234567890123456789012345678901234")),
+		Commitment: types.MustAddressFromHex("0x1234567890123456789012345678901234567890"),
+		FeedIDs:    FeedIDsFromIDs([]byte{0x01, 0x02, 0x03, 0x04}),
 	}
 
 	calldata := hexutil.MustHexToBytes(
@@ -175,23 +169,4 @@ func Test_ConstructPokeMessage(t *testing.T) {
 
 	message := ConstructScribePokeMessage("ETH/USD", pokeData)
 	assert.Equal(t, "0xd469eb1a48223875f0cc0275c64d90077f23cd70dcf2b3d474e5ac3335cb6274", toEIP191(message).String())
-}
-
-func TestSignersBlob(t *testing.T) {
-	signers := []types.Address{
-		types.MustAddressFromHex("0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"),
-		types.MustAddressFromHex("0x0c4FC7D66b7b6c684488c1F218caA18D4082da18"),
-		types.MustAddressFromHex("0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9"),
-	}
-	feeds := []types.Address{
-		types.MustAddressFromHex("0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9"),
-		types.MustAddressFromHex("0x5C01f0F08E54B85f4CaB8C6a03c9425196fe66DD"),
-		types.MustAddressFromHex("0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"),
-		types.MustAddressFromHex("0x0c4FC7D66b7b6c684488c1F218caA18D4082da18"),
-	}
-	indices := []uint8{1, 2, 3, 4}
-
-	blob, err := SignersBlob(signers, feeds, indices)
-	require.NoError(t, err)
-	assert.Equal(t, []byte{0x04, 0x01, 0x03}, blob)
 }

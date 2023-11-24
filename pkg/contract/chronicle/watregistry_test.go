@@ -85,7 +85,7 @@ func TestWatRegistry_Config(t *testing.T) {
 
 	expectedConfig := ConfigResult{
 		Bar:   13,
-		Bloom: FeedBloom{0x02: true, 0x0d: true},
+		Bloom: FeedIDs{0x02: true, 0x0d: true},
 	}
 
 	config, err := watRegistry.Config("DAI/USD").Call(ctx, types.LatestBlockNumber)

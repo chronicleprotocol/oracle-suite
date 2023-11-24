@@ -45,6 +45,18 @@ func TestIsUnique(t *testing.T) {
 	assert.False(t, IsUnique([]string{"a", "b", "a"}))
 }
 
+func TestHasEqualElements(t *testing.T) {
+	assert.True(t, HasEqualElements([]string{"a", "b", "c"}, []string{"a", "b", "c"}))
+	assert.True(t, HasEqualElements([]string{"a", "b", "c"}, []string{"c", "b", "a"}))
+	assert.False(t, HasEqualElements([]string{"a", "b", "c"}, []string{"a", "b", "c", "a"}))
+	assert.False(t, HasEqualElements([]string{"a", "b", "c", "a"}, []string{"a", "b", "c"}))
+	assert.False(t, HasEqualElements([]string{"a", "b", "c"}, []string{"a", "b"}))
+	assert.False(t, HasEqualElements([]string{"a", "b"}, []string{"a", "b", "c"}))
+	assert.False(t, HasEqualElements([]string{"a", "b", "c"}, []string{"d", "e", "f"}))
+	assert.False(t, HasEqualElements([]string{"d", "e", "f"}, []string{"a", "b", "c"}))
+	assert.True(t, HasEqualElements([]string{}, []string{}))
+}
+
 func TestIntersect(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, Intersect([]string{"a", "b", "c"}, []string{"a", "b"}))
 	assert.Equal(t, []string{"a", "b"}, Intersect([]string{"a", "b"}, []string{"a", "b", "c"}))

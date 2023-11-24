@@ -214,8 +214,8 @@ func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumbe
 // - age: a time when the price was observed
 // - signature: a Schnorr signature
 // - commitment: a Schnorr commitment
-// - signersBlob: a byte slice with signers indexes obtained from a contract
-func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) []byte {
+// - feedIDs: a feed IDs that are participated in the signing
+func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, feedIDs FeedIDs) []byte {
 	// Asset name (wat):
 	bytes32Wat := make([]byte, 32)
 	copy(bytes32Wat, wat)
@@ -236,13 +236,16 @@ func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData Sch
 	bytes20Commitment := make([]byte, 20) //nolint:gomnd
 	copy(bytes20Commitment, schnorrData.Commitment.Bytes())
 
-	data := make([]byte, len(signersBlob)+104) //nolint:gomnd
+	// FeedIDs:
+	feedIDsBytes := feedIDs.FeedIDs()
+
+	data := make([]byte, len(feedIDsBytes)+104) //nolint:gomnd
 	copy(data[0:32], bytes32Wat)
 	copy(data[32:48], uint128Val)
 	copy(data[48:52], uint32Age)
 	copy(data[52:84], bytes32Signature)
 	copy(data[84:104], bytes20Commitment)
-	copy(data[104:], signersBlob)
+	copy(data[104:], feedIDsBytes)
 
 	return crypto.Keccak256(data).Bytes()
 }

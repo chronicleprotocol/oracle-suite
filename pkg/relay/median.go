@@ -20,10 +20,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
@@ -31,7 +29,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
 type median struct {
@@ -41,7 +38,6 @@ type median struct {
 	dataModel      string
 	spread         float64
 	expiration     time.Duration
-	ticker         *timeutil.Ticker
 	log            log.Logger
 }
 
@@ -52,15 +48,7 @@ type medianState struct {
 	bar int
 }
 
-func (w *median) client() rpc.RPC {
-	return w.contract.Client()
-}
-
-func (w *median) address() types.Address {
-	return w.contract.Address()
-}
-
-func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+func (w *median) createRelayCall(ctx context.Context) []relayCall {
 	state, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
@@ -68,7 +56,7 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			WithFields(w.logFields()).
 			WithAdvice("Ignore if it is related to temporary network issues").
 			Error("Failed to call Median contract")
-		return 0, nil
+		return nil
 	}
 	if state.wat != w.dataModel {
 		w.log.
@@ -76,13 +64,13 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			WithFields(w.logFields()).
 			WithAdvice("This is a bug in the configuration, probably a wrong contract address is used").
 			Error("Contract asset name does not match the configured asset name")
-		return 0, nil
+		return nil
 	}
 
 	// Load data points from the store.
 	dataPoints, signatures, ok := w.findDataPoints(ctx, state.age, state.bar)
 	if !ok {
-		return 0, nil
+		return nil
 	}
 
 	prices := dataPointsToPrices(dataPoints)
@@ -134,13 +122,18 @@ func (w *median) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 				WithFields(w.logFields()).
 				WithAdvice("Ignore if it is related to temporary network issues").
 				Error("Failed to poke the Median contract")
-			return 0, nil
+			return nil
 		}
 
-		return gas, poke
+		return []relayCall{{
+			client:      w.contract.Client(),
+			address:     w.contract.Address(),
+			callable:    poke,
+			gasEstimate: gas,
+		}}
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (w *median) currentState(ctx context.Context) (state medianState, err error) {
