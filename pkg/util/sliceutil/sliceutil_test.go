@@ -28,6 +28,18 @@ func TestCopy(t *testing.T) {
 	assert.NotSame(t, m, Copy(m))
 }
 
+func TestContains(t *testing.T) {
+	m := []string{"a", "b", "c"}
+	assert.True(t, Contains(m, "a"))
+	assert.False(t, Contains(m, "d"))
+}
+
+func TestContainsAll(t *testing.T) {
+	m := []string{"a", "b", "c"}
+	assert.True(t, ContainsAll(m, []string{"a", "b"}))
+	assert.False(t, ContainsAll(m, []string{"a", "d"}))
+}
+
 func TestMap(t *testing.T) {
 	m := []string{"a", "b", "c"}
 	assert.Equal(t, []string{"A", "B", "C"}, Map(m, strings.ToUpper))
@@ -43,18 +55,6 @@ func TestFilter(t *testing.T) {
 func TestIsUnique(t *testing.T) {
 	assert.True(t, IsUnique([]string{"a", "b", "c"}))
 	assert.False(t, IsUnique([]string{"a", "b", "a"}))
-}
-
-func TestHasEqualElements(t *testing.T) {
-	assert.True(t, HasEqualElements([]string{"a", "b", "c"}, []string{"a", "b", "c"}))
-	assert.True(t, HasEqualElements([]string{"a", "b", "c"}, []string{"c", "b", "a"}))
-	assert.False(t, HasEqualElements([]string{"a", "b", "c"}, []string{"a", "b", "c", "a"}))
-	assert.False(t, HasEqualElements([]string{"a", "b", "c", "a"}, []string{"a", "b", "c"}))
-	assert.False(t, HasEqualElements([]string{"a", "b", "c"}, []string{"a", "b"}))
-	assert.False(t, HasEqualElements([]string{"a", "b"}, []string{"a", "b", "c"}))
-	assert.False(t, HasEqualElements([]string{"a", "b", "c"}, []string{"d", "e", "f"}))
-	assert.False(t, HasEqualElements([]string{"d", "e", "f"}, []string{"a", "b", "c"}))
-	assert.True(t, HasEqualElements([]string{}, []string{}))
 }
 
 func TestIntersect(t *testing.T) {
