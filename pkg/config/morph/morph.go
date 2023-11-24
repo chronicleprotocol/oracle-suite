@@ -29,12 +29,29 @@ import (
 	ethereumConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/ethereum"
 	loggerConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/logger"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-	pkgMorph "github.com/chronicleprotocol/oracle-suite/pkg/morph"
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
+	pkgWatchDog "github.com/chronicleprotocol/oracle-suite/pkg/watchdog"
 )
 
 const defaultInterval = 60 * 60
+
+// Morph provides the solution to keep updated configurations for underlying applications.
+//
+// Gofer contains the data models we support.
+// Every time someone wants new oracle that we've not done before, we need to update data models in gofer and
+// deploy to the new feed release.
+// As the feed upgrade is painful, there's a big latency in updating feed clients, ensuring everything is correct,
+// getting feeds client updated, waiting their feedbacks and achieving the quorum on chain.
+// This is a very slow model to push data models.
+// We want to push data models on chain so as the feeds react automatically.
+// This will help us scale number of clients quickly and grow faster than competitors.
+//
+// We are going to put updated configuration to the IPFS and store its hash on `ConfigRegistry` smart contract
+// ensuring the decentralization and security, and having compatibility to update another config values
+// not limited to data models. We call it on-chain configuration.
+// Morph keep monitoring of on-chain configuration and let underlying apps such as ghost, spire, spectre, use it.
+// In order to implement it, Morph hires WatchDog service to perform it.
 
 type Config struct {
 	Morph    ConfigMorph           `hcl:"morph,block"`
@@ -80,7 +97,7 @@ type configApp struct {
 	// WorkDir is a working directory where run application
 	WorkDir string `hcl:"work_dir,optional"`
 
-	// ExecutableBinary is a path to executable binary that morph service initiates the app running.
+	// ExecutableBinary is a path to executable binary that watchdog service initiates the app running.
 	ExecutableBinary string `hcl:"bin"`
 
 	// Concatenated string of arguments, with a format of `run --x1 y1 --x2 y2 --x3 y3`
@@ -105,21 +122,21 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 	if err != nil {
 		return nil, err
 	}
-	morphService, err := c.Morph.Configure(logger, clients)
+	watchDogService, err := c.Morph.Configure(logger, clients)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Services{
-		Morph:  morphService,
-		Logger: logger,
+		WatchDog: watchDogService,
+		Logger:   logger,
 	}, nil
 }
 
 // Services returns the services that are configured from the Config struct.
 type Services struct {
-	Morph  *pkgMorph.Morph
-	Logger log.Logger
+	WatchDog *pkgWatchDog.WatchDog
+	Logger   log.Logger
 
 	supervisor *pkgSupervisor.Supervisor
 }
@@ -130,7 +147,7 @@ func (s *Services) Start(ctx context.Context) error {
 		return fmt.Errorf("services already started")
 	}
 	s.supervisor = pkgSupervisor.New(s.Logger)
-	s.supervisor.Watch(s.Morph)
+	s.supervisor.Watch(s.WatchDog)
 	if l, ok := s.Logger.(pkgSupervisor.Service); ok {
 		s.supervisor.Watch(l)
 	}
@@ -142,7 +159,7 @@ func (s *Services) Wait() <-chan error {
 	return s.supervisor.Wait()
 }
 
-func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.ClientRegistry) (*pkgMorph.Morph, error) {
+func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.ClientRegistry) (*pkgWatchDog.WatchDog, error) {
 	interval := c.Interval
 	if interval == 0 {
 		interval = defaultInterval
@@ -166,8 +183,8 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 		workDir = currentDir
 	}
 
-	cfg := pkgMorph.Config{
-		MorphFile:                 c.MorphFile,
+	cfg := pkgWatchDog.Config{
+		LocalFile:                 c.MorphFile,
 		Client:                    clients[c.EthereumClient],
 		ConfigRegistryAddress:     c.ConfigRegistryAddress,
 		Interval:                  timeutil.NewTicker(time.Second * time.Duration(interval)),
@@ -177,13 +194,13 @@ func (c *ConfigMorph) Configure(baseLogger log.Logger, clients ethereumConfig.Cl
 		WaitDurationForAppQuiting: time.Duration(c.AppConfig.WaitDurationForAppQuiting) * time.Second,
 		Logger:                    baseLogger,
 	}
-	morph, err := pkgMorph.NewMorphService(cfg)
+	watchDog, err := pkgWatchDog.NewWatchDogService(cfg)
 	if err != nil {
 		return nil, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Runtime error",
-			Detail:   fmt.Sprintf("Failed to create the Morph service: %v", err),
+			Detail:   fmt.Sprintf("Failed to create the WatchDog service: %v", err),
 		}
 	}
-	return morph, nil
+	return watchDog, nil
 }

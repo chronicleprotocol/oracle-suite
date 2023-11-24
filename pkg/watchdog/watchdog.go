@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package morph
+package watchdog
 
 import (
 	"context"
@@ -35,18 +35,18 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/timeutil"
 )
 
-// Morph service is working as app initializer, is responsible for
+// WatchDog service is working as app initializer, is responsible for
 // - keeping the local config up-to-dated
 // - running the main application with the latest up-to-dated config
 // - quiting the main application when quit itself
-type Morph struct {
+type WatchDog struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 	waitCh    chan error
 	log       log.Logger
 
 	// File path to the local cache config file, will be replaced with downloaded on-chain config
-	morphFile string
+	localFile string
 
 	// Contract to ConfigRegistry smart contract, where config's IPFS url stores
 	configRegistry *chronicle.ConfigRegistry
@@ -62,7 +62,7 @@ type Morph struct {
 }
 
 type Config struct {
-	MorphFile                 string
+	LocalFile                 string
 	Client                    rpc.RPC
 	ConfigRegistryAddress     types.Address
 	Interval                  *timeutil.Ticker
@@ -73,12 +73,12 @@ type Config struct {
 	Logger                    log.Logger
 }
 
-const LoggerTag = "MORPH"
+const LoggerTag = "WATCHDOG"
 
-// NewMorphService creates Morph, which proceeds the following steps:
+// NewWatchDogService creates WatchDog, which proceeds the following steps:
 // - Periodically pull the config from on-chain.
 // - Compares with previous one, if found difference, restart app.
-func NewMorphService(cfg Config) (*Morph, error) {
+func NewWatchDogService(cfg Config) (*WatchDog, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = null.New()
 	}
@@ -90,7 +90,7 @@ func NewMorphService(cfg Config) (*Morph, error) {
 		WorkDir: cfg.WorkDir,
 		Bin:     cfg.ExecutableBinary,
 		Arguments: append([]string{
-			"--config", cfg.MorphFile,
+			"--config", cfg.LocalFile,
 		}, cfg.Args...),
 		WaitDurationForQuiting: cfg.WaitDurationForAppQuiting,
 		Logger:                 cfg.Logger,
@@ -99,10 +99,10 @@ func NewMorphService(cfg Config) (*Morph, error) {
 		return nil, err
 	}
 
-	m := &Morph{
+	m := &WatchDog{
 		waitCh:         make(chan error),
 		log:            cfg.Logger.WithField("tag", LoggerTag),
-		morphFile:      cfg.MorphFile,
+		localFile:      cfg.LocalFile,
 		configRegistry: configRegistry,
 		interval:       cfg.Interval,
 		am:             am,
@@ -114,8 +114,8 @@ func NewMorphService(cfg Config) (*Morph, error) {
 //   - download the latest on-chain config first and update local config file if newly updated
 //   - execute command to run main application with local config file
 //     ./ghost run --config config-cache.hcl
-//     After executing command, morph will wait for app to run for a while (CFG_RUN_APP_DURATION in seconds)
-func (m *Morph) Start(ctx context.Context) error {
+//     After executing command, watchdog will wait for app to run for a while (CFG_RUN_APP_DURATION in seconds)
+func (m *WatchDog) Start(ctx context.Context) error {
 	if m.ctx != nil {
 		return errors.New("service can be started only once")
 	}
@@ -151,11 +151,11 @@ func (m *Morph) Start(ctx context.Context) error {
 	return nil
 }
 
-func (m *Morph) Wait() <-chan error {
+func (m *WatchDog) Wait() <-chan error {
 	return m.waitCh
 }
 
-func (m *Morph) Monitor() (bool, error) {
+func (m *WatchDog) Monitor() (bool, error) {
 	m.log.Debug("Fetching latest on-chain config")
 
 	// Fetch latest IPFS from ConfigRegistry contract
@@ -193,23 +193,23 @@ func (m *Morph) Monitor() (bool, error) {
 
 	m.lastIPFS = latest
 
-	// Read morphFile
-	cacheConfig, _ := os.ReadFile(m.morphFile)
+	// Read localFile
+	cacheConfig, _ := os.ReadFile(m.localFile)
 
 	if strings.Compare(string(onChainConfig), string(cacheConfig)) == 0 {
 		m.log.Info("There are no updated configuration")
 		return false, nil
 	}
 
-	file, err := os.Create(m.morphFile)
+	file, err := os.Create(m.localFile)
 	if err != nil {
-		m.log.WithError(err).Error("Failed creating in-memory config to the file:" + m.morphFile)
+		m.log.WithError(err).Error("Failed creating in-memory config to the file:" + m.localFile)
 		return false, err
 	}
 	defer file.Close()
 	_, err = file.Write(onChainConfig)
 	if err != nil {
-		m.log.WithError(err).Error("Failed writing in-memory config to the file:" + m.morphFile)
+		m.log.WithError(err).Error("Failed writing in-memory config to the file:" + m.localFile)
 		return false, err
 	}
 
@@ -218,7 +218,7 @@ func (m *Morph) Monitor() (bool, error) {
 	return true, nil
 }
 
-func (m *Morph) RestartApp() error {
+func (m *WatchDog) RestartApp() error {
 	// Quit app
 	if err := m.am.QuitApp(); err != nil {
 		return err
@@ -228,14 +228,14 @@ func (m *Morph) RestartApp() error {
 	return m.am.RunApp()
 }
 
-func (m *Morph) reloadRoutine() {
+func (m *WatchDog) reloadRoutine() {
 	m.interval.Start(m.ctx)
 	for {
 		select {
 		case <-m.ctx.Done():
 			return
 		case <-m.interval.TickCh():
-			if !m.am.IsAppRunning() { // morph checks if app is running per every interval
+			if !m.am.IsAppRunning() { // watchdog checks if app is running per every interval
 				m.waitCh <- fmt.Errorf("service app was exited already for some reason")
 				return
 			}
@@ -254,7 +254,7 @@ func (m *Morph) reloadRoutine() {
 	}
 }
 
-func (m *Morph) contextCancelHandler() {
+func (m *WatchDog) contextCancelHandler() {
 	defer func() { close(m.waitCh) }()
 	defer m.log.Info("Stopped")
 	<-m.ctx.Done()

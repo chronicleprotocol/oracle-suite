@@ -17,14 +17,16 @@ package supervisor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
-
-	"github.com/mitchellh/go-ps"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
@@ -90,6 +92,12 @@ func NewAppManager(cfg AppManagerConfig) (*AppManager, error) {
 // Start checks if application was already running and make sure that app is running
 // If running, take its process, else execute command to run application
 func (am *AppManager) Start(ctx context.Context) error {
+	if am.ctx != nil {
+		return errors.New("service can be started only once")
+	}
+	if ctx == nil {
+		return errors.New("context must not be nil")
+	}
 	am.ctx = ctx
 
 	// Extract process name from bin
@@ -102,12 +110,12 @@ func (am *AppManager) Start(ctx context.Context) error {
 		Info("Starting process")
 
 	// Find the process running of which process name is given name
-	process, err := isProcessRunning(processName)
+	processes, err := isProcessRunning(processName)
 	if err != nil {
 		return err
 	}
 	// If process running, force quit process
-	if process != nil {
+	for _, process := range processes {
 		if err = process.Signal(syscall.SIGINT); err != nil {
 			am.log.
 				WithField("processName", processName).
@@ -216,16 +224,64 @@ func (am *AppManager) waitProcess() {
 
 // isProcessRunning finds the process which has a process name of given parameter
 // Returns the os.Process instance and error
-func isProcessRunning(processName string) (*os.Process, error) {
-	processes, err := ps.Processes()
-	if err != nil {
-		return nil, err
-	}
+func isProcessRunning(processName string) ([]*os.Process, error) {
+	var pids []int
 
-	for _, process := range processes {
-		if process.Executable() == processName {
-			return os.FindProcess(process.Pid())
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("tasklist", "/fo", "csv", "/nh")
+		output, err := cmd.Output()
+		if err != nil {
+			return nil, err
+		}
+
+		// "csrss.exe","856","Console","1","6,052 K"
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			fields := strings.Split(strings.ReplaceAll(line, "\"", ""), ",")
+			if len(fields) >= 2 {
+				name := fields[0]
+				pid := fields[1]
+				if name == processName+".exe" {
+					pidInt, err := strconv.Atoi(pid)
+					if err != nil {
+						return nil, err
+					}
+					pids = append(pids, pidInt)
+				}
+			}
+		}
+	} else {
+		cmd := exec.Command("ps", "-e", "-o", "pid,comm")
+		output, err := cmd.Output()
+		if err != nil {
+			return nil, err
+		}
+
+		// 60453 /usr/libexec/diagnosticd
+		// 51979 com.docker.dev-envs
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				pid := fields[0]
+				packageName := fields[1]
+				name := filepath.Base(packageName)
+				if name == processName {
+					pidInt, err := strconv.Atoi(pid)
+					if err != nil {
+						return nil, err
+					}
+					pids = append(pids, pidInt)
+				}
+			}
 		}
 	}
-	return nil, nil
+
+	var processes []*os.Process
+	for _, pid := range pids {
+		if process, err := os.FindProcess(pid); process != nil && err == nil {
+			processes = append(processes, process)
+		}
+	}
+	return processes, nil
 }

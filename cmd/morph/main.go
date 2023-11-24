@@ -31,7 +31,7 @@ func main() {
 	c := cmd.NewRootCommand("morph", suite.Version, &cf, &lf)
 
 	c.AddCommand(
-		NewRunCmd(&config, &cf, &lf),
+		cmd.NewRunCmd(&config, &cf, &lf),
 		cmd.NewRenderConfigCmd(&config, &cf),
 	)
 

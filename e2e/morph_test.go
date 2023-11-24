@@ -20,6 +20,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -28,7 +32,6 @@ import (
 	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
-	"github.com/mitchellh/go-ps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -37,27 +40,75 @@ import (
 	"github.com/chronicleprotocol/infestor/smocker"
 )
 
-func isProcessRunning(processName string) (*os.Process, error) {
-	processes, err := ps.Processes()
-	if err != nil {
-		return nil, err
-	}
+func isProcessRunning(processName string) ([]*os.Process, error) {
+	var pids []int
 
-	for _, process := range processes {
-		if process.Executable() == processName {
-			return os.FindProcess(process.Pid())
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("tasklist", "/fo", "csv", "/nh")
+		output, err := cmd.Output()
+		if err != nil {
+			return nil, err
+		}
+
+		// "csrss.exe","856","Console","1","6,052 K"
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			fields := strings.Split(strings.ReplaceAll(line, "\"", ""), ",")
+			if len(fields) >= 2 {
+				name := fields[0]
+				pid := fields[1]
+				if name == processName+".exe" {
+					pidInt, err := strconv.Atoi(pid)
+					if err != nil {
+						return nil, err
+					}
+					pids = append(pids, pidInt)
+				}
+			}
+		}
+	} else {
+		cmd := exec.Command("ps", "-e", "-o", "pid,comm")
+		output, err := cmd.Output()
+		if err != nil {
+			return nil, err
+		}
+
+		// 60453 /usr/libexec/diagnosticd
+		// 51979 com.docker.dev-envs
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				pid := fields[0]
+				packageName := fields[1]
+				name := filepath.Base(packageName)
+				if name == processName {
+					pidInt, err := strconv.Atoi(pid)
+					if err != nil {
+						return nil, err
+					}
+					pids = append(pids, pidInt)
+				}
+			}
 		}
 	}
-	return nil, nil
+
+	var processes []*os.Process
+	for _, pid := range pids {
+		if process, err := os.FindProcess(pid); process != nil && err == nil {
+			processes = append(processes, process)
+		}
+	}
+	return processes, nil
 }
 
 func waitForAppRun(ctx context.Context, appName string) error {
 	for ctx.Err() == nil {
-		process, err := isProcessRunning(appName)
+		processes, err := isProcessRunning(appName)
 		if err != nil {
 			return err
 		}
-		if process != nil {
+		if processes != nil {
 			return nil
 		}
 		time.Sleep(time.Second)
@@ -74,7 +125,7 @@ const smockerAPI = "http://127.0.0.1:8081"
 const smockerURL = "http://127.0.0.1:8080"
 const configRegistry = "0x2712B667D07c7376F2C31642b2D578FB6D5F5364"
 
-func mockConfigRegistry(configRegistry string, ipfs string, hclFile string) ([]*smocker.Mock, error) {
+func mockConfigRegistry(_ string, ipfs string, hclFile string) ([]*smocker.Mock, error) {
 	data :=
 		"0x" +
 			"0000000000000000000000000000000000000000000000000000000000000020" +
@@ -161,7 +212,12 @@ func Test_Morph_Run_Ghost(t *testing.T) {
 	s := smocker.NewAPI(smockerAPI)
 	initializeMock(t, ctx, s, smockerURL+"/ipfs", "../e2e/testdata/config/ghost.hcl", 1, 1, 1)
 
-	morphCmd := command(ctx, "..", nil, "./morph", "run", "--bin", "./ghost", "--args", "run", "--config-rpc", smockerURL, "--config-registry", configRegistry, "-v", "debug")
+	morphCmd := command(ctx, "..", []string{
+		"CFG_APP_BIN=./ghost",
+		"CFG_APP_ARGS=run",
+		"CFG_CHAIN_RPC_URLS=" + smockerURL,
+		"CFG_CONFIG_REGISTRY=" + configRegistry,
+	}, "./morph", "run", "-v", "debug")
 	spireCmd := command(ctx, "..", nil, "./spire", "agent", "-c", "./e2e/testdata/config/spire.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
@@ -222,8 +278,12 @@ func Test_Morph_SelfExit(t *testing.T) {
 
 	wrongArg := "wrong"
 	morphCmd := command(ctx, "..", []string{
+		"CFG_APP_BIN=./ghost",
+		"CFG_APP_ARGS=" + wrongArg,
+		"CFG_CHAIN_RPC_URLS=" + smockerURL,
+		"CFG_CONFIG_REGISTRY=" + configRegistry,
 		"CFG_MORPH_INTERVAL=5", // NOTE: set morph interval with 5 seconds
-	}, "./morph", "run", "--bin", "./ghost", "--args", wrongArg, "--config-rpc", smockerURL, "--config-registry", configRegistry, "-v", "debug")
+	}, "./morph", "run", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		_ = morphCmd.Wait()
@@ -260,8 +320,12 @@ func Test_Morph_Restart_Ghost(t *testing.T) {
 	initializeMock(t, ctx, s, smockerURL+"/ipfs", "../e2e/testdata/config/ghost.hcl", 1, 1, 1)
 
 	morphCmd := command(ctx, "..", []string{
+		"CFG_APP_BIN=./ghost",
+		"CFG_APP_ARGS=run",
+		"CFG_CHAIN_RPC_URLS=" + smockerURL,
+		"CFG_CONFIG_REGISTRY=" + configRegistry,
 		"CFG_MORPH_INTERVAL=5",
-	}, "./morph", "run", "--bin", "./ghost", "--args", "run", "--config-rpc", smockerURL, "--config-registry", configRegistry, "-v", "debug")
+	}, "./morph", "run", "-v", "debug")
 	spireCmd := command(ctx, "..", nil, "./spire", "agent", "-c", "./e2e/testdata/config/spire.hcl", "-v", "debug")
 	defer func() {
 		ctxCancel()
@@ -332,7 +396,12 @@ func Test_Morph_ForceExit(t *testing.T) {
 	s := smocker.NewAPI(smockerAPI)
 	initializeMock(t, ctx, s, smockerURL+"/ipfs", "../e2e/testdata/config/ghost.hcl", 1, 1, 1)
 
-	morphCmd := command(ctx, "..", nil, "./morph", "run", "--bin", "./ghost", "--args", "run", "--config-rpc", smockerURL, "--config-registry", configRegistry, "-v", "debug")
+	morphCmd := command(ctx, "..", []string{
+		"CFG_APP_BIN=./ghost",
+		"CFG_APP_ARGS=run",
+		"CFG_CHAIN_RPC_URLS=" + smockerURL,
+		"CFG_CONFIG_REGISTRY=" + configRegistry,
+	}, "./morph", "run", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		p, err := isProcessRunning("ghost")
@@ -346,12 +415,14 @@ func Test_Morph_ForceExit(t *testing.T) {
 	require.NoError(t, waitForAppRun(ctx, "morph"))
 
 	// 2. send interrupt signal to morph
-	p, err := isProcessRunning("morph")
+	processes, err := isProcessRunning("morph")
 	assert.NoError(t, err)
-	assert.NotNil(t, p)
+	assert.NotNil(t, processes)
 
-	err = p.Signal(syscall.SIGINT)
-	assert.NoError(t, err)
+	for _, process := range processes {
+		err = process.Signal(syscall.SIGINT)
+		assert.NoError(t, err)
+	}
 
 	err = morphCmd.Wait()
 	assert.NoError(t, err)
@@ -373,8 +444,12 @@ func Test_Morph_Running_Ghost(t *testing.T) {
 
 	ghostCmd := command(ctx, "..", nil, "./ghost", "run", "-c", "./e2e/testdata/config/ghost.hcl", "-v", "debug")
 	morphCmd := command(ctx, "..", []string{
+		"CFG_APP_BIN=./ghost",
+		"CFG_APP_ARGS=run",
+		"CFG_CHAIN_RPC_URLS=" + smockerURL,
+		"CFG_CONFIG_REGISTRY=" + configRegistry,
 		"CFG_MORPH_INTERVAL=5",
-	}, "./morph", "run", "--bin", "./ghost", "--args", "run", "--config-rpc", smockerURL, "--config-registry", configRegistry, "-v", "debug")
+	}, "./morph", "run", "-v", "debug")
 	defer func() {
 		ctxCancel()
 		p, err := isProcessRunning("ghost")
@@ -396,12 +471,14 @@ func Test_Morph_Running_Ghost(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 4. send interrupt signal to morph
-	p, err := isProcessRunning("morph")
+	processes, err := isProcessRunning("morph")
 	assert.NoError(t, err)
-	assert.NotNil(t, p)
+	assert.NotNil(t, processes)
 
-	err = p.Signal(syscall.SIGINT)
-	assert.NoError(t, err)
+	for _, process := range processes {
+		err = process.Signal(syscall.SIGINT)
+		assert.NoError(t, err)
+	}
 
 	_ = morphCmd.Wait()
 }
