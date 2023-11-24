@@ -71,7 +71,7 @@ type ScribeContract interface {
 	Read(ctx context.Context) (chronicle.PokeData, error)
 	Wat() contract.TypedSelfCaller[string]
 	Bar() contract.TypedSelfCaller[int]
-	Feeds() contract.TypedSelfCaller[chronicle.FeedsResult]
+	Feeds() contract.TypedSelfCaller[[]types.Address]
 	Poke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller
 }
 

@@ -47,7 +47,7 @@ type scribe struct {
 type scribeState struct {
 	wat       string
 	bar       int
-	feeds     chronicle.FeedsResult
+	feeds     []types.Address
 	pokeData  chronicle.PokeData
 	finalized bool      // If price is finalized (only for Scribe Optimistic contracts).
 	time      time.Time // Date and time when the state was fetched.
@@ -96,7 +96,7 @@ func (w *scribe) createRelayCall(ctx context.Context) []relayCall {
 
 		// Check if feed addresses included in the signature match the feed
 		// addresses from the contract.
-		if !sliceutil.HasEqualElements(s.Signers, state.feeds) {
+		if !sliceutil.ContainsAll(s.Signers, state.feeds) {
 			w.log.
 				WithError(err).
 				WithFields(w.logFields()).

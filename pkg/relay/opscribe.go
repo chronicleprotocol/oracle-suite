@@ -88,7 +88,7 @@ func (w *opScribe) createRelayCall(ctx context.Context) []relayCall {
 
 		// Check if feed addresses included in the signature match the feed
 		// addresses from the contract.
-		if !sliceutil.HasEqualElements(s.Signers, state.feeds) {
+		if !sliceutil.ContainsAll(s.Signers, state.feeds) {
 			w.log.
 				WithError(err).
 				WithFields(w.logFields()).

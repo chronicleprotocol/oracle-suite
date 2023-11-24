@@ -70,12 +70,9 @@ func TestScribe(t *testing.T) {
 		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
-				chronicle.FeedsResult{
-					Feeds:       []types.Address{testFeed},
-					FeedIndices: []uint8{1},
-				},
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+			return mock.NewTypedCaller[[]types.Address](t).MockResult(
+				[]types.Address{testFeed},
 				nil,
 			)
 		}
@@ -137,12 +134,9 @@ func TestScribe(t *testing.T) {
 		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
-				chronicle.FeedsResult{
-					Feeds:       []types.Address{testFeed},
-					FeedIndices: []uint8{1},
-				},
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+			return mock.NewTypedCaller[[]types.Address](t).MockResult(
+				[]types.Address{testFeed},
 				nil,
 			)
 		}
@@ -193,12 +187,9 @@ func TestScribe(t *testing.T) {
 		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
-				chronicle.FeedsResult{
-					Feeds:       []types.Address{testFeed},
-					FeedIndices: []uint8{1},
-				},
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+			return mock.NewTypedCaller[[]types.Address](t).MockResult(
+				[]types.Address{testFeed},
 				nil,
 			)
 		}
@@ -260,12 +251,9 @@ func TestScribe(t *testing.T) {
 		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
-				chronicle.FeedsResult{
-					Feeds:       []types.Address{testFeed},
-					FeedIndices: []uint8{1},
-				},
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+			return mock.NewTypedCaller[[]types.Address](t).MockResult(
+				[]types.Address{testFeed},
 				nil,
 			)
 		}
@@ -371,12 +359,9 @@ func TestScribe(t *testing.T) {
 				mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 					return mock.NewTypedCaller[int](t).MockResult(1, nil)
 				}
-				mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-					return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
-						chronicle.FeedsResult{
-							Feeds:       []types.Address{testFeed},
-							FeedIndices: []uint8{1},
-						},
+				mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+					return mock.NewTypedCaller[[]types.Address](t).MockResult(
+						[]types.Address{testFeed},
 						nil,
 					)
 				}
@@ -417,12 +402,9 @@ func TestScribe(t *testing.T) {
 		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 			return mock.NewTypedCaller[int](t).MockResult(2, nil)
 		}
-		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(
-				chronicle.FeedsResult{
-					Feeds:       []types.Address{testFeed, testFeed2},
-					FeedIndices: []uint8{1, 2},
-				},
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+			return mock.NewTypedCaller[[]types.Address](t).MockResult(
+				[]types.Address{testFeed, testFeed2},
 				nil,
 			)
 		}
@@ -468,8 +450,8 @@ func TestScribe(t *testing.T) {
 		mockContract.BarFn = func() contract.TypedSelfCaller[int] {
 			return mock.NewTypedCaller[int](t).MockResult(1, nil)
 		}
-		mockContract.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
-			return mock.NewTypedCaller[chronicle.FeedsResult](t).MockResult(chronicle.FeedsResult{}, errors.New("foo"))
+		mockContract.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
+			return mock.NewTypedCaller[[]types.Address](t).MockResult([]types.Address{}, errors.New("foo"))
 		}
 		mockContract.ReadFn = func(ctx context.Context) (chronicle.PokeData, error) {
 			return chronicle.PokeData{
