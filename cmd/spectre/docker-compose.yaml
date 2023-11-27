@@ -4,7 +4,7 @@ services:
     image: ghcr.io/chronicleprotocol/spectre:0.0.0-dev.0
     build:
       context: "../.."
-      dockerfile: "./cmd/Dockerfile"
+      dockerfile: "../../Dockerfile"
       args:
         APP_NAME: "spectre"
         APP_VERSION: "0.0.0-dev.0"

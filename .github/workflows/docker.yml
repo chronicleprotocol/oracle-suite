@@ -9,11 +9,6 @@ on:
 
   workflow_dispatch:
     inputs:
-      version:
-        description: 'New Version (no `v` prefix)'
-        type: string
-        required: false
-        default: ''
       application:
         description: 'Application Name (lowercase)'
         type: choice
@@ -23,6 +18,11 @@ on:
           - spire
           - ghost
           - spectre
+      version:
+        description: 'New Version (no `v` prefix)'
+        type: string
+        required: false
+        default: ''
 
 jobs:
   build-and-push:
@@ -68,7 +68,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./cmd/Dockerfile
+          file: ./Dockerfile
           build-args: |
             APP_NAME=${{ inputs.application }}
             APP_VERSION=${{ inputs.version != '' && inputs.version || steps.meta.outputs.version }}

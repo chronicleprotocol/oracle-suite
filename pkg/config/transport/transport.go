@@ -474,7 +474,7 @@ func (c *Config) configureLibP2P(d Dependencies) (transport.Service, error) {
 }
 
 // parseAddr creates an external listening address
-// TODO: this would be a good place to ensure that the external does not have a tcp component or use it instead the original one
+// TODO: this would be a good place to ensure that the external does not have a tcp component
 // TODO: or use it instead the original one
 func parseAddr(addr string, addrs []string) (multiaddr.Multiaddr, error) {
 	if len(addrs) == 0 {

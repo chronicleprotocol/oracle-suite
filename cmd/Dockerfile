@@ -18,12 +18,16 @@ RUN CGO_ENABLED=0 go build -v \
     -o ./dist/chronicle-app ./cmd/${APP_NAME}
 
 # ----------------------------------------------------------------------------------------
+FROM ghcr.io/chronicleprotocol/watchdog:latest as watchdog
+
+# ----------------------------------------------------------------------------------------
 FROM gcr.io/distroless/static-debian11
 
-COPY --from=builder /app/dist/* /usr/local/bin/
+COPY --from=watchdog /usr/local/bin/watchdog /usr/local/bin/
+COPY --from=builder /app/dist/chronicle-app /usr/local/bin/
 
-ENTRYPOINT ["/usr/local/bin/chronicle-app"]
-CMD ["run"]
+ENTRYPOINT ["/usr/local/bin/watchdog"]
+CMD ["/usr/local/bin/chronicle-app","run"]
 
 # libp2p
 EXPOSE 8000
