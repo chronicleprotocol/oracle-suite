@@ -50,6 +50,12 @@ gofer {
     jq   = "{price: .last, time: .timestamp, volume: .volume}"
   }
 
+  origin "bybit" {
+    type = "tick_generic_jq"
+    url = "https://api.bybit.com/v5/market/tickers?category=spot&symbol=$${ucbase}$${ucquote}"
+    jq = "{price: .result.list[0].lastPrice|tonumber, volume: .result.list[0].volume24h|tonumber, time: (.time/1000)|round}"
+  }
+
   origin "coinbase" {
     type = "tick_generic_jq"
     url  = "https://api.pro.coinbase.com/products/$${ucbase}-$${ucquote}/ticker"
