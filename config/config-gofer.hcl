@@ -206,7 +206,8 @@ gofer {
         "ARB/WETH"    = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
         "DAI/FRAX"    = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
         "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
-        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
+        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42",
+        "MNT/WETH"    = "0xF4c5e0F4590b6679B3030d29A84857F226087FeF"
       }
     }
   }
@@ -586,6 +587,22 @@ gofer {
       indirect {
         origin "kraken" { query = "MKR/USD" }
         reference { data_model = "ETH/USD" }
+      }
+    }
+  }
+
+  data_model "MNT/USD" {
+    median {
+      min_values = 2
+      indirect {
+        alias "MNT/ETH" {
+          origin "uniswapV3" { query = "MNT/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "bybit" { query = "MNT/USDT" }
+        reference { data_model = "USDT/USD" }
       }
     }
   }
