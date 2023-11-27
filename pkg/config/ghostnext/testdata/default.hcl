@@ -52,6 +52,11 @@ gofer {
     url  = "https://www.bitstamp.net/api/v2/ticker/$${lcbase}$${lcquote}"
     jq   = "{price: .last, time: .timestamp, volume: .volume}"
   }
+  origin "bybit" {
+    type = "tick_generic_jq"
+    url  = "https://api.bybit.com/v5/market/tickers?category=spot&symbol=$${ucbase}$${ucquote}"
+    jq   = "{price: .result.list[0].lastPrice|tonumber, volume: .result.list[0].volume24h|tonumber, time: (.time/1000)|round}"
+  }
   origin "coinbase" {
     type = "tick_generic_jq"
     url  = "https://api.pro.coinbase.com/products/$${ucbase}-$${ucquote}/ticker"
@@ -185,6 +190,7 @@ gofer {
         "MATIC/WETH"  = "0x290a6a7460b308ee3f19023d2d00de604bcf5b42"
         "MKR/USDC"    = "0xc486ad2764d55c7dc033487d634195d6e4a6917e"
         "MKR/WETH"    = "0xe8c6c9227491c0a8156a0106a0204d881bb7e531"
+        "MNT/WETH"    = "0xf4c5e0f4590b6679b3030d29a84857f226087fef"
         "UNI/WETH"    = "0x1d42064fc4beb5f8aaf85f4617ae8b3b5b8bd801"
         "USDC/SNX"    = "0x020c349a0541d76c16f501abc6b2e9c98adae892"
         "USDC/WETH"   = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"
@@ -567,6 +573,22 @@ gofer {
       indirect {
         origin "kraken" { query = "MKR/USD" }
         reference { data_model = "ETH/USD" }
+      }
+    }
+  }
+  data_model "MNT/USD" {
+    median {
+      min_values = 2
+
+      indirect {
+        alias "MNT/ETH" {
+          origin "uniswapV3" { query = "MNT/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "bybit" { query = "MNT/USDT" }
+        reference { data_model = "USDT/USD" }
       }
     }
   }
