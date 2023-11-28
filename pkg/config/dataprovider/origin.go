@@ -18,10 +18,10 @@ package dataprovider
 import (
 	"fmt"
 
+	"github.com/hashicorp/hcl/v2"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/origin"
 	utilHCL "github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
-
-	"github.com/hashicorp/hcl/v2"
 )
 
 type configOrigin struct {
@@ -86,6 +86,11 @@ type configContracts struct {
 	ContractAddresses origin.ContractAddresses `hcl:"addresses"`
 }
 
+type configOriginDeGate struct {
+	Endpoint string             `hcl:"endpoint"`
+	Pairs    []origin.AssetPair `hcl:"pairs"`
+}
+
 type configOriginDSR struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
@@ -134,6 +139,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginBalancer{}
 	case "curve":
 		config = &configOriginCurve{}
+	case "degate":
+		config = &configOriginDeGate{}
 	case "dsr":
 		config = &configOriginDSR{}
 	case "ishares":
@@ -220,6 +227,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create curve origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginDeGate:
+		origin, err := origin.NewDeGate(origin.DeGateConfig{
+			Endpoint: o.Endpoint,
+			Client:   d.HTTPClient,
+			Pairs:    o.Pairs,
+			Logger:   d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create degate origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}

@@ -57,6 +57,11 @@ gofer {
       }
     }
   }
+  origin "degate" {
+    type     = "degate"
+    endpoint = "https://v1-mainnet-backend.degate.com"
+    pairs    = ["USDM/USDC"]
+  }
   origin "dsr" {
     type = "dsr"
 

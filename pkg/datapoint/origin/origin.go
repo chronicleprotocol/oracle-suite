@@ -70,6 +70,17 @@ func (a AssetPair) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s)
 }
 
+func (a AssetPair) MarshalText() (text []byte, err error) {
+	var s string
+	for i := 0; i < len(a); i++ {
+		if i > 0 && len(a[i]) > 0 {
+			s += "/" // separator
+		}
+		s += a[i]
+	}
+	return []byte(s), nil
+}
+
 func (a *AssetPair) UnmarshalText(text []byte) error {
 	ss := strings.Split(string(text), "/")
 	if len(ss) < 2 {
