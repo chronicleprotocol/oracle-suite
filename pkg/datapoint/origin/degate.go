@@ -129,7 +129,7 @@ type DeGate struct {
 	endpoint   string
 	client     *http.Client
 	pairs      assetPairs
-	tokenIdMap map[string]int
+	tokenIDMap map[string]int
 	logger     log.Logger
 }
 
@@ -145,7 +145,7 @@ func NewDeGate(config DeGateConfig) (*DeGate, error) {
 		endpoint:   config.Endpoint,
 		client:     config.Client,
 		pairs:      config.Pairs,
-		tokenIdMap: make(map[string]int),
+		tokenIDMap: make(map[string]int),
 		logger:     config.Logger.WithField("degate", DeGateLoggerTag),
 	}, nil
 }
@@ -165,10 +165,10 @@ func (d *DeGate) FetchDataPoints(ctx context.Context, query []any) (map[any]data
 	// Fetch token id if not found in cache
 	var tokens []string
 	for _, pair := range pairs {
-		if _, ok := d.tokenIdMap[pair.Base]; !ok {
+		if _, ok := d.tokenIDMap[pair.Base]; !ok {
 			tokens = append(tokens, pair.Base)
 		}
-		if _, ok := d.tokenIdMap[pair.Quote]; !ok {
+		if _, ok := d.tokenIDMap[pair.Quote]; !ok {
 			tokens = append(tokens, pair.Quote)
 		}
 	}
@@ -185,7 +185,7 @@ func (d *DeGate) FetchDataPoints(ctx context.Context, query []any) (map[any]data
 			continue
 		}
 
-		ticker, err := d.fetchTicker24(ctx, d.tokenIdMap[pair.Base], d.tokenIdMap[pair.Quote])
+		ticker, err := d.fetchTicker24(ctx, d.tokenIDMap[pair.Base], d.tokenIDMap[pair.Quote])
 		if err != nil || ticker == nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf("failed in fetching ticker24(%s): %v", pair.String(), err)}
 			continue
@@ -235,7 +235,7 @@ func (d *DeGate) fetchTokenIds(ctx context.Context, tokens []string) error {
 	}
 
 	for _, token := range tokensResponse.Data {
-		d.tokenIdMap[strings.ToUpper(token.Symbol)] = token.ID
+		d.tokenIDMap[strings.ToUpper(token.Symbol)] = token.ID
 	}
 	return nil
 }
