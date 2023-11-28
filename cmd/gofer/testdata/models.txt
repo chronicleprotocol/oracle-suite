@@ -5335,6 +5335,3 @@ Model for YFIUSD:
                            │                 └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:kraken, query:BTC/USD)
                            ├──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:bitstamp, query:USDC/USD)
                            └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:gemini, query:USDC/USD)
-Model for WUSDM/WSTETH:
-───reference()
-   └──origin(expiry_threshold:5m0s, freshness_threshold:1m0s, origin:weightedBalancerV2, query:WUSDM/WSTETH)

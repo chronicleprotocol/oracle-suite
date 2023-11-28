@@ -192,9 +192,6 @@ gofer {
       }
     }
   }
-  data_model "WUSDM/WSTETH" {
-    origin "weightedBalancerV2" { query = "WUSDM/WSTETH" }
-  }
   data_model "AAVE/USD" {
     median {
       min_values = 4
