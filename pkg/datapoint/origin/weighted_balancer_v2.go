@@ -74,7 +74,6 @@ func NewWeightedBalancerV2(config WeightedBalancerV2Config) (*WeightedBalancerV2
 	}, nil
 }
 
-//nolint:funlen
 func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
@@ -85,13 +84,12 @@ func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (
 		return pairs[i].String() < pairs[j].String()
 	})
 
-	points := make(map[any]datapoint.Point)
-
 	block, err := b.client.BlockNumber(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get block number, %w", err)
 	}
 
+	points := make(map[any]datapoint.Point)
 	totals := make(map[value.Pair]*bn.DecFloatPointNumber)
 
 	var poolConfigs []WeightedPoolConfig
@@ -118,37 +116,38 @@ func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (
 			blockNumber := types.BlockNumberFromUint64(uint64(block.Int64() - blockDelta))
 			pools, err := NewWeightedPools(poolConfigs, b.client)
 			if err != nil {
-				return nil, err
-			}
-			// Get the required storage values from pool contracts
-			err = pools.getPoolTokens(ctx, blockNumber)
-			if err != nil {
-				return nil, err
-			}
-			err = pools.getPoolParameters(ctx, blockNumber)
-			if err != nil {
-				return nil, err
+				points[pair] = datapoint.Point{Error: err}
+				break
 			}
 
-			pool := pools.findPoolByPair(pair)
+			err = pools.InitializePools(ctx, blockNumber)
+			if err != nil {
+				points[pair] = datapoint.Point{Error: err}
+				break
+			}
+
+			pool := pools.FindPoolByPair(pair)
 			if pool == nil {
 				points[pair] = datapoint.Point{Error: fmt.Errorf(
 					"not found balancer's weighted pool: %s", pair.String())}
-				continue
+				break
 			}
 
 			baseToken := pools.tokenDetails[pair.Base]
 			quoteToken := pools.tokenDetails[pair.Quote]
 			// amountIn = 10 ^ baseDecimals
 			amountIn := bn.DecFloatPoint(10).Exp(bn.DecFloatPoint(baseToken.decimals))
-			amountOut, _, err := pool.calcAmountOut(baseToken.address, quoteToken.address, amountIn)
+			amountOut, _, err := pool.CalcAmountOut(baseToken.address, quoteToken.address, amountIn)
 			if err != nil {
 				points[pair] = datapoint.Point{Error: err}
-				return nil, err
+				break
 			}
 			// price = amountOut / 10 ^ quoteDecimals
 			price := amountOut.Div(bn.DecFloatPoint(10).Exp(bn.DecFloatPoint(quoteToken.decimals)))
 			totals[pair] = totals[pair].Add(price)
+		}
+		if points[pair].Error != nil {
+			continue
 		}
 
 		avgPrice := totals[pair].Div(bn.DecFloatPoint(len(b.blocks)))

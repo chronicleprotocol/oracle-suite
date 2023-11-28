@@ -110,6 +110,9 @@ func (c ContractAddresses) MarshalJSON() ([]byte, error) {
 }
 
 func (c ContractAddresses) MarshalHCL() (cty.Value, error) {
+	if c == nil {
+		return cty.NilVal, nil
+	}
 	mapAddresses := make(map[string]cty.Value)
 	for key, value := range c {
 		pairs := key.String()

@@ -19,6 +19,16 @@ gofer {
       }
     }
   }
+  origin "weightedBalancerV2" {
+    type = "weighted_balancerV2"
+
+    contracts "ethereum" {
+      addresses = {
+        "WUSDM/WSTETH" = "0x54ca50ee86616379420cc56718e12566aa75abbe"
+      }
+      references = null
+    }
+  }
   origin "binance" {
     type = "tick_generic_jq"
     url  = "https://api.binance.com/api/v3/ticker/24hr"
@@ -181,6 +191,9 @@ gofer {
         "WSTETH/STETH" = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
       }
     }
+  }
+  data_model "WUSDM/WSTETH" {
+    origin "weightedBalancerV2" { query = "WUSDM/WSTETH" }
   }
   data_model "AAVE/USD" {
     median {

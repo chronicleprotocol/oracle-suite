@@ -77,6 +77,18 @@ func NewWeightedPools(configs []WeightedPoolConfig, client rpc.RPC) (*WeightedPo
 	}, nil
 }
 
+func (w *WeightedPools) InitializePools(ctx context.Context, blockNumber types.BlockNumber) error {
+	err := w.getPoolTokens(ctx, blockNumber)
+	if err != nil {
+		return err
+	}
+	err = w.getPoolParameters(ctx, blockNumber)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (w *WeightedPools) getPoolTokens(ctx context.Context, blockNumber types.BlockNumber) error {
 	var calls []types.Call
 
@@ -198,7 +210,7 @@ func (w *WeightedPools) getPoolParameters(ctx context.Context, blockNumber types
 	return nil
 }
 
-func (w *WeightedPools) findPoolByPair(pair value.Pair) *WeightedPool {
+func (w *WeightedPools) FindPoolByPair(pair value.Pair) *WeightedPool {
 	for _, pool := range w.pools {
 		if pool.pair == pair {
 			return pool
@@ -207,7 +219,7 @@ func (w *WeightedPools) findPoolByPair(pair value.Pair) *WeightedPool {
 	return nil
 }
 
-func (p *WeightedPool) calcAmountOut(tokenIn, tokenOut types.Address, amountIn *bn.DecFloatPointNumber) (
+func (p *WeightedPool) CalcAmountOut(tokenIn, tokenOut types.Address, amountIn *bn.DecFloatPointNumber) (
 	*bn.DecFloatPointNumber,
 	*bn.DecFloatPointNumber,
 	error,
