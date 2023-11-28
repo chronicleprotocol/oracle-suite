@@ -74,7 +74,7 @@ func NewWeightedBalancerV2(config WeightedBalancerV2Config) (*WeightedBalancerV2
 	}, nil
 }
 
-// nolint:funlen
+//nolint:funlen
 func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
