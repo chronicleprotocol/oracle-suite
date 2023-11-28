@@ -64,14 +64,31 @@ gofer {
         "RETH/WSTETH"   = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
         "ETH/STETH"     = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
         "DAI/USDC/USDT" = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
-        "FRAX/USDC"     = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
+        "FRAX/USDC"     = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2"
       }
       addresses2 = {
         # uint256, cryptoswap
-        "WETH/LDO"       = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
-        "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
-        "WETH/YFI"       = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
-        "WETH/RETH"      = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
+        "WETH/LDO"        = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
+        "USDT/WBTC/WETH"  = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
+        "WETH/YFI"        = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
+        "WETH/RETH"       = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
+      }
+    }
+  }
+
+  origin "curveV3" {
+    type = "curveV3"
+    contracts "ethereum" {
+      addresses = {
+        # int256, stableswap
+        "CRVUSD/USDC"   = "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E",
+        "CRVUSD/USDT"   = "0x390f3595bCa2Df7d23783dFd126427CCeb997BF4",
+        "CRVUSD/USDM"   = "0x2dabF79E16ceb92B651651f47b6E835C9DB5828A",
+        "CRVUSD/SDAI"   = "0x1539c2461d7432cc114b0903f1824079bfca2c92"
+      }
+      addresses2 = {
+        # uint256, cryptoswap
+        "CRVUSD/WETH/CRV" = "0x4eBdF703948ddCEA3B11f675B4D1Fba9d2414A14"
       }
     }
   }
@@ -200,7 +217,8 @@ gofer {
         "ARB/WETH"    = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
         "DAI/FRAX"    = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
         "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
-        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
+        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42",
+        "WUSDM/SDAI" = "0x330b0C153c57cbCa6538d143021954368Ca0969F"
       }
     }
   }
@@ -334,6 +352,32 @@ gofer {
       indirect {
         origin "okx" { query = "CRV/USDT" }
         reference { data_model = "USDT/USD" }
+      }
+    }
+  }
+
+  data_model "CRVUSD/USD" {
+    median {
+      min_values = 2
+      indirect {
+        origin "curveV3" { query = "CRVUSD/USDC" }
+        reference { data_model = "USDC/USD" }
+      }
+      indirect {
+        origin "curveV3" { query = "CRVUSD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        alias "CRVUSD/ETH" {
+          origin "curveV3" { query = "CRVUSD/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        alias "CRVUSD/SDAI" {
+          origin "curveV3" { query = "CRVUSD/SDAI" }
+        }
+        reference { data_model = "SDAI/USD" }
       }
     }
   }
@@ -748,6 +792,32 @@ gofer {
       }
       origin "bitstamp" { query = "USDC/USD" }
       origin "gemini" { query = "USDC/USD" }
+    }
+  }
+
+  data_model "USDM/USD" {
+    median {
+      min_values = 2
+      indirect {
+        origin "degate" { query = "USDM/USDC" }
+        reference { data_model = "USDC/USD" }
+      }
+      indirect {
+        origin "curve" { query = "CRVUSD/USDM" }
+        reference { data_model = "CRVUSD/USD" }
+      }
+      indirect {
+        alias "USDM/WSTETH" {
+          origin "weightedBalancerV2" { query = "WUSDM/WSTETH" }
+        }
+        reference { data_model = "WSTETH/USD" }
+      }
+      indirect{
+        alias "USDM/SDAI" {
+          origin "uniswapV3" { query = "WUSDM/SDAI" }
+        }
+        reference { data_model = "SDAI/USD" }
+      }
     }
   }
 
