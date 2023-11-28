@@ -175,6 +175,21 @@ func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
+// MulDownFixed multiplies the number y and deflates prec precision
+func (x *DecFloatPointNumber) MulDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	return x.Mul(y).Deflate(prec)
+}
+
+// MulUpFixed multiplies the number y up and deflates prec precision
+func (x *DecFloatPointNumber) MulUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	ret := x.Mul(y)
+	if ret.Sign() == 0 {
+		return ret
+	}
+	one := DecFloatPoint(intOne)
+	return ret.Sub(one).Deflate(prec).Add(one)
+}
+
 // Div divides the number by y and returns the result.
 //
 // Division by zero panics.
@@ -194,6 +209,98 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	n := x.DivPrec(y, wp)
 	n.x.x = bigIntSetPrec(n.x.x, uint32(n.x.p), rp)
 	n.x.p = uint8(rp)
+	n.adjustPrec()
+	return n
+}
+
+// DivUp divides the number y up and return the result.
+func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+	// 1 + (a - 1) / b
+	one := DecFloatPoint(intOne)
+	return x.Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
+}
+
+// DivUpFixed inflates prec precision and divides the number y up.
+func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+
+	// The traditional divUp formula is:
+	// divUp(x, y) := (x + y - 1) / y
+	// To avoid intermediate overflow in the addition, we distribute the division and get:
+	// divUp(x, y) := (x - 1) / y + 1
+	// Note that this requires x != 0, which we already tested for.
+	one := DecFloatPoint(intOne)
+	return x.Inflate(prec).Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
+}
+
+// DivDownFixed inflates prec precision and divides the number y down
+func (x *DecFloatPointNumber) DivDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.Inflate(prec).DivPrec(y, uint32(x.x.p))
+}
+
+func (x *DecFloatPointNumber) Mod(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if y.x.Sign() == 0 {
+		panic("division by zero")
+	}
+
+	z := new(big.Int).Mod(x.x.x, y.x.x)
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
+	return n
+}
+
+// Complement returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
+//
+// Useful when computing the complement for values with some level of relative error, as it strips this error and
+// prevents intermediate negative values.
+func (x *DecFloatPointNumber) Complement() *DecFloatPointNumber {
+	// return (x < ONE) ? (ONE - x) : 0;
+	one := DecFloatPoint(intOne)
+	if x.Cmp(one) < 0 {
+		return one.Sub(x)
+	}
+	return DecFloatPoint(intZero)
+}
+
+// Exp exponential function by y and return the x ^ y.
+func (x *DecFloatPointNumber) Exp(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if x.x.Sign() == 0 {
+		return x
+	}
+	if x.Cmp(DecFloatPoint(1)) == 0 {
+		return DecFloatPoint(1)
+	}
+	z := new(big.Int).Exp(x.x.x, y.x.x, nil)
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
+	n.adjustPrec()
+	return n
+}
+
+// Inflate inflates the number by prec precision and return the result.
+// return = x * (10 ^ prec)
+// Do not change precision.
+func (x *DecFloatPointNumber) Inflate(prec uint8) *DecFloatPointNumber {
+	if prec == 0 {
+		return x
+	}
+	p := uint32(x.x.p) + uint32(prec)
+	z := bigIntSetPrec(x.x.x, uint32(x.x.p), p)
+	return &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
+}
+
+// Deflate deflates the number by prec precision and return the results.
+// return = x / (10 ^ prec)
+// Do not change precision. If x < 10 ^ prec, return 0
+func (x *DecFloatPointNumber) Deflate(prec uint8) *DecFloatPointNumber {
+	z := new(big.Int).Quo(x.x.x, pow10(prec))
+	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
 	n.adjustPrec()
 	return n
 }

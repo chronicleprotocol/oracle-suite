@@ -14,6 +14,15 @@ gofer {
     }
   }
 
+  origin "weightedBalancerV2" {
+    type = "weighted_balancerV2"
+    contracts "ethereum" {
+      addresses = {
+        "WUSDM/WSTETH" = "0x54ca50EE86616379420Cc56718E12566aa75Abbe"
+      }
+    }
+  }
+
   origin "binance" {
     type = "tick_generic_jq"
     url  = "https://api.binance.com/api/v3/ticker/24hr"
