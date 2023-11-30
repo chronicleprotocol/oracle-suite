@@ -23,7 +23,7 @@ services:
   _base:
     <<: *disabled
     environment: &base
-
+      CFG_CONTRACT_CONFIG_REGISTRY: 0x2712B667D07c7376F2C31642b2D578FB6D5F5364
       CFG_ENVIRONMENT: "stage"
 
       CFG_FEEDS: |-
