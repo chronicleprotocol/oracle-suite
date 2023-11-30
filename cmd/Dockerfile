@@ -25,8 +25,8 @@ FROM gcr.io/distroless/static-debian11
 COPY --from=watchdog /usr/local/bin/watchdog /usr/local/bin/
 COPY --from=builder /app/dist/chronicle-app /usr/local/bin/
 
-ENTRYPOINT ["/usr/local/bin/watchdog"]
-CMD ["/usr/local/bin/chronicle-app","run"]
+ENTRYPOINT ["/usr/local/bin/watchdog","/usr/local/bin/chronicle-app"]
+CMD ["run"]
 
 # libp2p
 EXPOSE 8000

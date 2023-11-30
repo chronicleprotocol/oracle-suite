@@ -23,7 +23,7 @@ services:
   _base:
     <<: *disabled
     environment: &base
-      CFG_CONTRACT_CONFIG_REGISTRY: 0x2712B667D07c7376F2C31642b2D578FB6D5F5364
+      CFG_CONTRACT_CONFIG_REGISTRY: 0x92c2f55d7eEA37b02fC588aA9E14063cc236C6Be
       CFG_ENVIRONMENT: "stage"
 
       CFG_FEEDS: |-
@@ -125,7 +125,7 @@ services:
       CFG_CHAIN_NAME: "sep"
 
   ghost1:
-    image: ghcr.io/chronicleprotocol/ghost:0.0.0-dev.0
+    image: ghcr.io/chronicleprotocol/ghost:sha-ca47fd7
     environment:
       <<: *base_ghost
 
