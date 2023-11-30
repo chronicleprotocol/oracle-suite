@@ -65,13 +65,15 @@ gofer {
         "ETH/STETH"     = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
         "DAI/USDC/USDT" = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
         "FRAX/USDC"     = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
+        "ETH/ETHX"      = "0x59Ab5a5b5d617E478a2479B0cAD80DA7e2831492"
       }
       addresses2 = {
         # uint256, cryptoswap
         "WETH/LDO"       = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
         "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
         "WETH/YFI"       = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
-        "WETH/RETH"      = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
+        "WETH/RETH"      = "0x0f3159811670c117c372428D4E69AC32325e4D0F",
+        "WSTETH/ETHX"    = "0x14756A5eD229265F86990e749285bDD39Fe0334F"
       }
     }
   }
@@ -200,7 +202,8 @@ gofer {
         "ARB/WETH"    = "0x755E5A186F0469583bd2e80d1216E02aB88Ec6ca",
         "DAI/FRAX"    = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
         "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
-        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
+        "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42",
+        "ETHX/WETH"   = "0x1b9669b12959Ad51B01FaBcF01EaBDFADB82f578"
       }
     }
   }
@@ -402,6 +405,26 @@ gofer {
           origin "uniswapV3" { query = "WETH/USDC" }
         }
         reference { data_model = "USDC/USD" }
+      }
+    }
+  }
+
+  data_model "ETHX/USD" {
+    median {
+      min_values = 3
+      indirect {
+        origin "curve" { query = "WSTETH/ETHX" }
+        reference { data_model = "WSTETH/USD" }
+      }
+      indirect {
+        origin "curve" { query = "ETH/ETHX" }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        alias "ETHX/ETH" {
+          origin "uniswapV3" { query = "ETHX/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
       }
     }
   }
