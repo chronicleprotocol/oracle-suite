@@ -87,6 +87,12 @@ gofer {
     }
   }
 
+  origin "gate" {
+    type = "tick_generic_jq"
+    url  = "https://api.gateio.ws/api/v4/spot/tickers"
+    jq   = ".[] | select(.currency_pair == ($ucbase + \"_\" + $ucquote)) | {price:.last, volume: null, time:now|round}"
+  }
+
   origin "gemini" {
     type = "tick_generic_jq"
     url  = "https://api.gemini.com/v1/pubticker/$${lcbase}$${lcquote}"
@@ -203,7 +209,8 @@ gofer {
         "DAI/FRAX"    = "0x97e7d56A0408570bA1a7852De36350f7713906ec",
         "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
         "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42",
-        "ETHX/WETH"   = "0x1b9669b12959Ad51B01FaBcF01EaBDFADB82f578"
+        "ETHX/WETH"   = "0x1b9669b12959Ad51B01FaBcF01EaBDFADB82f578",
+        "SD/USDC"     = "0xc72AbB13B6BDfA64770cb5B1F57Bebd36a91A29E"
       }
     }
   }
@@ -426,6 +433,10 @@ gofer {
         }
         reference { data_model = "ETH/USD" }
       }
+      indirect {
+        origin "weightedBalancerV2" { query = "SD/ETHx" }
+        reference { data_model = "SD/USD" }
+      }
     }
   }
 
@@ -643,6 +654,24 @@ gofer {
     indirect {
       reference { data_model = "RETH/ETH" }
       reference { data_model = "ETH/USD" }
+    }
+  }
+
+  data_model "SD/USD" {
+    median {
+      min_values = 2
+      indirect {
+        origin "gate" { query = "SD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "okx" { query = "SD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "uniswapV3" { query = "SD/USDC" }
+        reference { data_model = "USDC/USD" }
+      }
     }
   }
 
