@@ -87,9 +87,9 @@ func (r *Registry) Deployments(ctx context.Context) ([]Deployment, error) {
 				return nil, fmt.Errorf("on-chain registry: %w", err)
 			}
 			var liftedFeeds []types.Address
-			for _, feed := range liftedFeeds {
+			for _, feed := range feeds {
 				if config.Bloom.Has(feed) {
-					feeds = append(feeds, feed)
+					liftedFeeds = append(liftedFeeds, feed)
 				}
 			}
 			deployments = append(deployments, Deployment{

@@ -160,7 +160,7 @@ func TestHandleMessage(t *testing.T) {
 				"wat": "ETH/USD"
 			},
 			"signatures": [{
-				"type": "scribe-optimistic/v1",
+				"type": "scribe-optimistic/v2",
 				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"
 			}],
 			"meta": {
@@ -286,7 +286,7 @@ func TestHandleMessage(t *testing.T) {
 			},
 			"signature": "0x499602d2",
 			"signatures": [{
-				"type": "scribe-optimistic/v1",
+				"type": "scribe-optimistic/v2",
 				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"
 			},{
 				"type": "scribe/v1",
