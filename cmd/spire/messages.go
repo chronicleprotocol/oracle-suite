@@ -249,7 +249,7 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 		}
 
 		signatures = append(signatures, map[string]any{
-			"type":      "scribe-optimistic/v1",
+			"type":      "scribe-optimistic/v2",
 			"signature": msgTickMeta.ECDSAData.String(),
 		})
 
