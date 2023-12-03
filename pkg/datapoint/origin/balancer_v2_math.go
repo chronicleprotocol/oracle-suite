@@ -475,9 +475,9 @@ func _ln_36(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber { //nolint:revive
 func _powUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	// Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
 	// and 80/20 Weighted Pools
-	one := bn.DecFloatPoint(1)
-	two := bn.DecFloatPoint(2)
-	four := bn.DecFloatPoint(4)
+	one := bn.DecFloatPoint(1).Inflate(balancerV2Precision)
+	two := bn.DecFloatPoint(2).Inflate(balancerV2Precision)
+	four := bn.DecFloatPoint(4).Inflate(balancerV2Precision)
 
 	const MAX_POW_RELATIVE_ERROR = 10000 //nolint:revive,stylecheck
 
