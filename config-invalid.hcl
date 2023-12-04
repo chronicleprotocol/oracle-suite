@@ -1,7 +1,7 @@
-# broken config
-broken = var.broken
-
 variables {
+  # invalid config
+  config = var.broken
+
   contract_map = {
     "prod-eth-Chainlog" : "0xE10e8f60584e2A2202864d5B35A098EA84761256",
     "prod-eth-TorAddressRegister" : "0x16515EEe550Fe7ae3b8f70bdfb737a57811B3C96",
