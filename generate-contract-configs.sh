@@ -55,7 +55,9 @@ _CONTRACTS="$({
 		challenge_period:.IScribeOptimistic.opChallengePeriod,
 		poke:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // {}),
 		poke_optimistic:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // {}),
+		version,name:.salt,
 	} | del(..|nulls) | del(..|select(type=="object" and length==0))'
+
 	jq <<<"$__medians" --argjson r "$__relays" -c '{
 		env,
 		chain,
