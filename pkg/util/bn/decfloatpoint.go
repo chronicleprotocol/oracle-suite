@@ -176,11 +176,13 @@ func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
 }
 
 // MulDownFixed multiplies the number y and deflates prec precision
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
 func (x *DecFloatPointNumber) MulDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
 	return x.Mul(y).Deflate(prec)
 }
 
 // MulUpFixed multiplies the number y up and deflates prec precision
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
 func (x *DecFloatPointNumber) MulUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
 	ret := x.Mul(y)
 	if ret.Sign() == 0 {
@@ -214,6 +216,7 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 }
 
 // DivUp divides the number y up and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
 func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber {
 	if x.Sign() == 0 {
 		return x
@@ -224,6 +227,7 @@ func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber
 }
 
 // DivUpFixed inflates prec precision and divides the number y up.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
 func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
 	if x.Sign() == 0 {
 		return x
@@ -239,6 +243,7 @@ func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *De
 }
 
 // DivDownFixed inflates prec precision and divides the number y down
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
 func (x *DecFloatPointNumber) DivDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
 	if x.Sign() == 0 {
 		return x
@@ -254,19 +259,6 @@ func (x *DecFloatPointNumber) Mod(y *DecFloatPointNumber) *DecFloatPointNumber {
 	z := new(big.Int).Mod(x.x.x, y.x.x)
 	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
 	return n
-}
-
-// Complement returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
-//
-// Useful when computing the complement for values with some level of relative error, as it strips this error and
-// prevents intermediate negative values.
-func (x *DecFloatPointNumber) Complement() *DecFloatPointNumber {
-	// return (x < ONE) ? (ONE - x) : 0;
-	one := DecFloatPoint(intOne)
-	if x.Cmp(one) < 0 {
-		return one.Sub(x)
-	}
-	return DecFloatPoint(intZero)
 }
 
 // Exp exponential function by y and return the x ^ y.

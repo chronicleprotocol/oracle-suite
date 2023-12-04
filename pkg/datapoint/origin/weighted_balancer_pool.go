@@ -244,6 +244,7 @@ func (p *WeightedPool) CalcAmountOut(tokenIn, tokenOut types.Address, amountIn *
 	return bn.DecFloatPoint(amountOut), bn.DecFloatPoint(feeAmount), nil
 }
 
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-utils/contracts/BaseMinimalSwapInfoPool.sol#L32
 func (p *WeightedPool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.DecFloatPointNumber) (
 	*bn.DecFloatPointNumber,
 	*bn.DecFloatPointNumber,
@@ -277,6 +278,7 @@ func (p *WeightedPool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.DecFloat
 	return p._downscaleDown(amountOut, scalingFactorTokenOut), feeAmount
 }
 
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-weighted/contracts/BaseWeightedPool.sol#L107
 func (p *WeightedPool) _onSwapGivenIn(
 	indexIn, indexOut int,
 	amountIn, currentBalanceTokenIn, currentBalanceTokenOut *bn.DecFloatPointNumber,
@@ -304,6 +306,7 @@ func (p *WeightedPool) _onSwapGivenIn(
 
 // _calcOutGivenIn computes how many tokens can be taken out of a pool if `amountIn` are sent, given the
 // current balances and weights.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-weighted/contracts/WeightedMath.sol#L78
 func (p *WeightedPool) _calcOutGivenIn(
 	balanceIn, weightIn, balanceOut, weightOut, amountIn *bn.DecFloatPointNumber,
 ) *bn.DecFloatPointNumber {
@@ -341,6 +344,8 @@ func (p *WeightedPool) _calcOutGivenIn(
 	return balanceOut.MulDownFixed(_complementFixed(power), balancerV2Precision)
 }
 
+// Returns the scaling factor for one of the Pool's tokens. Reverts if `token` is not a token registered by the Pool.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-weighted/contracts/WeightedPool.sol#L189
 func (p *WeightedPool) _scalingFactor(index int) (*bn.DecFloatPointNumber, error) {
 	if index < 0 || index >= len(p.scalingFactors) {
 		return nil, fmt.Errorf("unsupported token")
@@ -349,6 +354,7 @@ func (p *WeightedPool) _scalingFactor(index int) (*bn.DecFloatPointNumber, error
 }
 
 // Returns the normalized weight of `token`. Weights are fixed point numbers that sum to FixedPoint.ONE.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-weighted/contracts/WeightedPool.sol#L143
 func (p *WeightedPool) _getNormalizedWeight(index int) (*bn.DecFloatPointNumber, error) {
 	if index < 0 || index >= len(p.scalingFactors) {
 		return nil, fmt.Errorf("unsupported token")
@@ -358,6 +364,7 @@ func (p *WeightedPool) _getNormalizedWeight(index int) (*bn.DecFloatPointNumber,
 
 // _upscale applies `scalingFactor` to `amount`, resulting in a larger or equal value depending on whether it needed
 // scaling or not.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/helpers/ScalingHelpers.sol#L35
 func (p *WeightedPool) _upscale(amount, scalingFactor *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// Upscale rounding wouldn't necessarily always go in the same direction: in a swap for example the balance of
 	// token in should be rounded up, and that of token out rounded down. This is the only place where we round in
@@ -368,6 +375,7 @@ func (p *WeightedPool) _upscale(amount, scalingFactor *bn.DecFloatPointNumber) *
 }
 
 // _subtractSwapFeeAmount subtracts swap fee amount from `amount`, returning a lower value.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-utils/contracts/BasePool.sol#L603
 func (p *WeightedPool) _subtractSwapFeeAmount(amount *bn.DecFloatPointNumber) (
 	*bn.DecFloatPointNumber,
 	*bn.DecFloatPointNumber,
@@ -381,6 +389,7 @@ func (p *WeightedPool) _subtractSwapFeeAmount(amount *bn.DecFloatPointNumber) (
 
 // _downscaleDown reverses the `scalingFactor` applied to `amount`, resulting in a smaller or equal value depending on
 // whether it needed scaling or not. The result is rounded down.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/helpers/ScalingHelpers.sol#L46
 func (p *WeightedPool) _downscaleDown(amount, scalingFactor *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// return FixedPoint.divDown(amount, scalingFactor);
 	return amount.DivDownFixed(scalingFactor, balancerV2Precision)

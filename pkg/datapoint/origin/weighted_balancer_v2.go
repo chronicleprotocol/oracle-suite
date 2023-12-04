@@ -152,11 +152,6 @@ func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (
 		}
 
 		avgPrice := totals[pair].Div(bn.DecFloatPoint(len(b.blocks)))
-		// Invert the price if inverted price
-		_, baseIndex, quoteIndex, _ := b.contractAddresses.ByPair(pair)
-		if baseIndex > quoteIndex {
-			avgPrice = bn.DecFloatPoint(1).Div(avgPrice)
-		}
 
 		tick := value.NewTick(pair, avgPrice.SetPrec(balancerV2Precision), nil)
 		points[pair] = datapoint.Point{
