@@ -58,18 +58,8 @@ type degateBaseResponse struct {
 // Copied from DeGate Golang SDK
 // https://github.com/degatedev/degate-sdk-golang/blob/master/degate/model/model.go#L5
 type degateTokenInfo struct {
-	ID int `json:"id"`
-	// Chain           string `json:"chain"`
-	// Code            string `json:"code"`
+	ID     int    `json:"id"`
 	Symbol string `json:"symbol"`
-	// Decimals        int32  `json:"decimals"`
-	// IsTrustedToken  bool   `json:"is_trusted_token"`
-	// IsQuotableToken bool   `json:"is_quotable_token"`
-	// IsGasToken      bool   `json:"is_gas_token"`
-	// IsListToken     bool   `json:"is_list_token"`
-	// Active          bool   `json:"active"`
-	// ShowDecimal     int32  `json:"show_decimal"`
-	// Priority        uint64 `json:"priority"`
 }
 
 type degateTokensResponse struct {
@@ -80,35 +70,8 @@ type degateTokensResponse struct {
 // Copied from DeGate Golang SDk
 // https://github.com/degatedev/degate-sdk-golang/blob/master/degate/binance/market.go#L39
 type degateTicker struct {
-	// BaseTokenID        uint64 `json:"base_token_id"`
-	// QuoteTokenID       uint64 `json:"quote_token_id"`
-	// PriceChange        string `json:"price_change"`
-	// PriceChangePercent string `json:"price_change_percent"`
-	// WeightedAvgPrice   string `json:"weighted_avg_price"`
-	// PrevClosePrice     string `json:"prev_close_price"`
 	LastPrice string `json:"last_price"`
-	// LastQty            string `json:"last_qty"`
-	// BidPrice           string `json:"bid_price"`
-	// BidQty             string `json:"bid_qty"`
-	// AskPrice           string `json:"ask_price"`
-	// AskQty             string `json:"ask_qty"`
-	// OpenPrice          string `json:"open_price"`
-	// HighPrice          string `json:"high_price"`
-	// LowPrice           string `json:"low_price"`
-	Volume string `json:"volume"`
-	// QuoteVolume     string `json:"quote_volume"`
-	// OpenTime        int64  `json:"open_time"`
-	// CloseTime       int64  `json:"close_time"`
-	// FirstID         string `json:"first_id"`
-	// LastID          string `json:"last_id"`
-	// Count           uint64 `json:"count"`
-	// WeekHighPrice   string `json:"week_high_price"`
-	// WeekLowPrice    string `json:"week_low_price"`
-	// BaseTokenPrice  string `json:"base_token_price"`
-	// QuoteTokenPrice string `json:"quote_token_price"`
-	// MakerFee        string `json:"maker_fee"`
-	// TakerFee        string `json:"taker_fee"`
-	// PairID          uint64 `json:"pair_id"`
+	Volume    string `json:"volume"`
 }
 
 type degateTickerResponse struct {
