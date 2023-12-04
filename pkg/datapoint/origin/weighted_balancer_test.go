@@ -30,7 +30,7 @@ func TestWeightedPool_Swap(t *testing.T) {
 					Base:  "RDNT",
 					Quote: "WETH",
 				},
-				address: types.MustAddressFromHex("0x54ca50ee86616379420cc56718e12566aa75abbe"),
+				address: types.MustAddressFromHex("0xcF7b51ce5755513d4bE016b0e28D6EDEffa1d52a"),
 				tokens: []types.Address{
 					types.MustAddressFromHex("0x137dDB47Ee24EaA998a535Ab00378d6BFa84F893"), // RDNT
 					types.MustAddressFromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"), // WETH
@@ -61,6 +61,44 @@ func TestWeightedPool_Swap(t *testing.T) {
 				decimals: 18,
 			},
 			amountOut: string2DecFloatPointNumber("4944898525417925727"),
+		},
+		{
+			pool: &WeightedPool{
+				pair: value.Pair{
+					Base:  "WUSDM",
+					Quote: "WSTETHS",
+				},
+				address: types.MustAddressFromHex("0x54ca50EE86616379420Cc56718E12566aa75Abbe"),
+				tokens: []types.Address{
+					types.MustAddressFromHex("0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812"), // WUSDM
+					types.MustAddressFromHex("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"), // WSTETH
+				},
+				balances: []*bn.DecFloatPointNumber{
+					string2DecFloatPointNumber("60655883048463530117866"), // WUSDM
+					string2DecFloatPointNumber("25630194454768640289"),    // WSTETH
+				},
+				swapFeePercentage: bn.DecFloatPoint("3000000000000000"),
+				scalingFactors: []*bn.DecFloatPointNumber{
+					string2DecFloatPointNumber("1000000000000000000"),
+					string2DecFloatPointNumber("1000000000000000000"),
+				},
+				normalizedWeights: []*bn.DecFloatPointNumber{
+					string2DecFloatPointNumber("500000000000000000"),
+					string2DecFloatPointNumber("500000000000000000"),
+				},
+			},
+			tokenIn: ERC20Details{
+				address:  types.MustAddressFromHex("0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812"),
+				symbol:   "WUSDM",
+				decimals: 18,
+			},
+			amountIn: string2DecFloatPointNumber("1000000000000000000000"), // 1000 WUSDM
+			tokenOut: ERC20Details{
+				address:  types.MustAddressFromHex("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
+				symbol:   "WSTETH",
+				decimals: 18,
+			},
+			amountOut: string2DecFloatPointNumber("414470542299175666"),
 		},
 	}
 
