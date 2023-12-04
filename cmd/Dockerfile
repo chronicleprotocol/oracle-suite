@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 go build -v \
     -o ./dist/chronicle-app ./cmd/${APP_NAME}
 
 # ----------------------------------------------------------------------------------------
-FROM ghcr.io/chronicleprotocol/watchdog:0.1.0 as watchdog
+FROM ghcr.io/chronicleprotocol/watchdog:0.0.5 as watchdog
 # ----------------------------------------------------------------------------------------
 FROM gcr.io/distroless/static-debian11
 
