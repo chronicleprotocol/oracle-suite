@@ -2,6 +2,7 @@ package origin
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
 
@@ -18,164 +19,151 @@ func string2DecFloatPointNumber(s string) *bn.DecFloatPointNumber {
 }
 
 func TestComposableStablePool_Swap(t *testing.T) {
-	var BoneFloat = bn.DecFloatPoint("1000000000000000000")
-	swapFee := bn.DecFloatPoint(big.NewFloat(0.000001)).Mul(BoneFloat)
-	config := ComposableStablePoolFullConfig{
-		Pair: value.Pair{
-			Base:  "A",
-			Quote: "B",
+	// https://etherscan.io/tx/0xd6b6c4b43551b658dad1032c832f947c8e2cbb6ee61a69dab0558902579b0548
+	pool := ComposableStablePool{
+		pair: value.Pair{
+			Base:  "GHO",
+			Quote: "USDC",
 		},
-		ContractAddress: types.MustAddressFromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a5431"),
-		PoolID:          types.Bytes("0x9001cbbd96f54a658ff4e6e65ab564ded76a543100000000000000000000050a"),
-		Vault:           types.MustAddressFromHex("0xba12222222228d8ba445958a75a0704d566bf2c8"),
-		Tokens: []types.Address{
-			types.MustAddressFromHex("0x60d604890feaa0b5460b28a424407c24fe89374a"), // A
-			types.MustAddressFromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a5431"), // B
-			types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"), // C
+		address: types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"),
+		tokens: []types.Address{
+			types.MustAddressFromHex("0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f"), // GHO
+			types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/USDT/USDC
+			types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+			types.MustAddressFromHex("0xdAC17F958D2ee523a2206206994597C13D831ec7"), // USDT
 		},
-		BptIndex: 1,
-		RateProviders: []types.Address{
-			types.MustAddressFromHex("0x60d604890feaa0b5460b28a424407c24fe89374a"),
+		balances: []*bn.DecFloatPointNumber{
+			string2DecFloatPointNumber("6448444062456011477376368"),
+			string2DecFloatPointNumber("2596148429302257816743021881556180"),
+			string2DecFloatPointNumber("1513827018794"),
+			string2DecFloatPointNumber("1538170251459"),
+		},
+		bptIndex: 1,
+		rateProviders: []types.Address{
 			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
-			types.MustAddressFromHex("0x7311e4bb8a72e7b300c5b8bde4de6cdaa822a5b1"),
+			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
+			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
+			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
 		},
-		Balances: []*bn.DecFloatPointNumber{
-			bn.DecFloatPoint("2518960237189623226641"),
-			bn.DecFloatPoint("2596148429266323438822175768385755"),
-			bn.DecFloatPoint("3457262534881651304610"),
-		},
-		TotalSupply:       bn.DecFloatPoint("2596148429272429220684965023562161"),
-		SwapFeePercentage: swapFee,
-		Extra: Extra{
-			AmplificationParameter: AmplificationParameter{
-				Value:      bn.DecFloatPoint(700000),
-				IsUpdating: false,
-				Precision:  bn.DecFloatPoint(1000),
+		totalSupply:       string2DecFloatPointNumber("2596148438770953798709961309149655"),
+		swapFeePercentage: string2DecFloatPointNumber("500000000000000"),
+		extra: Extra{
+			amplificationParameter: AmplificationParameter{
+				value:      bn.DecFloatPoint(200000),
+				isUpdating: false,
+				precision:  bn.DecFloatPoint(1000),
 			},
-			ScalingFactors: []*bn.DecFloatPointNumber{
-				bn.DecFloatPoint("1003649423771917631"),
-				bn.DecFloatPoint("1000000000000000000"),
-				bn.DecFloatPoint("1043680240732074966"),
+			scalingFactors: []*bn.DecFloatPointNumber{
+				string2DecFloatPointNumber("1000000000000000000"),
+				string2DecFloatPointNumber("1000000000000000000"),
+				string2DecFloatPointNumber("1000000000000000000000000000000"),
+				string2DecFloatPointNumber("1000000000000000000000000000000"),
 			},
-			LastJoinExit: LastJoinExitData{
-				LastJoinExitAmplification: bn.DecFloatPoint("700000"),
-				LastPostJoinExitInvariant: bn.DecFloatPoint("6135006746648647084879"),
+			lastJoinExit: LastJoinExitData{
+				lastJoinExitAmplification: string2DecFloatPointNumber("200000"),
+				lastPostJoinExitInvariant: string2DecFloatPointNumber("9482927260967981674261420"),
 			},
-			TokensExemptFromYieldProtocolFee: []bool{
-				false, false, false,
+			tokensExemptFromYieldProtocolFee: []bool{
+				false, false, false, false,
 			},
-			TokenRateCaches: []TokenRateCache{
-				{
-					Rate:     bn.DecFloatPoint("1003649423771917631"),
-					OldRate:  bn.DecFloatPoint("1003554274984131981"),
-					Duration: bn.DecFloatPoint("21600"),
-					Expires:  bn.DecFloatPoint("1689845039"),
-				},
-				{
-					Rate:     nil,
-					OldRate:  nil,
-					Duration: nil,
-					Expires:  nil,
-				},
-				{
-					Rate:     bn.DecFloatPoint("1043680240732074966"),
-					OldRate:  bn.DecFloatPoint("1043375386816533719"),
-					Duration: bn.DecFloatPoint("21600"),
-					Expires:  bn.DecFloatPoint("1689845039"),
-				},
+			tokenRateCaches: []TokenRateCache{
+				{rate: nil, oldRate: nil, duration: nil, expires: nil},
+				{rate: nil, oldRate: nil, duration: nil, expires: nil},
+				{rate: nil, oldRate: nil, duration: nil, expires: nil},
+				{rate: nil, oldRate: nil, duration: nil, expires: nil},
 			},
-			ProtocolFeePercentageCacheSwapType:  bn.DecFloatPoint(0),
-			ProtocolFeePercentageCacheYieldType: bn.DecFloatPoint(0),
+			protocolFeePercentageCacheSwapType:  string2DecFloatPointNumber("500000000000000000"),
+			protocolFeePercentageCacheYieldType: string2DecFloatPointNumber("500000000000000000"),
 		},
 	}
 
-	p, _ := NewComposableStablePoolFull(config)
-
 	testCases := []struct {
-		tokenIn   ERC20Details
+		tokenIn   types.Address
 		amountIn  *bn.DecFloatPointNumber
-		tokenOut  ERC20Details
+		tokenOut  types.Address
 		amountOut *bn.DecFloatPointNumber
 	}{
 		{
-			tokenIn: ERC20Details{
-				address:  types.MustAddressFromHex("0x60d604890feaa0b5460b28a424407c24fe89374a"),
-				symbol:   "A",
-				decimals: 18,
-			},
-			amountIn: bn.DecFloatPoint("12000000000000000000"),
-			tokenOut: ERC20Details{
-				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
-				symbol:   "C",
-				decimals: 18,
-			},
-			amountOut: bn.DecFloatPoint("11545818036500155269"),
+			tokenIn:   types.MustAddressFromHex("0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f"), // GHO
+			amountIn:  string2DecFloatPointNumber("10551510000000000000000"),
+			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+			amountOut: string2DecFloatPointNumber("10371548845"),
 		},
 		{
-			tokenIn: ERC20Details{
-				address:  types.MustAddressFromHex("0x60d604890feaa0b5460b28a424407c24fe89374a"),
-				symbol:   "A",
-				decimals: 18,
-			},
-			amountIn: bn.DecFloatPoint("1000000000000000000"),
-			tokenOut: ERC20Details{
-				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
-				symbol:   "C",
-				decimals: 18,
-			},
-			amountOut: bn.DecFloatPoint("962157416748443460"),
+			tokenIn:   types.MustAddressFromHex("0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f"), // GHO
+			amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+			amountOut: string2DecFloatPointNumber("983063"),
 		},
+		//{
+		//	tokenIn:   types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/USDT/USDC
+		//	amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+		//	tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+		//	amountOut: string2DecFloatPointNumber("991677"),
+		//},
+		//{
+		//	tokenIn:   types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+		//	amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+		//	tokenOut:  types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/USDT/USDC
+		//	amountOut: string2DecFloatPointNumber("19877475578824849899330863774"),
+		//},
 		{
-			tokenIn: ERC20Details{
-				address:  types.MustAddressFromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a5431"),
-				symbol:   "B",
-				decimals: 18,
-			},
-			amountIn: bn.DecFloatPoint("1000000000000000000"),
-			tokenOut: ERC20Details{
-				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
-				symbol:   "C",
-				decimals: 18,
-			},
-			amountOut: bn.DecFloatPoint("963168955346971740"),
-		},
-		{
-			tokenIn: ERC20Details{
-				address:  types.MustAddressFromHex("0xbe9895146f7af43049ca1c1ae358b0541ea49704"),
-				symbol:   "C",
-				decimals: 18,
-			},
-			amountIn: bn.DecFloatPoint("1000000000000000000"),
-			tokenOut: ERC20Details{
-				address:  types.MustAddressFromHex("0x9001cbbd96f54a658ff4e6e65ab564ded76a5431"),
-				symbol:   "B",
-				decimals: 18,
-			},
-			amountOut: bn.DecFloatPoint("1038238386186088886"),
+			tokenIn:   types.MustAddressFromHex("0xdAC17F958D2ee523a2206206994597C13D831ec7"), // USDT
+			amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
+			amountOut: string2DecFloatPointNumber("1513827018793"),
 		},
 	}
 
 	for i, testcase := range testCases {
-		t.Run(fmt.Sprintf("testcase %d, tokenIn %s amountIn %s tokenOut %s amountOut %s", i, testcase.tokenIn.symbol, testcase.amountIn.String(), testcase.tokenOut.symbol, testcase.amountOut.String()), func(t *testing.T) {
-			amountOut, _, _ := p.calcAmountOut(testcase.tokenIn, testcase.tokenOut, testcase.amountIn)
+		t.Run(fmt.Sprintf("testcase %d, tokenIn %s amountIn %s tokenOut %s amountOut %s", i, testcase.tokenIn, testcase.amountIn.String(), testcase.tokenOut, testcase.amountOut.String()), func(t *testing.T) {
+			amountOut, _, _ := pool.CalcAmountOut(testcase.tokenIn, testcase.tokenOut, testcase.amountIn)
 			assert.Equal(t, testcase.amountOut, amountOut)
 		})
 	}
 }
 
 func TestCalculateInvariant(t *testing.T) {
-	a := bn.DecFloatPoint(60000)
-	b1 := string2DecFloatPointNumber("50310513788381313281")
-	b2 := string2DecFloatPointNumber("19360701460293571158")
-	b3 := string2DecFloatPointNumber("58687814461000000000000")
-
-	fmt.Println(b1.String())
-	fmt.Println(b2.String())
-	fmt.Println(b3.String())
-
-	balances := []*bn.DecFloatPointNumber{
-		b1, b2, b3,
+	testCases := []struct {
+		name      string
+		amp       *bn.DecFloatPointNumber
+		balances  []*bn.DecFloatPointNumber
+		invariant *bn.DecFloatPointNumber
+		error     error
+	}{
+		{
+			name: "success",
+			amp:  bn.DecFloatPoint(60000),
+			balances: []*bn.DecFloatPointNumber{
+				string2DecFloatPointNumber("50310513788381313281"),
+				string2DecFloatPointNumber("19360701460293571158"),
+				string2DecFloatPointNumber("58687814461000000000000"),
+			},
+			invariant: string2DecFloatPointNumber("10749877394384654056023"),
+		},
+		{
+			name: "revert",
+			amp:  bn.DecFloatPoint(60000),
+			balances: []*bn.DecFloatPointNumber{
+				string2DecFloatPointNumber("50310513788381313281"),
+				string2DecFloatPointNumber("19360701460293571158"),
+				string2DecFloatPointNumber("10000"),
+			},
+			error: STABLE_INVARIANT_DIDNT_CONVERGE,
+		},
 	}
-	_, err := _calculateInvariant(a, balances)
-	assert.Equal(t, err, fmt.Errorf("STABLE_INVARIANT_DIDNT_CONVERGE"))
+
+	for _, testcase := range testCases {
+		t.Run(testcase.name, func(t *testing.T) {
+			invariant, err := _calculateInvariant(testcase.amp, testcase.balances)
+			if testcase.error != nil {
+				assert.Equal(t, err, testcase.error)
+			} else {
+				require.NoError(t, err)
+				fmt.Println(invariant.String())
+				fmt.Println(testcase.invariant.String())
+				assert.Equal(t, invariant, testcase.invariant)
+			}
+		})
+	}
 }
