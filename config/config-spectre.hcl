@@ -38,7 +38,8 @@ spectre {
       for v in var.contracts : v
       if v.env == var.environment
       && v.chain == var.chain_name
-      && try(v.is_scribe, false) && !try(v.is_scribe_optimistic, false)
+      && try(split(".", v.version)[0] == "v2", false)
+      && try(v.is_scribe, false) && try(!v.is_scribe_optimistic, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
     ]
     iterator = contract
@@ -68,6 +69,7 @@ spectre {
       for v in var.contracts : v
       if v.env == var.environment
       && v.chain == var.chain_name
+      && try(split(".", v.version)[0] == "v2", false)
       && try(v.is_scribe, false) && try(v.is_scribe_optimistic, false)
       && try(length(var.spectre_pairs) == 0 || contains(var.spectre_pairs, v.wat), false)
     ]
