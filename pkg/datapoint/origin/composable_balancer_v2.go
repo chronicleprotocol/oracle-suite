@@ -74,7 +74,6 @@ func NewComposableBalancerV2(config ComposableBalancerV2Config) (*ComposableBala
 	}, nil
 }
 
-//nolint:funlen,gocyclo
 func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
