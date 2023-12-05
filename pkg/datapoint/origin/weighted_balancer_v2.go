@@ -136,14 +136,14 @@ func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (
 			baseToken := pools.tokenDetails[pair.Base]
 			quoteToken := pools.tokenDetails[pair.Quote]
 			// amountIn = 10 ^ baseDecimals
-			amountIn := bn.DecFloatPoint(10).Exp(bn.DecFloatPoint(baseToken.decimals))
+			amountIn := bn.DecFloatPoint(1).Inflate(uint8(baseToken.decimals))
 			amountOut, _, err := pool.CalcAmountOut(baseToken.address, quoteToken.address, amountIn)
 			if err != nil {
 				points[pair] = datapoint.Point{Error: err}
 				break
 			}
 			// price = amountOut / 10 ^ quoteDecimals
-			price := amountOut.Div(bn.DecFloatPoint(10).Exp(bn.DecFloatPoint(quoteToken.decimals)))
+			price := amountOut.Div(bn.DecFloatPoint(10).Inflate(uint8(quoteToken.decimals)))
 			totals[pair] = totals[pair].Add(price)
 		}
 		if points[pair].Error != nil {

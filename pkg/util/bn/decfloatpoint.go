@@ -184,6 +184,12 @@ func (x *DecFloatPointNumber) MulDownFixed(y *DecFloatPointNumber, prec uint8) *
 // MulUpFixed multiplies the number y up and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
 func (x *DecFloatPointNumber) MulUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
+	// The traditional divUp formula is:
+	// divUp(x, y) := (x + y - 1) / y
+	// To avoid intermediate overflow in the addition, we distribute the division and get:
+	// divUp(x, y) := (x - 1) / y + 1
+	// Note that this requires x != 0, if x == 0 then the result is zero
+
 	ret := x.Mul(y)
 	if ret.Sign() == 0 {
 		return ret
@@ -242,6 +248,15 @@ func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *De
 	return x.Inflate(prec).Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
 }
 
+// DivDown divides the number y down and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
+func (x *DecFloatPointNumber) DivDown(y *DecFloatPointNumber) *DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.DivPrec(y, uint32(x.x.p))
+}
+
 // DivDownFixed inflates prec precision and divides the number y down
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
 func (x *DecFloatPointNumber) DivDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
@@ -258,20 +273,6 @@ func (x *DecFloatPointNumber) Mod(y *DecFloatPointNumber) *DecFloatPointNumber {
 
 	z := new(big.Int).Mod(x.x.x, y.x.x)
 	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
-	return n
-}
-
-// Exp exponential function by y and return the x ^ y.
-func (x *DecFloatPointNumber) Exp(y *DecFloatPointNumber) *DecFloatPointNumber {
-	if x.x.Sign() == 0 {
-		return x
-	}
-	if x.Cmp(DecFloatPoint(1)) == 0 {
-		return DecFloatPoint(1)
-	}
-	z := new(big.Int).Exp(x.x.x, y.x.x, nil)
-	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
-	n.adjustPrec()
 	return n
 }
 

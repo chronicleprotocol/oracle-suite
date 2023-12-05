@@ -16,6 +16,9 @@
 package origin
 
 import (
+	"fmt"
+	"math/big"
+
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
@@ -35,15 +38,18 @@ func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return bn.DecFloatPoint(0)
 }
 
-var ONE_18 = bn.DecFloatPoint(1).Inflate(18)                        //nolint:revive,gomnd,stylecheck
-var ONE_20 = bn.DecFloatPoint(1).Inflate(20)                        //nolint:revive,gomnd,stylecheck
-var ONE_36 = bn.DecFloatPoint(1).Inflate(36)                        //nolint:revive,gomnd,stylecheck
-var MAX_NATURAL_EXPONENT = bn.DecFloatPoint(130).Mul(ONE_18)        //nolint:revive,gomnd,stylecheck
-var MIN_NATURAL_EXPONENT = bn.DecFloatPoint(-41).Mul(ONE_18)        //nolint:revive,gomnd,stylecheck
-var LN_36_LOWER_BOUND = ONE_18.Sub(bn.DecFloatPoint(1).Inflate(17)) //nolint:revive,gomnd,stylecheck
-var LN_36_UPPER_BOUND = ONE_18.Add(bn.DecFloatPoint(1).Inflate(17)) //nolint:revive,gomnd,stylecheck
-//nolint:revive,gomnd,stylecheck
-var MILD_EXPONENT_BOUND = bn.DecFloatPoint(2).Exp(bn.DecFloatPoint(254)).DivUpFixed(ONE_20, balancerV2Precision)
+var X_OUT_OF_BOUNDS = fmt.Errorf("X_OUT_OF_BOUNDS")                                                               //nolint:revive,stylecheck
+var Y_OUT_OF_BOUNDS = fmt.Errorf("Y_OUT_OF_BOUNDS")                                                               //nolint:revive,stylecheck
+var PRODUCT_OUT_OF_BOUNDS = fmt.Errorf("PRODUCT_OUT_OF_BOUNDS")                                                   //nolint:revive,stylecheck
+var ONE_18 = bn.DecFloatPoint(1).Inflate(balancerV2Precision)                                                     //nolint:revive,stylecheck
+var ONE_20 = bn.DecFloatPoint(1).Inflate(20)                                                                      //nolint:revive,gomnd,stylecheck
+var ONE_36 = bn.DecFloatPoint(1).Inflate(36)                                                                      //nolint:revive,gomnd,stylecheck
+var MAX_NATURAL_EXPONENT = bn.DecFloatPoint(130).Mul(ONE_18)                                                      //nolint:revive,gomnd,stylecheck
+var MIN_NATURAL_EXPONENT = bn.DecFloatPoint(-41).Mul(ONE_18)                                                      //nolint:revive,gomnd,stylecheck
+var LN_36_LOWER_BOUND = ONE_18.Sub(bn.DecFloatPoint(1).Inflate(17))                                               //nolint:revive,gomnd,stylecheck
+var LN_36_UPPER_BOUND = ONE_18.Add(bn.DecFloatPoint(1).Inflate(17))                                               //nolint:revive,gomnd,stylecheck
+var MAX_EXPONENT_BOUND = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(255), nil))                  //nolint:revive,gomnd,stylecheck
+var MILD_EXPONENT_BOUND = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(254), nil)).DivDown(ONE_20) //nolint:revive,gomnd,stylecheck
 var x0 = bn.DecFloatPoint("128000000000000000000")
 var a0 = bn.DecFloatPoint("38877084059945950922200000000000000000000000000000000000")
 var x1 = bn.DecFloatPoint("64000000000000000000")
@@ -71,20 +77,21 @@ var x11 = bn.DecFloatPoint("6250000000000000000")
 var a11 = bn.DecFloatPoint("106449445891785942956")
 
 // _pow calculate an exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
-func _pow(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol#L93
+func _pow(x, y *bn.DecFloatPointNumber) (*bn.DecFloatPointNumber, error) {
 	// if (y == 0) {
 	//	// We solve the 0^0 indetermination by making it equal one.
 	//	return uint256(ONE_18);
 	// }
 	if y.Cmp(bnZero) == 0 {
-		return ONE_18
+		return ONE_18, nil
 	}
 
 	// if (x == 0) {
 	//	return 0;
 	// }
 	if x.Cmp(bnZero) == 0 {
-		return bnZero
+		return bnZero, nil
 	}
 
 	// Instead of computing x^y directly, we instead rely on the properties of logarithms and exponentiation to
@@ -94,6 +101,9 @@ func _pow(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// The ln function takes a signed value, so we need to make sure x fits in the signed 256 bit range.
 	// _require(x >> 255 == 0, Errors.X_OUT_OF_BOUNDS);
 	// int256 x_int256 = int256(x);
+	if x.Cmp(MAX_EXPONENT_BOUND) >= 0 {
+		return nil, X_OUT_OF_BOUNDS
+	}
 
 	// We will compute y * ln(x) in a single step. Depending on the value of x, we can either use ln or ln_36. In
 	// both cases, we leave the division by ONE_18 (due to fixed point multiplication) to the end.
@@ -101,16 +111,9 @@ func _pow(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// This prevents y * ln(x) from overflowing, and at the same time guarantees y fits in the signed 256 bit range.
 	// _require(y < MILD_EXPONENT_BOUND, Errors.Y_OUT_OF_BOUNDS);
 	// int256 y_int256 = int256(y);
-
-	// int256 logx_times_y;
-
-	//	int256 ln_36_x = _ln_36(x_int256);
-	//
-
-	// } else {
-	//	logx_times_y = _ln(x_int256) * y_int256;
-	// }
-	// logx_times_y /= ONE_18;
+	if y.Cmp(MILD_EXPONENT_BOUND) >= 0 {
+		return nil, Y_OUT_OF_BOUNDS
+	}
 
 	var logx_times_y *bn.DecFloatPointNumber //nolint:revive,stylecheck
 	// if (LN_36_LOWER_BOUND < x_int256 && x_int256 < LN_36_UPPER_BOUND) {
@@ -133,19 +136,37 @@ func _pow(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	logx_times_y = logx_times_y.Div(ONE_18)
 
 	// Finally, we compute exp(y * ln(x)) to arrive at x^y
+	// _require(
+	//	MIN_NATURAL_EXPONENT <= logx_times_y && logx_times_y <= MAX_NATURAL_EXPONENT,
+	//	Errors.PRODUCT_OUT_OF_BOUNDS
+	// );
+	if logx_times_y.Cmp(MIN_NATURAL_EXPONENT) <= 0 && logx_times_y.Cmp(MAX_NATURAL_EXPONENT) <= 0 {
+		return nil, PRODUCT_OUT_OF_BOUNDS
+	}
+
 	// return uint256(exp(logx_times_y));
 	return _exp(logx_times_y)
 }
 
 // _exp is a natural exponentiation (e^x) with signed 18 decimal fixed point exponent.
-func _exp(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol#L146
+func _exp(x *bn.DecFloatPointNumber) (*bn.DecFloatPointNumber, error) {
+	// _require(x >= MIN_NATURAL_EXPONENT && x <= MAX_NATURAL_EXPONENT, Errors.INVALID_EXPONENT);
+	if x.Cmp(MIN_NATURAL_EXPONENT) < 0 || x.Cmp(MAX_NATURAL_EXPONENT) > 0 {
+		return nil, fmt.Errorf("INVALID_EXPONENT")
+	}
+
 	// if (x < 0) {
 	if x.Cmp(bnZero) < 0 {
 		// We only handle positive exponents: e^(-x) is computed as 1 / e^x. We can safely make x positive since it
 		// fits in the signed 256 bit range (as it is larger than MIN_NATURAL_EXPONENT).
 		// Fixed point division requires multiplying by ONE_18.
 		// return ((ONE_18 * ONE_18) / exp(-x));
-		return ONE_18.Mul(ONE_18).Div(_exp(x.Neg()))
+		ret, err := _exp(x.Neg())
+		if err != nil {
+			return nil, err
+		}
+		return ONE_18.Mul(ONE_18).Div(ret), nil
 	}
 
 	// First, we use the fact that e^(x+y) = e^x * e^y to decompose x into a sum of powers of two, which we call x_n,
@@ -253,10 +274,11 @@ func _exp(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// and then drop two digits to return an 18 decimal value.
 
 	// return (((product * seriesSum) / ONE_20) * firstAN) / 100;
-	return product.Mul(seriesSum).Div(ONE_20).Mul(firstAN).Div(bn.DecFloatPoint(100))
+	return product.Mul(seriesSum).Div(ONE_20).Mul(firstAN).Div(bn.DecFloatPoint(100)), nil
 }
 
 // _ln is an internal natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol#L326
 func _ln(a *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// if (a < ONE_18) {
 	if a.Cmp(ONE_18) < 0 {
@@ -439,6 +461,9 @@ func _ln(a *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return sum.Add(seriesSum).Div(bn.DecFloatPoint(100))
 }
 
+// _ln36 is an internal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,
+// for x close to one.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol#L466
 func _ln_36(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber { //nolint:revive,stylecheck
 	// Since ln(1) = 0, a value of x close to one will yield a very small result, which makes using 36 digits
 	// worthwhile.
@@ -476,6 +501,7 @@ func _ln_36(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber { //nolint:revive
 
 // PowUpFixed returns x^y, assuming both are fixed point numbers, rounding up.
 // The result is guaranteed to not be below the true value (that is, the error function expected - actual is always negative).
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L132
 func _powUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	// Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
 	// and 80/20 Weighted Pools
@@ -496,7 +522,7 @@ func _powUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumb
 	default:
 		//	uint256 raw = LogExpMath.pow(x, y);
 		//	uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
-		raw := _pow(x, y)
+		raw, _ := _pow(x, y)
 		// uint256 internal constant MAX_POW_RELATIVE_ERROR = 10000; // 10^(-14)
 		maxPowRelativeError := bn.DecFloatPoint(MAX_POW_RELATIVE_ERROR)
 		//	uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
@@ -507,12 +533,13 @@ func _powUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumb
 
 // PowDownFixed returns x^y, assuming both are fixed point numbers, rounding down.
 // The result is guaranteed to not be above the true value (that is, the error function expected - actual is always positive).
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L106
 func _powDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber { //nolint:unused
 	// Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
 	// and 80/20 Weighted Pools
-	one := bn.DecFloatPoint(1)
-	two := bn.DecFloatPoint(2)
-	four := bn.DecFloatPoint(4)
+	one := bn.DecFloatPoint(1).Inflate(balancerV2Precision)
+	two := bn.DecFloatPoint(2).Inflate(balancerV2Precision)
+	four := bn.DecFloatPoint(4).Inflate(balancerV2Precision)
 
 	const MAX_POW_RELATIVE_ERROR = 10000 //nolint:revive,stylecheck
 
@@ -527,7 +554,7 @@ func _powDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNu
 	default:
 		//	uint256 raw = LogExpMath.pow(x, y);
 		//	uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
-		raw := _pow(x, y)
+		raw, _ := _pow(x, y)
 		// uint256 internal constant MAX_POW_RELATIVE_ERROR = 10000; // 10^(-14)
 		maxPowRelativeError := bn.DecFloatPoint(MAX_POW_RELATIVE_ERROR)
 		maxError := raw.MulUpFixed(maxPowRelativeError, prec).Add(one)

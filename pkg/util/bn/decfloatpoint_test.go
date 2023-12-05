@@ -501,3 +501,23 @@ func TestDecFloatPointNumber_adjustPrec(t *testing.T) {
 		})
 	}
 }
+
+func TestDecFloatPointNumber_MulDownFixed(t *testing.T) {
+}
+
+func TestDecFloatPointNumber_MulUpFixed(t *testing.T) {
+}
+
+func TestDecFloatPointNumber_DivUp(t *testing.T) {}
+
+func TestDecFloatPointNumber_DivUpFixed(t *testing.T) {}
+
+func TestDecFloatPointNumber_DivDownFixed(t *testing.T) {}
+
+func TestDecFloatPointNumber_Mod(t *testing.T) {}
+
+func TestDecFloatPointNumber_Exp(t *testing.T) {}
+
+func TestDecFloatPointNumber_Inflate(t *testing.T) {}
+
+func TestDecFloatPointNumber_Deflate(t *testing.T) {}
