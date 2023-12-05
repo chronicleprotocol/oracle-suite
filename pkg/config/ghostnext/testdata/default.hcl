@@ -19,6 +19,15 @@ gofer {
       }
     }
   }
+  origin "composableBalancerV2" {
+    type = "composable_balancerV2"
+
+    contracts "ethereum" {
+      addresses = {
+        "GHO/LUSD" = "0x3fa8c89704e5d07565444009e5d9e624b40be813"
+      }
+    }
+  }
   origin "binance" {
     type = "tick_generic_jq"
     url  = "https://api.binance.com/api/v3/ticker/24hr"
