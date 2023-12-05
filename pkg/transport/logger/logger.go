@@ -54,18 +54,20 @@ func (r *Logger) Wait() <-chan error {
 }
 
 // Broadcast implements the transport.Transport interface.
-func (r *Logger) Broadcast(topic string, message transport.Message) error {
+func (r *Logger) Broadcast(topic string, msg transport.Message) error {
 	if !log.IsLevel(r.l, log.Debug) {
-		return r.t.Broadcast(topic, message)
+		return r.t.Broadcast(topic, msg)
 	}
-	err := r.t.Broadcast(topic, message)
+	err := r.t.Broadcast(topic, msg)
 	log := r.l.
-		WithField("topic", topic).
-		WithField("message", message)
+		WithFields(log.Fields{
+			"topic":   topic,
+			"message": msg,
+		})
 	if err != nil {
 		log.WithError(err)
 	}
-	log.Debug("Broadcasted message")
+	log.Debug("Broadcast message")
 	return err
 }
 
@@ -74,18 +76,24 @@ func (r *Logger) Messages(topic string) <-chan transport.ReceivedMessage {
 	if !log.IsLevel(r.l, log.Debug) {
 		return r.t.Messages(topic)
 	}
-	fi := chanutil.NewFanIn(r.t.Messages(topic))
+	in := r.t.Messages(topic)
+	if in == nil {
+		// It is possible that the underlying transport does not support
+		// given topic. In such case, it will return nil.
+		return nil
+	}
+	fo := chanutil.NewFanOut(in)
 	go func() {
-		for msg := range fi.Chan() {
+		for msg := range fo.Chan() {
 			r.l.
-				WithField("topic", topic).
-				WithField("message", msg).
+				WithFields(log.Fields{
+					"topic":   topic,
+					"message": msg,
+				}).
 				Debug("Received message")
 		}
 	}()
-	ch := fi.Chan()
-	fi.AutoClose()
-	return ch
+	return fo.Chan()
 }
 
 // ServiceName implements the supervisor.WithName interface.

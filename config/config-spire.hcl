@@ -1,5 +1,5 @@
 variables {
-  spire_keys = explode(var.item_separator, env("CFG_SYMBOLS", env("CFG_SPIRE_KEYS", "")))
+  spire_keys = explode(var.item_separator, env("CFG_MODELS", env("CFG_SPIRE_KEYS", "")))
 }
 
 spire {
@@ -16,7 +16,7 @@ spire {
     # Limit the list only to a specific environment but take all chains
     if v.env == var.environment
     # Only Scribe compatible contracts
-    && try(v.IScribe, false)
+    && try(v.is_scribe, false)
     # If CFG_SPIRE_KEYS is set to a list of asset symbols
     && try(length(var.spire_keys) == 0 || contains(var.spire_keys, v.wat), false)
   ], [

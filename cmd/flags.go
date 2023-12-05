@@ -16,19 +16,15 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-
 	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/globals"
 )
 
 func ConfigFlagsForConfig(d config.HasDefaults) ConfigFlags {
 	return ConfigFlagsWithEmbeds(d.DefaultEmbeds()...)
 }
+
 func ConfigFlagsWithEmbeds(embeds ...[]byte) ConfigFlags {
 	return ConfigFlags{
 		embeds: embeds,
@@ -42,54 +38,28 @@ type ConfigFlags struct {
 }
 
 // Load loads the config files into the given config struct.
-func (ff *ConfigFlags) Load(c any) error {
-	if len(ff.paths) == 0 {
-		if err := config.LoadEmbeds(c, ff.embeds); err != nil {
+func (cf *ConfigFlags) Load(cfg any) error {
+	if len(cf.paths) == 0 {
+		if err := config.LoadEmbeds(cfg, cf.embeds); err != nil {
 			return err
 		}
 	} else {
-		if err := config.LoadFiles(c, ff.paths); err != nil {
+		if err := config.LoadFiles(cfg, cf.paths); err != nil {
 			return err
 		}
-	}
-	switch {
-	case globals.ShowEnvVarsUsedInConfig:
-		for _, v := range globals.EnvVars {
-			fmt.Println(v)
-		}
-		os.Exit(0)
-	case globals.RenderConfigJSON:
-		marshaled, err := json.Marshal(c)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(marshaled))
-		os.Exit(0)
 	}
 	return nil
 }
 
 // FlagSet binds CLI args [--config or -c] for config files as a pflag.FlagSet.
-func (ff *ConfigFlags) FlagSet() *pflag.FlagSet {
+func (cf *ConfigFlags) FlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("config", pflag.PanicOnError)
 	fs.StringSliceVarP(
-		&ff.paths,
+		&cf.paths,
 		"config",
 		"c",
 		[]string{},
 		"config file",
-	)
-	fs.BoolVar(
-		&globals.ShowEnvVarsUsedInConfig,
-		"config.env",
-		false,
-		"show environment variables used in config files and exit",
-	)
-	fs.BoolVar(
-		&globals.RenderConfigJSON,
-		"config.json",
-		false,
-		"render config as JSON and exit",
 	)
 	return fs
 }

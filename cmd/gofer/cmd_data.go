@@ -34,18 +34,18 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/treerender"
 )
 
-func NewDataCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewDataCmd(cfg supervisor.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	var format formatTypeValue
-	cc := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "data [MODEL...]",
 		Aliases: []string{"price", "prices"},
 		Args:    cobra.MinimumNArgs(0),
 		Short:   "Return data points for given models",
-		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			if err := cf.Load(cfg); err != nil {
 				return err
 			}
-			services, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)
+			services, err := cfg.Services(lf.Logger(), cmd.Root().Use, cmd.Root().Version)
 			if err != nil {
 				return err
 			}
@@ -70,19 +70,19 @@ func NewDataCmd(c supervisor.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *co
 			return nil
 		},
 	}
-	cc.Flags().VarP(
+	cmd.Flags().VarP(
 		&format,
 		"format",
 		"o",
 		"output format",
 	)
-	cc.Flags().BoolVar(
+	cmd.Flags().BoolVar(
 		&treerender.NoColors,
 		"no-color",
 		false,
 		"disable output coloring",
 	)
-	return cc
+	return cmd
 }
 
 func marshalDataPoints(points map[string]datapoint.Point, format string) ([]byte, error) {

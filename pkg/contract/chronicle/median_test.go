@@ -37,17 +37,12 @@ func TestMedian_Val(t *testing.T) {
 	mockClient := new(mockRPC)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
-	mockClient.On(
-		"GetStorageAt",
-		ctx,
-		types.MustAddressFromHex("0x1122344556677889900112233445566778899001"),
-		types.MustHashFromBigInt(big.NewInt(1)),
-		types.LatestBlockNumber,
-	).
-		Return(
-			types.MustHashFromHexPtr("0x00000000000000000000000064e7d1470000000000000584f61606acd0158000", types.PadNone),
-			nil,
-		)
+	mockClient.getStorageAtFn = func(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
+		assert.Equal(t, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"), account)
+		assert.Equal(t, types.MustHashFromBigInt(big.NewInt(1)), key)
+		assert.Equal(t, types.LatestBlockNumber, block)
+		return types.MustHashFromHexPtr("0x00000000000000000000000064e7d1470000000000000584f61606acd0158000", types.PadNone), nil
+	}
 
 	val, err := median.Val(ctx)
 	require.NoError(t, err)
@@ -59,20 +54,12 @@ func TestMedian_Age(t *testing.T) {
 	mockClient := new(mockRPC)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &median.address,
-			Input: hexutil.MustHexToBytes("0x262a9dff"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			hexutil.MustHexToBytes("0x0000000000000000000000000000000000000000000000000000000064e7d147"),
-			&types.Call{},
-			nil,
-		)
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &median.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0x262a9dff"), call.Input)
+		return hexutil.MustHexToBytes("0x0000000000000000000000000000000000000000000000000000000064e7d147"), &types.Call{}, nil
+	}
 
 	age, err := median.Age().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
@@ -84,20 +71,12 @@ func TestMedian_Wat(t *testing.T) {
 	mockClient := new(mockRPC)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &median.address,
-			Input: hexutil.MustHexToBytes("0x4ca29923"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			hexutil.MustHexToBytes("0x4254435553440000000000000000000000000000000000000000000000000000"),
-			&types.Call{},
-			nil,
-		)
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &median.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0x4ca29923"), call.Input)
+		return hexutil.MustHexToBytes("0x4254435553440000000000000000000000000000000000000000000000000000"), &types.Call{}, nil
+	}
 
 	wat, err := median.Wat().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
@@ -109,20 +88,12 @@ func TestMedian_Bar(t *testing.T) {
 	mockClient := new(mockRPC)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &median.address,
-			Input: hexutil.MustHexToBytes("0xfebb0f7e"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d"),
-			&types.Call{},
-			nil,
-		)
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &median.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0xfebb0f7e"), call.Input)
+		return hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d"), &types.Call{}, nil
+	}
 
 	bar, err := median.Bar().Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)
@@ -176,36 +147,22 @@ func TestMedian_Poke(t *testing.T) {
 			"0000000000000000000000000000000000000000000000000000000000000005",
 	)
 
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &median.address,
-			Input: calldata,
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			[]byte{},
-			&types.Call{},
-			nil,
-		)
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &median.address, call.To)
+		assert.Equal(t, calldata, call.Input)
+		return []byte{}, &types.Call{}, nil
+	}
 
-	mockClient.On(
-		"SendTransaction",
-		ctx,
-		types.Transaction{
+	mockClient.sendTransactionFn = func(ctx context.Context, tx types.Transaction) (*types.Hash, *types.Transaction, error) {
+		assert.Equal(t, types.Transaction{
 			Call: types.Call{
 				To:    &median.address,
 				Input: calldata,
 			},
-		},
-	).
-		Return(
-			&types.Hash{},
-			&types.Transaction{},
-			nil,
-		)
+		}, tx)
+		return &types.Hash{}, &types.Transaction{}, nil
+	}
 
 	_, _, err := median.Poke(vals).SendTransaction(ctx)
 	require.NoError(t, err)

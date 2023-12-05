@@ -39,23 +39,23 @@ type BootstrapConfig struct {
 	Remain hcl.Body `hcl:",remain"` // To ignore unknown blocks.
 }
 
-func NewBootstrapCmd(c *BootstrapConfig, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewBootstrapCmd(cfg *BootstrapConfig, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "bootstrap",
 		Args:    cobra.ExactArgs(0),
 		Aliases: []string{"boot"},
 		Short:   "Starts bootstrap node",
 		RunE: func(cc *cobra.Command, _ []string) error {
-			if err := f.Load(c); err != nil {
-				return fmt.Errorf(`config error: %w`, err)
+			if err := cf.Load(cfg); err != nil {
+				return err
 			}
-			ll, err := c.Logger.Logger(logger.Dependencies{
-				BaseLogger: l.Logger(),
+			ll, err := cfg.Logger.Logger(logger.Dependencies{
+				BaseLogger: lf.Logger(),
 			})
 			if err != nil {
 				return fmt.Errorf(`ethereum config error: %w`, err)
 			}
-			t, err := c.Transport.LibP2PBootstrap(transport.BootstrapDependencies{
+			t, err := cfg.Transport.LibP2PBootstrap(transport.BootstrapDependencies{
 				Logger:     ll,
 				AppName:    cc.Root().Use,
 				AppVersion: cc.Root().Version,

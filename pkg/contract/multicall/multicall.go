@@ -26,12 +26,9 @@ import (
 var (
 	multicallAddress = types.MustAddressFromHex("0xcA11bde05977b3631167028862bE2a173976CA11")
 	multicallAbi     = abi.MustParseSignatures(
-		`function aggregate3((address target, bool allowFailure, bytes callData)[] calldata calls) public payable returns ((bool success, bytes returnData)[] memory returnData)`, //nolint:lll
-
-		// Below will work in the next version of go-eth:
-		// `struct Call3{address target; bool allowFailure; bytes callData;}`,
-		// `struct Result{bool success; bytes returnData;}`,
-		// `function aggregate3(Call3[] calldata calls) public payable returns (Result[] memory returnData)`,
+		`struct Call3{address target; bool allowFailure; bytes callData;}`,
+		`struct Result{bool success; bytes returnData;}`,
+		`function aggregate3(Call3[] calldata calls) public payable returns (Result[] memory returnData)`,
 	)
 )
 

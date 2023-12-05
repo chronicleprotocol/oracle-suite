@@ -28,6 +28,18 @@ func TestCopy(t *testing.T) {
 	assert.NotSame(t, m, Copy(m))
 }
 
+func TestContains(t *testing.T) {
+	m := []string{"a", "b", "c"}
+	assert.True(t, Contains(m, "a"))
+	assert.False(t, Contains(m, "d"))
+}
+
+func TestContainsAll(t *testing.T) {
+	m := []string{"a", "b", "c"}
+	assert.True(t, ContainsAll(m, []string{"a", "b"}))
+	assert.False(t, ContainsAll(m, []string{"a", "d"}))
+}
+
 func TestMap(t *testing.T) {
 	m := []string{"a", "b", "c"}
 	assert.Equal(t, []string{"A", "B", "C"}, Map(m, strings.ToUpper))

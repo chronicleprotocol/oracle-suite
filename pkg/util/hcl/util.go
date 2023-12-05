@@ -13,9 +13,27 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package globals
+package hcl
 
-var ShowEnvVarsUsedInConfig bool
-var RenderConfigJSON bool
+import "reflect"
 
-var EnvVars []string
+// derefType dereferences the given type until it is not a pointer or an
+// interface.
+func derefType(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Interface {
+		t = t.Elem()
+	}
+	return t
+}
+
+// derefValue dereferences the given value until it is not a pointer or an
+// interface. If the value is a nil pointer, it is initialized.
+func derefValue(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.Kind() == reflect.Ptr && v.IsNil() && v.CanSet() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		v = v.Elem()
+	}
+	return v
+}

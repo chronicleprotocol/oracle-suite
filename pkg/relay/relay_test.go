@@ -227,7 +227,7 @@ type mockScribeContract struct {
 	ReadFn    func(ctx context.Context) (chronicle.PokeData, error)
 	WatFn     func() contract.TypedSelfCaller[string]
 	BarFn     func() contract.TypedSelfCaller[int]
-	FeedsFn   func() contract.TypedSelfCaller[chronicle.FeedsResult]
+	FeedsFn   func() contract.TypedSelfCaller[[]types.Address]
 	PokeFn    func(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller
 }
 
@@ -260,7 +260,7 @@ func (m *mockScribeContract) reset(t *testing.T) {
 		assert.FailNow(t, "unexpected call to Bar")
 		return nil
 	}
-	m.FeedsFn = func() contract.TypedSelfCaller[chronicle.FeedsResult] {
+	m.FeedsFn = func() contract.TypedSelfCaller[[]types.Address] {
 		assert.FailNow(t, "unexpected call to Feeds")
 		return nil
 	}
@@ -290,7 +290,7 @@ func (m *mockScribeContract) Bar() contract.TypedSelfCaller[int] {
 	return m.BarFn()
 }
 
-func (m *mockScribeContract) Feeds() contract.TypedSelfCaller[chronicle.FeedsResult] {
+func (m *mockScribeContract) Feeds() contract.TypedSelfCaller[[]types.Address] {
 	return m.FeedsFn()
 }
 

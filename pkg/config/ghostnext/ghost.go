@@ -29,7 +29,6 @@ import (
 	transportConfig "github.com/chronicleprotocol/oracle-suite/pkg/config/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/feed"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
-
 	pkgSupervisor "github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
 	pkgTransport "github.com/chronicleprotocol/oracle-suite/pkg/transport"
 	"github.com/chronicleprotocol/oracle-suite/pkg/transport/messages"
@@ -110,6 +109,7 @@ func (c *Config) Services(baseLogger log.Logger, appName string, appVersion stri
 	if err != nil {
 		return nil, err
 	}
+
 	return &Services{
 		Feed:      feedService,
 		Transport: transport,

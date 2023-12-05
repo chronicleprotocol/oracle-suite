@@ -1,5 +1,5 @@
 variables {
-  spectre_pairs = explode(var.item_separator, env("CFG_SYMBOLS", env("CFG_SPECTRE_PAIRS", "")))
+  spectre_pairs = explode(var.item_separator, env("CFG_MODELS", env("CFG_SPECTRE_PAIRS", "")))
 }
 
 spectre {

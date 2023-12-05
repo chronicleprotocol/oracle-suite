@@ -16,12 +16,14 @@
 package ghostnext
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/config"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
 
 func TestConfig(t *testing.T) {
@@ -46,4 +48,20 @@ func TestConfig(t *testing.T) {
 			test.test(t, &cfg)
 		})
 	}
+}
+
+func TestDefaults(t *testing.T) {
+	cfg := &Config{}
+	require.NoError(t, config.LoadEmbeds(cfg, cfg.DefaultEmbeds()))
+
+	block := &hcl.Block{}
+	hcl.Encode(cfg, block)
+
+	expectedConfig, err := os.ReadFile("./testdata/default.hcl")
+	require.NoError(t, err)
+
+	loadedConfig, diags := block.Bytes()
+	require.False(t, diags.HasErrors())
+
+	require.Equal(t, expectedConfig, loadedConfig)
 }

@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/defiweb/go-anymapper v0.3.0
-	github.com/defiweb/go-eth v0.4.5
+	github.com/defiweb/go-eth v0.5.1
 	github.com/ethereum/go-ethereum v1.11.5
 	github.com/hashicorp/hcl/v2 v2.18.0
 	github.com/itchyny/gojq v0.12.12
@@ -44,7 +44,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/defiweb/go-rlp v0.3.0 // indirect
-	github.com/defiweb/go-sigparser v0.4.0 // indirect
+	github.com/defiweb/go-sigparser v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/elastic/gosigar v0.14.2 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
@@ -58,6 +58,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20230821062121-407c9e7a662f // indirect
 	github.com/google/uuid v1.3.1 // indirect

@@ -16,8 +16,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 1,
-      "interval": 60
+      "spread": 1
     }
   },
   {
@@ -28,26 +27,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 1,
-      "interval": 60
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "eth",
-    "wat": "BTC/USD",
-    "address": "0x898D1aB819a24880F636416df7D1493C94143262",
-    "chain_id": 1,
-    "is_scribe": true,
-    "is_scribe_optimistic": true,
-    "challenge_period": 600,
-    "poke": {
-      "spread": 3,
-      "expiration": 86400
-    },
-    "poke_optimistic": {
-      "spread": 1,
-      "expiration": 43200
+      "spread": 1
     }
   },
   {
@@ -56,6 +36,7 @@ contracts = [
     "wat": "BTC/USD",
     "address": "0x9Af8fe1d0c9ED3f176Dd3559B6f4b6FeF3AAb83B",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -76,8 +57,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 1,
-      "interval": 60
+      "spread": 1
     }
   },
   {
@@ -86,6 +66,7 @@ contracts = [
     "wat": "DAI/USD",
     "address": "0xf2dc732221e2b374eBBfd0023EF794c4432E66d8",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -106,8 +87,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 4,
-      "interval": 60
+      "spread": 4
     }
   },
   {
@@ -116,24 +96,7 @@ contracts = [
     "wat": "ETH/USD",
     "address": "0x1174948681bb05748E3682398d9b7a6836B07554",
     "chain_id": 1,
-    "is_scribe": true,
-    "is_scribe_optimistic": true,
-    "challenge_period": 1200,
-    "poke": {
-      "spread": 3,
-      "expiration": 86400
-    },
-    "poke_optimistic": {
-      "spread": 1,
-      "expiration": 43200
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "eth",
-    "wat": "ETH/USD",
-    "address": "0x5E16CA75000fb2B9d7B1184Fa24fF5D938a345Ef",
-    "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -154,8 +117,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 1,
-      "interval": 60
+      "spread": 1
     }
   },
   {
@@ -164,6 +126,7 @@ contracts = [
     "wat": "GNO/USD",
     "address": "0x0b4d1660D9f28203a23C33808112FF44cA7bCE41",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -184,8 +147,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 4,
-      "interval": 60
+      "spread": 4
     }
   },
   {
@@ -196,8 +158,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 10,
-      "interval": 60
+      "spread": 10
     }
   },
   {
@@ -208,8 +169,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 4,
-      "interval": 60
+      "spread": 4
     }
   },
   {
@@ -220,26 +180,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 4,
-      "interval": 60
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "eth",
-    "wat": "MKR/USD",
-    "address": "0xb400027B7C31D67982199Fa48B8228F128691fCb",
-    "chain_id": 1,
-    "is_scribe": true,
-    "is_scribe_optimistic": true,
-    "challenge_period": 1200,
-    "poke": {
-      "spread": 3,
-      "expiration": 86400
-    },
-    "poke_optimistic": {
-      "spread": 1,
-      "expiration": 43200
+      "spread": 4
     }
   },
   {
@@ -248,6 +189,7 @@ contracts = [
     "wat": "MKR/USD",
     "address": "0xc4962E0c282b52d00f995f5C70d4695e4Ac14F57",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -268,8 +210,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -278,24 +219,7 @@ contracts = [
     "wat": "RETH/USD",
     "address": "0x3Fcc752dc6Fb8acc80E3e0843C16ea080240b57F",
     "chain_id": 1,
-    "is_scribe": true,
-    "is_scribe_optimistic": true,
-    "challenge_period": 1200,
-    "poke": {
-      "spread": 3,
-      "expiration": 86400
-    },
-    "poke_optimistic": {
-      "spread": 2,
-      "expiration": 43200
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "eth",
-    "wat": "RETH/USD",
-    "address": "0x608D9cD5aC613EBAC4549E6b8A73954eA64C3660",
-    "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -316,8 +240,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 4,
-      "interval": 60
+      "spread": 4
     }
   },
   {
@@ -326,6 +249,7 @@ contracts = [
     "wat": "SDAI/USD",
     "address": "0xe53e78006d2c3E905d73cBdb31b8E43ec06F27A9",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -344,6 +268,7 @@ contracts = [
     "wat": "USDC/USD",
     "address": "0x209186cd917dfaBd9529935dd7202C755a59f06F",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -362,24 +287,7 @@ contracts = [
     "wat": "WSTETH/ETH",
     "address": "0x84A48F89D5844385C515f43797147D6aF61cE2AE",
     "chain_id": 1,
-    "is_scribe": true,
-    "is_scribe_optimistic": true,
-    "challenge_period": 1200,
-    "poke": {
-      "spread": 3,
-      "expiration": 86400
-    },
-    "poke_optimistic": {
-      "spread": 1,
-      "expiration": 43200
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "eth",
-    "wat": "WSTETH/USD",
-    "address": "0x013C5C46db9914A19A58E57AD539eD5B125aFA15",
-    "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": true,
     "challenge_period": 1200,
@@ -398,8 +306,10 @@ contracts = [
     "wat": "WSTETH/USD",
     "address": "0x12a8Ad45db5085e17aBabb3016bba67cc6Bac5Db",
     "chain_id": 1,
+    "bar": 9,
     "is_scribe": true,
-    "is_scribe_optimistic": false,
+    "is_scribe_optimistic": true,
+    "challenge_period": 1200,
     "poke": {
       "spread": 3,
       "expiration": 86400
@@ -417,8 +327,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 2,
-      "interval": 60
+      "spread": 2
     }
   },
   {
@@ -429,8 +338,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 4,
-      "interval": 60
+      "spread": 4
     }
   },
   {
@@ -439,6 +347,7 @@ contracts = [
     "wat": "BTC/USD",
     "address": "0x898D1aB819a24880F636416df7D1493C94143262",
     "chain_id": 100,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -452,6 +361,7 @@ contracts = [
     "wat": "DAI/USD",
     "address": "0x64596dEb187A1F4dD73240474A18e854AEAe22f7",
     "chain_id": 100,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -465,6 +375,7 @@ contracts = [
     "wat": "ETH/USD",
     "address": "0x5E16CA75000fb2B9d7B1184Fa24fF5D938a345Ef",
     "chain_id": 100,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -478,6 +389,7 @@ contracts = [
     "wat": "GNO/USD",
     "address": "0x92D2E219f7175dce742Bc1aF65c25D11E0e9095e",
     "chain_id": 100,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -491,6 +403,7 @@ contracts = [
     "wat": "WSTETH/ETH",
     "address": "0xe189932051328bAf256bea646c01D0898258C4A9",
     "chain_id": 100,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -506,8 +419,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 1,
-      "interval": 60
+      "spread": 1
     }
   },
   {
@@ -518,21 +430,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 86400,
-      "spread": 1,
-      "interval": 60
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "zkevm",
-    "wat": "BTC/USD",
-    "address": "0x898D1aB819a24880F636416df7D1493C94143262",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 21600
+      "spread": 1
     }
   },
   {
@@ -541,6 +439,7 @@ contracts = [
     "wat": "BTC/USD",
     "address": "0x9Af8fe1d0c9ED3f176Dd3559B6f4b6FeF3AAb83B",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -554,6 +453,7 @@ contracts = [
     "wat": "DAI/USD",
     "address": "0xf2dc732221e2b374eBBfd0023EF794c4432E66d8",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -567,12 +467,12 @@ contracts = [
     "wat": "DSR/RATE",
     "address": "0xbBC385C209bC4C8E00E3687B51E25E21b0E7B186",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 32400
     }
   },
   {
@@ -581,19 +481,7 @@ contracts = [
     "wat": "ETH/USD",
     "address": "0x1174948681bb05748E3682398d9b7a6836B07554",
     "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 21600
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "zkevm",
-    "wat": "ETH/USD",
-    "address": "0x5E16CA75000fb2B9d7B1184Fa24fF5D938a345Ef",
-    "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -607,19 +495,7 @@ contracts = [
     "wat": "MATIC/USD",
     "address": "0xD8569712fc3d447004524896010d4a2FB98C0ef7",
     "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 21600
-    }
-  },
-  {
-    "env": "prod",
-    "chain": "zkevm",
-    "wat": "MATIC/USD",
-    "address": "0xE0ECe625B1E128EE00e39BB91A80772D5d4d8Ed5",
-    "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -633,12 +509,12 @@ contracts = [
     "wat": "SDAI/DAI",
     "address": "0xfFcF8e5A12Acc48870D2e8834310aa270dE10fE6",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 32400
     }
   },
   {
@@ -647,12 +523,12 @@ contracts = [
     "wat": "SDAI/ETH",
     "address": "0xE6DF058512F99c0C8940736687aDdb38722c73C0",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 32400
     }
   },
   {
@@ -661,12 +537,12 @@ contracts = [
     "wat": "SDAI/MATIC",
     "address": "0x6c9571D1dD3e606Ce734Cc558bdd0BE576E01660",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
-      "expiration": 32400,
-      "interval": 120
+      "expiration": 32400
     }
   },
   {
@@ -675,6 +551,7 @@ contracts = [
     "wat": "WSTETH/ETH",
     "address": "0x84A48F89D5844385C515f43797147D6aF61cE2AE",
     "chain_id": 1101,
+    "bar": 9,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -690,8 +567,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -702,16 +578,16 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
     "env": "stage",
     "chain": "gno",
     "wat": "AAVE/USD",
-    "address": "0xa38C2B5408Eb1DCeeDBEC5d61BeD580589C6e717",
+    "address": "0xED4C91FC28B48E2Cf98b59668408EAeE44665511",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -723,8 +599,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "ARB/USD",
-    "address": "0x579BfD0581beD0d18fBb0Ebab099328d451552DD",
+    "address": "0x7dE6Df8E4c057eD9baE215F347A0339D603B09B2",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -736,8 +613,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "AVAX/USD",
-    "address": "0x78C8260AF7C8D0d17Cf3BA91F251E9375A389688",
+    "address": "0xD419f76594d411BD94c71FB0a78c80f71A2290Ce",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -749,8 +627,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "BNB/USD",
-    "address": "0x26EE3E8b618227C1B735D8D884d52A852410019f",
+    "address": "0x6931FB9C54958f77873ceC4536EaC56F561d2dC4",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -762,8 +641,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "BTC/USD",
-    "address": "0x4B5aBFC0Fe78233b97C80b8410681765ED9fC29c",
+    "address": "0xdD5232e76798BEACB69eC310d9b0864b56dD08dD",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -775,8 +655,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "CRV/USD",
-    "address": "0xf29a932ae56bB96CcACF8d1f2Da9028B01c8F030",
+    "address": "0x7B6E473f1CeB8b7100C9F7d58879e7211Bc48f32",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -788,8 +669,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "DAI/USD",
-    "address": "0xa7aA6a860D17A89810dE6e6278c58EB21Fa00fc4",
+    "address": "0x16984396EE0903782Ba8e6ebfA7DD356B0cA3841",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -801,8 +683,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "DSR/RATE",
-    "address": "0x729af3A41AE9E707e7AE421569C4b9c632B66a0c",
+    "address": "0x09f3BfC6b46526045De5F5BE64f5CCe121bbf8B3",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -814,8 +697,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "ETH/BTC",
-    "address": "0x1804969b296E89C1ddB1712fA99816446956637e",
+    "address": "0x4E866Ac929374096Afc2715C4e9c40D581A4067e",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -827,8 +711,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "ETH/USD",
-    "address": "0xc8A1F9461115EF3C1E84Da6515A88Ea49CA97660",
+    "address": "0x90430C5b8045a1E2A0Fc4e959542a0c75b576439",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -840,8 +725,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "GNO/USD",
-    "address": "0xA28dCaB66FD25c668aCC7f232aa71DA1943E04b8",
+    "address": "0xBcC6BFFde7888A3008f17c88D5a5e5F0D7462cf9",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -853,8 +739,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "IBTA/USD",
-    "address": "0x07487b0Bf28801ECD15BF09C13e32FBc87572e81",
+    "address": "0xc52539EfbA58a521d69494D86fc47b9E71D32997",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -866,8 +753,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "LDO/USD",
-    "address": "0xa53dc5B100f0e4aB593f2D8EcD3c5932EE38215E",
+    "address": "0x3aeF92049C9401094A9f75259430F4771143F0C3",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -879,8 +767,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "LINK/USD",
-    "address": "0xecB89B57A60ac44E06ab1B767947c19b236760c3",
+    "address": "0x4EDdF05CfAd20f1E39ed4CB067bdfa831dAeA9fE",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -892,8 +781,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "MATIC/USD",
-    "address": "0xa48c56e48A71966676d0D113EAEbe6BE61661F18",
+    "address": "0x06997AadB30d51eAdBAA7836f7a0F177474fc235",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -905,8 +795,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "MKR/USD",
-    "address": "0x67ffF0C6abD2a36272870B1E8FE42CC8E8D5ec4d",
+    "address": "0xE61A66f737c32d5Ac8cDea6982635B80447e9404",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -918,8 +809,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "OP/USD",
-    "address": "0xfadF055f6333a4ab435D2D248aEe6617345A4782",
+    "address": "0x1Ae491D618A667a44D48E0b0BE2Cc0cDBF269BC5",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -931,8 +823,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "RETH/USD",
-    "address": "0xEE02370baC10b3AC3f2e9eebBf8f3feA1228D263",
+    "address": "0xEff79d34f24Bb36eD8FB6c4CbaD5De293fdCf66F",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -944,8 +837,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "SDAI/DAI",
-    "address": "0xD93c56Aa71923228cDbE2be3bf5a83bF25B0C491",
+    "address": "0xB6EE756124e88e12585981DdDa9E6E3bf3C4487D",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -957,8 +851,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "SDAI/ETH",
-    "address": "0x05aB94eD168b5d18B667cFcbbA795789C750D893",
+    "address": "0x20A32F633c1D26fC42A15dc7e6bd12Bf0468cAb1",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -970,8 +865,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "SDAI/MATIC",
-    "address": "0x2f0e0dE1F8c11d2380dE093ED15cA6cE07653cbA",
+    "address": "0x0A154ec276972dBFEA01b13711408Ea6e72Ac36B",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -983,8 +879,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "SNX/USD",
-    "address": "0xD20f1eC72bA46b6126F96c5a91b6D3372242cE98",
+    "address": "0x6Ab51f7E684923CE051e784D382A470b0fa834Be",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -996,8 +893,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "SOL/USD",
-    "address": "0x4D1e6f39bbfcce8b471171b8431609b83f3a096D",
+    "address": "0x11ceEcca4d49f596E0Df781Af237CDE741ad2106",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1009,8 +907,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "UNI/USD",
-    "address": "0x2aFF768F5d6FC63fA456B062e02f2049712a1ED5",
+    "address": "0xfE051Bc90D3a2a825fA5172181f9124f8541838c",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1022,8 +921,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "USDC/USD",
-    "address": "0x1173da1811a311234e7Ab0A33B4B7B646Ff42aEC",
+    "address": "0xfef7a1Eb17A095E1bd7723cBB1092caba34f9b1C",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1035,8 +935,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "USDT/USD",
-    "address": "0x0bd446021Ab95a2ABd638813f9bDE4fED3a5779a",
+    "address": "0xF78A4e093Cd2D9F57Bb363Cc4edEBcf9bF3325ba",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1048,8 +949,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "WBTC/USD",
-    "address": "0xA7226d85CE5F0DE97DCcBDBfD38634D6391d0584",
+    "address": "0x39C899178F4310705b12888886884b361CeF26C7",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1061,8 +963,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "WSTETH/USD",
-    "address": "0xc9Bb81d3668f03ec9109bBca77d32423DeccF9Ab",
+    "address": "0x8Ba43F8Fa2fC13D7EEDCeb9414CDbB6643483C34",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1074,8 +977,9 @@ contracts = [
     "env": "stage",
     "chain": "gno",
     "wat": "YFI/USD",
-    "address": "0x0893EcE705639112C1871DcE88D87D81540D0199",
+    "address": "0x16978358A8D6C7C8cA758F433685A5E8D988dfD4",
     "chain_id": 100,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1091,8 +995,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1103,8 +1006,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1115,8 +1017,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1127,8 +1028,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1139,8 +1039,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 10,
-      "interval": 60
+      "spread": 10
     }
   },
   {
@@ -1151,8 +1050,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1163,8 +1061,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1175,8 +1072,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1187,8 +1083,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1199,8 +1094,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1211,8 +1105,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1223,8 +1116,7 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
@@ -1235,19 +1127,19 @@ contracts = [
     "is_median": true,
     "poke": {
       "expiration": 14400,
-      "spread": 3,
-      "interval": 60
+      "spread": 3
     }
   },
   {
     "env": "stage",
     "chain": "sep",
     "wat": "AAVE/USD",
-    "address": "0xED4C91FC28B48E2Cf98b59668408EAeE44665511",
+    "address": "0x3F982a82B4B6bd09b1DAF832140F166b595FEF7F",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1261,11 +1153,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "ARB/USD",
-    "address": "0x7dE6Df8E4c057eD9baE215F347A0339D603B09B2",
+    "address": "0x9Bf0C1ba75C9d7b6Bf051cc7f7dCC7bfE5274302",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1279,11 +1172,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "AVAX/USD",
-    "address": "0xD419f76594d411BD94c71FB0a78c80f71A2290Ce",
+    "address": "0x7F56CdaAdB1c5230Fcab3E20D3A15BDE26cb6C2b",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1297,11 +1191,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "BNB/USD",
-    "address": "0x6931FB9C54958f77873ceC4536EaC56F561d2dC4",
+    "address": "0xE4A1EED38F972d05794C740Eae965A7Daa6Ab28c",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1315,11 +1210,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "BTC/USD",
-    "address": "0xdD5232e76798BEACB69eC310d9b0864b56dD08dD",
+    "address": "0x6edF073c4Bd934d3916AA6dDAC4255ccB2b7c0f0",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1333,11 +1229,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "CRV/USD",
-    "address": "0x7B6E473f1CeB8b7100C9F7d58879e7211Bc48f32",
+    "address": "0xDcda58cAAC639C20aed270859109f03E9832a13A",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1351,11 +1248,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "DAI/USD",
-    "address": "0x16984396EE0903782Ba8e6ebfA7DD356B0cA3841",
+    "address": "0xaf900d10f197762794C41dac395C5b8112eD13E1",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 0.5,
       "expiration": 86400
@@ -1369,11 +1267,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "ETH/BTC",
-    "address": "0x4E866Ac929374096Afc2715C4e9c40D581A4067e",
+    "address": "0xf95d3B8Ae567F4AA9BEC822931976c117cdf836a",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1387,11 +1286,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "ETH/USD",
-    "address": "0x90430C5b8045a1E2A0Fc4e959542a0c75b576439",
+    "address": "0xdd6D76262Fd7BdDe428dcfCd94386EbAe0151603",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1405,11 +1305,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "GNO/USD",
-    "address": "0xBcC6BFFde7888A3008f17c88D5a5e5F0D7462cf9",
+    "address": "0x9C9e56AE479f82bcF229F2200420106C93C0A24e",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1423,11 +1324,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "IBTA/USD",
-    "address": "0xc52539EfbA58a521d69494D86fc47b9E71D32997",
+    "address": "0x92b7Ab73BA53Bc64b57194242e3a36A6F1209A70",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1441,11 +1343,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "LDO/USD",
-    "address": "0x3aeF92049C9401094A9f75259430F4771143F0C3",
+    "address": "0x4cD2a8c3Fd6329029461A95784051A553f31eb29",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1459,11 +1362,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "LINK/USD",
-    "address": "0x4EDdF05CfAd20f1E39ed4CB067bdfa831dAeA9fE",
+    "address": "0x260c182f0054BF244a8e38d7C475b6d9f67AeAc1",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1477,11 +1381,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "MATIC/USD",
-    "address": "0x06997AadB30d51eAdBAA7836f7a0F177474fc235",
+    "address": "0xEa00861Dc00eBd246F6E51E52c28aBd9062bc09F",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1495,11 +1400,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "MKR/USD",
-    "address": "0xE61A66f737c32d5Ac8cDea6982635B80447e9404",
+    "address": "0xE55afC31AFA140597c581Bc32057BF393ba97c5A",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1513,11 +1419,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "OP/USD",
-    "address": "0x1Ae491D618A667a44D48E0b0BE2Cc0cDBF269BC5",
+    "address": "0x1Be54a524226fc44565747FE221157f4cAE71B80",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1531,11 +1438,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "RETH/USD",
-    "address": "0xEff79d34f24Bb36eD8FB6c4CbaD5De293fdCf66F",
+    "address": "0x6454753E0909E7F6476BfB78BD6BDC281197A5be",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1549,11 +1457,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "SDAI/DAI",
-    "address": "0xB6EE756124e88e12585981DdDa9E6E3bf3C4487D",
+    "address": "0x0B20Fd1c09452FC3F214667073EA8975aB2c55EA",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 0.5,
       "expiration": 86400
@@ -1567,11 +1476,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "SNX/USD",
-    "address": "0x6Ab51f7E684923CE051e784D382A470b0fa834Be",
+    "address": "0x1eFD788C634C59e2c7507b523B3eEfD6CaaE0c4f",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1585,11 +1495,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "SOL/USD",
-    "address": "0x11ceEcca4d49f596E0Df781Af237CDE741ad2106",
+    "address": "0x39eC7D193D1Aa282b8ecCAC9B791b09c75D30491",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1603,11 +1514,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "UNI/USD",
-    "address": "0xfE051Bc90D3a2a825fA5172181f9124f8541838c",
+    "address": "0x0E9e54244F6585a71d0d1035E7625849B516C817",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1621,11 +1533,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "USDC/USD",
-    "address": "0xfef7a1Eb17A095E1bd7723cBB1092caba34f9b1C",
+    "address": "0xb34d784dc8E7cD240Fe1F318e282dFdD13C389AC",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 0.5,
       "expiration": 86400
@@ -1639,11 +1552,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "USDT/USD",
-    "address": "0xF78A4e093Cd2D9F57Bb363Cc4edEBcf9bF3325ba",
+    "address": "0x8c852EEC6ae356FeDf5d7b824E254f7d94Ac6824",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 0.5,
       "expiration": 86400
@@ -1657,11 +1571,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "WBTC/USD",
-    "address": "0x39C899178F4310705b12888886884b361CeF26C7",
+    "address": "0xdc3ef3E31AdAe791d9D5054B575f7396851Fa432",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1675,11 +1590,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "WSTETH/ETH",
-    "address": "0x67E93d37B57747686F22f2F2f0a8aAd253199B38",
+    "address": "0x2d95B1862279771fcE76823CD777384D8598fB48",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1693,11 +1609,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "WSTETH/USD",
-    "address": "0x8Ba43F8Fa2fC13D7EEDCeb9414CDbB6643483C34",
+    "address": "0x89822dd9D74dF50BFba8764DC9bE25E9B8d554A1",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1711,11 +1628,12 @@ contracts = [
     "env": "stage",
     "chain": "sep",
     "wat": "YFI/USD",
-    "address": "0x16978358A8D6C7C8cA758F433685A5E8D988dfD4",
+    "address": "0xdF54aBf0eF88aB7fFf22e21eDD9AE1DA89A7DefC",
     "chain_id": 11155111,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": true,
-    "challenge_period": 3600,
+    "challenge_period": 1200,
     "poke": {
       "spread": 2,
       "expiration": 86400
@@ -1729,8 +1647,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "AAVE/USD",
-    "address": "0xED4C91FC28B48E2Cf98b59668408EAeE44665511",
+    "address": "0x3F982a82B4B6bd09b1DAF832140F166b595FEF7F",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1742,8 +1661,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "ARB/USD",
-    "address": "0x7dE6Df8E4c057eD9baE215F347A0339D603B09B2",
+    "address": "0x9bf0c1ba75c9d7b6bf051cc7f7dcc7bfe5274302",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1755,8 +1675,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "AVAX/USD",
-    "address": "0xD419f76594d411BD94c71FB0a78c80f71A2290Ce",
+    "address": "0xDcd4c95f9D1f660E31fD516B936388fc9D4117Ea",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1768,8 +1689,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "BNB/USD",
-    "address": "0x6931FB9C54958f77873ceC4536EaC56F561d2dC4",
+    "address": "0xE4A1EED38F972d05794C740Eae965A7Daa6Ab28c",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1781,8 +1703,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "BTC/USD",
-    "address": "0xdD5232e76798BEACB69eC310d9b0864b56dD08dD",
+    "address": "0x6edF073c4Bd934d3916AA6dDAC4255ccB2b7c0f0",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1794,8 +1717,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "CRV/USD",
-    "address": "0x7B6E473f1CeB8b7100C9F7d58879e7211Bc48f32",
+    "address": "0xDcda58cAAC639C20aed270859109f03E9832a13A",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1807,8 +1731,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "DAI/USD",
-    "address": "0x16984396EE0903782Ba8e6ebfA7DD356B0cA3841",
+    "address": "0xaf900d10f197762794C41dac395C5b8112eD13E1",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1820,8 +1745,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "ETH/BTC",
-    "address": "0x4E866Ac929374096Afc2715C4e9c40D581A4067e",
+    "address": "0xf95d3B8Ae567F4AA9BEC822931976c117cdf836a",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1833,8 +1759,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "ETH/USD",
-    "address": "0x90430C5b8045a1E2A0Fc4e959542a0c75b576439",
+    "address": "0xdd6D76262Fd7BdDe428dcfCd94386EbAe0151603",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1846,8 +1773,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "GNO/USD",
-    "address": "0xBcC6BFFde7888A3008f17c88D5a5e5F0D7462cf9",
+    "address": "0x9C9e56AE479f82bcF229F2200420106C93C0A24e",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1859,8 +1787,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "IBTA/USD",
-    "address": "0xc52539EfbA58a521d69494D86fc47b9E71D32997",
+    "address": "0x92b7Ab73BA53Bc64b57194242e3a36A6F1209A70",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1872,8 +1801,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "LDO/USD",
-    "address": "0x3aeF92049C9401094A9f75259430F4771143F0C3",
+    "address": "0x4cD2a8c3Fd6329029461A95784051A553f31eb29",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1885,8 +1815,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "LINK/USD",
-    "address": "0x4EDdF05CfAd20f1E39ed4CB067bdfa831dAeA9fE",
+    "address": "0x260c182f0054BF244a8e38d7C475b6d9f67AeAc1",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1898,8 +1829,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "MATIC/USD",
-    "address": "0x06997AadB30d51eAdBAA7836f7a0F177474fc235",
+    "address": "0xEa00861Dc00eBd246F6E51E52c28aBd9062bc09F",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1911,8 +1843,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "MKR/USD",
-    "address": "0xE61A66f737c32d5Ac8cDea6982635B80447e9404",
+    "address": "0xE55afC31AFA140597c581Bc32057BF393ba97c5A",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1924,8 +1857,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "OP/USD",
-    "address": "0x1ae491d618a667a44d48e0b0be2cc0cdbf269bc5",
+    "address": "0x1Be54a524226fc44565747FE221157f4cAE71B80",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1937,8 +1871,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "RETH/USD",
-    "address": "0xEff79d34f24Bb36eD8FB6c4CbaD5De293fdCf66F",
+    "address": "0x6454753E0909E7F6476BfB78BD6BDC281197A5be",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1950,8 +1885,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "SDAI/DAI",
-    "address": "0xB6EE756124e88e12585981DdDa9E6E3bf3C4487D",
+    "address": "0x0B20Fd1c09452FC3F214667073EA8975aB2c55EA",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1963,8 +1899,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "SNX/USD",
-    "address": "0x6Ab51f7E684923CE051e784D382A470b0fa834Be",
+    "address": "0x1eFD788C634C59e2c7507b523B3eEfD6CaaE0c4f",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1976,8 +1913,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "SOL/USD",
-    "address": "0x11ceEcca4d49f596E0Df781Af237CDE741ad2106",
+    "address": "0x39eC7D193D1Aa282b8ecCAC9B791b09c75D30491",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -1989,8 +1927,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "UNI/USD",
-    "address": "0xfE051Bc90D3a2a825fA5172181f9124f8541838c",
+    "address": "0x0E9e54244F6585a71d0d1035E7625849B516C817",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -2002,8 +1941,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "USDC/USD",
-    "address": "0xfef7a1Eb17A095E1bd7723cBB1092caba34f9b1C",
+    "address": "0xb34d784dc8E7cD240Fe1F318e282dFdD13C389AC",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -2015,8 +1955,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "USDT/USD",
-    "address": "0xF78A4e093Cd2D9F57Bb363Cc4edEBcf9bF3325ba",
+    "address": "0x8c852EEC6ae356FeDf5d7b824E254f7d94Ac6824",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -2028,8 +1969,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "WBTC/USD",
-    "address": "0x39C899178F4310705b12888886884b361CeF26C7",
+    "address": "0xdc3ef3E31AdAe791d9D5054B575f7396851Fa432",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -2041,8 +1983,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "WSTETH/ETH",
-    "address": "0x67E93d37B57747686F22f2F2f0a8aAd253199B38",
+    "address": "0x2d95B1862279771fcE76823CD777384D8598fB48",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -2054,8 +1997,9 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "WSTETH/USD",
-    "address": "0x8Ba43F8Fa2fC13D7EEDCeb9414CDbB6643483C34",
+    "address": "0x89822dd9D74dF50BFba8764DC9bE25E9B8d554A1",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
@@ -2067,111 +2011,14 @@ contracts = [
     "env": "stage",
     "chain": "testnet-zkEVM-mango",
     "wat": "YFI/USD",
-    "address": "0x16978358A8D6C7C8cA758F433685A5E8D988dfD4",
+    "address": "0xdF54aBf0eF88aB7fFf22e21eDD9AE1DA89A7DefC",
     "chain_id": 1442,
+    "bar": 3,
     "is_scribe": true,
     "is_scribe_optimistic": false,
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "BTC/USD",
-    "address": "0x4B5aBFC0Fe78233b97C80b8410681765ED9fC29c",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "DSR/RATE",
-    "address": "0x729af3A41AE9E707e7AE421569C4b9c632B66a0c",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "ETH/USD",
-    "address": "0xc8A1F9461115EF3C1E84Da6515A88Ea49CA97660",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "MATIC/USD",
-    "address": "0xa48c56e48A71966676d0D113EAEbe6BE61661F18",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "SDAI/DAI",
-    "address": "0xD93c56Aa71923228cDbE2be3bf5a83bF25B0C491",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "SDAI/ETH",
-    "address": "0x05aB94eD168b5d18B667cFcbbA795789C750D893",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
-    }
-  },
-  {
-    "env": "stage",
-    "chain": "zkevm",
-    "wat": "SDAI/MATIC",
-    "address": "0x2f0e0dE1F8c11d2380dE093ED15cA6cE07653cbA",
-    "chain_id": 1101,
-    "is_scribe": true,
-    "is_scribe_optimistic": false,
-    "poke": {
-      "spread": 1,
-      "expiration": 32400,
-      "interval": 120
     }
   }
 ]

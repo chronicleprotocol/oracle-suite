@@ -26,29 +26,38 @@ import (
 )
 
 const (
-	pokeStorageSlot   = 4
-	opPokeStorageSlot = 8
+	pokeStorageSlot   = 4 // storage slot where the poke data is stored in Scribe and OpScribe contracts
+	opPokeStorageSlot = 8 // storage slot where the optimistic poke data is stored in OpScribe contract
 )
 
 var (
 	abi = goethABI.NewABI()
 
-	abiMedian      *goethABI.Contract
-	abiScribe      *goethABI.Contract
-	abiOpScribe    *goethABI.Contract
-	abiWatRegistry *goethABI.Contract
-	abiChainlog    *goethABI.Contract
+	abiMedian       *goethABI.Contract
+	abiScribe       *goethABI.Contract
+	abiOpScribe     *goethABI.Contract
+	abiWatRegistry  *goethABI.Contract
+	abiFeedRegistry *goethABI.Contract
+	abiChainlog     *goethABI.Contract
 )
 
 func init() {
-	// Types for Scribe and Optimistic Scribe
-	abi.Types["PokeData"], _ = abi.ParseType("(uint128 val, uint32 age)")
-	abi.Types["SchnorrData"], _ = abi.ParseType("(bytes32 signature, address commitment, bytes signersBlob)")
-	abi.Types["ECDSAData"], _ = abi.ParseType("(uint8 v, bytes32 r, bytes32 s)")
+	// The bytes32_string type is a null-terminated string represented as a bytes32.
+	abi.Types["bytes32_string"] = bytes32StringType{}
 
-	abiMedian, _ = abi.ParseSignatures(
+	// The uint256_feedBloom type is a 256-bit bitfield, where n-th bit is set if
+	// the feed with first byte of its address equal to n is present in the bloom
+	// filter.
+	abi.Types["uint256_feedBloom"] = uint256FeedBloomType{}
+
+	// Types for Scribe and Optimistic Scribe.
+	abi.Types["PokeData"] = abi.MustParseType("(uint128 val, uint32 age)")
+	abi.Types["SchnorrData"] = abi.MustParseType("(bytes32 signature, address commitment, bytes feedIDs)")
+	abi.Types["ECDSAData"] = abi.MustParseType("(uint8 v, bytes32 r, bytes32 s)")
+
+	abiMedian = abi.MustParseSignatures(
 		`age()(uint256 age)`,
-		`wat()(bytes32 wat)`,
+		`wat()(bytes32_string wat)`,
 		`bar()(uint8 bar)`,
 		`poke(
 			uint256[] calldata val_, 
@@ -59,7 +68,7 @@ func init() {
 		)`,
 	)
 
-	abiScribe, _ = abi.ParseSignatures(
+	abiScribe = abi.MustParseSignatures(
 		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
 		`error FutureMessage(uint32 givenAge, uint32 currentTimestamp)`,
 		`error BarNotReached(uint8 numberSigners, uint8 bar)`,
@@ -67,14 +76,14 @@ func init() {
 		`error SignersNotOrdered()`,
 		`error SchnorrSignatureInvalid()`,
 
-		`wat()(bytes32 wat)`,
+		`wat()(bytes32_string wat)`,
 		`bar()(uint8 bar)`,
-		`feeds()(address[] feeds, uint[] feedIndexes)`,
+		`feeds()(address[] feeds)`,
 		`poke(PokeData pokeData, SchnorrData schnorrData)`,
 		`poke_optimized_7136211(PokeData pokeData, SchnorrData schnorrData)`,
 	)
 
-	abiOpScribe, _ = abi.ParseSignatures(
+	abiOpScribe = abi.MustParseSignatures(
 		`error StaleMessage(uint32 givenAge, uint32 currentAge)`,
 		`error FutureMessage(uint32 givenAge, uint32 currentTimestamp)`,
 		`error BarNotReached(uint8 numberSigners, uint8 bar)`,
@@ -85,25 +94,55 @@ func init() {
 		`error NoOpPokeToChallenge()`,
 		`error SchnorrDataMismatch(uint160 gotHash, uint160 wantHash)`,
 
-		`wat()(bytes32 wat)`,
+		`wat()(bytes32_string wat)`,
 		`bar()(uint8 bar)`,
 		`opChallengePeriod()(uint16 opChallengePeriod)`,
-		`feeds()(address[] feeds, uint[] feedIndexes)`,
+		`feeds()(address[] feeds)`,
 		`opPoke(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
 		`opPoke_optimized_397084999(PokeData pokeData, SchnorrData schnorrData, ECDSAData ecdsaData)`,
 	)
 
-	abiWatRegistry, _ = abi.ParseSignatures(
-		`bar(bytes32 wat)(uint8 bar)`,
-		`feeds(bytes32 wat)(address[] feeds)`,
+	abiFeedRegistry = abi.MustParseSignatures(
+		`event FeedLifted(address indexed caller, address indexed feed)`,
+		`event FeedDropped(address indexed caller, address indexed feed)`,
+
+		`function feeds() external view returns (address[] memory)`,
+		`function feeds(address feed) external view returns (bool)`,
 	)
 
-	abiChainlog, _ = abi.ParseSignatures(
+	abiWatRegistry = abi.MustParseSignatures(
+		`event Embraced(address indexed caller, bytes32 indexed wat)`,
+		`event Abandoned(address indexed caller, bytes32 indexed wat)`,
+		`event ConfigUpdated(
+			address indexed caller,
+			bytes32 indexed wat,
+			uint8 oldBar,
+			uint8 newBar,
+			uint oldFeedsBloom,
+			uint newFeedsBloom
+    	)`,
+		`event DeploymentUpdated(
+			address indexed caller,
+			bytes32 indexed wat,
+			uint chainId,
+			address oldDeployment,
+			address newDeployment
+    	)`,
+
+		`wats() external view returns (bytes32_string[] memory)`,
+		`exists(bytes32_string wat) external view returns (bool)`,
+		`config(bytes32_string wat) external view returns (uint8 bar, uint256_feedBloom bloom)`,
+		`chains(bytes32_string wat) external view returns (uint[] memory)`,
+		`deployment(bytes32_string wat, uint chainId) external view returns (address)`,
+	)
+
+	abiChainlog = abi.MustParseSignatures(
 		`tryGet(bytes32 key)(bool ok, address address)`,
 	)
 
 	abiScribe.Methods["poke"] = abiScribe.Methods["poke_optimized_7136211"]
 	abiOpScribe.Methods["opPoke"] = abiOpScribe.Methods["opPoke_optimized_397084999"]
+	abiFeedRegistry.Methods["feeds(address)"] = abiFeedRegistry.Methods["feeds2"]
 }
 
 type PokeData struct {
@@ -112,9 +151,9 @@ type PokeData struct {
 }
 
 type SchnorrData struct {
-	Signature   *big.Int
-	Commitment  types.Address
-	SignersBlob []byte
+	Signature  *big.Int
+	Commitment types.Address
+	FeedIDs    FeedIDs
 }
 
 // PokeDataStruct represents the PokeData struct in the IScribe interface.
@@ -125,9 +164,9 @@ type PokeDataStruct struct {
 
 // SchnorrDataStruct represents the SchnorrData struct in the IScribe interface.
 type SchnorrDataStruct struct {
-	Signature   *big.Int      `abi:"signature"`
-	Commitment  types.Address `abi:"commitment"`
-	SignersBlob []byte        `abi:"signersBlob"`
+	Signature  *big.Int      `abi:"signature"`
+	Commitment types.Address `abi:"commitment"`
+	FeedIDs    []byte        `abi:"feedIDs"`
 }
 
 // ECDSADataStruct represents the ECDSAData struct in the IScribe interface.
@@ -145,7 +184,11 @@ func toPokeDataStruct(p PokeData) PokeDataStruct {
 }
 
 func toSchnorrDataStruct(s SchnorrData) SchnorrDataStruct {
-	return SchnorrDataStruct(s)
+	return SchnorrDataStruct{
+		Signature:  s.Signature,
+		Commitment: s.Commitment,
+		FeedIDs:    s.FeedIDs.FeedIDs(),
+	}
 }
 
 func toECDSADataStruct(s types.Signature) ECDSADataStruct {

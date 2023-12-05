@@ -4,8 +4,6 @@ github.com/btcsuite/btcd/btcec/v2 v2.3.2/go.mod h1:zYzJ8etWJQIv1Ogk7OzpWjowwOdXY
 github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2 h1:KdUfX2zKommPRa+PD0sWZUyXe9w277ABlgELO7H04IM=
 github.com/chronicleprotocol/infestor v0.2.14-0.20230913203939-62cd93702970 h1:OijI+AlREHOKCOn9oaloIN4lJDfLU8cbeVSxMK2mUMA=
 github.com/chronicleprotocol/infestor v0.2.14-0.20230913203939-62cd93702970/go.mod h1:pW1wprhTW6ThBqUv0yWroQ5/2gtHE2YWTWGAjr5f5TQ=
-github.com/chronicleprotocol/infestor v0.2.14 h1:Ha84s+AQNTDRqCFL0IQ3poN2RDnvy60RF0J1+UYpAlU=
-github.com/chronicleprotocol/infestor v0.2.14/go.mod h1:pW1wprhTW6ThBqUv0yWroQ5/2gtHE2YWTWGAjr5f5TQ=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/decred/dcrd/crypto/blake256 v1.0.1 h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=

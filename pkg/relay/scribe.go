@@ -20,14 +20,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 // stateCacheExpiration is the time after which the cached state is considered
@@ -48,21 +47,13 @@ type scribe struct {
 type scribeState struct {
 	wat       string
 	bar       int
-	feeds     chronicle.FeedsResult
+	feeds     []types.Address
 	pokeData  chronicle.PokeData
 	finalized bool      // If price is finalized (only for Scribe Optimistic contracts).
 	time      time.Time // Date and time when the state was fetched.
 }
 
-func (w *scribe) client() rpc.RPC {
-	return w.contract.Client()
-}
-
-func (w *scribe) address() types.Address {
-	return w.contract.Address()
-}
-
-func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+func (w *scribe) createRelayCall(ctx context.Context) []relayCall {
 	state, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
@@ -70,7 +61,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			WithFields(w.logFields()).
 			WithAdvice("Ignore if it is related to temporary network issues").
 			Error("Failed to call Scribe contract")
-		return 0, nil
+		return nil
 	}
 	if state.wat != w.dataModel {
 		w.log.
@@ -78,13 +69,14 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			WithFields(w.logFields()).
 			WithAdvice("This is a bug in the configuration, probably a wrong contract address is used").
 			Error("Contract asset name does not match the configured asset name")
-		return 0, nil
+		return nil
 	}
 
 	// Iterate over all signatures to check if any of them can be used to update
 	// the price on the Scribe contract.
+	hasValidSigns := false
 	for _, s := range w.muSigStore.SignaturesByDataModel(w.dataModel) {
-		if s.Commitment.IsZero() || s.SchnorrSignature == nil {
+		if s.Commitment.IsZero() || s.SchnorrSignature == nil || len(s.Signers) != state.bar {
 			continue
 		}
 
@@ -93,8 +85,27 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			continue
 		}
 
+		// hasValidSigns is used to check if there are at least one valid signature
+		// for the current data model.
+		hasValidSigns = true
+
 		// If the signature is older than the current price, skip it.
 		if meta.Age.Before(state.pokeData.Age) {
+			continue
+		}
+
+		// Check if feed addresses included in the signature match the feed
+		// addresses from the contract.
+		if !sliceutil.ContainsAll(s.Signers, state.feeds) {
+			w.log.
+				WithError(err).
+				WithFields(w.logFields()).
+				WithFields(log.Fields{
+					"signatureFeeds": chronicle.FeedIDsFromAddresses(s.Signers),
+					"contractFeeds":  state.feeds,
+				}).
+				WithAdvice("This is a bug in the configuration or a list of lifted feeds in not synchronized with the FeedRegistry contract").
+				Warn("Signature includes feeds that are not lifted in the contract")
 			continue
 		}
 
@@ -102,22 +113,11 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		// The price needs to be updated if:
 		// - Price is older than the interval specified in the expiration
 		//   field.
-		// - Price differs from the current price by more than is specified in the
-		//   spread field.
+		// - Price differs from the current price by more than is specified in
+		//   the spread field.
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
-
-		// Generate signersBlob.
-		// If signersBlob returns an error, it means that some signers are not
-		// present in the feed list on the contract.
-		signersBlob, err := chronicle.SignersBlob(s.Signers, state.feeds.Feeds, state.feeds.FeedIndices)
-		if err != nil {
-			w.log.
-				WithError(err).
-				WithFields(w.logFields()).
-				Error("Failed to generate signersBlob")
-		}
 
 		// Print logs.
 		w.log.
@@ -134,7 +134,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			}).
 			Debug("Scribe")
 
-		// If price is stale or expired, send update.
+		// If price is stale or expired, return a poke transaction.
 		if isExpired || isStale {
 			poke := w.contract.Poke(
 				chronicle.PokeData{
@@ -142,9 +142,9 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 					Age: meta.Age,
 				},
 				chronicle.SchnorrData{
-					Signature:   s.SchnorrSignature,
-					Commitment:  s.Commitment,
-					SignersBlob: signersBlob,
+					Signature:  s.SchnorrSignature,
+					Commitment: s.Commitment,
+					FeedIDs:    chronicle.FeedIDsFromAddresses(s.Signers),
 				},
 			)
 
@@ -155,13 +155,28 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 					WithFields(w.logFields()).
 					WithAdvice("Ignore if it is related to temporary network issues").
 					Error("Failed to poke the Scribe contract")
-				return 0, nil
+				return nil
 			}
 
-			return gas, poke
+			return []relayCall{{
+				client:      w.contract.Client(),
+				address:     w.contract.Address(),
+				callable:    poke,
+				gasEstimate: gas,
+			}}
 		}
 	}
-	return 0, nil
+
+	// If there are no valid signatures, this could mean a problem with the
+	// configuration.
+	if !hasValidSigns {
+		w.log.
+			WithFields(w.logFields()).
+			WithAdvice("Ignore if this occurs within the first few minutes after the relay starts; otherwise, it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
+			Warn("No valid signatures found for the current data model")
+	}
+
+	return nil
 }
 
 func (w *scribe) currentState(ctx context.Context) (state scribeState, err error) {
@@ -169,15 +184,13 @@ func (w *scribe) currentState(ctx context.Context) (state scribeState, err error
 		return w.cachedState, nil
 	}
 	// Always fetch the latest, non-finalized price from the contract. This is
-	// done for three reasons:
+	// done for two reasons:
 	// 1. If a price movement is significant enough to trigger both poke and
 	//    opPoke, opPoke is sent first and immediately overwritten by poke.
-	//    Using a non-finalized price prevents this.
-	// 2. If the optimistic price is incorrect, poke will overwrite it.
-	// 3. During the challenge period, if the price changes significantly,
-	//    poke will update the optimistic price. Without this, updates would be
-	//    halted until the challenge period concludes, regardless of the price
-	//    spread.
+	//    Using a non-finalized price prevents this because spread for regular
+	//	  poke will be calculated using the optimistic price.
+	// 2. If the optimistic price is incorrect, poke will overwrite it before
+	//    it is finalized.
 	switch c := w.contract.(type) {
 	case OpScribeContract:
 		state.pokeData, state.finalized, err = c.ReadNext(ctx)

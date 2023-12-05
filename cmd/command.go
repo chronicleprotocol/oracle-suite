@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -24,48 +25,76 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/supervisor"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/hcl"
 )
 
 // NewRootCommand returns a Cobra command with the given name and version.
 // It also adds all the provided pflag.FlagSet items to the command's persistent flags.
 func NewRootCommand(name, version string, sets ...FlagSetter) *cobra.Command {
-	c := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:          name,
 		Version:      version,
 		SilenceUsage: true,
 	}
-	flags := c.PersistentFlags()
+	flags := cmd.PersistentFlags()
 	for _, set := range sets {
 		flags.AddFlagSet(set.FlagSet())
 	}
-	return c
+	return cmd
 }
 
-func NewRunCmd(c supervisor.Config, f *ConfigFlags, l *LoggerFlags) *cobra.Command {
-	cc := &cobra.Command{
+func NewRunCmd(cfg supervisor.Config, cf *ConfigFlags, lf *LoggerFlags) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:     "run",
 		Args:    cobra.NoArgs,
 		Short:   "Run the main service",
 		Aliases: []string{"agent", "server"},
-		RunE: func(cc *cobra.Command, _ []string) error {
-			if err := f.Load(c); err != nil {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := cf.Load(cfg); err != nil {
 				return err
 			}
-			s, err := c.Services(l.Logger(), cc.Root().Use, cc.Root().Version)
+			s, err := cfg.Services(lf.Logger(), cmd.Root().Use, cmd.Root().Version)
 			if err != nil {
 				return err
 			}
-			ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer ctxCancel()
 			if err = s.Start(ctx); err != nil {
 				return err
 			}
 			return <-s.Wait()
 		},
 	}
-	flags := cc.Flags()
-	flags.AddFlagSet(f.FlagSet())
-	flags.AddFlagSet(l.FlagSet())
-	return cc
+	flags := cmd.Flags()
+	flags.AddFlagSet(cf.FlagSet())
+	flags.AddFlagSet(lf.FlagSet())
+	return cmd
+}
+
+func NewRenderConfigCmd(cfg supervisor.Config, cf *ConfigFlags) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config",
+		Args:  cobra.NoArgs,
+		Short: "Render the config file",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := cf.Load(cfg); err != nil {
+				return err
+			}
+			body := &hcl.Block{}
+			if err := hcl.Encode(cfg, body); err.HasErrors() {
+				return err
+			}
+			content, diags := body.Bytes()
+			if diags.HasErrors() {
+				return diags
+			}
+			fmt.Println(string(content))
+			return nil
+		},
+	}
+	flags := cmd.Flags()
+	flags.AddFlagSet(cf.FlagSet())
+	return cmd
 }
 
 type FlagSetter interface {

@@ -28,80 +28,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/ptrutil"
 )
 
-type textUnmarshaler struct {
-	Val string
-}
-
-func (t *textUnmarshaler) UnmarshalText(text []byte) error {
-	t.Val = string(text)
-	return nil
-}
-
-type hclUnmarshaler struct {
-	Val string
-}
-
-func (t *hclUnmarshaler) UnmarshalHCL(cty cty.Value) error {
-	t.Val = cty.AsString()
-	return nil
-}
-
 func TestDecode(t *testing.T) {
-	type basicTypes struct {
-		String          string           `hcl:"string,optional"`
-		Int             int32            `hcl:"int,optional"`
-		Float           float32          `hcl:"float,optional"`
-		Bool            bool             `hcl:"bool,optional"`
-		Slice           []int            `hcl:"slice,optional"`
-		Map             map[string]int   `hcl:"map,optional"`
-		CTY             cty.Value        `hcl:"cty,optional"`
-		TextUnmarshaler *textUnmarshaler `hcl:"text_unmarshaler,optional"`
-		HCLUnmarshaler  *hclUnmarshaler  `hcl:"hcl_unmarshaler,optional"`
-	}
-	type block struct {
-		Label string `hcl:",label"`
-		Attr  string `hcl:"attr,optional"`
-	}
-	type blocks struct {
-		Single      block              `hcl:"single,block"`
-		SinglePtr   *block             `hcl:"single_ptr,block"`
-		Slice       []block            `hcl:"slice,block"`
-		SlicePtr    []*block           `hcl:"slice_ptr,block"`
-		Map         map[string]block   `hcl:"map,block"`
-		MapPtr      map[string]*block  `hcl:"map_ptr,block"`
-		PtrSlice    *[]block           `hcl:"ptr_slice,block"`
-		PtrSlicePtr *[]*block          `hcl:"ptr_slice_ptr,block"`
-		PtrMap      *map[string]block  `hcl:"ptr_map,block"`
-		PtrMapPtr   *map[string]*block `hcl:"ptr_map_ptr,block"`
-	}
-	type singleBlock struct {
-		Block block `hcl:"block,block"`
-	}
-	type requiredAttrs struct {
-		Var    string  `hcl:"var"`
-		VarPtr *string `hcl:"var_ptr"`
-	}
-	type optionalAttrs struct {
-		Var    string  `hcl:"var,optional"`
-		VarPtr *string `hcl:"var_ptr,optional"`
-	}
-	type requiredBlocks struct {
-		Block    block  `hcl:"block,block"`
-		BlockPtr *block `hcl:"block_ptr,block"`
-	}
-	type optionalBlocks struct {
-		Block    *block `hcl:"block,block,optional"`
-		BlockPtr *block `hcl:"block_ptr,block,optional"`
-	}
-	type blockSlice struct {
-		Slice []block `hcl:"slice,block"`
-	}
-	type ignoredField struct {
-		Var string `hcl:"var,ignore"`
-	}
-	type anyField struct {
-		Var any `hcl:"var"`
-	}
 	tests := []struct {
 		input   string
 		target  any
@@ -468,7 +395,7 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestSpecialTags(t *testing.T) {
+func TestDecodeSpecialTags(t *testing.T) {
 	type config struct {
 		Attr string `hcl:"attr"`
 
@@ -492,7 +419,7 @@ func TestSpecialTags(t *testing.T) {
 	assert.Equal(t, ":0,0-0", dest.Range.String())
 }
 
-func TestRecursiveSchema(t *testing.T) {
+func TestDecodeRecursiveSchema(t *testing.T) {
 	type recur struct {
 		Recur []recur `hcl:"Recur,block"`
 	}
@@ -509,7 +436,7 @@ func TestRecursiveSchema(t *testing.T) {
 	require.False(t, diags.HasErrors(), diags.Error())
 }
 
-func TestEmbeddedStruct(t *testing.T) {
+func TestDecodeEmbeddedStruct(t *testing.T) {
 	type embedded struct {
 		EmbLabel string `hcl:",label"`
 		EmbAttr  string `hcl:"emb_attr"`
@@ -541,7 +468,7 @@ func TestEmbeddedStruct(t *testing.T) {
 	assert.Equal(t, "baz", dest.Block.EmbAttr)
 }
 
-func TestDuplicatedBlocks(t *testing.T) {
+func TestDecodeDuplicatedBlocks(t *testing.T) {
 	type config struct {
 		Block struct{} `hcl:"block,block"`
 	}
@@ -558,7 +485,7 @@ func TestDuplicatedBlocks(t *testing.T) {
 	require.True(t, diags.HasErrors(), diags.Error())
 }
 
-func TestDuplicatedOptionalBlocks(t *testing.T) {
+func TestDecodeDuplicatedOptionalBlocks(t *testing.T) {
 	type config struct {
 		Block struct{} `hcl:"block,block,optional"`
 	}

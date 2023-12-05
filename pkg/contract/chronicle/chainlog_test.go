@@ -30,26 +30,18 @@ func TestChainlog_TryGet(t *testing.T) {
 	mockClient := new(mockRPC)
 	chainlog := NewChainlog(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
-	data := hexutil.MustHexToBytes(
-		"0x" +
-			"0000000000000000000000000000000000000000000000000000000000000001" +
-			"0000000000000000000000001234567890123456789012345678901234567890",
-	)
-
-	mockClient.On(
-		"Call",
-		ctx,
-		types.Call{
-			To:    &chainlog.address,
-			Input: hexutil.MustHexToBytes("0xdc09a8a74554482f55534400000000000000000000000000000000000000000000000000"),
-		},
-		types.LatestBlockNumber,
-	).
-		Return(
-			data,
-			&types.Call{},
-			nil,
+	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
+		data := hexutil.MustHexToBytes(
+			"0x" +
+				"0000000000000000000000000000000000000000000000000000000000000001" +
+				"0000000000000000000000001234567890123456789012345678901234567890",
 		)
+
+		assert.Equal(t, types.LatestBlockNumber, blockNumber)
+		assert.Equal(t, &chainlog.address, call.To)
+		assert.Equal(t, hexutil.MustHexToBytes("0xdc09a8a74554482f55534400000000000000000000000000000000000000000000000000"), call.Input)
+		return data, &types.Call{}, nil
+	}
 
 	result, err := chainlog.TryGet("ETH/USD").Call(ctx, types.LatestBlockNumber)
 	require.NoError(t, err)

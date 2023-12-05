@@ -29,30 +29,30 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/config/spire"
 )
 
-func NewPullCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
-	cc := &cobra.Command{
+func NewPullCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "pull",
 		Args:  cobra.ExactArgs(1),
 		Short: "Pulls data from the Spire datastore (require agent)",
 	}
-	cc.AddCommand(
-		NewPullPriceCmd(c, f, l),
-		NewPullPricesCmd(c, f, l),
+	cmd.AddCommand(
+		NewPullPriceCmd(cfg, cf, lf),
+		NewPullPricesCmd(cfg, cf, lf),
 	)
-	return cc
+	return cmd
 }
 
-func NewPullPriceCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPullPriceCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "price ASSET_PAIR FEED",
 		Args:  cobra.ExactArgs(2),
 		Short: "Pulls latest price for a given pair and feed",
-		RunE: func(cc *cobra.Command, args []string) error {
-			if err := f.Load(c); err != nil {
-				return fmt.Errorf(`config error: %w`, err)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cf.Load(cfg); err != nil {
+				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.ClientServices(l.Logger(), cc.Root().Use, cc.Root().Version)
+			services, err := cfg.ClientServices(lf.Logger(), cmd.Root().Use, cmd.Root().Version)
 			if err != nil {
 				return err
 			}
@@ -87,18 +87,18 @@ type pullPricesOptions struct {
 	FilterFrom string
 }
 
-func NewPullPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *cobra.Command {
+func NewPullPricesCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
 	var pullPricesOpts pullPricesOptions
-	cc := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "prices",
 		Args:  cobra.ExactArgs(0),
 		Short: "Pulls all prices",
-		RunE: func(cc *cobra.Command, args []string) (err error) {
-			if err := f.Load(c); err != nil {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			if err := cf.Load(cfg); err != nil {
 				return err
 			}
 			ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt)
-			services, err := c.ClientServices(l.Logger(), cc.Root().Use, cc.Root().Version)
+			services, err := cfg.ClientServices(lf.Logger(), cmd.Root().Use, cmd.Root().Version)
 			if err != nil {
 				return err
 			}
@@ -123,17 +123,17 @@ func NewPullPricesCmd(c *spire.Config, f *cmd.ConfigFlags, l *cmd.LoggerFlags) *
 			return
 		},
 	}
-	cc.PersistentFlags().StringVar(
+	cmd.PersistentFlags().StringVar(
 		&pullPricesOpts.FilterFrom,
 		"filter.from",
 		"",
 		"",
 	)
-	cc.PersistentFlags().StringVar(
+	cmd.PersistentFlags().StringVar(
 		&pullPricesOpts.FilterPair,
 		"filter.pair",
 		"",
 		"",
 	)
-	return cc
+	return cmd
 }

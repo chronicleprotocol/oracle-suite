@@ -32,6 +32,7 @@ func main() {
 
 	c.AddCommand(
 		cmd.NewRunCmd(&config, &cf, &lf),
+		cmd.NewRenderConfigCmd(&config, &cf),
 		NewModelsCmd(&config, &cf, &lf),
 		NewDataCmd(&config, &cf, &lf),
 	)

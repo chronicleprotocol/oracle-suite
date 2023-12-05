@@ -248,13 +248,10 @@ func handleMuSigMessage(msg *messages.MuSigMessage) streamType {
 			})
 		}
 
-		for _, optimistic := range msgTickMeta.Optimistic {
-			signatures = append(signatures, map[string]any{
-				"type":         "scribe-optimistic/v1",
-				"signature":    optimistic.ECDSASignature.String(),
-				"signers_blob": hexutil.BytesToHex(optimistic.SignerIndexes),
-			})
-		}
+		signatures = append(signatures, map[string]any{
+			"type":      "scribe-optimistic/v2",
+			"signature": msgTickMeta.ECDSAData.String(),
+		})
 
 		data = map[string]any{
 			"body": msg.MsgBody.String(),

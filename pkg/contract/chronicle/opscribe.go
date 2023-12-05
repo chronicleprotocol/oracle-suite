@@ -29,10 +29,12 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
+// OpScribe allows interacting with the OpScribe contract.
 type OpScribe struct {
 	Scribe
 }
 
+// NewOpScribe creates a new OpScribe instance.
 func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	return &OpScribe{
 		Scribe: Scribe{
@@ -42,6 +44,17 @@ func NewOpScribe(client rpc.RPC, address types.Address) *OpScribe {
 	}
 }
 
+// Client returns the RPC client used to interact with the OpScribe.
+func (s *OpScribe) Client() rpc.RPC {
+	return s.client
+}
+
+// Address returns the address of the OpScribe contract.
+func (s *OpScribe) Address() types.Address {
+	return s.address
+}
+
+// OpChallengePeriod returns the challenge period for the OpScribe contract.
 func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
 	method := abiOpScribe.Methods["opChallengePeriod"]
 	return contract.NewTypedCall[time.Duration](
@@ -62,11 +75,15 @@ func (s *OpScribe) OpChallengePeriod() contract.TypedSelfCaller[time.Duration] {
 	)
 }
 
+// Read reads the PokeData from the contract using the current time as the
+// reference time for determining if the latest optimistic poke is finalized.
 func (s *OpScribe) Read(ctx context.Context) (PokeData, error) {
 	pd, _, err := s.ReadAt(ctx, time.Now())
 	return pd, err
 }
 
+// ReadNext reads the next poke data from the contract without checking if
+// the latest optimistic poke is already finalized.
 func (s *OpScribe) ReadNext(ctx context.Context) (PokeData, bool, error) {
 	return s.ReadNextAt(ctx, time.Now())
 }
@@ -131,6 +148,7 @@ func (s *OpScribe) ReadNextAt(ctx context.Context, readTime time.Time) (PokeData
 	return pokeData, opPokeDataFinalized, nil
 }
 
+// ReadPokeData reads the PokeData from the last non-optimistic poke.
 func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
 	pokeData, err := s.readPokeData(ctx, pokeStorageSlot, types.LatestBlockNumber)
 	if err != nil {
@@ -139,6 +157,7 @@ func (s *OpScribe) ReadPokeData(ctx context.Context) (PokeData, error) {
 	return pokeData, nil
 }
 
+// ReadOpPokeData reads the PokeData from the last optimistic poke.
 func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	pokeData, err := s.readPokeData(ctx, opPokeStorageSlot, types.LatestBlockNumber)
 	if err != nil {
@@ -147,6 +166,7 @@ func (s *OpScribe) ReadOpPokeData(ctx context.Context) (PokeData, error) {
 	return pokeData, nil
 }
 
+// OpPoke updates the optimistic poke data in the contract.
 func (s *OpScribe) OpPoke(pokeData PokeData, schnorrData SchnorrData, ecdsaData types.Signature) contract.SelfTransactableCaller {
 	return contract.NewTransactableCall(
 		contract.CallOpts{
@@ -194,8 +214,8 @@ func (s *OpScribe) opChallengePeriod(ctx context.Context, block types.BlockNumbe
 // - age: a time when the price was observed
 // - signature: a Schnorr signature
 // - commitment: a Schnorr commitment
-// - signersBlob: a byte slice with signers indexes obtained from a contract
-func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, signersBlob []byte) []byte {
+// - feedIDs: a feed IDs that are participated in the signing
+func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData SchnorrData, feedIDs FeedIDs) []byte {
 	// Asset name (wat):
 	bytes32Wat := make([]byte, 32)
 	copy(bytes32Wat, wat)
@@ -216,13 +236,16 @@ func ConstructScribeOpPokeMessage(wat string, pokeData PokeData, schnorrData Sch
 	bytes20Commitment := make([]byte, 20) //nolint:gomnd
 	copy(bytes20Commitment, schnorrData.Commitment.Bytes())
 
-	data := make([]byte, len(signersBlob)+104) //nolint:gomnd
+	// FeedIDs:
+	feedIDsBytes := feedIDs.FeedIDs()
+
+	data := make([]byte, len(feedIDsBytes)+104) //nolint:gomnd
 	copy(data[0:32], bytes32Wat)
 	copy(data[32:48], uint128Val)
 	copy(data[48:52], uint32Age)
 	copy(data[52:84], bytes32Signature)
 	copy(data[84:104], bytes20Commitment)
-	copy(data[104:], signersBlob)
+	copy(data[104:], feedIDsBytes)
 
 	return crypto.Keccak256(data).Bytes()
 }
