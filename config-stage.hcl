@@ -47,7 +47,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_BTC_USD_2"
   },
   {
     "env": "prod",
@@ -77,7 +79,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_DAI_USD_2"
   },
   {
     "env": "prod",
@@ -107,7 +111,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_ETH_USD_2"
   },
   {
     "env": "prod",
@@ -137,7 +143,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 2,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_GNO_USD_2"
   },
   {
     "env": "prod",
@@ -200,7 +208,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_MKR_USD_2"
   },
   {
     "env": "prod",
@@ -230,7 +240,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 2,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_RETH_USD_2"
   },
   {
     "env": "prod",
@@ -260,7 +272,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_SDAI_USD_2"
   },
   {
     "env": "prod",
@@ -279,7 +293,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_USDC_USD_2"
   },
   {
     "env": "prod",
@@ -298,7 +314,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_WSTETH_ETH_2"
   },
   {
     "env": "prod",
@@ -317,7 +335,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_WSTETH_USD_2"
   },
   {
     "env": "prod",
@@ -353,7 +373,9 @@ contracts = [
     "poke": {
       "spread": 0.25,
       "expiration": 14400
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_BTC_USD_1"
   },
   {
     "env": "prod",
@@ -367,7 +389,9 @@ contracts = [
     "poke": {
       "spread": 0.25,
       "expiration": 14400
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_DAI_USD_1"
   },
   {
     "env": "prod",
@@ -381,7 +405,9 @@ contracts = [
     "poke": {
       "spread": 0.25,
       "expiration": 14400
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_ETH_USD_1"
   },
   {
     "env": "prod",
@@ -395,7 +421,9 @@ contracts = [
     "poke": {
       "spread": 0.25,
       "expiration": 14400
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_GNO_USD_1"
   },
   {
     "env": "prod",
@@ -409,7 +437,9 @@ contracts = [
     "poke": {
       "spread": 0.25,
       "expiration": 14400
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_WSTETH_ETH_1"
   },
   {
     "env": "prod",
@@ -445,7 +475,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_BTC_USD_2"
   },
   {
     "env": "prod",
@@ -459,7 +491,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_DAI_USD_2"
   },
   {
     "env": "prod",
@@ -473,7 +507,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 32400
-    }
+    },
+    "version": "v1.1.0",
+    "name": "Chronicle_DSR_RATE_1"
   },
   {
     "env": "prod",
@@ -487,7 +523,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_ETH_USD_2"
   },
   {
     "env": "prod",
@@ -501,7 +539,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_MATIC_USD_2"
   },
   {
     "env": "prod",
@@ -515,7 +555,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 32400
-    }
+    },
+    "version": "v1.1.0",
+    "name": "Chronicle_SDAI_DAI_1"
   },
   {
     "env": "prod",
@@ -529,7 +571,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 32400
-    }
+    },
+    "version": "v1.1.0",
+    "name": "Chronicle_SDAI_ETH_1"
   },
   {
     "env": "prod",
@@ -543,7 +587,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 32400
-    }
+    },
+    "version": "v1.1.0",
+    "name": "Chronicle_SDAI_MATIC_1"
   },
   {
     "env": "prod",
@@ -557,7 +603,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v1.2.0",
+    "name": "Chronicle_WSTETH_ETH_2"
   },
   {
     "env": "stage",
@@ -593,7 +641,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_AAVE_USD_2"
   },
   {
     "env": "stage",
@@ -607,7 +657,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ARB_USD_2"
   },
   {
     "env": "stage",
@@ -621,7 +673,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_AVAX_USD_2"
   },
   {
     "env": "stage",
@@ -635,7 +689,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_BNB_USD_2"
   },
   {
     "env": "stage",
@@ -649,7 +705,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_BTC_USD_2"
   },
   {
     "env": "stage",
@@ -663,7 +721,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_CRV_USD_2"
   },
   {
     "env": "stage",
@@ -677,7 +737,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_DAI_USD_2"
   },
   {
     "env": "stage",
@@ -691,7 +753,9 @@ contracts = [
     "poke": {
       "expiration": 32400,
       "spread": 1
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_DSR_RATE_2"
   },
   {
     "env": "stage",
@@ -705,7 +769,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ETH_BTC_2"
   },
   {
     "env": "stage",
@@ -719,7 +785,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ETH_USD_2"
   },
   {
     "env": "stage",
@@ -733,7 +801,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_GNO_USD_2"
   },
   {
     "env": "stage",
@@ -747,7 +817,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_IBTA_USD_2"
   },
   {
     "env": "stage",
@@ -761,7 +833,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_LDO_USD_2"
   },
   {
     "env": "stage",
@@ -775,7 +849,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_LINK_USD_2"
   },
   {
     "env": "stage",
@@ -789,7 +865,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_MATIC_USD_2"
   },
   {
     "env": "stage",
@@ -803,7 +881,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_MKR_USD_2"
   },
   {
     "env": "stage",
@@ -817,7 +897,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_OP_USD_2"
   },
   {
     "env": "stage",
@@ -831,7 +913,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_RETH_USD_2"
   },
   {
     "env": "stage",
@@ -845,7 +929,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SDAI_DAI_2"
   },
   {
     "env": "stage",
@@ -859,7 +945,9 @@ contracts = [
     "poke": {
       "expiration": 32400,
       "spread": 1
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SDAI_ETH_2"
   },
   {
     "env": "stage",
@@ -873,7 +961,9 @@ contracts = [
     "poke": {
       "expiration": 32400,
       "spread": 1
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SDAI_MATIC_2"
   },
   {
     "env": "stage",
@@ -887,7 +977,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SNX_USD_2"
   },
   {
     "env": "stage",
@@ -901,7 +993,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SOL_USD_2"
   },
   {
     "env": "stage",
@@ -915,7 +1009,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_UNI_USD_2"
   },
   {
     "env": "stage",
@@ -929,7 +1025,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_USDC_USD_2"
   },
   {
     "env": "stage",
@@ -943,7 +1041,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_USDT_USD_2"
   },
   {
     "env": "stage",
@@ -957,7 +1057,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WBTC_USD_2"
   },
   {
     "env": "stage",
@@ -971,7 +1073,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WSTETH_USD_2"
   },
   {
     "env": "stage",
@@ -985,7 +1089,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_YFI_USD_2"
   },
   {
     "env": "stage",
@@ -1147,7 +1253,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_AAVE_USD_3"
   },
   {
     "env": "stage",
@@ -1166,7 +1274,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ARB_USD_3"
   },
   {
     "env": "stage",
@@ -1185,7 +1295,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_AVAX_USD_3_a"
   },
   {
     "env": "stage",
@@ -1204,7 +1316,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_BNB_USD_3"
   },
   {
     "env": "stage",
@@ -1223,7 +1337,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_BTC_USD_3"
   },
   {
     "env": "stage",
@@ -1242,7 +1358,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_CRV_USD_3"
   },
   {
     "env": "stage",
@@ -1261,7 +1379,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_DAI_USD_3"
   },
   {
     "env": "stage",
@@ -1280,7 +1400,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ETH_BTC_3"
   },
   {
     "env": "stage",
@@ -1299,7 +1421,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ETH_USD_3"
   },
   {
     "env": "stage",
@@ -1318,7 +1442,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_GNO_USD_3"
   },
   {
     "env": "stage",
@@ -1337,7 +1463,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_IBTA_USD_3"
   },
   {
     "env": "stage",
@@ -1356,7 +1484,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_LDO_USD_3"
   },
   {
     "env": "stage",
@@ -1375,7 +1505,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_LINK_USD_3"
   },
   {
     "env": "stage",
@@ -1394,7 +1526,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_MATIC_USD_3"
   },
   {
     "env": "stage",
@@ -1413,7 +1547,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_MKR_USD_3"
   },
   {
     "env": "stage",
@@ -1432,7 +1568,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_OP_USD_3"
   },
   {
     "env": "stage",
@@ -1451,7 +1589,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_RETH_USD_3"
   },
   {
     "env": "stage",
@@ -1470,7 +1610,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 0.5,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SDAI_DAI_3"
   },
   {
     "env": "stage",
@@ -1489,7 +1631,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SNX_USD_3"
   },
   {
     "env": "stage",
@@ -1508,7 +1652,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SOL_USD_3"
   },
   {
     "env": "stage",
@@ -1527,7 +1673,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_UNI_USD_3"
   },
   {
     "env": "stage",
@@ -1546,7 +1694,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_USDC_USD_3"
   },
   {
     "env": "stage",
@@ -1565,7 +1715,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_USDT_USD_3"
   },
   {
     "env": "stage",
@@ -1584,7 +1736,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WBTC_USD_3"
   },
   {
     "env": "stage",
@@ -1603,7 +1757,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WSTETH_ETH_3"
   },
   {
     "env": "stage",
@@ -1622,7 +1778,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WSTETH_USD_3"
   },
   {
     "env": "stage",
@@ -1641,7 +1799,9 @@ contracts = [
     "poke_optimistic": {
       "spread": 1,
       "expiration": 43200
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_YFI_USD_3"
   },
   {
     "env": "stage",
@@ -1655,7 +1815,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_AAVE_USD_3"
   },
   {
     "env": "stage",
@@ -1669,7 +1831,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ARB_USD_3"
   },
   {
     "env": "stage",
@@ -1683,7 +1847,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_AVAX_USD_3"
   },
   {
     "env": "stage",
@@ -1697,7 +1863,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_BNB_USD_3"
   },
   {
     "env": "stage",
@@ -1711,7 +1879,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_BTC_USD_3"
   },
   {
     "env": "stage",
@@ -1725,7 +1895,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_CRV_USD_3"
   },
   {
     "env": "stage",
@@ -1739,7 +1911,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_DAI_USD_3"
   },
   {
     "env": "stage",
@@ -1753,7 +1927,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ETH_BTC_3"
   },
   {
     "env": "stage",
@@ -1767,7 +1943,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_ETH_USD_3"
   },
   {
     "env": "stage",
@@ -1781,7 +1959,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_GNO_USD_3"
   },
   {
     "env": "stage",
@@ -1795,7 +1975,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_IBTA_USD_3"
   },
   {
     "env": "stage",
@@ -1809,7 +1991,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_LDO_USD_3"
   },
   {
     "env": "stage",
@@ -1823,7 +2007,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_LINK_USD_3"
   },
   {
     "env": "stage",
@@ -1837,7 +2023,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_MATIC_USD_3"
   },
   {
     "env": "stage",
@@ -1851,7 +2039,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_MKR_USD_3"
   },
   {
     "env": "stage",
@@ -1865,7 +2055,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_OP_USD_3"
   },
   {
     "env": "stage",
@@ -1879,7 +2071,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_RETH_USD_3"
   },
   {
     "env": "stage",
@@ -1893,7 +2087,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SDAI_DAI_3"
   },
   {
     "env": "stage",
@@ -1907,7 +2103,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SNX_USD_3"
   },
   {
     "env": "stage",
@@ -1921,7 +2119,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_SOL_USD_3"
   },
   {
     "env": "stage",
@@ -1935,7 +2135,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_UNI_USD_3"
   },
   {
     "env": "stage",
@@ -1949,7 +2151,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_USDC_USD_3"
   },
   {
     "env": "stage",
@@ -1963,7 +2167,9 @@ contracts = [
     "poke": {
       "spread": 0.5,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_USDT_USD_3"
   },
   {
     "env": "stage",
@@ -1977,7 +2183,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WBTC_USD_3"
   },
   {
     "env": "stage",
@@ -1991,7 +2199,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WSTETH_ETH_3"
   },
   {
     "env": "stage",
@@ -2005,7 +2215,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_WSTETH_USD_3"
   },
   {
     "env": "stage",
@@ -2019,7 +2231,9 @@ contracts = [
     "poke": {
       "spread": 1,
       "expiration": 21600
-    }
+    },
+    "version": "v2.0.0",
+    "name": "Chronicle_YFI_USD_3"
   }
 ]
 models = [
