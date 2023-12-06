@@ -31,7 +31,7 @@ import (
 
 func TestOpScribe_OpChallengePeriod(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -91,7 +91,7 @@ func TestOpScribe_ReadAt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			mockClient := new(mockRPC)
+			mockClient := newMockRPC(t)
 			scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 			mockClient.blockNumberFn = func(ctx context.Context) (*big.Int, error) {
@@ -133,7 +133,7 @@ func TestOpScribe_ReadAt(t *testing.T) {
 
 func TestOpScribe_OpPoke(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewOpScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	// Mocked data for the test

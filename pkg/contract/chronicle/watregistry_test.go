@@ -27,7 +27,7 @@ import (
 
 func TestWatRegistry_Wats(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -52,7 +52,7 @@ func TestWatRegistry_Wats(t *testing.T) {
 
 func TestWatRegistry_Exists(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -71,11 +71,11 @@ func TestWatRegistry_Exists(t *testing.T) {
 
 func TestWatRegistry_Config(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
-		data := hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d0420000000000000000000000000000000000000000000000000000000000000")
+		data := hexutil.MustHexToBytes("0x000000000000000000000000000000000000000000000000000000000000000d0000000000000020000000000000000000200000100000000000000000001000")
 
 		assert.Equal(t, types.LatestBlockNumber, blockNumber)
 		assert.Equal(t, &watRegistry.address, call.To)
@@ -85,7 +85,7 @@ func TestWatRegistry_Config(t *testing.T) {
 
 	expectedConfig := ConfigResult{
 		Bar:   13,
-		Bloom: FeedIDs{0x02: true, 0x0d: true},
+		Bloom: FeedIDs{0x0c: true, 0x5c: true, 0x75: true, 0xc5: true},
 	}
 
 	config, err := watRegistry.Config("DAI/USD").Call(ctx, types.LatestBlockNumber)
@@ -95,7 +95,7 @@ func TestWatRegistry_Config(t *testing.T) {
 
 func TestWatRegistry_Chains(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -119,7 +119,7 @@ func TestWatRegistry_Chains(t *testing.T) {
 
 func TestWatRegistry_Deployment(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	watRegistry := NewWatRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {

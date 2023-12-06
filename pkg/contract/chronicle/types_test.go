@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	goethABI "github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,32 +29,35 @@ func Test_uint256FeedBloomValue(t *testing.T) {
 	tests := []struct {
 		name       string
 		addresses  []string
-		checkBytes goethABI.Word
+		checkBytes string
 	}{
 		{
 			name:       "single address",
 			addresses:  []string{"0x1234567890123456789012345678901234567890"},
-			checkBytes: goethABI.Word{0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			checkBytes: "0x0000000000000000000000000000000000000000000000000000000000040000",
 		},
 		{
 			name:       "multiple addresses",
-			addresses:  []string{"0x1234567890123456789012345678901234567890", "0x3456789012345678901234567890123456789012"},
-			checkBytes: goethABI.Word{0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			addresses:  []string{"0x0c4FC7D66b7b6c684488c1F218caA18D4082da18", "0x5C01f0F08E54B85f4CaB8C6a03c9425196fe66DD", "0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9", "0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"},
+			checkBytes: "0x0000000000000020000000000000000000200000100000000000000000001000",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var bloom goethABI.Word
+			copy(bloom[:], hexutil.MustHexToBytes(tt.checkBytes))
+
 			var feedIDs FeedIDs
 			for _, addressHex := range tt.addresses {
 				feedIDs.Add(types.MustAddressFromHex(addressHex))
 			}
-			bloom := &uint256FeedBloomValue{}
+			bloomType := &uint256FeedBloomValue{}
 
 			// Encode
-			require.NoError(t, bloom.MapFrom(nil, feedIDs))
-			words, err := bloom.EncodeABI()
+			require.NoError(t, bloomType.MapFrom(nil, feedIDs))
+			words, err := bloomType.EncodeABI()
 			require.NoError(t, err)
-			assert.Equal(t, tt.checkBytes, words[0])
+			assert.Equal(t, tt.checkBytes, hexutil.BytesToHex(words.Bytes()))
 
 			// Decode
 			decFeedIDs := FeedIDs{}

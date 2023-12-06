@@ -56,33 +56,32 @@ func NewRegistry(feedRegistry *FeedRegistry, watRegistry *WatRegistry) (*Registr
 	}, nil
 }
 
-// Feeds returns a list of all feeds from the FeedRegistry contract.
-func (r *Registry) Feeds(ctx context.Context) ([]types.Address, error) {
-	return r.feedRegistry.Feeds().Call(ctx, types.LatestBlockNumber)
-}
-
 // Deployments returns a list of all deployed contracts from the WatRegistry.
 func (r *Registry) Deployments(ctx context.Context) ([]Deployment, error) {
-	feeds, err := r.feedRegistry.Feeds().Call(ctx, types.LatestBlockNumber)
+	blockNumber, err := r.feedRegistry.Client().BlockNumber(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("on-chain registry: %w", err)
 	}
-	wats, err := r.watRegistry.Wats().Call(ctx, types.LatestBlockNumber)
+	feeds, err := r.feedRegistry.Feeds().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
+	if err != nil {
+		return nil, fmt.Errorf("on-chain registry: %w", err)
+	}
+	wats, err := r.watRegistry.Wats().Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 	if err != nil {
 		return nil, fmt.Errorf("on-chain registry: %w", err)
 	}
 	var deployments []Deployment
 	for _, wat := range wats {
-		config, err := r.watRegistry.Config(wat).Call(ctx, types.LatestBlockNumber)
+		config, err := r.watRegistry.Config(wat).Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 		if err != nil {
 			return nil, fmt.Errorf("on-chain registry: %w", err)
 		}
-		chainIDs, err := r.watRegistry.Chains(wat).Call(ctx, types.LatestBlockNumber)
+		chainIDs, err := r.watRegistry.Chains(wat).Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 		if err != nil {
 			return nil, fmt.Errorf("on-chain registry: %w", err)
 		}
 		for _, chainID := range chainIDs {
-			address, err := r.watRegistry.Deployment(wat, chainID).Call(ctx, types.LatestBlockNumber)
+			address, err := r.watRegistry.Deployment(wat, chainID).Call(ctx, types.BlockNumberFromBigInt(blockNumber))
 			if err != nil {
 				return nil, fmt.Errorf("on-chain registry: %w", err)
 			}
