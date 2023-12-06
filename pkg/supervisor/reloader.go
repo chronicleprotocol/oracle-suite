@@ -26,7 +26,7 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
-const ReloaderLoggerTag = "Reloader"
+const ReloaderLoggerTag = "RELOADER"
 
 // Reloader is a service that can reload another wrapped service.
 type Reloader struct {
