@@ -26,6 +26,7 @@ const balancerV2Precision = 18
 
 var bnEther = bn.DecFloatPoint(1).Inflate(balancerV2Precision)
 var bnZero = bn.DecFloatPoint(0)
+var bnOne = bn.DecFloatPoint(1)
 
 // Complement returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
 //
@@ -35,7 +36,69 @@ func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	if x.Cmp(bnEther) < 0 {
 		return bnEther.Sub(x)
 	}
-	return bn.DecFloatPoint(0)
+	return bnZero
+}
+
+// DivUpFixed inflates prec precision and divides the number y up.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
+func _divUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+
+	// The traditional divUp formula is:
+	// divUp(x, y) := (x + y - 1) / y
+	// To avoid intermediate overflow in the addition, we distribute the division and get:
+	// divUp(x, y) := (x - 1) / y + 1
+	// Note that this requires x != 0, which we already tested for.
+	return x.Inflate(prec).Sub(bnOne).DivPrec(y, uint32(x.Prec())).Add(bnOne)
+}
+
+func _divUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return _divUpFixed(x, y, balancerV2Precision)
+}
+
+// DivDownFixed inflates prec precision and divides the number y down
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
+func _divDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.Inflate(prec).DivPrec(y, uint32(x.Prec()))
+}
+
+func _divDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return _divDownFixed(x, y, balancerV2Precision)
+}
+
+// MulDownFixed multiplies the number y and deflates prec precision
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
+func _mulDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+	return x.Mul(y).Deflate(prec)
+}
+
+func _mulDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return _mulDownFixed(x, y, balancerV2Precision)
+}
+
+// MulUpFixed multiplies the number y up and deflates prec precision
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
+func _mulUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+	// The traditional divUp formula is:
+	// divUp(x, y) := (x + y - 1) / y
+	// To avoid intermediate overflow in the addition, we distribute the division and get:
+	// divUp(x, y) := (x - 1) / y + 1
+	// Note that this requires x != 0, if x == 0 then the result is zero
+
+	ret := x.Mul(y)
+	if ret.Sign() == 0 {
+		return ret
+	}
+	return ret.Sub(bnOne).Deflate(prec).Add(bnOne)
+}
+
+func _mulUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return _mulUpFixed(x, y, balancerV2Precision)
 }
 
 var X_OUT_OF_BOUNDS = fmt.Errorf("X_OUT_OF_BOUNDS")                                                               //nolint:revive,stylecheck
@@ -515,10 +578,10 @@ func _powUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumb
 	case y.Cmp(one) == 0:
 		return x
 	case y.Cmp(two) == 0:
-		return x.MulUpFixed(x, prec)
+		return _mulUpFixed(x, x, prec)
 	case y.Cmp(four) == 0:
-		square := x.MulUpFixed(x, prec)
-		return square.MulUpFixed(square, prec)
+		square := _mulUpFixed(x, x, prec)
+		return _mulUpFixed(square, square, prec)
 	default:
 		//	uint256 raw = LogExpMath.pow(x, y);
 		//	uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
@@ -526,9 +589,13 @@ func _powUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumb
 		// uint256 internal constant MAX_POW_RELATIVE_ERROR = 10000; // 10^(-14)
 		maxPowRelativeError := bn.DecFloatPoint(MAX_POW_RELATIVE_ERROR)
 		//	uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
-		maxError := raw.MulUpFixed(maxPowRelativeError, prec).Add(one)
+		maxError := _mulUpFixed(raw, maxPowRelativeError, prec).Add(one)
 		return raw.Add(maxError)
 	}
+}
+
+func _powUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	return _powUpFixed(x, y, balancerV2Precision)
 }
 
 // PowDownFixed returns x^y, assuming both are fixed point numbers, rounding down.
@@ -547,20 +614,24 @@ func _powDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNu
 	case y.Cmp(one) == 0:
 		return x
 	case y.Cmp(two) == 0:
-		return x.MulDownFixed(x, prec)
+		return _mulDownFixed(x, x, prec)
 	case y.Cmp(four) == 0:
-		square := x.MulDownFixed(x, prec)
-		return square.MulDownFixed(square, prec)
+		square := _mulDownFixed(x, x, prec)
+		return _mulDownFixed(square, square, prec)
 	default:
 		//	uint256 raw = LogExpMath.pow(x, y);
 		//	uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
 		raw, _ := _pow(x, y)
 		// uint256 internal constant MAX_POW_RELATIVE_ERROR = 10000; // 10^(-14)
 		maxPowRelativeError := bn.DecFloatPoint(MAX_POW_RELATIVE_ERROR)
-		maxError := raw.MulUpFixed(maxPowRelativeError, prec).Add(one)
+		maxError := _mulUpFixed(raw, maxPowRelativeError, prec).Add(one)
 		if raw.Cmp(maxError) < 0 {
 			return bn.DecFloatPoint(0)
 		}
 		return raw.Sub(maxError)
 	}
+}
+
+func _powDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber { //nolint:unused
+	return _powDownFixed(x, y, balancerV2Precision)
 }

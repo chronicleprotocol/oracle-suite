@@ -66,7 +66,7 @@ func TestWeightedPool_Swap(t *testing.T) {
 			pool: &WeightedPool{
 				pair: value.Pair{
 					Base:  "WUSDM",
-					Quote: "WSTETHS",
+					Quote: "WSTETH",
 				},
 				address: types.MustAddressFromHex("0x54ca50EE86616379420Cc56718E12566aa75Abbe"),
 				tokens: []types.Address{

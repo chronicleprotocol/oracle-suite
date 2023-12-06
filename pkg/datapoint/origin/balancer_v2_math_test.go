@@ -47,6 +47,7 @@ func expectEqualWithError(actual *bn.DecFloatPointNumber, expected *bn.DecFloatP
 	}
 }
 
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/test/LogExpMath.test.ts#L9
 func TestBalancerV2_ExpLog(t *testing.T) {
 	var MAX_X = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(255), nil)).Sub(bn.DecFloatPoint(1))
 	var MAX_Y = bn.DecFloatPoint(
@@ -162,6 +163,7 @@ func TestBalancerV2_ExpLog(t *testing.T) {
 	}
 }
 
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/test/FixedPoint.test.ts#L9
 func TestBalancerV2_PowUpdownFixed(t *testing.T) {
 	valuesPow4 := []*bn.DecFloatPointNumber{
 		bn.DecFloatPoint(0.0007),

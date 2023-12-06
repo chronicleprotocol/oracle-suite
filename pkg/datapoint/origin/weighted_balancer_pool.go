@@ -332,16 +332,16 @@ func (p *WeightedPool) _calcOutGivenIn(
 	denominator := balanceIn.Add(amountIn)
 
 	// uint256 base = balanceIn.divUp(denominator);
-	base := balanceIn.DivUpFixed(denominator, balancerV2Precision)
+	base := _divUpFixed18(balanceIn, denominator)
 
 	// uint256 exponent = weightIn.divDown(weightOut);
-	exponent := weightIn.DivDownFixed(weightOut, balancerV2Precision)
+	exponent := _divDownFixed18(weightIn, weightOut)
 
 	// uint256 power = base.powUp(exponent);
-	power := _powUpFixed(base, exponent, balancerV2Precision)
+	power := _powUpFixed18(base, exponent)
 
 	// return balanceOut.mulDown(power.complement());
-	return balanceOut.MulDownFixed(_complementFixed(power), balancerV2Precision)
+	return _mulDownFixed18(balanceOut, _complementFixed(power))
 }
 
 // Returns the scaling factor for one of the Pool's tokens. Reverts if `token` is not a token registered by the Pool.
@@ -371,7 +371,7 @@ func (p *WeightedPool) _upscale(amount, scalingFactor *bn.DecFloatPointNumber) *
 	// the same direction for all amounts, as the impact of this rounding is expected to be minimal (and there's no
 	// rounding error unless `_scalingFactor()` is overriden).
 	// return FixedPoint.mulDown(amount, scalingFactor);
-	return amount.MulDownFixed(scalingFactor, balancerV2Precision)
+	return _mulDownFixed18(amount, scalingFactor)
 }
 
 // _subtractSwapFeeAmount subtracts swap fee amount from `amount`, returning a lower value.
@@ -383,7 +383,7 @@ func (p *WeightedPool) _subtractSwapFeeAmount(amount *bn.DecFloatPointNumber) (
 	// This returns amount - fee amount, so we round up (favoring a higher fee amount).
 	// uint256 feeAmount = amount.mulUp(getSwapFeePercentage());
 	// return amount.sub(feeAmount);
-	feeAmount := amount.MulUpFixed(p.swapFeePercentage, balancerV2Precision)
+	feeAmount := _mulUpFixed18(amount, p.swapFeePercentage)
 	return amount.Sub(feeAmount), feeAmount
 }
 
@@ -392,5 +392,5 @@ func (p *WeightedPool) _subtractSwapFeeAmount(amount *bn.DecFloatPointNumber) (
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/helpers/ScalingHelpers.sol#L46
 func (p *WeightedPool) _downscaleDown(amount, scalingFactor *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	// return FixedPoint.divDown(amount, scalingFactor);
-	return amount.DivDownFixed(scalingFactor, balancerV2Precision)
+	return _divDownFixed18(amount, scalingFactor)
 }

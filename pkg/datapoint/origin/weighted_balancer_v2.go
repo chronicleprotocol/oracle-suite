@@ -143,7 +143,7 @@ func (b *WeightedBalancerV2) FetchDataPoints(ctx context.Context, query []any) (
 				break
 			}
 			// price = amountOut / 10 ^ quoteDecimals
-			price := amountOut.Div(bn.DecFloatPoint(10).Inflate(uint8(quoteToken.decimals)))
+			price := amountOut.Div(bn.DecFloatPoint(1).Inflate(uint8(quoteToken.decimals)))
 			totals[pair] = totals[pair].Add(price)
 		}
 		if points[pair].Error != nil {
