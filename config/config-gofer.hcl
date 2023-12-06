@@ -58,10 +58,17 @@ gofer {
     }
   }
 
-  origin "degate" {
-    type = "degate"
-    endpoint = "https://v1-mainnet-backend.degate.com"
+  origin "degate_usdm" {
+    type = "tick_generic_jq"
+    url  = "https://v1-mainnet-backend.degate.com/order-book-ws-api/ticker?base_token_id=$${ucbase}&quote_token_id=$${ucquote}" # USDM=58, USDC=2
+    jq   = "{price: .data.last_price|tonumber, time: now|round, volume: .data.volume|tonumber}"
   }
+
+#  data_model "USDM/USDC" {
+#    alias "USDM/USDC" {
+#      origin "degate_usdm" { query = "58/2" }
+#    }
+#  }
 
   origin "dsr" {
     type = "dsr"
