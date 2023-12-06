@@ -35,19 +35,6 @@ import (
 
 const DeGateLoggerTag = "DEGATE_ORIGIN"
 
-type assetPairs []AssetPair
-
-func (m assetPairs) byPair(p value.Pair) int {
-	for index, pair := range m {
-		baseIndex := pair.IndexOf(p.Base)
-		quoteIndex := pair.IndexOf(p.Quote)
-		if baseIndex >= 0 && quoteIndex >= 0 && baseIndex < quoteIndex {
-			return index
-		}
-	}
-	return -1
-}
-
 // Structure of DeGate response
 // Copied from DeGate Golang sdk
 // https://github.com/degatedev/degate-sdk-golang/blob/master/degate/binance/response.go#L3
@@ -82,16 +69,12 @@ type degateTickerResponse struct {
 type DeGateConfig struct {
 	Endpoint string
 	Client   *http.Client
-
-	// Available pairs
-	Pairs  assetPairs
-	Logger log.Logger
+	Logger   log.Logger
 }
 
 type DeGate struct {
 	endpoint   string
 	client     *http.Client
-	pairs      assetPairs
 	tokenIDMap map[string]int
 	logger     log.Logger
 }
@@ -107,7 +90,6 @@ func NewDeGate(config DeGateConfig) (*DeGate, error) {
 	return &DeGate{
 		endpoint:   config.Endpoint,
 		client:     config.Client,
-		pairs:      config.Pairs,
 		tokenIDMap: make(map[string]int),
 		logger:     config.Logger.WithField("degate", DeGateLoggerTag),
 	}, nil
@@ -142,12 +124,6 @@ func (d *DeGate) FetchDataPoints(ctx context.Context, query []any) (map[any]data
 	}
 
 	for _, pair := range pairs {
-		index := d.pairs.byPair(pair)
-		if index < 0 {
-			points[pair] = datapoint.Point{Error: fmt.Errorf("unsupported pair: %s", pair.String())}
-			continue
-		}
-
 		ticker, err := d.fetchTicker24(ctx, d.tokenIDMap[pair.Base], d.tokenIDMap[pair.Quote])
 		if err != nil || ticker == nil {
 			points[pair] = datapoint.Point{Error: fmt.Errorf("failed in fetching ticker24(%s): %v", pair.String(), err)}

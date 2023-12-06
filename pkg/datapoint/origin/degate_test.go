@@ -33,17 +33,6 @@ func TestDeGate_FetchDataPoints(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:              "Unsupported pair",
-			pair:              value.Pair{Base: "ETH", Quote: "USDC"},
-			tokenListResponse: "{\"code\":0,\"data\":[{\"id\":2,\"base_token_id\":0,\"quote_token_id\":0,\"chain\":\"ETH\",\"code\":\"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\",\"symbol\":\"USDC\",\"name\":\"USD Coin\",\"icon\":\"https://mainnet-cdn.degate.com/token/USDC.png\",\"decimals\":6,\"is_trusted_token\":true,\"is_quotable_token\":true,\"is_gas_token\":true,\"is_list_token\":true,\"active\":true,\"is_dynamic\":false,\"is_transfer_deposit\":true,\"show_decimal\":8,\"priority\":999900,\"list_priority\":999800,\"gas_priority\":999800,\"is_black\":false},{\"id\":58,\"base_token_id\":0,\"quote_token_id\":0,\"chain\":\"ETH\",\"code\":\"0x59d9356e565ab3a36dd77763fc0d87feaf85508c\",\"symbol\":\"USDM\",\"name\":\"Mountain Protocol USD\",\"icon\":\"https://v1-mainnet-cdn.degate.com/files/token/usdm_0x59d9356e565ab3a36dd77763fc0d87feaf85508c1697432749980.jpg\",\"decimals\":18,\"is_trusted_token\":false,\"is_quotable_token\":true,\"is_gas_token\":true,\"is_list_token\":true,\"active\":true,\"is_dynamic\":false,\"is_transfer_deposit\":true,\"show_decimal\":8,\"priority\":999750,\"list_priority\":999450,\"gas_priority\":0,\"is_black\":false}]}",
-			ticker24Response:  "{\"code\":-1}",
-			expectedResult: map[value.Pair]datapoint.Point{
-				value.Pair{Base: "ETH", Quote: "USDC"}: {
-					Error: fmt.Errorf("unsupported pair: ETH/USDC"),
-				},
-			},
-		},
 	}
 
 	ctx := context.Background()
@@ -62,7 +51,6 @@ func TestDeGate_FetchDataPoints(t *testing.T) {
 			// Create DeGate Origin
 			degate, err := NewDeGate(DeGateConfig{
 				Endpoint: server.URL,
-				Pairs:    []AssetPair{{"USDM", "USDC"}},
 			})
 			require.NoError(t, err)
 

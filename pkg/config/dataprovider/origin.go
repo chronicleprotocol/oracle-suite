@@ -87,8 +87,7 @@ type configContracts struct {
 }
 
 type configOriginDeGate struct {
-	Endpoint string             `hcl:"endpoint"`
-	Pairs    []origin.AssetPair `hcl:"pairs"`
+	Endpoint string `hcl:"endpoint"`
 }
 
 type configOriginDSR struct {
@@ -235,7 +234,6 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 		origin, err := origin.NewDeGate(origin.DeGateConfig{
 			Endpoint: o.Endpoint,
 			Client:   d.HTTPClient,
-			Pairs:    o.Pairs,
 			Logger:   d.Logger,
 		})
 		if err != nil {
