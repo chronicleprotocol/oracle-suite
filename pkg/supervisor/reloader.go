@@ -184,7 +184,9 @@ func (r *Reloader) serviceReloaderRoutine() {
 		case service, ok := <-r.factoryCh:
 			if !ok {
 				r.mu.Lock()
-				r.log.Info("Stopping service due to closing factory channel")
+				r.log.
+					WithField("service", ServiceName(r.service)).
+					Info("Stopping service due to closing factory channel")
 				r.mu.Unlock()
 				return
 			}
