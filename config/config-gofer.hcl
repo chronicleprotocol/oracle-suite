@@ -81,9 +81,9 @@ gofer {
     }
   }
 
-  origin "degate_usdm" {
+  origin "degate" {
     type = "tick_generic_jq"
-    url  = "https://v1-mainnet-backend.degate.com/order-book-ws-api/ticker?base_token_id=58&quote_token_id=2" # USDM=58, USDC=2
+    url  = "https://v1-mainnet-backend.degate.com/order-book-ws-api/ticker?base_token_id=$${ucbase}&quote_token_id=$${ucquote}"
     jq   = "{price: .data.last_price|tonumber, time: now|round, volume: .data.volume|tonumber}"
   }
 
@@ -793,7 +793,9 @@ gofer {
     median {
       min_values = 2
       indirect {
-        origin "degate_usdm" { query = "USDM/USDC" }
+        alias "USDM/USDC" {
+          origin "degate" { query = "58/2" } # USDM=58, USDC=2
+        }
         reference { data_model = "USDC/USD" }
       }
       indirect {
