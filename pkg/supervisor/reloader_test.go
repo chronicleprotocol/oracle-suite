@@ -29,8 +29,9 @@ func TestReloader(t *testing.T) {
 	t.Run("start service", func(t *testing.T) {
 		s := &service{waitCh: make(chan error)}
 		r := NewReloader(ReloaderConfig{
-			Factory: func(ctx context.Context, serviceCh chan Service) {
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
 				serviceCh <- s
+				return nil
 			},
 		})
 		ctx, cancel := context.WithCancel(context.Background())
@@ -45,11 +46,11 @@ func TestReloader(t *testing.T) {
 		s := &service{waitCh: make(chan error)}
 		c := make(chan struct{})
 		r := NewReloader(ReloaderConfig{
-			Factory: func(ctx context.Context, serviceCh chan Service) {
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
 				serviceCh <- s
 				c <- struct{}{}
 				close(serviceCh)
-				<-ctx.Done()
+				return nil
 			},
 		})
 		ctx, cancel := context.WithCancel(context.Background())
@@ -69,12 +70,13 @@ func TestReloader(t *testing.T) {
 		s2 := &service{waitCh: make(chan error)}
 		c := make(chan struct{})
 		r := NewReloader(ReloaderConfig{
-			Factory: func(ctx context.Context, serviceCh chan Service) {
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
 				serviceCh <- s1
 				c <- struct{}{}
 				serviceCh <- s2
 				c <- struct{}{}
 				close(serviceCh)
+				return nil
 			},
 		})
 		ctx, cancel := context.WithCancel(context.Background())
@@ -96,8 +98,9 @@ func TestReloader(t *testing.T) {
 	t.Run("service failed to start", func(t *testing.T) {
 		s := &service{waitCh: make(chan error), failOnStart: true}
 		r := NewReloader(ReloaderConfig{
-			Factory: func(ctx context.Context, serviceCh chan Service) {
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
 				serviceCh <- s
+				return nil
 			},
 		})
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -109,9 +112,10 @@ func TestReloader(t *testing.T) {
 	t.Run("service stopped", func(t *testing.T) {
 		s := &service{waitCh: make(chan error)}
 		r := NewReloader(ReloaderConfig{
-			Factory: func(ctx context.Context, serviceCh chan Service) {
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
 				serviceCh <- s
 				s.waitCh <- nil
+				return nil
 			},
 		})
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -123,9 +127,24 @@ func TestReloader(t *testing.T) {
 	t.Run("service failed", func(t *testing.T) {
 		s := &service{waitCh: make(chan error)}
 		r := NewReloader(ReloaderConfig{
-			Factory: func(ctx context.Context, serviceCh chan Service) {
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
 				serviceCh <- s
 				s.waitCh <- fmt.Errorf("service failed")
+				return nil
+			},
+		})
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		require.NoError(t, r.Start(ctx))
+		require.Error(t, <-r.Wait())
+	})
+
+	t.Run("factory failed", func(t *testing.T) {
+		s := &service{waitCh: make(chan error)}
+		r := NewReloader(ReloaderConfig{
+			Factory: func(ctx context.Context, serviceCh chan Service) error {
+				serviceCh <- s
+				return fmt.Errorf("factory failed")
 			},
 		})
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)

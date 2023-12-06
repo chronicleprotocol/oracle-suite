@@ -23,6 +23,7 @@ import (
 
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log/null"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/errutil"
 )
 
 const ReloaderLoggerTag = "Reloader"
@@ -38,8 +39,9 @@ type Reloader struct {
 	factoryCancel context.CancelFunc
 	serviceCtx    context.Context
 	serviceCancel context.CancelFunc
+	serviceErr    error
 	service       Service
-	factory       func(ctx context.Context, service chan Service)
+	factory       func(ctx context.Context, service chan Service) error
 	factoryCh     chan Service
 	serviceWaitCh <-chan error
 }
@@ -50,8 +52,9 @@ type ReloaderConfig struct {
 	// the new service is sent to the channel, the service is reloaded with
 	// the new instance.
 	//
-	// The service is stopped when the factory channel is closed.
-	Factory func(ctx context.Context, service chan Service)
+	// The service is stopped when the factory channel is closed or when the
+	// factory function returns an error.
+	Factory func(ctx context.Context, service chan Service) error
 
 	// Logger is a logger instance.
 	Logger log.Logger
@@ -137,7 +140,15 @@ func (r *Reloader) serviceFactoryRoutine() {
 	r.mu.Lock()
 	r.factoryCtx, r.factoryCancel = context.WithCancel(r.ctx)
 	r.mu.Unlock()
-	r.factory(r.factoryCtx, r.factoryCh)
+	if err := r.factory(r.factoryCtx, r.factoryCh); err != nil {
+		r.mu.Lock()
+		r.serviceErr = errutil.Append(r.serviceErr, err)
+		r.factoryCancel()
+		if r.serviceCancel != nil {
+			r.serviceCancel()
+		}
+		r.mu.Unlock()
+	}
 }
 
 func (r *Reloader) serviceReloaderRoutine() {
@@ -146,8 +157,14 @@ func (r *Reloader) serviceReloaderRoutine() {
 		if r.factoryCancel != nil {
 			r.factoryCancel()
 		}
-		r.mu.Unlock()
+		if r.serviceCancel != nil {
+			r.serviceCancel()
+		}
+		if r.serviceErr != nil {
+			r.waitCh <- r.serviceErr
+		}
 		close(r.waitCh)
+		r.mu.Unlock()
 		r.log.Info("Stopped")
 	}()
 	for {
@@ -159,23 +176,22 @@ func (r *Reloader) serviceReloaderRoutine() {
 		// because no one is waiting for it.
 		case err := <-r.serviceWaitCh:
 			if err != nil {
-				r.waitCh <- fmt.Errorf("service reloader: service stopped with error: %w", err)
+				r.mu.Lock()
+				r.serviceErr = errutil.Append(r.serviceErr, err)
+				r.mu.Unlock()
 			}
 			return
 		case service, ok := <-r.factoryCh:
 			if !ok {
 				r.mu.Lock()
-				if r.serviceCancel != nil {
-					r.serviceCancel()
-					r.log.
-						WithField("service", ServiceName(r.service)).
-						Info("Stopping service due to closing factory channel")
-				}
+				r.log.Info("Stopping service due to closing factory channel")
 				r.mu.Unlock()
 				return
 			}
 			if err := r.reloadService(service); err != nil {
-				r.waitCh <- err
+				r.mu.Lock()
+				r.serviceErr = errutil.Append(r.serviceErr, err)
+				r.mu.Unlock()
 				return
 			}
 		}
