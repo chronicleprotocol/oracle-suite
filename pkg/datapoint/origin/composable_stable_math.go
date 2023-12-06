@@ -113,10 +113,9 @@ func _calcBptOutGivenExactTokensIn(
 	// The weighted sum of token balance ratios with fee
 	invariantRatioWithFees := bn.DecFloatPoint(0)
 	for i, balance := range balances {
-		currentWeight := balance.DivDownFixed(sumBalances, balancerV2Precision)
-		balanceRatiosWithFee[i] = balance.Add(amountsIn[i]).DivDownFixed(balance, balancerV2Precision)
-		invariantRatioWithFees = invariantRatioWithFees.Add(
-			balanceRatiosWithFee[i].MulDownFixed(currentWeight, balancerV2Precision))
+		currentWeight := _divDownFixed18(balance, sumBalances)
+		balanceRatiosWithFee[i] = _divDownFixed18(balance.Add(amountsIn[i]), balance)
+		invariantRatioWithFees = invariantRatioWithFees.Add(_mulDownFixed18(balanceRatiosWithFee[i], currentWeight))
 	}
 
 	// Second loop calculates new amounts in, taking into account the fee on the percentage excess
@@ -125,15 +124,10 @@ func _calcBptOutGivenExactTokensIn(
 		var amountInWithoutFee *bn.DecFloatPointNumber
 		// Check if the balance ratio is greater than the ideal ratio to charge fees or not
 		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
-			nonTaxableAmount :=
-				balance.MulDownFixed(
-					invariantRatioWithFees.Sub(bnOne), balancerV2Precision)
+			nonTaxableAmount := _mulDownFixed18(balance, invariantRatioWithFees.Sub(bnOne))
 			taxableAmount := amountsIn[i].Sub(nonTaxableAmount)
 			// No need to use checked arithmetic for the swap fee, it is guaranteed to be lower than 50%
-			amountInWithoutFee = nonTaxableAmount.Add(
-				taxableAmount.MulDownFixed(
-					bnOne.Sub(swapFeePercentage), balancerV2Precision),
-			)
+			amountInWithoutFee = nonTaxableAmount.Add(_mulDownFixed18(taxableAmount, bnOne.Sub(swapFeePercentage)))
 		} else {
 			amountInWithoutFee = amountsIn[i]
 		}
@@ -145,10 +139,10 @@ func _calcBptOutGivenExactTokensIn(
 	if err != nil {
 		return nil, nil, err
 	}
-	invariantRatio := newInvariant.DivDownFixed(invariant, balancerV2Precision)
+	invariantRatio := _divDownFixed18(newInvariant, invariant)
 	// If the invariant didn't increase for any reason, we simply don't mint BPT
 	if invariantRatio.Cmp(bnOne) > 0 {
-		return bptTotalSupply.MulDownFixed(invariantRatio.Sub(bnOne), balancerV2Precision),
+		return _mulDownFixed18(bptTotalSupply, invariantRatio.Sub(bnOne)),
 			feeAmountIn,
 			nil
 	}
@@ -165,9 +159,7 @@ func _calcTokenOutGivenExactBptIn(
 	bptTotalSupply, currentInvariant, swapFeePercentage *bn.DecFloatPointNumber,
 ) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
 	// Token out, so we round down overall.
-	newInvariant :=
-		bptTotalSupply.Sub(bptAmountIn).DivUpFixed(bptTotalSupply, balancerV2Precision).MulUpFixed(
-			currentInvariant, balancerV2Precision)
+	newInvariant := _mulUpFixed18(_divUpFixed18(bptTotalSupply.Sub(bptAmountIn), bptTotalSupply), currentInvariant)
 	// Calculate amount out without fee
 	newBalanceTokenIndex, err := _getTokenBalanceGivenInvariantAndAllOtherBalances(amp, balances, newInvariant, tokenIndex)
 	if err != nil {
@@ -184,16 +176,16 @@ func _calcTokenOutGivenExactBptIn(
 
 	// We can now compute how much excess balance is being withdrawn as a result of the virtual swaps, which result
 	// in swap fees.
-	currentWeight := balances[tokenIndex].DivDownFixed(sumBalances, balancerV2Precision)
+	currentWeight := _divDownFixed18(balances[tokenIndex], sumBalances)
 	taxablePercentage := _complementFixed(currentWeight)
 
 	// Swap fees are typically charged on 'token in', but there is no 'token in' here, so we apply it
 	// to 'token out'. This results in slightly larger price impact. Fees are rounded up.
-	taxableAmount := amountOutWithoutFee.MulUpFixed(taxablePercentage, balancerV2Precision)
+	taxableAmount := _mulUpFixed18(amountOutWithoutFee, taxablePercentage)
 	nonTaxableAmount := amountOutWithoutFee.Sub(taxableAmount)
 
 	// No need to use checked arithmetic for the swap fee, it is guaranteed to be lower than 50%
-	feeOfTaxableAmount := taxableAmount.MulDownFixed(bnOne.Sub(swapFeePercentage), balancerV2Precision)
+	feeOfTaxableAmount := _mulDownFixed18(taxableAmount, bnOne.Sub(swapFeePercentage))
 	feeAmount := taxableAmount.Sub(feeOfTaxableAmount)
 	return nonTaxableAmount.Add(feeOfTaxableAmount), feeAmount, nil
 }

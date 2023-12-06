@@ -469,7 +469,7 @@ func (p *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amount
 		return nil, nil, fmt.Errorf("INVALID_AMOUNT_OUT_CALCULATED")
 	}
 	// _downscaleDown(amountCalculated, scalingFactors[registeredIndexOut]) // Amount out, round down
-	return amountCalculated.DivDownFixed(p.extra.scalingFactors[indexOut], balancerV2Precision), feeAmount, nil
+	return _divDownFixed18(amountCalculated, p.extra.scalingFactors[indexOut]), feeAmount, nil
 }
 
 // Since this is an exit, we know the tokenIn is BPT. Since it is GivenIn, we know the BPT amount, and must calculate the token amount out.
@@ -715,13 +715,13 @@ func (p *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*b
 	// represent the percentage of Pool ownership the protocol should have due to each source.
 
 	// swapFeeGrowthInvariantDelta/totalGrowthInvariant*getProtocolFeePercentageCache
-	protocolSwapFeePercentage :=
-		swapFeeGrowthInvariantDelta.DivDownFixed(totalGrowthInvariant, balancerV2Precision).MulDownFixed(
-			p.extra.protocolFeePercentageCacheSwapType, balancerV2Precision)
+	protocolSwapFeePercentage := _mulDownFixed18(
+		_divDownFixed18(swapFeeGrowthInvariantDelta, totalGrowthInvariant),
+		p.extra.protocolFeePercentageCacheSwapType)
 
-	protocolYieldPercentage :=
-		nonExemptYieldGrowthInvariantDelta.DivDownFixed(totalGrowthInvariant, balancerV2Precision).MulDownFixed(
-			p.extra.protocolFeePercentageCacheYieldType, balancerV2Precision)
+	protocolYieldPercentage := _mulDownFixed18(
+		_divDownFixed18(nonExemptYieldGrowthInvariantDelta, totalGrowthInvariant),
+		p.extra.protocolFeePercentageCacheYieldType)
 
 	// These percentages can then be simply added to compute the total protocol Pool ownership percentage.
 	// This is naturally bounded above by FixedPoint.ONE so this addition cannot overflow.
@@ -969,7 +969,7 @@ func (p *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.
 		return nil, nil, err
 	}
 
-	return amountOut.DivDownFixed(p.extra.scalingFactors[indexOut], balancerV2Precision), feeAmount, nil
+	return _divDownFixed18(amountOut, p.extra.scalingFactors[indexOut]), feeAmount, nil
 }
 
 // Subtracts swap fee amount from `amount`, returning a lower value.
@@ -979,7 +979,7 @@ func (p *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage 
 	*bn.DecFloatPointNumber,
 ) {
 
-	feeAmount := amount.MulUpFixed(swapFeePercentage, balancerV2Precision)
+	feeAmount := _mulUpFixed18(amount, swapFeePercentage)
 	return amount.Sub(feeAmount), feeAmount
 }
 
@@ -989,7 +989,7 @@ func (p *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage 
 func (p *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*bn.DecFloatPointNumber) []*bn.DecFloatPointNumber {
 	result := make([]*bn.DecFloatPointNumber, len(amounts))
 	for i, amount := range amounts {
-		result[i] = amount.MulUpFixed(scalingFactors[i], balancerV2Precision)
+		result[i] = _mulUpFixed18(amount, scalingFactors[i])
 	}
 	return result
 }
@@ -1001,5 +1001,5 @@ func (p *ComposableStablePool) _upscale(amount, scalingFactor *bn.DecFloatPointN
 	// Upscale rounding wouldn't necessarily always go in the same direction: in a swap for example the balance of
 	// token in should be rounded up, and that of token out rounded down. This is the only place where we round in
 	// the same direction for all amounts, as the impact of this rounding is expected to be minimal.
-	return amount.MulUpFixed(scalingFactor, balancerV2Precision)
+	return _mulUpFixed18(amount, scalingFactor)
 }

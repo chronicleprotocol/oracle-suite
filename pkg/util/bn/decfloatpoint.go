@@ -175,29 +175,6 @@ func (x *DecFloatPointNumber) Mul(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
-// MulDownFixed multiplies the number y and deflates prec precision
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
-func (x *DecFloatPointNumber) MulDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
-	return x.Mul(y).Deflate(prec)
-}
-
-// MulUpFixed multiplies the number y up and deflates prec precision
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
-func (x *DecFloatPointNumber) MulUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
-	// The traditional divUp formula is:
-	// divUp(x, y) := (x + y - 1) / y
-	// To avoid intermediate overflow in the addition, we distribute the division and get:
-	// divUp(x, y) := (x - 1) / y + 1
-	// Note that this requires x != 0, if x == 0 then the result is zero
-
-	ret := x.Mul(y)
-	if ret.Sign() == 0 {
-		return ret
-	}
-	one := DecFloatPoint(intOne)
-	return ret.Sub(one).Deflate(prec).Add(one)
-}
-
 // Div divides the number by y and returns the result.
 //
 // Division by zero panics.
@@ -232,22 +209,6 @@ func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber
 	return x.Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
 }
 
-// DivUpFixed inflates prec precision and divides the number y up.
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
-func (x *DecFloatPointNumber) DivUpFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
-	if x.Sign() == 0 {
-		return x
-	}
-
-	// The traditional divUp formula is:
-	// divUp(x, y) := (x + y - 1) / y
-	// To avoid intermediate overflow in the addition, we distribute the division and get:
-	// divUp(x, y) := (x - 1) / y + 1
-	// Note that this requires x != 0, which we already tested for.
-	one := DecFloatPoint(intOne)
-	return x.Inflate(prec).Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
-}
-
 // DivDown divides the number y down and return the result.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
 func (x *DecFloatPointNumber) DivDown(y *DecFloatPointNumber) *DecFloatPointNumber {
@@ -255,15 +216,6 @@ func (x *DecFloatPointNumber) DivDown(y *DecFloatPointNumber) *DecFloatPointNumb
 		return x
 	}
 	return x.DivPrec(y, uint32(x.x.p))
-}
-
-// DivDownFixed inflates prec precision and divides the number y down
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
-func (x *DecFloatPointNumber) DivDownFixed(y *DecFloatPointNumber, prec uint8) *DecFloatPointNumber {
-	if x.Sign() == 0 {
-		return x
-	}
-	return x.Inflate(prec).DivPrec(y, uint32(x.x.p))
 }
 
 func (x *DecFloatPointNumber) Mod(y *DecFloatPointNumber) *DecFloatPointNumber {
