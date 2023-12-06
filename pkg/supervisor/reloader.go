@@ -81,7 +81,7 @@ func (r *Reloader) Start(ctx context.Context) (err error) {
 	}
 	r.log.Info("Starting")
 	r.ctx = ctx
-	go r.factory(r.ctx, r.factoryCh)
+	go r.serviceFactoryRoutine()
 	go r.serviceReloaderRoutine()
 	return nil
 }

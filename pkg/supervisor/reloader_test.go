@@ -49,6 +49,7 @@ func TestReloader(t *testing.T) {
 				serviceCh <- s
 				c <- struct{}{}
 				close(serviceCh)
+				<-ctx.Done()
 			},
 		})
 		ctx, cancel := context.WithCancel(context.Background())
