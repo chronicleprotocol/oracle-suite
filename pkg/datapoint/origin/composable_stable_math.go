@@ -68,16 +68,16 @@ func _calculateInvariant(amplificationParameter *bn.DecFloatPointNumber, balance
 		var DP = invariant // D_P
 		for j := 0; j < numTokens; j++ {
 			// (D_P * invariant) / (balances[j] * numTokens)
-			DP = DP.Mul(invariant).DivDown(balances[j].Mul(numTokensBi))
+			DP = _divDown(DP.Mul(invariant), balances[j].Mul(numTokensBi))
 		}
 		prevInvariant = invariant
 		// ((ampTimesTotal * sum) / AMP_PRECISION + D_P * numTokens) * invariant
-		numerator := ampTimesTotal.Mul(sum).Mul(invariant).DivDown(ampPrecision).Add(
+		numerator := _divDown(ampTimesTotal.Mul(sum).Mul(invariant), ampPrecision).Add(
 			DP.Mul(numTokensBi).Mul(invariant))
 		// ((ampTimesTotal - _AMP_PRECISION) * invariant) / _AMP_PRECISION + (numTokens + 1) * D_P
-		denominator := ampTimesTotal.Sub(ampPrecision).Mul(invariant).DivDown(ampPrecision).Add(
+		denominator := _divDown(ampTimesTotal.Sub(ampPrecision).Mul(invariant), ampPrecision).Add(
 			numTokensBi.Add(bnOne).Mul(DP))
-		invariant = numerator.DivDown(denominator)
+		invariant = _divDown(numerator, denominator)
 		if invariant.Cmp(prevInvariant) > 0 {
 			if invariant.Sub(prevInvariant).Cmp(bnOne) <= 0 {
 				return invariant, nil
@@ -206,24 +206,24 @@ func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 	var sum = balances[0]
 	var PD = balances[0].Mul(nTokensBi) // P_D
 	for j := 1; j < nTokens; j++ {
-		PD = PD.Mul(balances[j]).Mul(nTokensBi).DivDown(invariant)
+		PD = _divDown(PD.Mul(balances[j]).Mul(nTokensBi), invariant)
 		sum = sum.Add(balances[j])
 	}
 	// No need to use safe math, based on the loop above `sum` is greater than or equal to `balances[tokenIndex]`
 	sum = sum.Sub(balances[tokenIndex])
 	var inv2 = invariant.Mul(invariant)
 	// We remove the balance from c by multiplying it
-	var c = inv2.DivUp(ampTimesTotal.Mul(PD)).Mul(ampPrecision).Mul(balances[tokenIndex])
-	var b = sum.Add(invariant.DivDown(ampTimesTotal).Mul(ampPrecision))
+	var c = _divUp(inv2, ampTimesTotal.Mul(PD)).Mul(ampPrecision).Mul(balances[tokenIndex])
+	var b = sum.Add(_divDown(invariant, ampTimesTotal).Mul(ampPrecision))
 	// We iterate to find the balance
 	var prevTokenBalance *bn.DecFloatPointNumber
 	// We multiply the first iteration outside the loop with the invariant to set the value of the
 	// initial approximation.
-	var tokenBalance = inv2.Add(c).DivUp(invariant.Add(b))
+	var tokenBalance = _divUp(inv2.Add(c), invariant.Add(b))
 	for i := 0; i < 255; i++ {
 		prevTokenBalance = tokenBalance
 		tokenBalance =
-			tokenBalance.Mul(tokenBalance).Add(c).DivUp(
+			_divUp(tokenBalance.Mul(tokenBalance).Add(c),
 				tokenBalance.Mul(bnTwo).Add(b).Sub(invariant))
 		if tokenBalance.Cmp(prevTokenBalance) > 0 {
 			if tokenBalance.Sub(prevTokenBalance).Cmp(bnOne) <= 0 {

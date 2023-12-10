@@ -890,7 +890,7 @@ func (p *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFloatPoint
 // Compute balance * oldRate/currentRate, doing division last to minimize rounding error.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L242
 func (p *ComposableStablePool) _adjustedBalance(balance *bn.DecFloatPointNumber, cache *TokenRateCache) *bn.DecFloatPointNumber {
-	return balance.Mul(cache.oldRate).DivDown(cache.rate)
+	return _divDown(balance.Mul(cache.oldRate), cache.rate)
 }
 
 // Remove the item at `_bptIndex` from an arbitrary array (e.g., amountsIn).

@@ -35,7 +35,33 @@ func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return bnZero
 }
 
-// DivUpFixed inflates prec precision and divides the number y up.
+// _divUp divides the number y up and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
+func _divUp(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+	if x.Sign() == 0 {
+		return x
+	}
+	// 1 + (a - 1) / b
+	//return x.Sub(bnOne).Add(bnOne)
+	return x.Sub(bnOne).DivPrec(y, uint32(x.Prec())).Add(bnOne)
+}
+
+// _divDown divides the number y down and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
+func _divDown(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.DivPrec(y, uint32(x.Prec()))
+}
+
+// _divUpFixed inflates prec precision and divides the number y up.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
 func _divUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	if x.Sign() == 0 {
@@ -54,7 +80,7 @@ func _divUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _divUpFixed(x, y, balancerV2Precision)
 }
 
-// DivDownFixed inflates prec precision and divides the number y down
+// _divDownFixed inflates prec precision and divides the number y down
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
 func _divDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	if x.Sign() == 0 {
@@ -67,7 +93,7 @@ func _divDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _divDownFixed(x, y, balancerV2Precision)
 }
 
-// MulDownFixed multiplies the number y and deflates prec precision
+// _mulDownFixed multiplies the number y and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
 func _mulDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	return x.Mul(y).Deflate(prec)
@@ -77,7 +103,7 @@ func _mulDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _mulDownFixed(x, y, balancerV2Precision)
 }
 
-// MulUpFixed multiplies the number y up and deflates prec precision
+// _mulUpFixed multiplies the number y up and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
 func _mulUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	// The traditional divUp formula is:
