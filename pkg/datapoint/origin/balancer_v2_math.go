@@ -45,7 +45,6 @@ func _divUp(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 		return x
 	}
 	// 1 + (a - 1) / b
-	//return x.Sub(bnOne).Add(bnOne)
 	return x.Sub(bnOne).DivPrec(y, uint32(x.Prec())).Add(bnOne)
 }
 
