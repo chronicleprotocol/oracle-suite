@@ -28,17 +28,6 @@ var bnZero = bn.DecFixedPoint(0, 0)
 var bnOne = bn.DecFixedPoint(1, 0)
 var bnTwo = bn.DecFixedPoint(2, 0)
 
-// Complement returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
-//
-// Useful when computing the complement for values with some level of relative error, as it strips this error and
-// prevents intermediate negative values.
-func _complementFixed(x *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
-	if x.Cmp(bnEther) < 0 {
-		return bnEther.Sub(x)
-	}
-	return bnZero
-}
-
 // _divUp divides the number y up and return the result.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
 func _divUp(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
@@ -62,29 +51,6 @@ func _divDown(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 		return x
 	}
 	return x.DivPrec(y, 0)
-}
-
-// _divUpFixed inflates prec precision and divides the number y up.
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
-func _divUpFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumber {
-	if x.Prec() != 0 || y.Prec() != 0 {
-		panic("only available for integer")
-	}
-	if x.Sign() == 0 {
-		return x
-	}
-
-	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
-	// The traditional divUp formula is:
-	// divUp(x, y) := (x + y - 1) / y
-	// To avoid intermediate overflow in the addition, we distribute the division and get:
-	// divUp(x, y) := (x - 1) / y + 1
-	// Note that this requires x != 0, which we already tested for.
-	return x.Mul(inflated).Sub(bnOne).DivPrec(y, 0).Add(bnOne)
-}
-
-func _divUpFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
-	return _divUpFixed(x, y, balancerV2Precision)
 }
 
 // _divDownFixed inflates prec precision and divides the number y down

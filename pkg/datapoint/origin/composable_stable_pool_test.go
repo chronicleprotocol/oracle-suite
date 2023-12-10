@@ -98,20 +98,6 @@ func TestComposableStablePool_Swap(t *testing.T) {
 			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
 			amountOut: string2DecFixedPointNumber("983063"),
 		},
-		//{
-		//	name:      "GHO/BPT/USDC/USDT->USDC",
-		//	tokenIn:   types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/BPT/USDT/USDC
-		//	amountIn:  string2DecFixedPointNumber("1000000000000000000"),
-		//	tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-		//	amountOut: string2DecFixedPointNumber("991677"),
-		//},
-		//{
-		//	name:      "USDC->GHO/BPT/USDC/USDT",
-		//	tokenIn:   types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-		//	amountIn:  string2DecFixedPointNumber("1000000000000000000"),
-		//	tokenOut:  types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/BPT/USDT/USDC
-		//	amountOut: string2DecFixedPointNumber("19877475578824849899330863774"),
-		//},
 		{
 			name:      "USDT->USDC",
 			tokenIn:   types.MustAddressFromHex("0xdAC17F958D2ee523a2206206994597C13D831ec7"), // USDT

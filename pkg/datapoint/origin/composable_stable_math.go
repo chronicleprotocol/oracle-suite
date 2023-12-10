@@ -149,47 +149,6 @@ func _calcBptOutGivenExactTokensIn(
 	return bnZero, feeAmountIn, nil
 }
 
-// _calcTokenOutGivenExactBptIn implements same functionality with the following url:
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L354
-func _calcTokenOutGivenExactBptIn(
-	amp *bn.DecFixedPointNumber,
-	balances []*bn.DecFixedPointNumber,
-	tokenIndex int,
-	bptAmountIn *bn.DecFixedPointNumber,
-	bptTotalSupply, currentInvariant, swapFeePercentage *bn.DecFixedPointNumber,
-) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
-	// Token out, so we round down overall.
-	newInvariant := _mulUpFixed18(_divUpFixed18(bptTotalSupply.Sub(bptAmountIn), bptTotalSupply), currentInvariant)
-	// Calculate amount out without fee
-	newBalanceTokenIndex, err := _getTokenBalanceGivenInvariantAndAllOtherBalances(amp, balances, newInvariant, tokenIndex)
-	if err != nil {
-		return nil, nil, err
-	}
-	amountOutWithoutFee := balances[tokenIndex].Sub(newBalanceTokenIndex)
-
-	// First calculate the sum of all token balances, which will be used to calculate
-	// the current weight of each token
-	sumBalances := bnZero
-	for _, balance := range balances {
-		sumBalances = sumBalances.Add(balance)
-	}
-
-	// We can now compute how much excess balance is being withdrawn as a result of the virtual swaps, which result
-	// in swap fees.
-	currentWeight := _divDownFixed18(balances[tokenIndex], sumBalances)
-	taxablePercentage := _complementFixed(currentWeight)
-
-	// Swap fees are typically charged on 'token in', but there is no 'token in' here, so we apply it
-	// to 'token out'. This results in slightly larger price impact. Fees are rounded up.
-	taxableAmount := _mulUpFixed18(amountOutWithoutFee, taxablePercentage)
-	nonTaxableAmount := amountOutWithoutFee.Sub(taxableAmount)
-
-	// No need to use checked arithmetic for the swap fee, it is guaranteed to be lower than 50%
-	feeOfTaxableAmount := _mulDownFixed18(taxableAmount, bnOne.Sub(swapFeePercentage))
-	feeAmount := taxableAmount.Sub(feeOfTaxableAmount)
-	return nonTaxableAmount.Add(feeOfTaxableAmount), feeAmount, nil
-}
-
 // This function calculates the balance of a given token (tokenIndex)
 // given all the other balances and the invariant
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L399
