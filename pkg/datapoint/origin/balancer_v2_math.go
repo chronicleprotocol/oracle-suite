@@ -15,20 +15,24 @@
 
 package origin
 
-import "github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+import (
+	"math/big"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
+)
 
 const balancerV2Precision = 18
 
-var bnEther = bn.DecFloatPoint(1).Inflate(balancerV2Precision)
-var bnZero = bn.DecFloatPoint(0)
-var bnOne = bn.DecFloatPoint(1)
-var bnTwo = bn.DecFloatPoint(2)
+var bnEther = bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(balancerV2Precision), nil), 0)
+var bnZero = bn.DecFixedPoint(0, 0)
+var bnOne = bn.DecFixedPoint(1, 0)
+var bnTwo = bn.DecFixedPoint(2, 0)
 
 // Complement returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
 //
 // Useful when computing the complement for values with some level of relative error, as it strips this error and
 // prevents intermediate negative values.
-func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _complementFixed(x *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	if x.Cmp(bnEther) < 0 {
 		return bnEther.Sub(x)
 	}
@@ -37,7 +41,7 @@ func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 
 // _divUp divides the number y up and return the result.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
-func _divUp(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _divUp(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	if x.Prec() != 0 || y.Prec() != 0 {
 		panic("only available for integer")
 	}
@@ -45,66 +49,82 @@ func _divUp(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 		return x
 	}
 	// 1 + (a - 1) / b
-	return x.Sub(bnOne).DivPrec(y, uint32(x.Prec())).Add(bnOne)
+	return x.Sub(bnOne).DivPrec(y, 0).Add(bnOne)
 }
 
 // _divDown divides the number y down and return the result.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
-func _divDown(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _divDown(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	if x.Prec() != 0 || y.Prec() != 0 {
 		panic("only available for integer")
 	}
 	if x.Sign() == 0 {
 		return x
 	}
-	return x.DivPrec(y, uint32(x.Prec()))
+	return x.DivPrec(y, 0)
 }
 
 // _divUpFixed inflates prec precision and divides the number y up.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
-func _divUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+func _divUpFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
 	if x.Sign() == 0 {
 		return x
 	}
 
+	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
 	// The traditional divUp formula is:
 	// divUp(x, y) := (x + y - 1) / y
 	// To avoid intermediate overflow in the addition, we distribute the division and get:
 	// divUp(x, y) := (x - 1) / y + 1
 	// Note that this requires x != 0, which we already tested for.
-	return x.Inflate(prec).Sub(bnOne).DivPrec(y, uint32(x.Prec())).Add(bnOne)
+	return x.Mul(inflated).Sub(bnOne).DivPrec(y, 0).Add(bnOne)
 }
 
-func _divUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _divUpFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _divUpFixed(x, y, balancerV2Precision)
 }
 
 // _divDownFixed inflates prec precision and divides the number y down
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
-func _divDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+func _divDownFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
 	if x.Sign() == 0 {
 		return x
 	}
-	return x.Inflate(prec).DivPrec(y, uint32(x.Prec()))
+	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
+	return x.Mul(inflated).DivPrec(y, 0)
 }
 
-func _divDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _divDownFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _divDownFixed(x, y, balancerV2Precision)
 }
 
 // _mulDownFixed multiplies the number y and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
-func _mulDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
-	return x.Mul(y).Deflate(prec)
+func _mulDownFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
+	return x.Mul(y).DivPrec(inflated, 0)
 }
 
-func _mulDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _mulDownFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _mulDownFixed(x, y, balancerV2Precision)
 }
 
 // _mulUpFixed multiplies the number y up and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
-func _mulUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
+func _mulUpFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+
 	// The traditional divUp formula is:
 	// divUp(x, y) := (x + y - 1) / y
 	// To avoid intermediate overflow in the addition, we distribute the division and get:
@@ -115,9 +135,10 @@ func _mulUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumb
 	if ret.Sign() == 0 {
 		return ret
 	}
-	return ret.Sub(bnOne).Deflate(prec).Add(bnOne)
+	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
+	return ret.Sub(bnOne).DivPrec(inflated, 0).Add(bnOne)
 }
 
-func _mulUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func _mulUpFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _mulUpFixed(x, y, balancerV2Precision)
 }

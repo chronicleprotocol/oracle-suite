@@ -20,31 +20,31 @@ type ComposableStablePoolConfig struct {
 }
 
 type LastJoinExitData struct {
-	lastJoinExitAmplification *bn.DecFloatPointNumber
-	lastPostJoinExitInvariant *bn.DecFloatPointNumber
+	lastJoinExitAmplification *bn.DecFixedPointNumber
+	lastPostJoinExitInvariant *bn.DecFixedPointNumber
 }
 
 type TokenRateCache struct {
-	rate     *bn.DecFloatPointNumber
-	oldRate  *bn.DecFloatPointNumber
-	duration *bn.DecFloatPointNumber
-	expires  *bn.DecFloatPointNumber
+	rate     *bn.DecFixedPointNumber
+	oldRate  *bn.DecFixedPointNumber
+	duration *bn.DecFixedPointNumber
+	expires  *bn.DecFixedPointNumber
 }
 
 type AmplificationParameter struct {
-	value      *bn.DecFloatPointNumber
+	value      *bn.DecFixedPointNumber
 	isUpdating bool
-	precision  *bn.DecFloatPointNumber
+	precision  *bn.DecFixedPointNumber
 }
 
 type Extra struct {
 	amplificationParameter              AmplificationParameter
-	scalingFactors                      []*bn.DecFloatPointNumber
+	scalingFactors                      []*bn.DecFixedPointNumber
 	lastJoinExit                        LastJoinExitData
 	tokensExemptFromYieldProtocolFee    []bool
 	tokenRateCaches                     []TokenRateCache
-	protocolFeePercentageCacheSwapType  *bn.DecFloatPointNumber
-	protocolFeePercentageCacheYieldType *bn.DecFloatPointNumber
+	protocolFeePercentageCacheSwapType  *bn.DecFixedPointNumber
+	protocolFeePercentageCacheYieldType *bn.DecFixedPointNumber
 }
 
 type ComposableStablePool struct {
@@ -52,11 +52,11 @@ type ComposableStablePool struct {
 	address types.Address
 
 	tokens            []types.Address
-	balances          []*bn.DecFloatPointNumber
+	balances          []*bn.DecFixedPointNumber
 	bptIndex          int
 	rateProviders     []types.Address
-	totalSupply       *bn.DecFloatPointNumber
-	swapFeePercentage *bn.DecFloatPointNumber
+	totalSupply       *bn.DecFixedPointNumber
+	swapFeePercentage *bn.DecFixedPointNumber
 	extra             Extra
 }
 
@@ -160,9 +160,9 @@ func (c *ComposableStablePools) getPoolTokens(ctx context.Context, blockNumber t
 			tokensMap[address] = struct{}{}
 		}
 		pool.tokens = tokens
-		var decBalances []*bn.DecFloatPointNumber
+		var decBalances []*bn.DecFixedPointNumber
 		for _, balance := range balances {
-			decBalances = append(decBalances, bn.DecFloatPoint(balance))
+			decBalances = append(decBalances, bn.DecFixedPoint(balance, 0))
 		}
 		pool.balances = decBalances
 	}
@@ -222,7 +222,7 @@ func (c *ComposableStablePools) getPoolParameters(ctx context.Context, blockNumb
 		if err := getRateProviders.DecodeValues(resp[i*n+1], &pool.rateProviders); err != nil {
 			return fmt.Errorf("failed decoding rate providers calls: %s, %w", pool.pair.String(), err)
 		}
-		pool.swapFeePercentage = bn.DecFloatPoint(new(big.Int).SetBytes(resp[i*n+2]))
+		pool.swapFeePercentage = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+2]), 0)
 		var amplificationParameter, amplificationPrecision *big.Int
 		var isUpdating bool
 		if err := getAmplificationParameter.DecodeValues(resp[i*n+3], &amplificationParameter, &isUpdating, &amplificationPrecision); err != nil {
@@ -236,9 +236,9 @@ func (c *ComposableStablePools) getPoolParameters(ctx context.Context, blockNumb
 		if err := getLastJoinExitData.DecodeValues(resp[i*n+5], &lastJoinExitAmplification, &lastPostJoinExitInvariant); err != nil {
 			return fmt.Errorf("failed decoding last join exit calls: %s, %w", pool.pair.String(), err)
 		}
-		pool.totalSupply = bn.DecFloatPoint(new(big.Int).SetBytes(resp[i*n+6]))
-		pool.extra.protocolFeePercentageCacheSwapType = bn.DecFloatPoint(new(big.Int).SetBytes(resp[i*n+7]))
-		pool.extra.protocolFeePercentageCacheYieldType = bn.DecFloatPoint(new(big.Int).SetBytes(resp[i*n+8]))
+		pool.totalSupply = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+6]), 0)
+		pool.extra.protocolFeePercentageCacheSwapType = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+7]), 0)
+		pool.extra.protocolFeePercentageCacheYieldType = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+8]), 0)
 		pool.extra.tokensExemptFromYieldProtocolFee = make([]bool, len(pool.tokens))
 		for j := 0; j < len(pool.tokens); j++ {
 			var isTokenExempt bool
@@ -247,15 +247,15 @@ func (c *ComposableStablePools) getPoolParameters(ctx context.Context, blockNumb
 			}
 			pool.extra.tokensExemptFromYieldProtocolFee[j] = isTokenExempt
 		}
-		pool.extra.amplificationParameter.value = bn.DecFloatPoint(amplificationParameter)
+		pool.extra.amplificationParameter.value = bn.DecFixedPoint(amplificationParameter, 0)
 		pool.extra.amplificationParameter.isUpdating = isUpdating
-		pool.extra.amplificationParameter.precision = bn.DecFloatPoint(amplificationPrecision)
-		pool.extra.scalingFactors = make([]*bn.DecFloatPointNumber, len(scalingFactors))
+		pool.extra.amplificationParameter.precision = bn.DecFixedPoint(amplificationPrecision, 0)
+		pool.extra.scalingFactors = make([]*bn.DecFixedPointNumber, len(scalingFactors))
 		for j, factor := range scalingFactors {
-			pool.extra.scalingFactors[j] = bn.DecFloatPoint(factor)
+			pool.extra.scalingFactors[j] = bn.DecFixedPoint(factor, 0)
 		}
-		pool.extra.lastJoinExit.lastJoinExitAmplification = bn.DecFloatPoint(lastJoinExitAmplification)
-		pool.extra.lastJoinExit.lastPostJoinExitInvariant = bn.DecFloatPoint(lastPostJoinExitInvariant)
+		pool.extra.lastJoinExit.lastJoinExitAmplification = bn.DecFixedPoint(lastJoinExitAmplification, 0)
+		pool.extra.lastJoinExit.lastPostJoinExitInvariant = bn.DecFixedPoint(lastPostJoinExitInvariant, 0)
 	}
 	return nil
 }
@@ -294,10 +294,10 @@ func (c *ComposableStablePools) getPoolRateCache(ctx context.Context, blockNumbe
 				return fmt.Errorf("failed decoding token rate cache calls: %s, %w", pool.pair.String(), err)
 			}
 			pool.extra.tokenRateCaches[j] = TokenRateCache{
-				rate:     bn.DecFloatPoint(rate),
-				oldRate:  bn.DecFloatPoint(oldRate),
-				duration: bn.DecFloatPoint(duration),
-				expires:  bn.DecFloatPoint(expires),
+				rate:     bn.DecFixedPoint(rate, 0),
+				oldRate:  bn.DecFixedPoint(oldRate, 0),
+				duration: bn.DecFixedPoint(duration, 0),
+				expires:  bn.DecFixedPoint(expires, 0),
 			}
 		}
 	}
@@ -313,9 +313,9 @@ func (c *ComposableStablePools) FindPoolByPair(pair value.Pair) *ComposableStabl
 	return nil
 }
 
-func (p *ComposableStablePool) CalcAmountOut(tokenIn, tokenOut types.Address, amountIn *bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) CalcAmountOut(tokenIn, tokenOut types.Address, amountIn *bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 
@@ -334,24 +334,24 @@ func (p *ComposableStablePool) CalcAmountOut(tokenIn, tokenOut types.Address, am
 			p.pair.String(), tokenIn.String(), tokenOut.String())
 	}
 
-	var amountOut, feeAmount *bn.DecFloatPointNumber
+	var amountOut, feeAmount *bn.DecFixedPointNumber
 	var err error
 	if tokenIn == p.address || tokenOut == p.address {
 		amountOut, feeAmount, err = p._swapWithBptGivenIn(indexIn, indexOut, amountIn)
 	} else {
 		amountOut, feeAmount, err = p._swapGivenIn(indexIn, indexOut, amountIn)
 	}
-	return bn.DecFloatPoint(amountOut), bn.DecFloatPoint(feeAmount), err
+	return amountOut, feeAmount, err
 }
 
 // _onRegularSwap implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L283
 func (p *ComposableStablePool) _onRegularSwap(
-	amountIn *bn.DecFloatPointNumber,
-	registeredBalances []*bn.DecFloatPointNumber,
+	amountIn *bn.DecFixedPointNumber,
+	registeredBalances []*bn.DecFixedPointNumber,
 	registeredIndexIn,
 	registeredIndexOut int,
-) (*bn.DecFloatPointNumber, error) {
+) (*bn.DecFixedPointNumber, error) {
 	// Adjust indices and balances for BPT token
 	// uint256[] memory balances = _dropBptItem(registeredBalances);
 	// uint256 indexIn = _skipBptIndex(indexIn);
@@ -376,11 +376,11 @@ func (p *ComposableStablePool) _onRegularSwap(
 // _onSwapGivenIn implements same functionality with the following url:
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L242
 func (p *ComposableStablePool) _onSwapGivenIn(
-	amountIn *bn.DecFloatPointNumber,
-	registeredBalances []*bn.DecFloatPointNumber,
+	amountIn *bn.DecFixedPointNumber,
+	registeredBalances []*bn.DecFixedPointNumber,
 	indexIn,
 	indexOut int,
-) (*bn.DecFloatPointNumber, error) {
+) (*bn.DecFixedPointNumber, error) {
 
 	return p._onRegularSwap(amountIn, registeredBalances, indexIn, indexOut)
 }
@@ -394,13 +394,13 @@ func (p *ComposableStablePool) _onSwapGivenIn(
 // but not yet applied to the balances.
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L314
-func (p *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amountIn *bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amountIn *bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 
-	var amountCalculated, feeAmount *bn.DecFloatPointNumber
+	var amountCalculated, feeAmount *bn.DecFixedPointNumber
 
 	// bool isGivenIn = swapRequest.kind == IVault.SwapKind.GIVEN_IN;
 	// _upscaleArray(registeredBalances, scalingFactors);
@@ -477,13 +477,13 @@ func (p *ComposableStablePool) _swapWithBptGivenIn(indexIn, indexOut int, amount
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L504
 func (p *ComposableStablePool) _exitSwapExactBptInForTokenOut(
-	bptAmount *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
+	bptAmount *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
 	indexOut int,
-	currentAmp *bn.DecFloatPointNumber,
-	actualSupply *bn.DecFloatPointNumber,
-	preJoinExitInvariant *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	currentAmp *bn.DecFixedPointNumber,
+	actualSupply *bn.DecFixedPointNumber,
+	preJoinExitInvariant *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 
 	amountOut, feeAmount, err := _calcTokenOutGivenExactBptIn(
 		currentAmp, balances, indexOut, bptAmount, actualSupply, preJoinExitInvariant, p.swapFeePercentage)
@@ -503,13 +503,13 @@ func (p *ComposableStablePool) _exitSwapExactBptInForTokenOut(
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L375
 func (p *ComposableStablePool) _doJoinSwap(
 	isGivenIn bool,
-	amount *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
+	amount *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
 	indexIn int,
-	currentAmp *bn.DecFloatPointNumber,
-	actualSupply *bn.DecFloatPointNumber,
-	preJoinExitInvariant *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	currentAmp *bn.DecFixedPointNumber,
+	actualSupply *bn.DecFixedPointNumber,
+	preJoinExitInvariant *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 
 	if isGivenIn {
 		return p._joinSwapExactTokenInForBptOut(amount, balances, indexIn, currentAmp, actualSupply, preJoinExitInvariant)
@@ -524,13 +524,13 @@ func (p *ComposableStablePool) _doJoinSwap(
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L470
 func (p *ComposableStablePool) _doExitSwap(
 	isGivenIn bool,
-	amount *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
+	amount *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
 	indexOut int,
-	currentAmp *bn.DecFloatPointNumber,
-	actualSupply *bn.DecFloatPointNumber,
-	preJoinExitInvariant *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	currentAmp *bn.DecFixedPointNumber,
+	actualSupply *bn.DecFixedPointNumber,
+	preJoinExitInvariant *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 
 	if isGivenIn {
 		return p._exitSwapExactBptInForTokenOut(amount, balances, indexOut, currentAmp, actualSupply, preJoinExitInvariant)
@@ -545,18 +545,18 @@ func (p *ComposableStablePool) _doExitSwap(
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L409
 func (p *ComposableStablePool) _joinSwapExactTokenInForBptOut(
-	amountIn *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
+	amountIn *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
 	indexIn int,
-	currentAmp *bn.DecFloatPointNumber,
-	actualSupply *bn.DecFloatPointNumber,
-	preJoinExitInvariant *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	currentAmp *bn.DecFixedPointNumber,
+	actualSupply *bn.DecFixedPointNumber,
+	preJoinExitInvariant *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 	// The StableMath function was created with joins in mind, so it expects a full amounts array.
 	// We create an empty one and only set the amount for the token involved.
-	amountsIn := make([]*bn.DecFloatPointNumber, len(balances))
+	amountsIn := make([]*bn.DecFixedPointNumber, len(balances))
 	for i := range amountsIn {
-		amountsIn[i] = bn.DecFloatPoint(0)
+		amountsIn[i] = bnZero
 	}
 	amountsIn[indexIn] = amountIn
 	bptOut, feeAmountIn, err := _calcBptOutGivenExactTokensIn(
@@ -573,11 +573,11 @@ func (p *ComposableStablePool) _joinSwapExactTokenInForBptOut(
 // Pay any due protocol fees and calculate values necessary for performing the join/exit.
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePool.sol#L701
-func (p *ComposableStablePool) _beforeJoinExit(registeredBalances []*bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	[]*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) _beforeJoinExit(registeredBalances []*bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	[]*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 
@@ -590,7 +590,7 @@ func (p *ComposableStablePool) _beforeJoinExit(registeredBalances []*bn.DecFloat
 	// If the amplification factor is the same as it was during the last join/exit then we can reuse the
 	// value calculated using the "old" amplification factor. If not, then we have to calculate this now.
 	var (
-		preJoinExitInvariant *bn.DecFloatPointNumber
+		preJoinExitInvariant *bn.DecFixedPointNumber
 	)
 	if currentAmp.Cmp(p.extra.lastJoinExit.lastJoinExitAmplification) == 0 {
 		preJoinExitInvariant = oldAmpPreJoinExitInvariant
@@ -612,8 +612,8 @@ func (p *ComposableStablePool) _beforeJoinExit(registeredBalances []*bn.DecFloat
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolProtocolFees.sol#L64
 func (p *ComposableStablePool) _payProtocolFeesBeforeJoinExit(
-	registeredBalances []*bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, []*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	registeredBalances []*bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, []*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 
 	virtualSupply, droppedBalances := p._dropBptItemFromBalances(registeredBalances)
 	// First, we'll compute what percentage of the Pool the protocol should own due to charging protocol fees on
@@ -637,9 +637,9 @@ func (p *ComposableStablePool) _payProtocolFeesBeforeJoinExit(
 }
 
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolProtocolFees.sol#L102
-func (p *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 	// We compute three invariants, adjusting the balances of tokens that have rate providers by undoing the current
@@ -701,13 +701,13 @@ func (p *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*b
 	// Calculate the delta for swap fee growth invariant
 	swapFeeGrowthInvariantDelta := swapFeeGrowthInvariant.Sub(p.extra.lastJoinExit.lastPostJoinExitInvariant)
 	if swapFeeGrowthInvariantDelta.Cmp(bnZero) < 0 {
-		swapFeeGrowthInvariantDelta = bn.DecFloatPoint(0)
+		swapFeeGrowthInvariantDelta = bnZero
 	}
 
 	// Calculate the delta for non-exempt yield growth invariant
 	nonExemptYieldGrowthInvariantDelta := totalNonExemptGrowthInvariant.Sub(swapFeeGrowthInvariant)
 	if nonExemptYieldGrowthInvariantDelta.Cmp(bnZero) < 0 {
-		nonExemptYieldGrowthInvariantDelta = bn.DecFloatPoint(0)
+		nonExemptYieldGrowthInvariantDelta = bnZero
 	}
 
 	// We can now derive what percentage of the Pool's total value each invariant delta represents by dividing by
@@ -732,19 +732,19 @@ func (p *ComposableStablePool) _getProtocolPoolOwnershipPercentage(balances []*b
 }
 
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolProtocolFees.sol#L189
-func (p *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 	// We always calculate the swap fee growth invariant, since we cannot easily know whether swap fees have
 	// accumulated or not.
 
 	var (
-		swapFeeGrowthInvariant        *bn.DecFloatPointNumber
-		totalNonExemptGrowthInvariant *bn.DecFloatPointNumber
-		totalGrowthInvariant          *bn.DecFloatPointNumber
+		swapFeeGrowthInvariant        *bn.DecFixedPointNumber
+		totalNonExemptGrowthInvariant *bn.DecFixedPointNumber
+		totalGrowthInvariant          *bn.DecFixedPointNumber
 		err                           error
 	)
 
@@ -804,7 +804,7 @@ func (p *ComposableStablePool) _getGrowthInvariants(balances []*bn.DecFloatPoint
 // and `balances` is assumed to be the current Pool balances (including BPT).
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolStorage.sol#L259
-func (p *ComposableStablePool) _dropBptItemFromBalances(balances []*bn.DecFloatPointNumber) (*bn.DecFloatPointNumber, []*bn.DecFloatPointNumber) {
+func (p *ComposableStablePool) _dropBptItemFromBalances(balances []*bn.DecFixedPointNumber) (*bn.DecFixedPointNumber, []*bn.DecFixedPointNumber) {
 	return p._getVirtualSupply(balances[p.bptIndex]), p._dropBptItem(balances)
 }
 
@@ -820,7 +820,7 @@ func (p *ComposableStablePool) _dropBptItemFromBalances(balances []*bn.DecFloatP
 // joins/exit functions, the totalSupply can change as BPT are minted for joins or burned for exits.
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolStorage.sol#L386
-func (p *ComposableStablePool) _getVirtualSupply(bptBalance *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func (p *ComposableStablePool) _getVirtualSupply(bptBalance *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	// The initial amount of BPT pre-minted is _PREMINTED_TOKEN_BALANCE, and it goes entirely to the pool balance in
 	// the vault. So the virtualSupply (the amount of BPT supply in circulation) is defined as:
 	// virtualSupply = totalSupply() - _balances[_bptIndex]
@@ -867,9 +867,9 @@ func (p *ComposableStablePool) _areAllTokensExempt() bool {
 // Apply the token ratios to a set of balances, optionally adjusting for exempt yield tokens.
 // The `balances` array is assumed to not include BPT to ensure that token indices align.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L222
-func (p *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFloatPointNumber, ignoreExemptFlags bool) []*bn.DecFloatPointNumber {
+func (p *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFixedPointNumber, ignoreExemptFlags bool) []*bn.DecFixedPointNumber {
 	totalTokensWithoutBpt := len(balances)
-	adjustedBalances := make([]*bn.DecFloatPointNumber, totalTokensWithoutBpt)
+	adjustedBalances := make([]*bn.DecFixedPointNumber, totalTokensWithoutBpt)
 
 	for i := 0; i < totalTokensWithoutBpt; i++ {
 		skipBptIndex := i
@@ -889,14 +889,14 @@ func (p *ComposableStablePool) _getAdjustedBalances(balances []*bn.DecFloatPoint
 
 // Compute balance * oldRate/currentRate, doing division last to minimize rounding error.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolRates.sol#L242
-func (p *ComposableStablePool) _adjustedBalance(balance *bn.DecFloatPointNumber, cache *TokenRateCache) *bn.DecFloatPointNumber {
+func (p *ComposableStablePool) _adjustedBalance(balance *bn.DecFixedPointNumber, cache *TokenRateCache) *bn.DecFixedPointNumber {
 	return _divDown(balance.Mul(cache.oldRate), cache.rate)
 }
 
 // Remove the item at `_bptIndex` from an arbitrary array (e.g., amountsIn).
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/ComposableStablePoolStorage.sol#L246
-func (p *ComposableStablePool) _dropBptItem(amounts []*bn.DecFloatPointNumber) []*bn.DecFloatPointNumber {
-	amountsWithoutBpt := make([]*bn.DecFloatPointNumber, len(amounts)-1)
+func (p *ComposableStablePool) _dropBptItem(amounts []*bn.DecFixedPointNumber) []*bn.DecFixedPointNumber {
+	amountsWithoutBpt := make([]*bn.DecFixedPointNumber, len(amounts)-1)
 	bptIndex := p.bptIndex
 
 	for i := 0; i < len(amountsWithoutBpt); i++ {
@@ -917,7 +917,7 @@ func (p *ComposableStablePool) _dropBptItem(amounts []*bn.DecFloatPointNumber) [
 // @return bptAmount - The amount of BPT to mint such that it is `poolPercentage` of the resultant total supply.
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-utils/contracts/external-fees/ExternalFees.sol#L31
-func (p *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolOwnershipPercentage *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func (p *ComposableStablePool) _bptForPoolOwnershipPercentage(totalSupply, poolOwnershipPercentage *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	// If we mint some amount `bptAmount` of BPT then the percentage ownership of the pool this grants is given by:
 	// `poolOwnershipPercentage = bptAmount / (totalSupply + bptAmount)`.
 	// Solving for `bptAmount`, we arrive at:
@@ -949,9 +949,9 @@ func (p *ComposableStablePool) _skipBptIndex(index int) int {
 // processing for a regular swap.
 //
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-utils/contracts/BaseGeneralPool.sol#L49
-func (p *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 	// Fees are subtracted before scaling, to reduce the complexity of the rounding direction analysis.
@@ -974,9 +974,9 @@ func (p *ComposableStablePool) _swapGivenIn(indexIn, indexOut int, amountIn *bn.
 
 // Subtracts swap fee amount from `amount`, returning a lower value.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-utils/contracts/BasePool.sol#L603
-func (p *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage *bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
-	*bn.DecFloatPointNumber,
+func (p *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage *bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
+	*bn.DecFixedPointNumber,
 ) {
 
 	feeAmount := _mulUpFixed18(amount, swapFeePercentage)
@@ -986,8 +986,8 @@ func (p *ComposableStablePool) _subtractSwapFeeAmount(amount, swapFeePercentage 
 // Same as `_upscale`, but for an entire array. This function does not return anything, but instead *mutates*
 // the `amounts` array.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/helpers/ScalingHelpers.sol#L64C1-L64C1
-func (p *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*bn.DecFloatPointNumber) []*bn.DecFloatPointNumber {
-	result := make([]*bn.DecFloatPointNumber, len(amounts))
+func (p *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*bn.DecFixedPointNumber) []*bn.DecFixedPointNumber {
+	result := make([]*bn.DecFixedPointNumber, len(amounts))
 	for i, amount := range amounts {
 		result[i] = _mulUpFixed18(amount, scalingFactors[i])
 	}
@@ -997,7 +997,7 @@ func (p *ComposableStablePool) _upscaleArray(amounts, scalingFactors []*bn.DecFl
 // Applies `scalingFactor` to `amount`, resulting in a larger or equal value depending on whether it needed
 // scaling or not.
 // https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/helpers/ScalingHelpers.sol#L32
-func (p *ComposableStablePool) _upscale(amount, scalingFactor *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+func (p *ComposableStablePool) _upscale(amount, scalingFactor *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	// Upscale rounding wouldn't necessarily always go in the same direction: in a swap for example the balance of
 	// token in should be rounded up, and that of token out rounded down. This is the only place where we round in
 	// the same direction for all amounts, as the impact of this rounding is expected to be minimal.

@@ -8,7 +8,7 @@ import (
 
 const AmpPrecision = 1e3
 
-var ampPrecision = bn.DecFloatPoint(AmpPrecision)
+var ampPrecision = bn.DecFixedPoint(AmpPrecision, 0)
 
 var STABLE_INVARIANT_DIDNT_CONVERGE = fmt.Errorf("STABLE_INVARIANT_DIDNT_CONVERGE")     //nolint:revive,stylecheck
 var STABLE_GET_BALANCE_DIDNT_CONVERGE = fmt.Errorf("STABLE_GET_BALANCE_DIDNT_CONVERGE") //nolint:revive,stylecheck
@@ -37,8 +37,8 @@ var STABLE_GET_BALANCE_DIDNT_CONVERGE = fmt.Errorf("STABLE_GET_BALANCE_DIDNT_CON
 // See: https://github.com/curvefi/curve-contract/blob/b0bbf77f8f93c9c5f4e415bce9cd71f0cdee960e/contracts/pool-templates/base/SwapTemplateBase.vy#L206
 // solhint-disable-previous-line max-line-length
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L57
-func _calculateInvariant(amplificationParameter *bn.DecFloatPointNumber, balances []*bn.DecFloatPointNumber) (
-	*bn.DecFloatPointNumber,
+func _calculateInvariant(amplificationParameter *bn.DecFixedPointNumber, balances []*bn.DecFixedPointNumber) (
+	*bn.DecFixedPointNumber,
 	error,
 ) {
 	/**********************************************************************************************
@@ -54,14 +54,14 @@ func _calculateInvariant(amplificationParameter *bn.DecFloatPointNumber, balance
 
 	var sum = bnZero // S in the Curve version
 	var numTokens = len(balances)
-	var numTokensBi = bn.DecFloatPoint(numTokens)
+	var numTokensBi = bn.DecFixedPoint(numTokens, 0)
 	for i := 0; i < numTokens; i++ {
 		sum = sum.Add(balances[i])
 	}
 	if sum.Cmp(bnZero) == 0 {
 		return bnZero, nil
 	}
-	var prevInvariant *bn.DecFloatPointNumber                   // Dprev in the Curve version
+	var prevInvariant *bn.DecFixedPointNumber                   // Dprev in the Curve version
 	var invariant = sum                                         // D in the Curve version
 	var ampTimesTotal = amplificationParameter.Mul(numTokensBi) // Ann in the Curve version
 	for i := 0; i < 255; i++ {
@@ -92,26 +92,26 @@ func _calculateInvariant(amplificationParameter *bn.DecFloatPointNumber, balance
 // _calcBptOutGivenExactTokensIn implements same functionality with the following url:
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L201
 func _calcBptOutGivenExactTokensIn(
-	amp *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
-	amountsIn []*bn.DecFloatPointNumber,
-	bptTotalSupply, invariant, swapFeePercentage *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	amp *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
+	amountsIn []*bn.DecFixedPointNumber,
+	bptTotalSupply, invariant, swapFeePercentage *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 
 	// BPT out, so we round down overall.
 
 	// First loop calculates the sum of all token balances, which will be used to calculate
 	// the current weights of each token, relative to this sum
-	feeAmountIn := bn.DecFloatPoint(0)
-	sumBalances := bn.DecFloatPoint(0)
+	feeAmountIn := bnZero
+	sumBalances := bnZero
 	for _, balance := range balances {
 		sumBalances = sumBalances.Add(balance)
 	}
 
 	// Calculate the weighted balance ratio without considering fees
-	balanceRatiosWithFee := make([]*bn.DecFloatPointNumber, len(amountsIn))
+	balanceRatiosWithFee := make([]*bn.DecFixedPointNumber, len(amountsIn))
 	// The weighted sum of token balance ratios with fee
-	invariantRatioWithFees := bn.DecFloatPoint(0)
+	invariantRatioWithFees := bnZero
 	for i, balance := range balances {
 		currentWeight := _divDownFixed18(balance, sumBalances)
 		balanceRatiosWithFee[i] = _divDownFixed18(balance.Add(amountsIn[i]), balance)
@@ -119,9 +119,9 @@ func _calcBptOutGivenExactTokensIn(
 	}
 
 	// Second loop calculates new amounts in, taking into account the fee on the percentage excess
-	newBalances := make([]*bn.DecFloatPointNumber, len(balances))
+	newBalances := make([]*bn.DecFixedPointNumber, len(balances))
 	for i, balance := range balances {
-		var amountInWithoutFee *bn.DecFloatPointNumber
+		var amountInWithoutFee *bn.DecFixedPointNumber
 		// Check if the balance ratio is greater than the ideal ratio to charge fees or not
 		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
 			nonTaxableAmount := _mulDownFixed18(balance, invariantRatioWithFees.Sub(bnOne))
@@ -152,12 +152,12 @@ func _calcBptOutGivenExactTokensIn(
 // _calcTokenOutGivenExactBptIn implements same functionality with the following url:
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L354
 func _calcTokenOutGivenExactBptIn(
-	amp *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
+	amp *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
 	tokenIndex int,
-	bptAmountIn *bn.DecFloatPointNumber,
-	bptTotalSupply, currentInvariant, swapFeePercentage *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, *bn.DecFloatPointNumber, error) {
+	bptAmountIn *bn.DecFixedPointNumber,
+	bptTotalSupply, currentInvariant, swapFeePercentage *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
 	// Token out, so we round down overall.
 	newInvariant := _mulUpFixed18(_divUpFixed18(bptTotalSupply.Sub(bptAmountIn), bptTotalSupply), currentInvariant)
 	// Calculate amount out without fee
@@ -169,7 +169,7 @@ func _calcTokenOutGivenExactBptIn(
 
 	// First calculate the sum of all token balances, which will be used to calculate
 	// the current weight of each token
-	sumBalances := bn.DecFloatPoint(0)
+	sumBalances := bnZero
 	for _, balance := range balances {
 		sumBalances = sumBalances.Add(balance)
 	}
@@ -194,14 +194,14 @@ func _calcTokenOutGivenExactBptIn(
 // given all the other balances and the invariant
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L399
 func _getTokenBalanceGivenInvariantAndAllOtherBalances(
-	amplificationParameter *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
-	invariant *bn.DecFloatPointNumber,
+	amplificationParameter *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
+	invariant *bn.DecFixedPointNumber,
 	tokenIndex int,
-) (*bn.DecFloatPointNumber, error) {
+) (*bn.DecFixedPointNumber, error) {
 	// Rounds result up overall
 	var nTokens = len(balances)
-	var nTokensBi = bn.DecFloatPoint(nTokens)
+	var nTokensBi = bn.DecFixedPoint(nTokens, 0)
 	var ampTimesTotal = amplificationParameter.Mul(nTokensBi)
 	var sum = balances[0]
 	var PD = balances[0].Mul(nTokensBi) // P_D
@@ -216,7 +216,7 @@ func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 	var c = _divUp(inv2, ampTimesTotal.Mul(PD)).Mul(ampPrecision).Mul(balances[tokenIndex])
 	var b = sum.Add(_divDown(invariant, ampTimesTotal).Mul(ampPrecision))
 	// We iterate to find the balance
-	var prevTokenBalance *bn.DecFloatPointNumber
+	var prevTokenBalance *bn.DecFixedPointNumber
 	// We multiply the first iteration outside the loop with the invariant to set the value of the
 	// initial approximation.
 	var tokenBalance = _divUp(inv2.Add(c), invariant.Add(b))
@@ -240,13 +240,13 @@ func _getTokenBalanceGivenInvariantAndAllOtherBalances(
 // The amplification parameter equals: A n^(n-1)
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L124
 func _calcOutGivenIn(
-	amplificationParameter *bn.DecFloatPointNumber,
-	balances []*bn.DecFloatPointNumber,
+	amplificationParameter *bn.DecFixedPointNumber,
+	balances []*bn.DecFixedPointNumber,
 	tokenIndexIn int,
 	tokenIndexOut int,
-	tokenAmountIn *bn.DecFloatPointNumber,
-	invariant *bn.DecFloatPointNumber,
-) (*bn.DecFloatPointNumber, error) {
+	tokenAmountIn *bn.DecFixedPointNumber,
+	invariant *bn.DecFixedPointNumber,
+) (*bn.DecFixedPointNumber, error) {
 
 	/**************************************************************************************************************
 	// outGivenIn token x for y - polynomial equation to solve                                                   //

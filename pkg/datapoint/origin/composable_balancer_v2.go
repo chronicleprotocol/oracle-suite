@@ -18,6 +18,7 @@ package origin
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"sort"
 	"time"
 
@@ -135,14 +136,14 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 			baseToken := pools.tokenDetails[pair.Base]
 			quoteToken := pools.tokenDetails[pair.Quote]
 			// amountIn = 10 ^ baseDecimals
-			amountIn := bn.DecFloatPoint(1).Inflate(uint8(baseToken.decimals))
+			amountIn := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil), 0)
 			amountOut, _, err := pool.CalcAmountOut(baseToken.address, quoteToken.address, amountIn)
 			if err != nil {
 				points[pair] = datapoint.Point{Error: err}
 				break
 			}
 			// price = amountOut / 10 ^ quoteDecimals
-			price := amountOut.Div(bn.DecFloatPoint(1).Inflate(uint8(quoteToken.decimals)))
+			price := bn.DecFloatPoint(amountOut).Div(bn.DecFloatPoint(1).Inflate(uint8(quoteToken.decimals)))
 			totals[pair] = totals[pair].Add(price)
 		}
 		if points[pair].Error != nil {
@@ -151,7 +152,7 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 
 		avgPrice := totals[pair].Div(bn.DecFloatPoint(len(b.blocks)))
 
-		tick := value.NewTick(pair, avgPrice.SetPrec(balancerV2Precision), nil)
+		tick := value.NewTick(pair, avgPrice, nil)
 		points[pair] = datapoint.Point{
 			Value: tick,
 			Time:  time.Now(),

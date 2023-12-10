@@ -13,9 +13,9 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func string2DecFloatPointNumber(s string) *bn.DecFloatPointNumber {
+func string2DecFixedPointNumber(s string) *bn.DecFixedPointNumber {
 	b, _ := new(big.Int).SetString(s, 10)
-	return bn.DecFloatPoint(b)
+	return bn.DecFixedPoint(b, 0)
 }
 
 func TestComposableStablePool_Swap(t *testing.T) {
@@ -28,15 +28,15 @@ func TestComposableStablePool_Swap(t *testing.T) {
 		address: types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"),
 		tokens: []types.Address{
 			types.MustAddressFromHex("0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f"), // GHO
-			types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/USDT/USDC
+			types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/BPT/USDT/USDC
 			types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
 			types.MustAddressFromHex("0xdAC17F958D2ee523a2206206994597C13D831ec7"), // USDT
 		},
-		balances: []*bn.DecFloatPointNumber{
-			string2DecFloatPointNumber("6448444062456011477376368"),
-			string2DecFloatPointNumber("2596148429302257816743021881556180"),
-			string2DecFloatPointNumber("1513827018794"),
-			string2DecFloatPointNumber("1538170251459"),
+		balances: []*bn.DecFixedPointNumber{
+			string2DecFixedPointNumber("6448444062456011477376368"),
+			string2DecFixedPointNumber("2596148429302257816743021881556180"),
+			string2DecFixedPointNumber("1513827018794"),
+			string2DecFixedPointNumber("1538170251459"),
 		},
 		bptIndex: 1,
 		rateProviders: []types.Address{
@@ -45,23 +45,23 @@ func TestComposableStablePool_Swap(t *testing.T) {
 			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
 			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
 		},
-		totalSupply:       string2DecFloatPointNumber("2596148438770953798709961309149655"),
-		swapFeePercentage: string2DecFloatPointNumber("500000000000000"),
+		totalSupply:       string2DecFixedPointNumber("2596148438770953798709961309149655"),
+		swapFeePercentage: string2DecFixedPointNumber("500000000000000"),
 		extra: Extra{
 			amplificationParameter: AmplificationParameter{
-				value:      bn.DecFloatPoint(200000),
+				value:      bn.DecFixedPoint(200000, 0),
 				isUpdating: false,
-				precision:  bn.DecFloatPoint(1000),
+				precision:  bn.DecFixedPoint(1000, 0),
 			},
-			scalingFactors: []*bn.DecFloatPointNumber{
-				string2DecFloatPointNumber("1000000000000000000"),
-				string2DecFloatPointNumber("1000000000000000000"),
-				string2DecFloatPointNumber("1000000000000000000000000000000"),
-				string2DecFloatPointNumber("1000000000000000000000000000000"),
+			scalingFactors: []*bn.DecFixedPointNumber{
+				string2DecFixedPointNumber("1000000000000000000"),
+				string2DecFixedPointNumber("1000000000000000000"),
+				string2DecFixedPointNumber("1000000000000000000000000000000"),
+				string2DecFixedPointNumber("1000000000000000000000000000000"),
 			},
 			lastJoinExit: LastJoinExitData{
-				lastJoinExitAmplification: string2DecFloatPointNumber("200000"),
-				lastPostJoinExitInvariant: string2DecFloatPointNumber("9482927260967981674261420"),
+				lastJoinExitAmplification: string2DecFixedPointNumber("200000"),
+				lastPostJoinExitInvariant: string2DecFixedPointNumber("9482927260967981674261420"),
 			},
 			tokensExemptFromYieldProtocolFee: []bool{
 				false, false, false, false,
@@ -72,51 +72,57 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				{rate: nil, oldRate: nil, duration: nil, expires: nil},
 				{rate: nil, oldRate: nil, duration: nil, expires: nil},
 			},
-			protocolFeePercentageCacheSwapType:  string2DecFloatPointNumber("500000000000000000"),
-			protocolFeePercentageCacheYieldType: string2DecFloatPointNumber("500000000000000000"),
+			protocolFeePercentageCacheSwapType:  string2DecFixedPointNumber("500000000000000000"),
+			protocolFeePercentageCacheYieldType: string2DecFixedPointNumber("500000000000000000"),
 		},
 	}
 
 	testCases := []struct {
+		name      string
 		tokenIn   types.Address
-		amountIn  *bn.DecFloatPointNumber
+		amountIn  *bn.DecFixedPointNumber
 		tokenOut  types.Address
-		amountOut *bn.DecFloatPointNumber
+		amountOut *bn.DecFixedPointNumber
 	}{
 		{
+			name:      "GHO->USDC",
 			tokenIn:   types.MustAddressFromHex("0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f"), // GHO
-			amountIn:  string2DecFloatPointNumber("10551510000000000000000"),
+			amountIn:  string2DecFixedPointNumber("10551510000000000000000"),
 			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-			amountOut: string2DecFloatPointNumber("10371548845"),
+			amountOut: string2DecFixedPointNumber("10371548845"),
 		},
 		{
+			name:      "GHO->USDC-2",
 			tokenIn:   types.MustAddressFromHex("0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f"), // GHO
-			amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+			amountIn:  string2DecFixedPointNumber("1000000000000000000"),
 			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-			amountOut: string2DecFloatPointNumber("983063"),
+			amountOut: string2DecFixedPointNumber("983063"),
 		},
 		//{
-		//	tokenIn:   types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/USDT/USDC
-		//	amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+		//	name:      "GHO/BPT/USDC/USDT->USDC",
+		//	tokenIn:   types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/BPT/USDT/USDC
+		//	amountIn:  string2DecFixedPointNumber("1000000000000000000"),
 		//	tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-		//	amountOut: string2DecFloatPointNumber("991677"),
+		//	amountOut: string2DecFixedPointNumber("991677"),
 		//},
 		//{
+		//	name:      "USDC->GHO/BPT/USDC/USDT",
 		//	tokenIn:   types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-		//	amountIn:  string2DecFloatPointNumber("1000000000000000000"),
-		//	tokenOut:  types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/USDT/USDC
-		//	amountOut: string2DecFloatPointNumber("19877475578824849899330863774"),
+		//	amountIn:  string2DecFixedPointNumber("1000000000000000000"),
+		//	tokenOut:  types.MustAddressFromHex("0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF"), // GHO/BPT/USDT/USDC
+		//	amountOut: string2DecFixedPointNumber("19877475578824849899330863774"),
 		//},
 		{
+			name:      "USDT->USDC",
 			tokenIn:   types.MustAddressFromHex("0xdAC17F958D2ee523a2206206994597C13D831ec7"), // USDT
-			amountIn:  string2DecFloatPointNumber("1000000000000000000"),
+			amountIn:  string2DecFixedPointNumber("1000000000000000000"),
 			tokenOut:  types.MustAddressFromHex("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), // USDC
-			amountOut: string2DecFloatPointNumber("1513827018793"),
+			amountOut: string2DecFixedPointNumber("1513827018793"),
 		},
 	}
 
-	for i, testcase := range testCases {
-		t.Run(fmt.Sprintf("testcase %d, tokenIn %s amountIn %s tokenOut %s amountOut %s", i, testcase.tokenIn, testcase.amountIn.String(), testcase.tokenOut, testcase.amountOut.String()), func(t *testing.T) {
+	for _, testcase := range testCases {
+		t.Run(fmt.Sprintf("testcase %s, tokenIn %s amountIn %s tokenOut %s amountOut %s", testcase.name, testcase.tokenIn, testcase.amountIn.String(), testcase.tokenOut, testcase.amountOut.String()), func(t *testing.T) {
 			amountOut, _, _ := pool.CalcAmountOut(testcase.tokenIn, testcase.tokenOut, testcase.amountIn)
 			assert.Equal(t, testcase.amountOut, amountOut)
 		})
@@ -126,28 +132,28 @@ func TestComposableStablePool_Swap(t *testing.T) {
 func TestCalculateInvariant(t *testing.T) {
 	testCases := []struct {
 		name      string
-		amp       *bn.DecFloatPointNumber
-		balances  []*bn.DecFloatPointNumber
-		invariant *bn.DecFloatPointNumber
+		amp       *bn.DecFixedPointNumber
+		balances  []*bn.DecFixedPointNumber
+		invariant *bn.DecFixedPointNumber
 		error     error
 	}{
 		{
 			name: "success",
-			amp:  bn.DecFloatPoint(60000),
-			balances: []*bn.DecFloatPointNumber{
-				string2DecFloatPointNumber("50310513788381313281"),
-				string2DecFloatPointNumber("19360701460293571158"),
-				string2DecFloatPointNumber("58687814461000000000000"),
+			amp:  bn.DecFixedPoint(60000, 0),
+			balances: []*bn.DecFixedPointNumber{
+				string2DecFixedPointNumber("50310513788381313281"),
+				string2DecFixedPointNumber("19360701460293571158"),
+				string2DecFixedPointNumber("58687814461000000000000"),
 			},
-			invariant: string2DecFloatPointNumber("10749877394384654056023"),
+			invariant: string2DecFixedPointNumber("10749877394384654056023"),
 		},
 		{
 			name: "revert",
-			amp:  bn.DecFloatPoint(60000),
-			balances: []*bn.DecFloatPointNumber{
-				string2DecFloatPointNumber("50310513788381313281"),
-				string2DecFloatPointNumber("19360701460293571158"),
-				string2DecFloatPointNumber("10000"),
+			amp:  bn.DecFixedPoint(60000, 0),
+			balances: []*bn.DecFixedPointNumber{
+				string2DecFixedPointNumber("50310513788381313281"),
+				string2DecFixedPointNumber("19360701460293571158"),
+				string2DecFixedPointNumber("10000"),
 			},
 			error: STABLE_INVARIANT_DIDNT_CONVERGE,
 		},
