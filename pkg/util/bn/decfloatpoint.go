@@ -198,38 +198,6 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
-func (x *DecFloatPointNumber) Mod(y *DecFloatPointNumber) *DecFloatPointNumber {
-	if y.x.Sign() == 0 {
-		panic("division by zero")
-	}
-
-	z := new(big.Int).Mod(x.x.x, y.x.x)
-	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
-	return n
-}
-
-// Inflate inflates the number by prec precision and return the result.
-// return = x * (10 ^ prec)
-// Do not change precision.
-func (x *DecFloatPointNumber) Inflate(prec uint8) *DecFloatPointNumber {
-	if prec == 0 {
-		return x
-	}
-	p := uint32(x.x.p) + uint32(prec)
-	z := bigIntSetPrec(x.x.x, uint32(x.x.p), p)
-	return &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
-}
-
-// Deflate deflates the number by prec precision and return the results.
-// return = x / (10 ^ prec)
-// Do not change precision. If x < 10 ^ prec, return 0
-func (x *DecFloatPointNumber) Deflate(prec uint8) *DecFloatPointNumber {
-	z := new(big.Int).Quo(x.x.x, pow10(prec))
-	n := &DecFloatPointNumber{x: &DecFixedPointNumber{x: z, p: x.x.p}}
-	n.adjustPrec()
-	return n
-}
-
 // DivPrec divides the number by y and returns the result.
 //
 // Division by zero panics.

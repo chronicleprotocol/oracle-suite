@@ -2,12 +2,14 @@ package origin
 
 import (
 	"fmt"
-	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
-	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
-	"github.com/defiweb/go-eth/types"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+
+	"github.com/defiweb/go-eth/types"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
 func string2DecFixedPointNumber(s string) *bn.DecFixedPointNumber {
