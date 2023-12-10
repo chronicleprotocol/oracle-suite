@@ -39,7 +39,19 @@ func _complementFixed(x *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return bnZero
 }
 
-// DivUpFixed inflates prec precision and divides the number y up.
+// _divDown divides the number y down and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
+func _divDown(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.DivPrec(y, uint32(x.Prec()))
+}
+
+// _divUpFixed inflates prec precision and divides the number y up.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L83
 func _divUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	if x.Sign() == 0 {
@@ -58,7 +70,7 @@ func _divUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _divUpFixed(x, y, balancerV2Precision)
 }
 
-// DivDownFixed inflates prec precision and divides the number y down
+// _divDownFixed inflates prec precision and divides the number y down
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L74
 func _divDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	if x.Sign() == 0 {
@@ -71,7 +83,7 @@ func _divDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _divDownFixed(x, y, balancerV2Precision)
 }
 
-// MulDownFixed multiplies the number y and deflates prec precision
+// _mulDownFixed multiplies the number y and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
 func _mulDownFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	return x.Mul(y).Deflate(prec)
@@ -81,7 +93,7 @@ func _mulDownFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _mulDownFixed(x, y, balancerV2Precision)
 }
 
-// MulUpFixed multiplies the number y up and deflates prec precision
+// _mulUpFixed multiplies the number y up and deflates prec precision
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L57
 func _mulUpFixed(x, y *bn.DecFloatPointNumber, prec uint8) *bn.DecFloatPointNumber {
 	// The traditional divUp formula is:
@@ -101,18 +113,18 @@ func _mulUpFixed18(x, y *bn.DecFloatPointNumber) *bn.DecFloatPointNumber {
 	return _mulUpFixed(x, y, balancerV2Precision)
 }
 
-var X_OUT_OF_BOUNDS = fmt.Errorf("X_OUT_OF_BOUNDS")                                                               //nolint:revive,stylecheck
-var Y_OUT_OF_BOUNDS = fmt.Errorf("Y_OUT_OF_BOUNDS")                                                               //nolint:revive,stylecheck
-var PRODUCT_OUT_OF_BOUNDS = fmt.Errorf("PRODUCT_OUT_OF_BOUNDS")                                                   //nolint:revive,stylecheck
-var ONE_18 = bn.DecFloatPoint(1).Inflate(balancerV2Precision)                                                     //nolint:revive,stylecheck
-var ONE_20 = bn.DecFloatPoint(1).Inflate(20)                                                                      //nolint:revive,gomnd,stylecheck
-var ONE_36 = bn.DecFloatPoint(1).Inflate(36)                                                                      //nolint:revive,gomnd,stylecheck
-var MAX_NATURAL_EXPONENT = bn.DecFloatPoint(130).Mul(ONE_18)                                                      //nolint:revive,gomnd,stylecheck
-var MIN_NATURAL_EXPONENT = bn.DecFloatPoint(-41).Mul(ONE_18)                                                      //nolint:revive,gomnd,stylecheck
-var LN_36_LOWER_BOUND = ONE_18.Sub(bn.DecFloatPoint(1).Inflate(17))                                               //nolint:revive,gomnd,stylecheck
-var LN_36_UPPER_BOUND = ONE_18.Add(bn.DecFloatPoint(1).Inflate(17))                                               //nolint:revive,gomnd,stylecheck
-var MAX_EXPONENT_BOUND = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(255), nil))                  //nolint:revive,gomnd,stylecheck
-var MILD_EXPONENT_BOUND = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(254), nil)).DivDown(ONE_20) //nolint:revive,gomnd,stylecheck
+var X_OUT_OF_BOUNDS = fmt.Errorf("X_OUT_OF_BOUNDS")                                                                 //nolint:revive,stylecheck
+var Y_OUT_OF_BOUNDS = fmt.Errorf("Y_OUT_OF_BOUNDS")                                                                 //nolint:revive,stylecheck
+var PRODUCT_OUT_OF_BOUNDS = fmt.Errorf("PRODUCT_OUT_OF_BOUNDS")                                                     //nolint:revive,stylecheck
+var ONE_18 = bn.DecFloatPoint(1).Inflate(balancerV2Precision)                                                       //nolint:revive,stylecheck
+var ONE_20 = bn.DecFloatPoint(1).Inflate(20)                                                                        //nolint:revive,gomnd,stylecheck
+var ONE_36 = bn.DecFloatPoint(1).Inflate(36)                                                                        //nolint:revive,gomnd,stylecheck
+var MAX_NATURAL_EXPONENT = bn.DecFloatPoint(130).Mul(ONE_18)                                                        //nolint:revive,gomnd,stylecheck
+var MIN_NATURAL_EXPONENT = bn.DecFloatPoint(-41).Mul(ONE_18)                                                        //nolint:revive,gomnd,stylecheck
+var LN_36_LOWER_BOUND = ONE_18.Sub(bn.DecFloatPoint(1).Inflate(17))                                                 //nolint:revive,gomnd,stylecheck
+var LN_36_UPPER_BOUND = ONE_18.Add(bn.DecFloatPoint(1).Inflate(17))                                                 //nolint:revive,gomnd,stylecheck
+var MAX_EXPONENT_BOUND = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(255), nil))                    //nolint:revive,gomnd,stylecheck
+var MILD_EXPONENT_BOUND = _divDown(bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(254), nil)), ONE_20) //nolint:revive,gomnd,stylecheck
 var x0 = bn.DecFloatPoint("128000000000000000000")
 var a0 = bn.DecFloatPoint("38877084059945950922200000000000000000000000000000000000")
 var x1 = bn.DecFloatPoint("64000000000000000000")

@@ -198,26 +198,6 @@ func (x *DecFloatPointNumber) Div(y *DecFloatPointNumber) *DecFloatPointNumber {
 	return n
 }
 
-// DivUp divides the number y up and return the result.
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
-func (x *DecFloatPointNumber) DivUp(y *DecFloatPointNumber) *DecFloatPointNumber {
-	if x.Sign() == 0 {
-		return x
-	}
-	// 1 + (a - 1) / b
-	one := DecFloatPoint(intOne)
-	return x.Sub(one).DivPrec(y, uint32(x.x.p)).Add(one)
-}
-
-// DivDown divides the number y down and return the result.
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
-func (x *DecFloatPointNumber) DivDown(y *DecFloatPointNumber) *DecFloatPointNumber {
-	if x.Sign() == 0 {
-		return x
-	}
-	return x.DivPrec(y, uint32(x.x.p))
-}
-
 func (x *DecFloatPointNumber) Mod(y *DecFloatPointNumber) *DecFloatPointNumber {
 	if y.x.Sign() == 0 {
 		panic("division by zero")
