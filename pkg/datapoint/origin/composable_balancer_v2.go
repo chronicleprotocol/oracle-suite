@@ -18,7 +18,6 @@ package origin
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"sort"
 	"time"
 
@@ -136,14 +135,14 @@ func (b *ComposableBalancerV2) FetchDataPoints(ctx context.Context, query []any)
 			baseToken := pools.tokenDetails[pair.Base]
 			quoteToken := pools.tokenDetails[pair.Quote]
 			// amountIn = 10 ^ baseDecimals
-			amountIn := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(baseToken.decimals)), nil), 0)
+			amountIn := _powX(10, int64(baseToken.decimals))
 			amountOut, _, err := pool.CalcAmountOut(baseToken.address, quoteToken.address, amountIn)
 			if err != nil {
 				points[pair] = datapoint.Point{Error: err}
 				break
 			}
 			// price = amountOut / 10 ^ quoteDecimals
-			price := bn.DecFloatPoint(amountOut).Div(bn.DecFloatPoint(1).Inflate(uint8(quoteToken.decimals)))
+			price := bn.DecFloatPoint(amountOut).Div(bn.DecFloatPoint(_powX(10, int64(quoteToken.decimals))))
 			totals[pair] = totals[pair].Add(price)
 		}
 		if points[pair].Error != nil {

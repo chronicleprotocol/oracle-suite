@@ -89,66 +89,6 @@ func _calculateInvariant(amplificationParameter *bn.DecFixedPointNumber, balance
 	return nil, STABLE_INVARIANT_DIDNT_CONVERGE
 }
 
-// _calcBptOutGivenExactTokensIn implements same functionality with the following url:
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L201
-func _calcBptOutGivenExactTokensIn(
-	amp *bn.DecFixedPointNumber,
-	balances []*bn.DecFixedPointNumber,
-	amountsIn []*bn.DecFixedPointNumber,
-	bptTotalSupply, invariant, swapFeePercentage *bn.DecFixedPointNumber,
-) (*bn.DecFixedPointNumber, *bn.DecFixedPointNumber, error) {
-
-	// BPT out, so we round down overall.
-
-	// First loop calculates the sum of all token balances, which will be used to calculate
-	// the current weights of each token, relative to this sum
-	feeAmountIn := bnZero
-	sumBalances := bnZero
-	for _, balance := range balances {
-		sumBalances = sumBalances.Add(balance)
-	}
-
-	// Calculate the weighted balance ratio without considering fees
-	balanceRatiosWithFee := make([]*bn.DecFixedPointNumber, len(amountsIn))
-	// The weighted sum of token balance ratios with fee
-	invariantRatioWithFees := bnZero
-	for i, balance := range balances {
-		currentWeight := _divDownFixed18(balance, sumBalances)
-		balanceRatiosWithFee[i] = _divDownFixed18(balance.Add(amountsIn[i]), balance)
-		invariantRatioWithFees = invariantRatioWithFees.Add(_mulDownFixed18(balanceRatiosWithFee[i], currentWeight))
-	}
-
-	// Second loop calculates new amounts in, taking into account the fee on the percentage excess
-	newBalances := make([]*bn.DecFixedPointNumber, len(balances))
-	for i, balance := range balances {
-		var amountInWithoutFee *bn.DecFixedPointNumber
-		// Check if the balance ratio is greater than the ideal ratio to charge fees or not
-		if balanceRatiosWithFee[i].Cmp(invariantRatioWithFees) > 0 {
-			nonTaxableAmount := _mulDownFixed18(balance, invariantRatioWithFees.Sub(bnOne))
-			taxableAmount := amountsIn[i].Sub(nonTaxableAmount)
-			// No need to use checked arithmetic for the swap fee, it is guaranteed to be lower than 50%
-			amountInWithoutFee = nonTaxableAmount.Add(_mulDownFixed18(taxableAmount, bnOne.Sub(swapFeePercentage)))
-		} else {
-			amountInWithoutFee = amountsIn[i]
-		}
-		feeAmountIn = feeAmountIn.Add(amountsIn[i].Sub(amountInWithoutFee))
-		newBalances[i] = balance.Add(amountInWithoutFee)
-	}
-
-	newInvariant, err := _calculateInvariant(amp, newBalances)
-	if err != nil {
-		return nil, nil, err
-	}
-	invariantRatio := _divDownFixed18(newInvariant, invariant)
-	// If the invariant didn't increase for any reason, we simply don't mint BPT
-	if invariantRatio.Cmp(bnOne) > 0 {
-		return _mulDownFixed18(bptTotalSupply, invariantRatio.Sub(bnOne)),
-			feeAmountIn,
-			nil
-	}
-	return bnZero, feeAmountIn, nil
-}
-
 // This function calculates the balance of a given token (tokenIndex)
 // given all the other balances and the invariant
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/pool-stable/contracts/StableMath.sol#L399

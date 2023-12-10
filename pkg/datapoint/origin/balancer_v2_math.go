@@ -23,10 +23,13 @@ import (
 
 const balancerV2Precision = 18
 
-var bnEther = bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(balancerV2Precision), nil), 0)
 var bnZero = bn.DecFixedPoint(0, 0)
 var bnOne = bn.DecFixedPoint(1, 0)
 var bnTwo = bn.DecFixedPoint(2, 0)
+
+func _powX(x, y int64) *bn.DecFixedPointNumber { //nolint:unparam
+	return bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(x), big.NewInt(y), nil), 0)
+}
 
 // _divUp divides the number y up and return the result.
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
@@ -62,26 +65,12 @@ func _divDownFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNu
 	if x.Sign() == 0 {
 		return x
 	}
-	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
+	inflated := _powX(10, int64(prec))
 	return x.Mul(inflated).DivPrec(y, 0)
 }
 
 func _divDownFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _divDownFixed(x, y, balancerV2Precision)
-}
-
-// _mulDownFixed multiplies the number y and deflates prec precision
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol#L50
-func _mulDownFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumber {
-	if x.Prec() != 0 || y.Prec() != 0 {
-		panic("only available for integer")
-	}
-	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
-	return x.Mul(y).DivPrec(inflated, 0)
-}
-
-func _mulDownFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
-	return _mulDownFixed(x, y, balancerV2Precision)
 }
 
 // _mulUpFixed multiplies the number y up and deflates prec precision
@@ -101,7 +90,7 @@ func _mulUpFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumb
 	if ret.Sign() == 0 {
 		return ret
 	}
-	inflated := bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(prec)), nil), 0)
+	inflated := _powX(10, int64(prec))
 	return ret.Sub(bnOne).DivPrec(inflated, 0).Add(bnOne)
 }
 
