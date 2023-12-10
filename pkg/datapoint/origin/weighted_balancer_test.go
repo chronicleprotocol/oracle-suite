@@ -10,18 +10,18 @@ import (
 	"testing"
 )
 
-func string2DecFloatPointNumber(s string) *bn.DecFloatPointNumber {
+func string2DecFixedPointNumber(s string) *bn.DecFixedPointNumber {
 	b, _ := new(big.Int).SetString(s, 10)
-	return bn.DecFloatPoint(b)
+	return bn.DecFixedPoint(b, 0)
 }
 
 func TestWeightedPool_Swap(t *testing.T) {
 	testCases := []struct {
 		pool      *WeightedPool
 		tokenIn   ERC20Details
-		amountIn  *bn.DecFloatPointNumber
+		amountIn  *bn.DecFixedPointNumber
 		tokenOut  ERC20Details
-		amountOut *bn.DecFloatPointNumber
+		amountOut *bn.DecFixedPointNumber
 	}{
 		{
 			// txhash: 0x74dac9957a9b4f3892ebbcf6deb7ca4d98ed5e0b0769c28ae1c81f5819125955
@@ -35,18 +35,18 @@ func TestWeightedPool_Swap(t *testing.T) {
 					types.MustAddressFromHex("0x137dDB47Ee24EaA998a535Ab00378d6BFa84F893"), // RDNT
 					types.MustAddressFromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"), // WETH
 				},
-				balances: []*bn.DecFloatPointNumber{
-					string2DecFloatPointNumber("34043497190382699990148821"), // RDNT
-					string2DecFloatPointNumber("1060514722983166251296"),     // WETH
+				balances: []*bn.DecFixedPointNumber{
+					string2DecFixedPointNumber("34043497190382699990148821"), // RDNT
+					string2DecFixedPointNumber("1060514722983166251296"),     // WETH
 				},
-				swapFeePercentage: bn.DecFloatPoint("5000000000000000"),
-				scalingFactors: []*bn.DecFloatPointNumber{
-					string2DecFloatPointNumber("1000000000000000000"),
-					string2DecFloatPointNumber("1000000000000000000"),
+				swapFeePercentage: string2DecFixedPointNumber("5000000000000000"),
+				scalingFactors: []*bn.DecFixedPointNumber{
+					string2DecFixedPointNumber("1000000000000000000"),
+					string2DecFixedPointNumber("1000000000000000000"),
 				},
-				normalizedWeights: []*bn.DecFloatPointNumber{
-					string2DecFloatPointNumber("800000000000000000"),
-					string2DecFloatPointNumber("200000000000000000"),
+				normalizedWeights: []*bn.DecFixedPointNumber{
+					string2DecFixedPointNumber("800000000000000000"),
+					string2DecFixedPointNumber("200000000000000000"),
 				},
 			},
 			tokenIn: ERC20Details{
@@ -54,13 +54,13 @@ func TestWeightedPool_Swap(t *testing.T) {
 				symbol:   "RDNT",
 				decimals: 18,
 			},
-			amountIn: string2DecFloatPointNumber("40000000000000000000000"),
+			amountIn: string2DecFixedPointNumber("40000000000000000000000"),
 			tokenOut: ERC20Details{
 				address:  types.MustAddressFromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 				symbol:   "WETH",
 				decimals: 18,
 			},
-			amountOut: string2DecFloatPointNumber("4944898525417925727"),
+			amountOut: string2DecFixedPointNumber("4944898525417925727"),
 		},
 		{
 			pool: &WeightedPool{
@@ -73,18 +73,18 @@ func TestWeightedPool_Swap(t *testing.T) {
 					types.MustAddressFromHex("0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812"), // WUSDM
 					types.MustAddressFromHex("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"), // WSTETH
 				},
-				balances: []*bn.DecFloatPointNumber{
-					string2DecFloatPointNumber("60655883048463530117866"), // WUSDM
-					string2DecFloatPointNumber("25630194454768640289"),    // WSTETH
+				balances: []*bn.DecFixedPointNumber{
+					string2DecFixedPointNumber("60655883048463530117866"), // WUSDM
+					string2DecFixedPointNumber("25630194454768640289"),    // WSTETH
 				},
-				swapFeePercentage: bn.DecFloatPoint("3000000000000000"),
-				scalingFactors: []*bn.DecFloatPointNumber{
-					string2DecFloatPointNumber("1000000000000000000"),
-					string2DecFloatPointNumber("1000000000000000000"),
+				swapFeePercentage: string2DecFixedPointNumber("3000000000000000"),
+				scalingFactors: []*bn.DecFixedPointNumber{
+					string2DecFixedPointNumber("1000000000000000000"),
+					string2DecFixedPointNumber("1000000000000000000"),
 				},
-				normalizedWeights: []*bn.DecFloatPointNumber{
-					string2DecFloatPointNumber("500000000000000000"),
-					string2DecFloatPointNumber("500000000000000000"),
+				normalizedWeights: []*bn.DecFixedPointNumber{
+					string2DecFixedPointNumber("500000000000000000"),
+					string2DecFixedPointNumber("500000000000000000"),
 				},
 			},
 			tokenIn: ERC20Details{
@@ -92,13 +92,13 @@ func TestWeightedPool_Swap(t *testing.T) {
 				symbol:   "WUSDM",
 				decimals: 18,
 			},
-			amountIn: string2DecFloatPointNumber("1000000000000000000000"), // 1000 WUSDM
+			amountIn: string2DecFixedPointNumber("1000000000000000000000"), // 1000 WUSDM
 			tokenOut: ERC20Details{
 				address:  types.MustAddressFromHex("0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"),
 				symbol:   "WSTETH",
 				decimals: 18,
 			},
-			amountOut: string2DecFloatPointNumber("414470542299175666"),
+			amountOut: string2DecFixedPointNumber("414470542299175666"),
 		},
 	}
 

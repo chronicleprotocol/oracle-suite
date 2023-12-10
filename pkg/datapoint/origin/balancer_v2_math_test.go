@@ -17,7 +17,6 @@ package origin
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,9 +25,9 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
 
-func expectEqualWithError(actual *bn.DecFloatPointNumber, expected *bn.DecFloatPointNumber, error *bn.DecFloatPointNumber) bool {
+func expectEqualWithError(actual *bn.DecFixedPointNumber, expected *bn.DecFixedPointNumber, error *bn.DecFixedPointNumber) bool {
 	acceptedError := expected.Mul(error)
-	if acceptedError.Cmp(bn.DecFloatPoint(0)) > 0 {
+	if acceptedError.Cmp(bnZero) > 0 {
 		if actual.Cmp(expected.Sub(acceptedError)) < 0 {
 			return false
 		}
@@ -49,102 +48,97 @@ func expectEqualWithError(actual *bn.DecFloatPointNumber, expected *bn.DecFloatP
 
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/test/LogExpMath.test.ts#L9
 func TestBalancerV2_ExpLog(t *testing.T) {
-	var MAX_X = bn.DecFloatPoint(new(big.Int).Exp(big.NewInt(2), big.NewInt(255), nil)).Sub(bn.DecFloatPoint(1))
-	var MAX_Y = bn.DecFloatPoint(
-		new(big.Int).Div(
-			new(big.Int).Exp(big.NewInt(2), big.NewInt(254), nil),
-			new(big.Int).Exp(big.NewInt(10), big.NewInt(20), nil),
-		),
-	).Sub(bn.DecFloatPoint(1))
+	var MAX_X = _powX(2, 255).Sub(bnOne)
+	var MAX_Y = _powX(2, 254).DivPrec(_powX(10, 20), 0).Sub(bnOne)
 
 	tests := []struct {
 		name     string
-		base     *bn.DecFloatPointNumber
-		exponent *bn.DecFloatPointNumber
-		result   *bn.DecFloatPointNumber
-		delta    *bn.DecFloatPointNumber
+		base     *bn.DecFixedPointNumber
+		exponent *bn.DecFixedPointNumber
+		result   *bn.DecFixedPointNumber
+		delta    *bn.DecFixedPointNumber
 		error    error
 	}{
 		{
 			name:     "exponent zero, handles base zero",
-			base:     bn.DecFloatPoint(0),
-			exponent: bn.DecFloatPoint(0),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0),
+			base:     bnZero,
+			exponent: bnZero,
+			result:   bnEther,
+			delta:    bnZero,
 		},
 		{
 			name:     "exponent zero, handles base one",
-			base:     bn.DecFloatPoint(1),
-			exponent: bn.DecFloatPoint(0),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0),
+			base:     bnOne,
+			exponent: bnZero,
+			result:   bnEther,
+			delta:    bnZero,
 		},
 		{
 			name:     "exponent zero, handles base greater than one",
-			base:     bn.DecFloatPoint(10),
-			exponent: bn.DecFloatPoint(0),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0),
+			base:     bn.DecFixedPoint(10, 0),
+			exponent: bnZero,
+			result:   bnEther,
+			delta:    bnZero,
 		},
 		{
 			name:     "base zero, handles exponent zero",
-			base:     bn.DecFloatPoint(0),
-			exponent: bn.DecFloatPoint(0),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0),
+			base:     bnZero,
+			exponent: bnZero,
+			result:   bnEther,
+			delta:    bnZero,
 		},
 		{
 			name:     "base zero, handles exponent one",
-			base:     bn.DecFloatPoint(0),
-			exponent: bn.DecFloatPoint(1),
-			result:   bn.DecFloatPoint(0),
-			delta:    bn.DecFloatPoint(0),
+			base:     bnZero,
+			exponent: bnOne,
+			result:   bnZero,
+			delta:    bnZero,
 		},
 		{
 			name:     "base zero, handles exponent greater than one",
-			base:     bn.DecFloatPoint(0),
-			exponent: bn.DecFloatPoint(10),
-			result:   bn.DecFloatPoint(0),
-			delta:    bn.DecFloatPoint(0),
+			base:     bnZero,
+			exponent: bn.DecFixedPoint(10, 0),
+			result:   bnZero,
+			delta:    bnZero,
 		},
 		{
 			name:     "base one, handles exponent zero",
-			base:     bn.DecFloatPoint(1),
-			exponent: bn.DecFloatPoint(0),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0),
+			base:     bnOne,
+			exponent: bnZero,
+			result:   bnEther,
+			delta:    bnZero,
 		},
 		{
 			name:     "base one, handles exponent one",
-			base:     bn.DecFloatPoint(1),
-			exponent: bn.DecFloatPoint(1),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0.000000000001),
+			base:     bnOne,
+			exponent: bnOne,
+			result:   bnEther,
+			delta:    bn.DecFixedPoint(1, 12),
 		},
 		{
 			name:     "base one, handles exponent greater than one",
-			base:     bn.DecFloatPoint(1),
-			exponent: bn.DecFloatPoint(10),
-			result:   bn.DecFloatPoint(1).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0.000000000001),
+			base:     bnOne,
+			exponent: bn.DecFixedPoint(10, 0),
+			result:   bnEther,
+			delta:    bn.DecFixedPoint(1, 12),
 		},
 		{
 			name:     "decimals, handles decimals properly",
-			base:     bn.DecFloatPoint(2).Inflate(balancerV2Precision),
-			exponent: bn.DecFloatPoint(4).Inflate(balancerV2Precision),
-			result:   bn.DecFloatPoint(16).Inflate(balancerV2Precision),
-			delta:    bn.DecFloatPoint(0.000000000001),
+			base:     _powX(2, balancerV2Precision),
+			exponent: _powX(4, balancerV2Precision),
+			result:   _powX(16, balancerV2Precision),
+			delta:    bn.DecFixedPoint(1, 12),
 		},
 		{
 			name:     "max values, cannot handle a base greater than 2^255 - 1",
-			base:     MAX_X.Add(bn.DecFloatPoint(1)),
-			exponent: bn.DecFloatPoint(1),
+			base:     MAX_X.Add(bnOne),
+			exponent: bnOne,
 			error:    fmt.Errorf("X_OUT_OF_BOUNDS"),
 		},
 		{
 			name:     "max values, cannot handle an exponent greater than (2^254/1e20) - 1",
-			base:     bn.DecFloatPoint(1),
-			exponent: MAX_Y.Add(bn.DecFloatPoint(1)),
+			base:     bnOne,
+			exponent: MAX_Y.Add(bnOne),
 			error:    fmt.Errorf("Y_OUT_OF_BOUNDS"),
 		},
 	}
@@ -165,60 +159,60 @@ func TestBalancerV2_ExpLog(t *testing.T) {
 
 // Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/test/FixedPoint.test.ts#L9
 func TestBalancerV2_PowUpdownFixed(t *testing.T) {
-	valuesPow4 := []*bn.DecFloatPointNumber{
-		bn.DecFloatPoint(0.0007),
-		bn.DecFloatPoint(0.0022),
-		bn.DecFloatPoint(0.093),
-		bn.DecFloatPoint(2.9),
-		bn.DecFloatPoint(13.3),
-		bn.DecFloatPoint(450.8),
-		bn.DecFloatPoint(1550.3339),
-		bn.DecFloatPoint(69039.11),
-		bn.DecFloatPoint(7834839.432),
-		bn.DecFloatPoint(83202933.5433),
-		bn.DecFloatPoint(9983838318.4),
-		bn.DecFloatPoint(15831567871.1),
+	valuesPow4 := []*bn.DecFixedPointNumber{
+		bn.DecFixedPoint(7, 4),
+		bn.DecFixedPoint(22, 4),
+		bn.DecFixedPoint(93, 3),
+		bn.DecFixedPoint(29, 1),
+		bn.DecFixedPoint(133, 1),
+		bn.DecFixedPoint(4508, 1),
+		bn.DecFixedPoint(15503339, 4),
+		bn.DecFixedPoint(6903911, 2),
+		bn.DecFixedPoint(7834839432, 3),
+		bn.DecFixedPoint(832029335433, 4),
+		bn.DecFixedPoint(99838383184, 1),
+		bn.DecFixedPoint(158315678711, 1),
 	}
 
-	valuesPow2 := append(append([]*bn.DecFloatPointNumber{
-		bn.DecFloatPoint(8e-9),
-		bn.DecFloatPoint(0.0000013),
-		bn.DecFloatPoint(0.000043),
-	}, valuesPow4...), []*bn.DecFloatPointNumber{
-		bn.DecFloatPoint(8382392893832.1),
-		bn.DecFloatPoint(38859321075205.1),
-		bn.DecFloatPoint("848205610278492.2383"),
-		bn.DecFloatPoint("371328129389320282.3783289"),
+	valuesPow2 := append(append([]*bn.DecFixedPointNumber{
+		bn.DecFixedPoint(8, 9),
+		bn.DecFixedPoint(13, 7),
+		bn.DecFixedPoint(43, 6),
+	}, valuesPow4...), []*bn.DecFixedPointNumber{
+		bn.DecFixedPoint(83823928938321, 1),
+		bn.DecFixedPoint(3885932107520511, 1),
+		bn.DecFixedPoint("8482056102784922383", 4),
+		bn.DecFixedPoint("3713281293893202823783289", 7),
 	}...)
 
-	valuesPow1 := append(append([]*bn.DecFloatPointNumber{
-		bn.DecFloatPoint(1.7e-18),
-		bn.DecFloatPoint(1.7e-15),
-		bn.DecFloatPoint(1.7e-11),
-	}, valuesPow2...), []*bn.DecFloatPointNumber{
-		bn.DecFloatPoint("701847104729761867823532.139"),
-		bn.DecFloatPoint("175915239864219235419349070.947"),
+	valuesPow1 := append(append([]*bn.DecFixedPointNumber{
+		bn.DecFixedPoint(17, 18),
+		bn.DecFixedPoint(17, 15),
+		bn.DecFixedPoint(17, 11),
+	}, valuesPow2...), []*bn.DecFixedPointNumber{
+		bn.DecFixedPoint("701847104729761867823532139", 3),
+		bn.DecFixedPoint("175915239864219235419349070947", 3),
 	}...)
 
 	tests := []struct {
 		name   string
-		values []*bn.DecFloatPointNumber
-		pow    *bn.DecFloatPointNumber
+		values []*bn.DecFixedPointNumber
+		pow    *bn.DecFixedPointNumber
 	}{
 		{
 			name:   "non-fractional pow 1",
 			values: valuesPow1,
-			pow:    bn.DecFloatPoint(1),
+			pow:    bnOne,
 		},
 		{
 			name:   "non-fractional pow 2",
 			values: valuesPow2,
-			pow:    bn.DecFloatPoint(2),
+			pow:    bnTwo,
 		},
 		{
 			name:   "non-fractional pow 4",
 			values: valuesPow4,
-			pow:    bn.DecFloatPoint(4),
+			pow:    bnFour,
 		},
 	}
 
@@ -226,11 +220,11 @@ func TestBalancerV2_PowUpdownFixed(t *testing.T) {
 		for _, x := range tt.values {
 			t.Run(tt.name+":"+x.String(), func(t *testing.T) {
 				pow := tt.pow
-				EXPECTED_RELATIVE_ERROR := bn.DecFloatPoint(1e-14)
-				result, err := _pow(x.Inflate(balancerV2Precision), pow.Inflate(balancerV2Precision))
+				EXPECTED_RELATIVE_ERROR := bn.DecFixedPoint(1, 14)
+				result, err := _pow(x.Mul(bnEther).SetPrec(0), pow.Mul(bnEther).SetPrec(0))
 				require.NoError(t, err)
-				x2 := x.Inflate(balancerV2Precision)
-				pow2 := pow.Inflate(balancerV2Precision)
+				x2 := x.Mul(bnEther).SetPrec(0)
+				pow2 := pow.Mul(bnEther).SetPrec(0)
 				assert.True(t, expectEqualWithError(_powDownFixed(x2, pow2, balancerV2Precision), result, EXPECTED_RELATIVE_ERROR))
 				assert.True(t, expectEqualWithError(_powUpFixed(x2, pow2, balancerV2Precision), result, EXPECTED_RELATIVE_ERROR))
 			})
