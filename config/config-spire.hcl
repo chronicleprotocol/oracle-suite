@@ -1,5 +1,5 @@
 variables {
-  spire_keys = explode(var.item_separator, env("CFG_SYMBOLS", env("CFG_SPIRE_KEYS", "")))
+  spire_keys = explode(var.item_separator, env("CFG_MODELS", env("CFG_SPIRE_KEYS", "")))
 }
 
 spire {

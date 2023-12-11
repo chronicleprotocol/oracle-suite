@@ -16,7 +16,6 @@
 package relay
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"math"
@@ -25,9 +24,9 @@ import (
 	"github.com/defiweb/go-eth/abi"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 type opScribe struct {
@@ -38,7 +37,7 @@ type opScribe struct {
 	opExpiration time.Duration
 }
 
-func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+func (w *opScribe) createRelayCall(ctx context.Context) []relayCall {
 	state, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
@@ -46,7 +45,7 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			WithFields(w.logFields()).
 			WithAdvice("Ignore if it is related to temporary network issues").
 			Error("Failed to call Scribe contract")
-		return 0, nil
+		return nil
 	}
 	if state.wat != w.dataModel {
 		w.log.
@@ -54,7 +53,7 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			WithFields(w.logFields()).
 			WithAdvice("This is a bug in the configuration, probably a wrong contract address is used").
 			Error("Contract asset name does not match the configured asset name")
-		return 0, nil
+		return nil
 	}
 
 	// If the latest poke is not finalized, we cannot send optimistic poke,
@@ -72,8 +71,9 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		}
 		meta := s.MsgMeta.TickV1()
 
-		// If signature does not contain optimistic signatures, skip it.
-		if len(meta.Optimistic) == 0 {
+		// To send an optimistic poke, the signature must contain an additional
+		// ECDSA signature.
+		if meta.ECDSAData == nil {
 			continue
 		}
 
@@ -86,6 +86,21 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 			continue
 		}
 
+		// Check if feed addresses included in the signature match the feed
+		// addresses from the contract.
+		if !sliceutil.ContainsAll(s.Signers, state.feeds) {
+			w.log.
+				WithError(err).
+				WithFields(w.logFields()).
+				WithFields(log.Fields{
+					"signatureFeeds": chronicle.FeedIDsFromAddresses(s.Signers),
+					"contractFeeds":  state.feeds,
+				}).
+				WithAdvice("This is a bug in the configuration or a list of lifted feeds in not synchronized with the FeedRegistry contract").
+				Warn("Signature includes feeds that are not lifted in the contract")
+			continue
+		}
+
 		// Check if price on ScribeOptimistic contract needs to be updated.
 		// The price needs to be updated if:
 		// - Price is older than the interval specified in the opExpiration
@@ -95,21 +110,6 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.opExpiration
 		isStale := math.IsInf(spread, 0) || spread >= w.opSpread
-
-		// Generate signersBlob.
-		//
-		// In theory, multiple signatures with different feeds and feed indices
-		// could exist for the same data model. However, in practice, we've
-		// decided not to allow this situation. Therefore, an error is logged
-		// in case of a mismatch.
-		signersBlob, err := chronicle.SignersBlob(s.Signers, state.feeds.Feeds, state.feeds.FeedIndices)
-		if err != nil {
-			w.log.
-				WithError(err).
-				WithAdvice("Signature was generated with different list of feeds or feed indices; it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
-				Error("Failed to generate signersBlob")
-			continue
-		}
 
 		// Print logs.
 		w.log.
@@ -128,30 +128,29 @@ func (w *opScribe) createRelayCall(ctx context.Context) (gasEstimate uint64, cal
 
 		// If price is stale or expired, return an optimistic poke transaction.
 		if isExpired || isStale {
-			for _, optimistic := range meta.Optimistic {
-				// Verify if signersBlob is same as provided in the message.
-				if !bytes.Equal(signersBlob, optimistic.SignerIndexes) {
-					continue
-				}
-				poke := w.opContract.OpPoke(
-					chronicle.PokeData{
-						Val: meta.Val,
-						Age: meta.Age,
-					},
-					chronicle.SchnorrData{
-						Signature:   s.SchnorrSignature,
-						Commitment:  s.Commitment,
-						SignersBlob: signersBlob,
-					},
-					optimistic.ECDSASignature,
-				)
-				gas, err := poke.Gas(ctx, types.LatestBlockNumber)
-				if err != nil {
-					w.handlePokeErr(err)
-					return 0, nil
-				}
-				return gas, poke
+			poke := w.opContract.OpPoke(
+				chronicle.PokeData{
+					Val: meta.Val,
+					Age: meta.Age,
+				},
+				chronicle.SchnorrData{
+					Signature:  s.SchnorrSignature,
+					Commitment: s.Commitment,
+					FeedIDs:    chronicle.FeedIDsFromAddresses(s.Signers),
+				},
+				*meta.ECDSAData,
+			)
+			gas, err := poke.Gas(ctx, types.LatestBlockNumber)
+			if err != nil {
+				w.handlePokeErr(err)
+				return nil
 			}
+			return []relayCall{{
+				client:      w.contract.Client(),
+				address:     w.contract.Address(),
+				callable:    poke,
+				gasEstimate: gas,
+			}}
 		}
 	}
 

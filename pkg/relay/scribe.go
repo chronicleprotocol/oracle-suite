@@ -20,14 +20,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/defiweb/go-eth/rpc"
 	"github.com/defiweb/go-eth/types"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/contract"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/chronicle"
 	"github.com/chronicleprotocol/oracle-suite/pkg/contract/multicall"
 	"github.com/chronicleprotocol/oracle-suite/pkg/log"
 	"github.com/chronicleprotocol/oracle-suite/pkg/musig/store"
+	"github.com/chronicleprotocol/oracle-suite/pkg/util/sliceutil"
 )
 
 // stateCacheExpiration is the time after which the cached state is considered
@@ -48,21 +47,13 @@ type scribe struct {
 type scribeState struct {
 	wat       string
 	bar       int
-	feeds     chronicle.FeedsResult
+	feeds     []types.Address
 	pokeData  chronicle.PokeData
 	finalized bool      // If price is finalized (only for Scribe Optimistic contracts).
 	time      time.Time // Date and time when the state was fetched.
 }
 
-func (w *scribe) client() rpc.RPC {
-	return w.contract.Client()
-}
-
-func (w *scribe) address() types.Address {
-	return w.contract.Address()
-}
-
-func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call contract.Callable) {
+func (w *scribe) createRelayCall(ctx context.Context) []relayCall {
 	state, err := w.currentState(ctx)
 	if err != nil {
 		w.log.
@@ -70,7 +61,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			WithFields(w.logFields()).
 			WithAdvice("Ignore if it is related to temporary network issues").
 			Error("Failed to call Scribe contract")
-		return 0, nil
+		return nil
 	}
 	if state.wat != w.dataModel {
 		w.log.
@@ -78,7 +69,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			WithFields(w.logFields()).
 			WithAdvice("This is a bug in the configuration, probably a wrong contract address is used").
 			Error("Contract asset name does not match the configured asset name")
-		return 0, nil
+		return nil
 	}
 
 	// Iterate over all signatures to check if any of them can be used to update
@@ -103,6 +94,21 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			continue
 		}
 
+		// Check if feed addresses included in the signature match the feed
+		// addresses from the contract.
+		if !sliceutil.ContainsAll(s.Signers, state.feeds) {
+			w.log.
+				WithError(err).
+				WithFields(w.logFields()).
+				WithFields(log.Fields{
+					"signatureFeeds": chronicle.FeedIDsFromAddresses(s.Signers),
+					"contractFeeds":  state.feeds,
+				}).
+				WithAdvice("This is a bug in the configuration or a list of lifted feeds in not synchronized with the FeedRegistry contract").
+				Warn("Signature includes feeds that are not lifted in the contract")
+			continue
+		}
+
 		// Check if price on the Scribe contract needs to be updated.
 		// The price needs to be updated if:
 		// - Price is older than the interval specified in the expiration
@@ -112,21 +118,6 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 		spread := calculateSpread(state.pokeData.Val.DecFloatPoint(), meta.Val.DecFloatPoint())
 		isExpired := time.Since(state.pokeData.Age) >= w.expiration
 		isStale := math.IsInf(spread, 0) || spread >= w.spread
-
-		// Generate signersBlob.
-		//
-		// In theory, multiple signatures with different feeds and feed indices
-		// could exist for the same data model. However, in practice, we've
-		// decided not to allow this situation. Therefore, an error is logged
-		// in case of a mismatch.
-		signersBlob, err := chronicle.SignersBlob(s.Signers, state.feeds.Feeds, state.feeds.FeedIndices)
-		if err != nil {
-			w.log.
-				WithError(err).
-				WithAdvice("Signature was generated with different list of feeds or feed indices; it indicates a configuration error, either in the relay or in the contract"). //nolint:lll
-				Error("Failed to generate signersBlob")
-			continue
-		}
 
 		// Print logs.
 		w.log.
@@ -151,9 +142,9 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 					Age: meta.Age,
 				},
 				chronicle.SchnorrData{
-					Signature:   s.SchnorrSignature,
-					Commitment:  s.Commitment,
-					SignersBlob: signersBlob,
+					Signature:  s.SchnorrSignature,
+					Commitment: s.Commitment,
+					FeedIDs:    chronicle.FeedIDsFromAddresses(s.Signers),
 				},
 			)
 
@@ -164,10 +155,15 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 					WithFields(w.logFields()).
 					WithAdvice("Ignore if it is related to temporary network issues").
 					Error("Failed to poke the Scribe contract")
-				return 0, nil
+				return nil
 			}
 
-			return gas, poke
+			return []relayCall{{
+				client:      w.contract.Client(),
+				address:     w.contract.Address(),
+				callable:    poke,
+				gasEstimate: gas,
+			}}
 		}
 	}
 
@@ -180,7 +176,7 @@ func (w *scribe) createRelayCall(ctx context.Context) (gasEstimate uint64, call 
 			Warn("No valid signatures found for the current data model")
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (w *scribe) currentState(ctx context.Context) (state scribeState, err error) {

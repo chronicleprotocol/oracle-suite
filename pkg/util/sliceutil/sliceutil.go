@@ -32,6 +32,16 @@ func Contains[T comparable](s []T, e T) bool {
 	return false
 }
 
+// ContainsAll returns true if s slice contains all elements in e slice.
+func ContainsAll[T comparable](s []T, e []T) bool {
+	for _, x := range e {
+		if !Contains(s, x) {
+			return false
+		}
+	}
+	return true
+}
+
 // Map returns a new slice with the results of applying the function f to each
 // element of the original slice.
 func Map[T, U any](s []T, f func(T) U) []U {

@@ -42,13 +42,10 @@ func TestMuSigInitialize_MarshallBinary(t *testing.T) {
 					MsgBody: types.MustHashFromHex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890", types.PadNone),
 					MsgMeta: MuSigMeta{
 						Meta: MuSigMetaTickV1{
-							Wat: "TestAsset",
-							Val: bn.DecFixedPoint(100, 2),
-							Age: time.Unix(1630458972, 0),
-							Optimistic: []MuSigMetaOptimistic{{
-								ECDSASignature: types.MustSignatureFromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"),
-								SignerIndexes:  []byte{0, 1, 2},
-							}},
+							Wat:       "TestAsset",
+							Val:       bn.DecFixedPoint(100, 2),
+							Age:       time.Unix(1630458972, 0),
+							ECDSAData: types.MustSignatureFromHexPtr("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"),
 							FeedTicks: []MuSigMetaFeedTick{
 								{
 									Val: bn.DecFixedPoint(100, 2),
@@ -73,11 +70,11 @@ func TestMuSigInitialize_MarshallBinary(t *testing.T) {
 					MsgBody: types.MustHashFromHex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890", types.PadNone),
 					MsgMeta: MuSigMeta{
 						Meta: MuSigMetaTickV1{
-							Wat:        "",
-							Val:        nil,
-							Age:        time.Unix(0, 0),
-							Optimistic: nil,
-							FeedTicks:  []MuSigMetaFeedTick{},
+							Wat:       "",
+							Val:       nil,
+							Age:       time.Unix(0, 0),
+							ECDSAData: nil,
+							FeedTicks: []MuSigMetaFeedTick{},
 						},
 					},
 					Signers: []types.Address{},
@@ -141,13 +138,10 @@ func TestMuSigInitialize_UnmarshallBinary(t *testing.T) {
 						MsgBody: types.MustHashFromHex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890", types.PadNone),
 						MsgMeta: MuSigMeta{
 							Meta: MuSigMetaTickV1{
-								Wat: "TestAsset",
-								Val: bn.DecFixedPoint(100, 2),
-								Age: time.Unix(1630458972, 0),
-								Optimistic: []MuSigMetaOptimistic{{
-									ECDSASignature: types.MustSignatureFromHex("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"),
-									SignerIndexes:  []byte{0, 1, 2},
-								}},
+								Wat:       "TestAsset",
+								Val:       bn.DecFixedPoint(100, 2),
+								Age:       time.Unix(1630458972, 0),
+								ECDSAData: types.MustSignatureFromHexPtr("0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00"),
 								FeedTicks: []MuSigMetaFeedTick{
 									{
 										Val: bn.DecFixedPoint(100, 2),
@@ -189,11 +183,11 @@ func TestMuSigInitialize_UnmarshallBinary(t *testing.T) {
 						MsgBody: types.MustHashFromHex("0x0000000000000000000000000000000000000000000000000000000000000000", types.PadNone),
 						MsgMeta: MuSigMeta{
 							Meta: MuSigMetaTickV1{
-								Wat:        "",
-								Val:        nil,
-								Age:        time.Unix(0, 0),
-								Optimistic: nil,
-								FeedTicks:  []MuSigMetaFeedTick{},
+								Wat:       "",
+								Val:       nil,
+								Age:       time.Unix(0, 0),
+								ECDSAData: nil,
+								FeedTicks: []MuSigMetaFeedTick{},
 							},
 						},
 						Signers: []types.Address{},

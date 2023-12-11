@@ -20,7 +20,6 @@ import (
 	"errors"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/defiweb/go-eth/hexutil"
@@ -72,7 +71,7 @@ type ScribeContract interface {
 	Read(ctx context.Context) (chronicle.PokeData, error)
 	Wat() contract.TypedSelfCaller[string]
 	Bar() contract.TypedSelfCaller[int]
-	Feeds() contract.TypedSelfCaller[chronicle.FeedsResult]
+	Feeds() contract.TypedSelfCaller[[]types.Address]
 	Poke(pokeData chronicle.PokeData, schnorrData chronicle.SchnorrData) contract.SelfTransactableCaller
 }
 
@@ -85,16 +84,17 @@ type OpScribeContract interface {
 // callProvider provides a contract call that can be used to relay data to the
 // contract.
 type callProvider interface {
-	// client returns that should be used to send the transaction.
-	client() rpc.RPC
-
-	// address returns the address of the contract to relay data to.
-	address() types.Address
-
 	// createRelayCall creates a callable that can be used to relay data to the
 	// contract. It returns the gas estimate for the transaction and the callable.
 	// If callable is nil, then there is no data to relay.
-	createRelayCall(ctx context.Context) (gasEstimate uint64, callable contract.Callable)
+	createRelayCall(ctx context.Context) []relayCall
+}
+
+type relayCall struct {
+	client      rpc.RPC
+	address     types.Address
+	callable    contract.Callable
+	gasEstimate uint64
 }
 
 // Relay is a service that relays data to the blockchain.
@@ -108,20 +108,19 @@ type Relay struct {
 
 // Config is the configuration for the Relay.
 type Config struct {
-	// Medians is the list of median contracts configured for the relay.
+	// Medians is the list of median contracts configuration.
 	Medians []ConfigMedian
 
-	// Scribes is the list of scribe contracts configured for the relay.
+	// Scribes is the list of scribe contracts configuration.
 	Scribes []ConfigScribe
 
-	// OptimisticScribes is the list of optimistic scribe contracts configured
-	// for the relay.
+	// OptimisticScribes is the list of scribe optimistic contracts configuration.
 	OptimisticScribes []ConfigOptimisticScribe
 
 	// Ticker notifies the relay to check if an update is required.
 	Ticker *timeutil.Ticker
 
-	// Logger is a current logger interface used by the Feed.
+	// Logger is a current logger interface used by the Relay.
 	// If nil, null logger will be used.
 	Logger log.Logger
 }
@@ -331,84 +330,47 @@ func (m *Relay) sendRelayTransactions() {
 	}
 }
 
-func (m *Relay) uniqueContracts() map[rpc.RPC][]types.Address {
-	contracts := make(map[rpc.RPC][]types.Address)
-	for _, p := range m.providers {
-		c := p.client()
-		a := p.address()
-		contracts[c] = sliceutil.AppendUnique(contracts[c], a)
-	}
-	return contracts
-}
-
 func (m *Relay) relayCalls() map[rpc.RPC][]contract.Callable {
-	// Relay can send only one transaction for one oracle contract, even though
-	// multiple call providers may exist for that contract. The code below uses
-	// the call from the first provider that returns a valid call. To improve
-	// the performance, the createRelayCallForContract function is executed in
-	// parallel for all unique contracts.
 	var (
-		mu      = sync.Mutex{}
-		wg      = sync.WaitGroup{}
-		calls   = make(map[rpc.RPC][]contract.Callable)
-		limiter = make(chan struct{}, maxParallelCallProviders)
+		mu        = sync.Mutex{}
+		wg        = sync.WaitGroup{}
+		limiter   = make(chan struct{}, maxParallelCallProviders)
+		gasUsage  = make(map[rpc.RPC]uint64)
+		contracts = make(map[rpc.RPC][]types.Address)
+		calls     = make(map[rpc.RPC][]contract.Callable)
 	)
-	for c, as := range m.uniqueContracts() {
-		gasEstimate := new(atomic.Uint64)
-		for _, a := range as {
-			wg.Add(1)
-			go func(c rpc.RPC, a types.Address, g *atomic.Uint64) {
-				defer wg.Done()
-				defer func() { <-limiter }()
-				limiter <- struct{}{}
-				if g.Load() >= gasUsageSoftCap {
-					return
-				}
-				gas, call := m.createRelayCallForContract(c, a)
-				if call == nil {
-					return
-				}
+	for _, u := range m.providers {
+		go func(u callProvider) {
+			defer wg.Done()
+			defer func() { <-limiter }()
+			limiter <- struct{}{}
+			for _, c := range u.createRelayCall(m.ctx) {
 				mu.Lock()
-				defer mu.Unlock()
-				if g.Load() >= gasUsageSoftCap {
-					// Because this is a concurrent operation, we need to check
-					// gas usage again just before adding the call to the list.
-					return
+				if gasUsage[c.client] >= gasUsageSoftCap {
+					// If the gas usage is above the soft cap, then do not
+					// add any more transactions to the aggregate transaction.
+					mu.Unlock()
+					continue
 				}
-				calls[c] = append(calls[c], call)
-				if gas > baseGasUsage {
-					g.Add(gas - baseGasUsage)
-				} else {
-					g.Add(700) //nolint:gomnd // 700 is the minimum gas usage for a call
+				if sliceutil.Contains(contracts[c.client], c.address) {
+					// If there is already a transaction for the contract,
+					// then do not add another one.
+					mu.Unlock()
+					continue
 				}
-			}(c, a, gasEstimate)
-		}
+				gasEstimate := c.gasEstimate + 700 //nolint:gomnd // 700 is the minimum gas usage for a call
+				if gasEstimate > baseGasUsage {
+					gasEstimate -= baseGasUsage
+				}
+				gasUsage[c.client] += gasEstimate
+				contracts[c.client] = append(contracts[c.client], c.address)
+				calls[c.client] = append(calls[c.client], c.callable)
+				mu.Unlock()
+			}
+		}(u)
 	}
 	wg.Wait()
 	return calls
-}
-
-func (m *Relay) createRelayCallForContract(client rpc.RPC, addr types.Address) (gasEstimate uint64, call contract.Callable) {
-	defer func() {
-		if r := recover(); r != nil {
-			m.log.
-				WithFields(log.Fields{
-					"contractAddress": addr,
-					"panic":           r,
-				}).
-				WithAdvice("This is a critical bug and must be investigated").
-				Error("Panic during relay call creation")
-		}
-	}()
-	for _, u := range m.providers {
-		if u.client() != client || u.address() != addr {
-			continue
-		}
-		if gas, call := u.createRelayCall(m.ctx); call != nil {
-			return gas, call
-		}
-	}
-	return 0, nil
 }
 
 func (m *Relay) relayRoutine() {

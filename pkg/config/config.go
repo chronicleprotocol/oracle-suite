@@ -40,20 +40,27 @@ var hclContext = &hcl.EvalContext{
 		"env": getEnvVars(),
 	},
 	Functions: map[string]function.Function{
-		// Standard library functions:
-		"can":      tryfunc.CanFunc,
+		// Standard Library functions:
+		// try/can
+		"can": tryfunc.CanFunc,
+		"try": tryfunc.TryFunc,
+		// collection
+		"contains": stdlib.ContainsFunc,
+		"distinct": stdlib.DistinctFunc,
+		"keys":     stdlib.KeysFunc,
 		"length":   stdlib.LengthFunc,
-		"range":    stdlib.RangeFunc,
-		"replace":  stdlib.ReplaceFunc,
-		"join":     stdlib.JoinFunc,
 		"merge":    stdlib.MergeFunc,
 		"concat":   stdlib.ConcatFunc,
-		"try":      tryfunc.TryFunc,
-		"contains": stdlib.ContainsFunc,
-		"keys":     stdlib.KeysFunc,
-		"distinct": stdlib.DistinctFunc,
+		// sequence
+		"range": stdlib.RangeFunc,
+		// string
+		"join":  stdlib.JoinFunc,
+		"split": stdlib.SplitFunc,
+		// string replace
+		"replace": stdlib.ReplaceFunc,
 
 		// Custom functions:
+		// convert
 		"tobool":   funcs.MakeToFunc(cty.Bool),
 		"tolist":   funcs.MakeToFunc(cty.List(cty.DynamicPseudoType)),
 		"tomap":    funcs.MakeToFunc(cty.Map(cty.DynamicPseudoType)),
@@ -61,7 +68,7 @@ var hclContext = &hcl.EvalContext{
 		"toset":    funcs.MakeToFunc(cty.Set(cty.DynamicPseudoType)),
 		"tostring": funcs.MakeToFunc(cty.String),
 
-		// Even more customer functions:
+		// Customer (like in more custom) functions:
 		"env":     envFunc,
 		"explode": explodeFunc,
 	},

@@ -18,43 +18,54 @@ package chronicle
 import (
 	"testing"
 
+	goethABI "github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestFeedBloom(t *testing.T) {
+func Test_uint256FeedBloomValue(t *testing.T) {
 	tests := []struct {
 		name       string
 		addresses  []string
-		checkBytes [32]byte
+		checkBytes string
 	}{
 		{
-			name:       "Single Address",
+			name:       "single address",
 			addresses:  []string{"0x1234567890123456789012345678901234567890"},
-			checkBytes: [32]byte{0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			checkBytes: "0x0000000000000000000000000000000000000000000000000000000000040000",
 		},
 		{
-			name:       "Multiple Addresses",
-			addresses:  []string{"0x1234567890123456789012345678901234567890", "0x3456789012345678901234567890123456789012"},
-			checkBytes: [32]byte{0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			name:       "multiple addresses",
+			addresses:  []string{"0x0c4FC7D66b7b6c684488c1F218caA18D4082da18", "0x5C01f0F08E54B85f4CaB8C6a03c9425196fe66DD", "0x75FBD0aaCe74Fb05ef0F6C0AC63d26071Eb750c9", "0xC50DF8b5dcb701aBc0D6d1C7C99E6602171Abbc4"},
+			checkBytes: "0x0000000000000020000000000000000000200000100000000000000000001000",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var bloom FeedBloom
+			var bloom goethABI.Word
+			copy(bloom[:], hexutil.MustHexToBytes(tt.checkBytes))
+
+			var feedIDs FeedIDs
 			for _, addressHex := range tt.addresses {
-				address := types.MustAddressFromHex(addressHex)
-				bloom.Set(address)
-				assert.True(t, bloom.Has(address), "Address should be present in bloom")
+				feedIDs.Add(types.MustAddressFromHex(addressHex))
 			}
-			assert.Equal(t, tt.checkBytes, bloom.Bytes32())
+			bloomType := &uint256FeedBloomValue{}
+
+			// Encode
+			require.NoError(t, bloomType.MapFrom(nil, feedIDs))
+			words, err := bloomType.EncodeABI()
+			require.NoError(t, err)
+			assert.Equal(t, tt.checkBytes, hexutil.BytesToHex(words.Bytes()))
+
+			// Decode
+			decFeedIDs := FeedIDs{}
+			decBloom := &uint256FeedBloomValue{}
+			_, err = decBloom.DecodeABI(words)
+			require.NoError(t, err)
+			require.NoError(t, decBloom.MapTo(nil, &decFeedIDs))
+			assert.Equal(t, feedIDs, decFeedIDs)
 		})
 	}
-}
-
-func TestFeedBloom_Bytes32(t *testing.T) {
-	input := [32]byte{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}
-	var bloom FeedBloom
-	bloom.SetBytes32(input)
-	assert.Equal(t, input, bloom.Bytes32())
 }

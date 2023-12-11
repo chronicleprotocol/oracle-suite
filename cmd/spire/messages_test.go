@@ -160,9 +160,8 @@ func TestHandleMessage(t *testing.T) {
 				"wat": "ETH/USD"
 			},
 			"signatures": [{
-				"type": "scribe-optimistic/v1",
-				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-				"signers_blob":"0x123456"
+				"type": "scribe-optimistic/v2",
+				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"
 			}],
 			"meta": {
 				"type": "musig_initialize",
@@ -173,7 +172,7 @@ func TestHandleMessage(t *testing.T) {
 				"received_from_peer_id": "peer2",
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"started_at": 1234567890,
-				"topic": "musig_initialize/v1",
+				"topic": "musig_initialize/v1.1",
 				"trace_signers": ["0x1234567890abcdef1234567890abcdef12345678"],
 				"trace": [{
 					"age": 1234567890,
@@ -216,7 +215,7 @@ func TestHandleMessage(t *testing.T) {
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"transport": "libp2p",
 				"user_agent": "spire/v0.0.0",
-				"topic": "musig_commitment/v1",
+				"topic": "musig_commitment/v1.1",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_id": "peer1",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -248,7 +247,7 @@ func TestHandleMessage(t *testing.T) {
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"transport": "libp2p",
 				"user_agent": "spire/v0.0.0",
-				"topic": "musig_partial_signature/v1",
+				"topic": "musig_partial_signature/v1.1",
 				"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"peer_id": "peer1",
 				"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -287,9 +286,8 @@ func TestHandleMessage(t *testing.T) {
 			},
 			"signature": "0x499602d2",
 			"signatures": [{
-				"type": "scribe-optimistic/v1",
-				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01",
-				"signers_blob":"0x123456"
+				"type": "scribe-optimistic/v2",
+				"signature":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"
 			},{
 				"type": "scribe/v1",
 				"signature":"0x499602d2"
@@ -303,7 +301,7 @@ func TestHandleMessage(t *testing.T) {
 				"received_from_peer_id": "peer2",
 				"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 				"computed_at": 1234567890,
-				"topic": "musig_signature/v1",
+				"topic": "musig_signature/v1.1",
 				"trace_signers": ["0x1234567890abcdef1234567890abcdef12345678"],
 				"trace": [{
 					"age": 1234567890,
@@ -337,7 +335,7 @@ func TestHandleMessage(t *testing.T) {
 			"session_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			"transport": "libp2p",
 			"user_agent": "spire/v0.0.0",
-			"topic": "musig_terminate/v1",
+			"topic": "musig_terminate/v1.1",
 			"message_id": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			"peer_id": "peer1",
 			"peer_addr": "0x1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -406,12 +404,7 @@ func createMuSigMessage() *messages.MuSigMessage {
 						VRS: types.MustSignatureFromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"),
 					},
 				},
-				Optimistic: []messages.MuSigMetaOptimistic{
-					{
-						ECDSASignature: types.MustSignatureFromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"),
-						SignerIndexes:  []byte{0x12, 0x34, 0x56},
-					},
-				},
+				ECDSAData: types.MustSignatureFromHexPtr("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01"),
 			},
 		},
 		Signers: []types.Address{

@@ -36,11 +36,11 @@ const (
 )
 
 const (
-	MuSigStartV1MessageName            = "musig_initialize/v1"
-	MuSigTerminateV1MessageName        = "musig_terminate/v1"
-	MuSigCommitmentV1MessageName       = "musig_commitment/v1"
-	MuSigPartialSignatureV1MessageName = "musig_partial_signature/v1"
-	MuSigSignatureV1MessageName        = "musig_signature/v1"
+	MuSigStartV1MessageName            = "musig_initialize/v1.1"
+	MuSigTerminateV1MessageName        = "musig_terminate/v1.1"
+	MuSigCommitmentV1MessageName       = "musig_commitment/v1.1"
+	MuSigPartialSignatureV1MessageName = "musig_partial_signature/v1.1"
+	MuSigSignatureV1MessageName        = "musig_signature/v1.1"
 )
 
 type muSigMeta interface {
@@ -61,15 +61,11 @@ func (m *MuSigMeta) TickV1() *MuSigMetaTickV1 {
 }
 
 type MuSigMetaTickV1 struct {
-	// Optimistic is a slice because, theoretically, there could exist multiple
-	// ScribeOptimistic contracts for the same asset with different signer
-	// indexes, although this is unlikely.
-
-	Wat        string                  // Asset name.
-	Val        *bn.DecFixedPointNumber // Median price.
-	Age        time.Time               // Oldest tick timestamp.
-	Optimistic []MuSigMetaOptimistic   // Optimistic signatures.
-	FeedTicks  []MuSigMetaFeedTick     // All ticks used to calculate the median price.
+	Wat       string                  // Asset name.
+	Val       *bn.DecFixedPointNumber // Median price.
+	Age       time.Time               // Oldest tick timestamp.
+	ECDSAData *types.Signature        // Optional ECDSA signature data required for the optimistic poke.
+	FeedTicks []MuSigMetaFeedTick     // All ticks used to calculate the median price.
 }
 
 func (m MuSigMetaTickV1) MarshalJSON() ([]byte, error) {
@@ -77,24 +73,12 @@ func (m MuSigMetaTickV1) MarshalJSON() ([]byte, error) {
 		"wat":        m.Wat,
 		"val":        m.Val.String(),
 		"age":        m.Age.In(time.UTC).Format(time.RFC3339Nano),
-		"optimistic": m.Optimistic,
+		"ecdsa_data": m.ECDSAData,
 		"ticks":      m.FeedTicks,
 	})
 }
 
 func (m MuSigMetaTickV1) muSigMeta() {}
-
-type MuSigMetaOptimistic struct {
-	ECDSASignature types.Signature `json:"ecdsa_signature"`
-	SignerIndexes  []uint8         `json:"signer_indexes"`
-}
-
-func (m MuSigMetaOptimistic) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]any{
-		"ecdsa_signature": m.ECDSASignature.String(),
-		"signer_indexes":  hexutil.BytesToHex(m.SignerIndexes),
-	})
-}
 
 type MuSigMetaFeedTick struct {
 	Val *bn.DecFixedPointNumber // Price.
@@ -139,11 +123,8 @@ func (m *MuSigMeta) toProtobuf() (*pb.MuSigMeta, error) {
 				Vrs: tick.VRS.Bytes(),
 			})
 		}
-		for _, optimistic := range t.Optimistic {
-			tickV1.Optimistic = append(tickV1.Optimistic, &pb.MuSigMetaTickV1_Optimistic{
-				EcdsaSignature: optimistic.ECDSASignature.Bytes(),
-				SignersIndexes: optimistic.SignerIndexes,
-			})
+		if t.ECDSAData != nil {
+			tickV1.EcdsaData = t.ECDSAData.Bytes()
 		}
 		meta.MsgMeta = &pb.MuSigMeta_Ticks{
 			Ticks: tickV1,
@@ -183,15 +164,12 @@ func (m *MuSigMeta) fromProtobuf(msg *pb.MuSigMeta) error {
 				VRS: vrs,
 			})
 		}
-		for _, optimistic := range msg.Optimistic {
-			vrs, err := types.SignatureFromBytes(optimistic.EcdsaSignature)
+		if msg.EcdsaData != nil {
+			ecdsaData, err := types.SignatureFromBytes(msg.EcdsaData)
 			if err != nil {
 				return err
 			}
-			tick.Optimistic = append(tick.Optimistic, MuSigMetaOptimistic{
-				ECDSASignature: vrs,
-				SignerIndexes:  optimistic.SignersIndexes,
-			})
+			tick.ECDSAData = &ecdsaData
 		}
 		m.Meta = tick
 	}

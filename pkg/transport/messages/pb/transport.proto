@@ -75,14 +75,10 @@ message MuSigMetaTickV1 {
     int64 age = 2; // Unix timestamp.
     bytes vrs = 3; // Feed signature (types.Signature).
   }
-  message Optimistic {
-    bytes ecdsaSignature = 1; // Feed signature (types.Signature).
-    bytes signersIndexes = 2; // Indexes of signers that participated in this MuSig signature.
-  }
   string wat = 1; // Asset name (e.g. "ETH/USD").
   bytes val = 2; // Median value of all ticks (bn.DecFixedPoint).
   int64 age = 3; // Unix timestamp of the oldest tick.
-  repeated Optimistic optimistic = 4; // Optional data required for optimistic poke.
+  optional bytes ecdsaData = 4; // Optional ECDSA signature data required for the optimistic poke.
   repeated FeedTick ticks = 5; // Ticks used to calculate median along with feed signatures.
 }
 

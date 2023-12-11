@@ -58,7 +58,7 @@ func (w *Chainlog) TryGet(wat string) contract.TypedSelfCaller[TryGetResult] {
 		contract.CallOpts{
 			Client:       w.client,
 			Address:      w.address,
-			Encoder:      contract.NewCallEncoder(method, stringToBytes32(wat)),
+			Encoder:      contract.NewCallEncoder(method, wat),
 			Decoder:      contract.NewCallDecoder(method),
 			ErrorDecoder: contract.NewContractErrorDecoder(abiChainlog),
 		},
