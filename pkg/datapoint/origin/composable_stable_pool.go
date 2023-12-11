@@ -336,9 +336,8 @@ func (p *ComposableStablePool) CalcAmountOut(tokenIn, tokenOut types.Address, am
 
 	if tokenIn == p.address || tokenOut == p.address {
 		return nil, nil, fmt.Errorf("unsupported token swap")
-	} else {
-		return p._swapGivenIn(indexIn, indexOut, amountIn)
 	}
+	return p._swapGivenIn(indexIn, indexOut, amountIn)
 }
 
 // _onRegularSwap implements same functionality with the following url:
