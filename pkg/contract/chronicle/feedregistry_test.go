@@ -27,7 +27,7 @@ import (
 
 func TestFeedRegistry_Feeds(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	feedRegistry := NewFeedRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -57,7 +57,7 @@ func TestFeedRegistry_Feeds(t *testing.T) {
 
 func TestFeedRegistry_FeedExists(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	feedRegistry := NewFeedRegistry(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {

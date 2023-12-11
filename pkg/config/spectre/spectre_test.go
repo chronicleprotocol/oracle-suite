@@ -17,6 +17,7 @@ package spectre
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -65,5 +66,30 @@ func TestDefaults(t *testing.T) {
 	loadedConfig, diags := block.Bytes()
 	require.False(t, diags.HasErrors())
 
-	require.Equal(t, expectedConfig, loadedConfig)
+	require.Equal(t,
+		strings.Trim(string(expectedConfig), "\n"),
+		strings.Trim(string(loadedConfig), "\n"),
+	)
+}
+
+func TestDefaultsForStage(t *testing.T) {
+	require.NoError(t, os.Setenv("CFG_ENVIRONMENT", "stage"))
+	require.NoError(t, os.Setenv("CFG_CHAIN_NAME", "sep"))
+
+	cfg := &Config{}
+	require.NoError(t, config.LoadEmbeds(cfg, cfg.DefaultEmbeds()))
+
+	block := &hcl.Block{}
+	hcl.Encode(cfg, block)
+
+	expectedConfig, err := os.ReadFile("./testdata/default-stage-sep.hcl")
+	require.NoError(t, err)
+
+	loadedConfig, diags := block.Bytes()
+	require.False(t, diags.HasErrors())
+
+	require.Equal(t,
+		strings.Trim(string(expectedConfig), "\n"),
+		strings.Trim(string(loadedConfig), "\n"),
+	)
 }

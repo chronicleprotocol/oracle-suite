@@ -31,7 +31,7 @@ import (
 
 func TestScribe_Read(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.getStorageAtFn = func(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
@@ -49,7 +49,7 @@ func TestScribe_Read(t *testing.T) {
 
 func TestScribe_Wat(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -66,7 +66,7 @@ func TestScribe_Wat(t *testing.T) {
 
 func TestScribe_Bar(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -83,7 +83,7 @@ func TestScribe_Bar(t *testing.T) {
 
 func TestScribe_Feeds(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	// Mocked data for the test
@@ -114,7 +114,7 @@ func TestScribe_Feeds(t *testing.T) {
 
 func TestScribe_Poke(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	scribe := NewScribe(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899002"))
 
 	// Mocked data for the test

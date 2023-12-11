@@ -34,7 +34,7 @@ var priceHash = "0x5e7aa8f6514c872b2020a7f63c72a382e813dc0624a2fb3c28367fee763be
 
 func TestMedian_Val(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
 	mockClient.getStorageAtFn = func(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error) {
@@ -51,7 +51,7 @@ func TestMedian_Val(t *testing.T) {
 
 func TestMedian_Age(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -68,7 +68,7 @@ func TestMedian_Age(t *testing.T) {
 
 func TestMedian_Wat(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -85,7 +85,7 @@ func TestMedian_Wat(t *testing.T) {
 
 func TestMedian_Bar(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
 	mockClient.callFn = func(ctx context.Context, call types.Call, blockNumber types.BlockNumber) ([]byte, *types.Call, error) {
@@ -102,7 +102,7 @@ func TestMedian_Bar(t *testing.T) {
 
 func TestMedian_Poke(t *testing.T) {
 	ctx := context.Background()
-	mockClient := new(mockRPC)
+	mockClient := newMockRPC(t)
 	median := NewMedian(mockClient, types.MustAddressFromHex("0x1122344556677889900112233445566778899001"))
 
 	vals := []MedianVal{

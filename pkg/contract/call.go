@@ -360,7 +360,7 @@ var defErrorDecoder = func(err error) error {
 	return err
 }
 
-// Create private aliases to allow embedding without exposing the methods:
+// Private aliases to allow embedding without exposing the methods:
 
 type call = Call
 type transactableCall = TransactableCall

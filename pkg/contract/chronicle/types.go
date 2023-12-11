@@ -112,9 +112,9 @@ func (b uint256FeedBloomValue) IsDynamic() bool {
 // EncodeABI implements the abi.Value interface.
 func (b uint256FeedBloomValue) EncodeABI() (goethABI.Words, error) {
 	w := goethABI.Word{}
-	for i := 0; i < 32; i++ {
+	for i := 31; i >= 0; i-- {
 		for j := 0; j < 8; j++ {
-			if b[i*8+j] {
+			if b[255-i*8-(7-j)] {
 				w[i] |= 1 << uint(j)
 			}
 		}
@@ -127,9 +127,10 @@ func (b *uint256FeedBloomValue) DecodeABI(words goethABI.Words) (int, error) {
 	if len(words) == 0 {
 		return 0, fmt.Errorf("abi: cannot decode BytesFlags from empty data")
 	}
-	for i, v := range words[0] {
+	w := words[0]
+	for i := 31; i >= 0; i-- {
 		for j := 0; j < 8; j++ {
-			b[i*8+j] = v&(1<<uint(j)) != 0
+			b[255-i*8-(7-j)] = w[i]&(1<<uint(j)) != 0
 		}
 	}
 	return 1, nil

@@ -35,7 +35,7 @@ __relays="$(jq -c '.' "config/relays.json")"
 __relays_initial="$(jq -c '.' "config/relays-initial.json")"
 
 _CONTRACT_MAP="$({
-	findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog)$'
+	findAllConfigs "$1/deployments" '^(WatRegistry|Chainlog|FeedRegistry)$'
 	findAllConfigs "$1/deployments" '^TorAddressRegister_Feeds' 'name'
 } | jq -c '{(.environment+"-"+.chain+"-"+.contract):.address}' | sort | jq -s 'add')"
 
@@ -55,7 +55,9 @@ _CONTRACTS="$({
 		challenge_period:.IScribeOptimistic.opChallengePeriod,
 		poke:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke")] // {}),
 		poke_optimistic:($ri[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // $r[(.environment+"-"+.chain+"-"+.IScribe.wat+"-scribe-poke-optimistic")] // {}),
+		version,name:.salt,
 	} | del(..|nulls) | del(..|select(type=="object" and length==0))'
+
 	jq <<<"$__medians" --argjson r "$__relays" -c '{
 		env,
 		chain,
