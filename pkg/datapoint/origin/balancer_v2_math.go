@@ -136,6 +136,18 @@ func _mulUpFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _mulUpFixed(x, y, balancerV2Precision)
 }
 
+func _mod(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+	if x.Sign() == 0 {
+		return x
+	}
+
+	z := new(big.Int).Mod(x.RawBigInt(), y.RawBigInt())
+	return bn.DecFixedPoint(z, 0)
+}
+
 var X_OUT_OF_BOUNDS = fmt.Errorf("X_OUT_OF_BOUNDS")             //nolint:revive,stylecheck
 var Y_OUT_OF_BOUNDS = fmt.Errorf("Y_OUT_OF_BOUNDS")             //nolint:revive,stylecheck
 var PRODUCT_OUT_OF_BOUNDS = fmt.Errorf("PRODUCT_OUT_OF_BOUNDS") //nolint:revive,stylecheck
@@ -225,7 +237,7 @@ func _pow(x, y *bn.DecFixedPointNumber) (*bn.DecFixedPointNumber, error) {
 		// (downscaled) last 18 decimals.
 		// logx_times_y = ((ln_36_x / ONE_18) * y_int256 + ((ln_36_x % ONE_18) * y_int256) / ONE_18);
 		logx_times_y = ln_36_x.DivPrec(ONE_18, 0).Mul(y).
-			Add(ln_36_x.Mod(ONE_18).Mul(y).DivPrec(ONE_18, 0))
+			Add(_mod(ln_36_x, ONE_18).Mul(y).DivPrec(ONE_18, 0))
 	} else {
 		// logx_times_y = _ln(x_int256) * y_int256;
 		logx_times_y = _ln(x).Mul(y)

@@ -259,16 +259,6 @@ func (x *DecFixedPointNumber) DivPrec(y *DecFixedPointNumber, prec uint32) *DecF
 	return &DecFixedPointNumber{x: z, p: x.p}
 }
 
-func (x *DecFixedPointNumber) Mod(y *DecFixedPointNumber) *DecFixedPointNumber {
-	if y.x.Sign() == 0 {
-		panic("division by zero")
-	}
-
-	z := new(big.Int).Mod(x.x, y.x)
-	n := &DecFixedPointNumber{x: z, p: x.p}
-	return n
-}
-
 // Cmp compares x and y and returns:
 //
 //	-1 if x <  y
