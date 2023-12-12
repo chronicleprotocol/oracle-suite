@@ -65,7 +65,6 @@ gofer {
         "DAI/USDC/USDT" = "0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7"
         "ETH/STETH"     = "0xdc24316b9ae028f1497c275eb9192a3ea0f67022"
         "FRAX/USDC"     = "0xdcef968d416a41cdac0ed8702fac8128a64241a2"
-        "RETH/WSTETH"   = "0x447ddd4960d9fdbf6af9a790560d0af76795cb08"
       }
       addresses2 = {
         "USDT/WBTC/WETH" = "0xd51a44d3fae010294c616388b506acda1bfaae46"
@@ -127,6 +126,16 @@ gofer {
     url  = "https://www.okx.com/api/v5/market/ticker?instId=$${ucbase}-$${ucquote}&instType=SPOT"
     jq   = "{price: .data[0].last|tonumber, time: (.data[0].ts|tonumber/1000), volume: .data[0].vol24h|tonumber}"
   }
+  origin "pancakeswapV3" {
+    type = "uniswapV3"
+
+    contracts "ethereum" {
+      addresses = {
+        "RETH/WETH"   = "0x2201d2400d30bfd8172104b4ad046d019ca4e7bd"
+        "WSTETH/WETH" = "0x4f64951a6583d56004ff6310834c70d182142a07"
+      }
+    }
+  }
   origin "rocketpool" {
     type = "rocketpool"
 
@@ -185,6 +194,7 @@ gofer {
         "MATIC/WETH"  = "0x290a6a7460b308ee3f19023d2d00de604bcf5b42"
         "MKR/USDC"    = "0xc486ad2764d55c7dc033487d634195d6e4a6917e"
         "MKR/WETH"    = "0xe8c6c9227491c0a8156a0106a0204d881bb7e531"
+        "RETH/WETH"   = "0xa4e0faa58465a2d369aa21b3e42d43374c6f9613"
         "UNI/WETH"    = "0x1d42064fc4beb5f8aaf85f4617ae8b3b5b8bd801"
         "USDC/SNX"    = "0x020c349a0541d76c16f501abc6b2e9c98adae892"
         "USDC/WETH"   = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"
@@ -591,10 +601,16 @@ gofer {
   }
   data_model "RETH/ETH" {
     median {
-      min_values = 2
+      min_values = 3
 
       alias "RETH/ETH" {
+        origin "uniswapV3" { query = "RETH/WETH" }
+      }
+      alias "RETH/ETH" {
         origin "balancerV2" { query = "RETH/WETH" }
+      }
+      alias "RETH/ETH" {
+        origin "pancakeswapV3" { query = "RETH/WETH" }
       }
       alias "RETH/ETH" {
         origin "curve" { query = "RETH/WETH" }
@@ -789,8 +805,11 @@ gofer {
         origin "balancerV2" { query = "WSTETH/WETH" }
       }
       indirect {
-        origin "curve" { query = "RETH/WSTETH" }
-        reference { data_model = "RETH/ETH" }
+        origin "wsteth" { query = "WSTETH/STETH" }
+        origin "curve" { query = "ETH/STETH" }
+      }
+      alias "WSTETH/ETH" {
+        origin "pancakeswapV3" { query = "WSTETH/WETH" }
       }
     }
   }
