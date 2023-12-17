@@ -106,6 +106,7 @@ gofer {
     type = "lido_lst"
     contracts "ethereum" {
       addresses = {
+        # query in data model must be `1DAY` or `nDAYS`, n <= 7, i.e. "STETH/7DAYS"
         "STETH/ERC20" = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
       }
     }

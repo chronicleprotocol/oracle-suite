@@ -61,6 +61,9 @@ func requestWithBlockStep[T any](fromBlock, toBlock, step uint64, callback reque
 	var result []T
 	for ; fromBlock <= toBlock; fromBlock = toBlock + 1 {
 		to := fromBlock + step
+		if to > toBlock {
+			to = toBlock
+		}
 		nextResult, err := callback(types.BlockNumberFromUint64Ptr(fromBlock), types.BlockNumberFromUint64Ptr(to))
 		if err != nil {
 			return nil, err

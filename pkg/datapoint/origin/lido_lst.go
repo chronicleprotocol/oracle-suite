@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/defiweb/go-eth/rpc"
@@ -71,6 +73,8 @@ func NewLidoLST(config LidoLSTConfig) (*LidoLST, error) {
 }
 
 type rebaseEvent struct {
+	blockNumber     *big.Int
+	reportTimestamp *big.Int
 	preTotalEther   *big.Int
 	preTotalShares  *big.Int
 	postTotalEther  *big.Int
@@ -103,6 +107,8 @@ func (r *LidoLST) getRebaseEvents(fromBlock, toBlock *types.BlockNumber) ([]reba
 			return nil, err
 		}
 		events = append(events, rebaseEvent{
+			blockNumber:     log.BlockNumber,
+			reportTimestamp: reportTimestamp,
 			preTotalEther:   preTotalEther,
 			preTotalShares:  preTotalShares,
 			postTotalEther:  postTotalEther,
@@ -140,6 +146,28 @@ func (r *LidoLST) getLastRebaseEvent(block uint64) (*rebaseEvent, error) {
 	return nil, fmt.Errorf("not found TokenRebased event")
 }
 
+func (r *LidoLST) calculateAprFromRebaseEvent(event rebaseEvent) *bn.DecFloatPointNumber {
+	// Reference: https://github.com/lidofinance/lido-ethereum-sdk/blob/main/packages/sdk/src/statistics/apr.ts#L17
+	// LidoSDKApr::calculateAprFromRebaseEvent
+	const lidoDecimals = 27
+	const secondsInYearInt = 31536000
+	const pointDecimals = 18
+	tenTo27 := new(big.Float).Quo(big.NewFloat(10), big.NewFloat(lidoDecimals))
+	preShareRate := bn.DecFloatPoint(event.preTotalEther).
+		Mul(bn.DecFloatPoint(tenTo27)).
+		Div(bn.DecFloatPoint(event.preTotalShares))
+	postShareRate := bn.DecFloatPoint(event.postTotalEther).
+		Mul(bn.DecFloatPoint(tenTo27)).
+		Div(bn.DecFloatPoint(event.postTotalShares))
+	mulForPrecision := bn.DecFloatPoint(1000)
+	secondsInYear := bn.DecFloatPoint(secondsInYearInt)
+	userAPR := secondsInYear.Mul(postShareRate.Sub(preShareRate).Mul(mulForPrecision)).
+		Div(preShareRate).
+		Div(bn.DecFloatPoint(event.timeElapsed))
+
+	return userAPR.Mul(bn.DecFloatPoint(100)).Div(mulForPrecision).SetPrec(pointDecimals)
+}
+
 func (r *LidoLST) FetchDataPoints(ctx context.Context, query []any) (map[any]datapoint.Point, error) {
 	pairs, ok := queryToPairs(query)
 	if !ok {
@@ -153,6 +181,13 @@ func (r *LidoLST) FetchDataPoints(ctx context.Context, query []any) (map[any]dat
 	r.ctx = ctx
 	pair := pairs[0]
 
+	// Remove `DAYS` or `DAY` suffix and extract number of days
+	daysStr := strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(pair.Quote), "days", ""), "day", "")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		return nil, fmt.Errorf("quote token should be `nDAYS`, n is digit")
+	}
+
 	block, err := r.client.BlockNumber(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get block number, %w", err)
@@ -162,28 +197,16 @@ func (r *LidoLST) FetchDataPoints(ctx context.Context, query []any) (map[any]dat
 		return nil, err
 	}
 
+	apr := r.calculateAprFromRebaseEvent(*lastRebaseEvent)
+	for i := 0; i < days-1; i++ {
+		lastRebaseEvent, _ = r.getLastRebaseEvent(lastRebaseEvent.blockNumber.Uint64() - uint64(1))
+		lastAPR := r.calculateAprFromRebaseEvent(*lastRebaseEvent)
+		apr = apr.Add(lastAPR)
+	}
+
 	points := make(map[any]datapoint.Point)
-
-	// Reference: https://github.com/lidofinance/lido-ethereum-sdk/blob/main/packages/sdk/src/statistics/apr.ts#L17
-	// LidoSDKApr::calculateAprFromRebaseEvent
-	const lidoDecimals = 27
-	const secondsInYearInt = 31536000
-	const pointDecimals = 18
-	tenTo27 := new(big.Float).Quo(big.NewFloat(10), big.NewFloat(lidoDecimals))
-	preShareRate := bn.DecFloatPoint(lastRebaseEvent.preTotalEther).
-		Mul(bn.DecFloatPoint(tenTo27)).
-		Div(bn.DecFloatPoint(lastRebaseEvent.preTotalShares))
-	postShareRate := bn.DecFloatPoint(lastRebaseEvent.postTotalEther).
-		Mul(bn.DecFloatPoint(tenTo27)).
-		Div(bn.DecFloatPoint(lastRebaseEvent.postTotalShares))
-	mulForPrecision := bn.DecFloatPoint(1000)
-	secondsInYear := bn.DecFloatPoint(secondsInYearInt)
-	userAPR := secondsInYear.Mul(postShareRate.Sub(preShareRate).Mul(mulForPrecision)).
-		Div(preShareRate).
-		Div(bn.DecFloatPoint(lastRebaseEvent.timeElapsed))
-
 	points[pair] = datapoint.Point{
-		Value: value.NewTick(pair, userAPR.Mul(bn.DecFloatPoint(100)).Div(mulForPrecision).SetPrec(pointDecimals), nil),
+		Value: value.NewTick(pair, apr.Div(bn.DecFloatPoint(days)), nil),
 		Time:  time.Now(),
 	}
 
