@@ -1,6 +1,9 @@
 package origin
 
-import "github.com/defiweb/go-eth/abi"
+import (
+	"github.com/defiweb/go-eth/abi"
+	"github.com/defiweb/go-eth/types"
+)
 
 // [Balancer V2]
 var getLatest = abi.MustParseMethod("getLatest(uint8)(uint256)")
@@ -16,6 +19,15 @@ var coins = abi.MustParseMethod("coins(uint256)(address)")
 
 // [dsr]
 var dsr = abi.MustParseMethod("dsr()(uint256)")
+
+// [Lido-Liquid Staking Token]
+var tokenRebased = abi.MustParseEvent("TokenRebased(uint256 indexed reportTimestamp," +
+	"uint256 timeElapsed," +
+	"uint256 preTotalShares," +
+	"uint256 preTotalEther," +
+	"uint256 postTotalShares," +
+	"uint256 postTotalEther," +
+	"uint256 sharesMintedAsFees)")
 
 // [RocketPool]
 var getExchangeRate = abi.MustParseMethod("getExchangeRate()(uint256)")
@@ -42,3 +54,18 @@ var slot0 = abi.MustParseMethod("slot0()(uint160,int24,uint16,uint16,uint16,uint
 
 // [wstETH]
 var stEthPerToken = abi.MustParseMethod("stEthPerToken()(uint256)")
+
+type requestFunc[T any] func(fromBlock, toBlock *types.BlockNumber) ([]T, error)
+
+func requestWithBlockStep[T any](fromBlock, toBlock, step uint64, callback requestFunc[T]) ([]T, error) {
+	var result []T
+	for ; fromBlock <= toBlock; fromBlock = toBlock + 1 {
+		to := fromBlock + step
+		nextResult, err := callback(types.BlockNumberFromUint64Ptr(fromBlock), types.BlockNumberFromUint64Ptr(to))
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, nextResult...)
+	}
+	return result, nil
+}

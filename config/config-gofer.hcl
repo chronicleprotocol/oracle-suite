@@ -102,6 +102,15 @@ gofer {
     jq   = "{price: .data.price, time: (.data.time/1000)|round, volume: null}"
   }
 
+  origin "lido_lst" {
+    type = "lido_lst"
+    contracts "ethereum" {
+      addresses = {
+        "STETH/ERC20" = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+      }
+    }
+  }
+
   origin "okx" {
     type = "tick_generic_jq"
     url  = "https://www.okx.com/api/v5/market/ticker?instId=$${ucbase}-$${ucquote}&instType=SPOT"

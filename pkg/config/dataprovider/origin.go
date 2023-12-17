@@ -90,6 +90,10 @@ type configOriginDSR struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
 
+type configOriginLidoLST struct {
+	Contracts configContracts `hcl:"contracts,block"`
+}
+
 type configOriginRocketPool struct {
 	Contracts configContracts `hcl:"contracts,block"`
 }
@@ -138,6 +142,8 @@ func (c *configOrigin) PostDecodeBlock(
 		config = &configOriginDSR{}
 	case "ishares":
 		config = &configOriginIShares{}
+	case "lido_lst":
+		config = &configOriginLidoLST{}
 	case "rocketpool":
 		config = &configOriginRocketPool{}
 	case "sdai":
@@ -252,6 +258,22 @@ func (c *configOrigin) configureOrigin(d Dependencies) (origin.Origin, error) {
 				Severity: hcl.DiagError,
 				Summary:  "Runtime error",
 				Detail:   fmt.Sprintf("Failed to create ishares origin: %s", err),
+				Subject:  c.Range.Ptr(),
+			}
+		}
+		return origin, nil
+	case *configOriginLidoLST:
+		origin, err := origin.NewLidoLST(origin.LidoLSTConfig{
+			Client:            d.Clients[o.Contracts.EthereumClient],
+			ContractAddresses: o.Contracts.ContractAddresses,
+			Blocks:            averageFromBlocks,
+			Logger:            d.Logger,
+		})
+		if err != nil {
+			return nil, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Runtime error",
+				Detail:   fmt.Sprintf("Failed to create Lido LST origin: %s", err),
 				Subject:  c.Range.Ptr(),
 			}
 		}
