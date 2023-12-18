@@ -48,7 +48,6 @@ type LidoLST struct {
 	ctx    context.Context
 	client rpc.RPC
 	stETH  types.Address
-	blocks []int64
 	logger log.Logger
 }
 
@@ -67,7 +66,6 @@ func NewLidoLST(config LidoLSTConfig) (*LidoLST, error) {
 	return &LidoLST{
 		client: config.Client,
 		stETH:  config.ContractAddresses[keys[0]],
-		blocks: config.Blocks,
 		logger: config.Logger.WithField("lido_lst", LidoLSTLoggerTag),
 	}, nil
 }
