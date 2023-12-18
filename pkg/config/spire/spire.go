@@ -19,12 +19,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chronicleprotocol/oracle-suite/pkg/config/kafka"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/chronicleprotocol/oracle-suite/config"
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/kafka"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint"
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/signer"
 
