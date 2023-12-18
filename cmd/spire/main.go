@@ -34,6 +34,7 @@ func main() {
 		cmd.NewRunCmd(&config, &cf, &lf),
 		cmd.NewRenderConfigCmd(&config, &cf),
 		NewStreamCmd(&config, &cf, &lf),
+		NewStreamKafkaCmd(&config, &cf, &lf),
 		NewPullCmd(&config, &cf, &lf),
 		NewPushCmd(&config, &cf, &lf),
 	)

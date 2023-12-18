@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chronicleprotocol/oracle-suite/pkg/config/kafka"
 	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/types"
 	"github.com/hashicorp/hcl/v2"
@@ -48,6 +49,9 @@ type Config struct {
 	// HCL fields:
 	Remain  hcl.Body        `hcl:",remain"` // To ignore unknown blocks.
 	Content hcl.BodyContent `hcl:",content"`
+
+	// Kafka
+	Kafka kafka.ConfigKafka `hcl:"kafka,block"`
 }
 
 func (Config) DefaultEmbeds() [][]byte {
@@ -57,6 +61,7 @@ func (Config) DefaultEmbeds() [][]byte {
 		config.Spire,
 		config.Transport,
 		config.Ethereum,
+		config.Kafka,
 	}
 }
 
