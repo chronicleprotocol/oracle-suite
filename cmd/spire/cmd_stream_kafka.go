@@ -34,7 +34,6 @@ import (
 )
 
 func NewStreamKafkaCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFlags) *cobra.Command {
-	//var raw bool
 	var kafkaTopic string
 	cmd := &cobra.Command{
 		Use:   "kafka --topic kafka_topic [LIBP2P_TOPIC...]",
@@ -104,7 +103,7 @@ func NewStreamKafkaCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFla
 						lf.Logger().WithError(err).Error("Failed to send message to kafka")
 						continue
 					}
-					//fmt.Println(string(jsonMsg))
+					// fmt.Println(string(jsonMsg))
 				}
 			}
 		},
@@ -136,7 +135,7 @@ func startKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 func sendKafkaMessage(producer sarama.SyncProducer, topic string, data []byte) error {
 	msg := &sarama.ProducerMessage{
 		Topic: topic,
-		//Key:   sarama.StringEncoder(key),
+		// Key:   sarama.StringEncoder(key),
 		Value: sarama.StringEncoder(data),
 	}
 
@@ -149,10 +148,10 @@ func kafkaConfig() *sarama.Config {
 	config.Producer.Idempotent = true
 	config.Producer.Return.Errors = false
 	config.Producer.Return.Successes = true
-	//config.Producer.RequiredAcks = sarama.WaitForAll
+	// config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	config.Producer.Transaction.Retry.Backoff = 10
-	//config.Producer.Transaction.ID = "txn_producer"
+	// config.Producer.Transaction.ID = "txn_producer"
 	config.Net.MaxOpenRequests = 1
 	return config
 }
