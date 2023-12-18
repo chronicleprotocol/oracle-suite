@@ -104,7 +104,7 @@ func NewStreamKafkaCmd(cfg *spire.Config, cf *cmd.ConfigFlags, lf *cmd.LoggerFla
 						lf.Logger().WithError(err).Error("Failed to send message to kafka")
 						continue
 					}
-					fmt.Println(string(jsonMsg))
+					//fmt.Println(string(jsonMsg))
 				}
 			}
 		},
