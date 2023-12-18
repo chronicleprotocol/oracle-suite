@@ -42,3 +42,6 @@ var Spire []byte
 
 //go:embed config-transport.hcl
 var Transport []byte
+
+//go:embed config-kafka.hcl
+var Kafka []byte
