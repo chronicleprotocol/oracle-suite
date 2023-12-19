@@ -15,10 +15,6 @@
 
 package suite
 
-import (
-	_ "embed"
-)
-
 // Version that can be used by commands.
 // It is set by the linker during build.
 var Version = "unknown"

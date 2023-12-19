@@ -18,9 +18,8 @@ import (
 
 type BalancerV2Suite struct {
 	suite.Suite
-	addresses ContractAddresses
-	client    *ethereumMocks.RPC
-	origin    *BalancerV2
+	client *ethereumMocks.RPC
+	origin *BalancerV2
 }
 
 func (suite *BalancerV2Suite) SetupTest() {

@@ -30,7 +30,7 @@ var bnOne = bn.DecFixedPoint(1, 0)
 var bnTwo = bn.DecFixedPoint(2, 0)  //nolint:unused
 var bnFour = bn.DecFixedPoint(4, 0) //nolint:unused
 
-func _powX(x, y int64) *bn.DecFixedPointNumber {
+func _powX(x, y int64) *bn.DecFixedPointNumber { //nolint:unparam
 	return bn.DecFixedPoint(new(big.Int).Exp(big.NewInt(x), big.NewInt(y), nil), 0)
 }
 
@@ -43,18 +43,20 @@ func _complementFixed(x *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 		return bnEther.Sub(x)
 	}
 	return bnZero
+
 }
 
-// _divDown divides the number y down and return the result.
-// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
-func _divDown(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
+// _divUp divides the number y up and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L102
+func _divUp(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	if x.Prec() != 0 || y.Prec() != 0 {
 		panic("only available for integer")
 	}
 	if x.Sign() == 0 {
 		return x
 	}
-	return x.DivPrec(y, 0)
+	// 1 + (a - 1) / b
+	return x.Sub(bnOne).DivPrec(y, 0).Add(bnOne)
 }
 
 // _divUpFixed inflates prec precision and divides the number y up.
@@ -78,6 +80,18 @@ func _divUpFixed(x, y *bn.DecFixedPointNumber, prec uint8) *bn.DecFixedPointNumb
 
 func _divUpFixed18(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
 	return _divUpFixed(x, y, balancerV2Precision)
+}
+
+// _divDown divides the number y down and return the result.
+// Reference: https://github.com/balancer/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/Math.sol#L97
+func _divDown(x, y *bn.DecFixedPointNumber) *bn.DecFixedPointNumber {
+	if x.Prec() != 0 || y.Prec() != 0 {
+		panic("only available for integer")
+	}
+	if x.Sign() == 0 {
+		return x
+	}
+	return x.DivPrec(y, 0)
 }
 
 // _divDownFixed inflates prec precision and divides the number y down

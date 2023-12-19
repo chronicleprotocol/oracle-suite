@@ -2,7 +2,6 @@ package origin
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/defiweb/go-eth/types"
@@ -11,11 +10,6 @@ import (
 	"github.com/chronicleprotocol/oracle-suite/pkg/datapoint/value"
 	"github.com/chronicleprotocol/oracle-suite/pkg/util/bn"
 )
-
-func string2DecFixedPointNumber(s string) *bn.DecFixedPointNumber {
-	b, _ := new(big.Int).SetString(s, 10)
-	return bn.DecFixedPoint(b, 0)
-}
 
 func TestWeightedPool_Swap(t *testing.T) {
 	testCases := []struct {

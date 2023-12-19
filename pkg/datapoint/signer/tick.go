@@ -45,8 +45,6 @@ func (t *TickSigner) Supports(_ context.Context, data datapoint.Point) bool {
 }
 
 // Sign implements the Signer interface.
-//
-//nolint:gomnd
 func (t *TickSigner) Sign(_ context.Context, model string, data datapoint.Point) (*types.Signature, error) {
 	return t.signer.SignMessage(
 		chronicle.ConstructMedianPokeMessage(
@@ -75,8 +73,6 @@ func (t *TickRecoverer) Supports(_ context.Context, data datapoint.Point) bool {
 }
 
 // Recover implements the Recoverer interface.
-//
-//nolint:gomnd
 func (t *TickRecoverer) Recover(
 	_ context.Context,
 	model string,
