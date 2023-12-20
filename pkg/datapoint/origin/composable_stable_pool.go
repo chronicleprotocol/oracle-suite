@@ -19,18 +19,6 @@ type ComposableStablePoolConfig struct {
 	Address types.Address
 }
 
-type LastJoinExitData struct {
-	lastJoinExitAmplification *bn.DecFixedPointNumber
-	lastPostJoinExitInvariant *bn.DecFixedPointNumber
-}
-
-type TokenRateCache struct {
-	rate     *bn.DecFixedPointNumber
-	oldRate  *bn.DecFixedPointNumber
-	duration *bn.DecFixedPointNumber
-	expires  *bn.DecFixedPointNumber
-}
-
 type AmplificationParameter struct {
 	value      *bn.DecFixedPointNumber
 	isUpdating bool
@@ -38,13 +26,8 @@ type AmplificationParameter struct {
 }
 
 type Extra struct {
-	amplificationParameter              AmplificationParameter
-	scalingFactors                      []*bn.DecFixedPointNumber
-	lastJoinExit                        LastJoinExitData
-	tokensExemptFromYieldProtocolFee    []bool
-	tokenRateCaches                     []TokenRateCache
-	protocolFeePercentageCacheSwapType  *bn.DecFixedPointNumber
-	protocolFeePercentageCacheYieldType *bn.DecFixedPointNumber
+	amplificationParameter AmplificationParameter
+	scalingFactors         []*bn.DecFixedPointNumber
 }
 
 type ComposableStablePool struct {
@@ -54,7 +37,6 @@ type ComposableStablePool struct {
 	tokens            []types.Address
 	balances          []*bn.DecFixedPointNumber
 	bptIndex          int
-	rateProviders     []types.Address
 	totalSupply       *bn.DecFixedPointNumber
 	swapFeePercentage *bn.DecFixedPointNumber
 	extra             Extra
@@ -98,10 +80,6 @@ func (c *ComposableStablePools) InitializePools(ctx context.Context, blockNumber
 		return err
 	}
 	err = c.getPoolParameters(ctx, blockNumber)
-	if err != nil {
-		return err
-	}
-	err = c.getPoolRateCache(ctx, blockNumber)
 	if err != nil {
 		return err
 	}
@@ -180,9 +158,6 @@ func (c *ComposableStablePools) getPoolParameters(ctx context.Context, blockNumb
 		// Calls for `getBptIndex`
 		callData, _ := getBptIndex.EncodeArgs()
 		calls = append(calls, types.Call{To: &pool.address, Input: callData})
-		// Calls for `getRateProviders`
-		callData, _ = getRateProviders.EncodeArgs()
-		calls = append(calls, types.Call{To: &pool.address, Input: callData})
 		// Calls for `getSwapFeePercentage`
 		callData, _ = getSwapFeePercentage.EncodeArgs()
 		calls = append(calls, types.Call{To: &pool.address, Input: callData})
@@ -192,23 +167,9 @@ func (c *ComposableStablePools) getPoolParameters(ctx context.Context, blockNumb
 		// Calls for `getScalingFactors`
 		callData, _ = getScalingFactors.EncodeArgs()
 		calls = append(calls, types.Call{To: &pool.address, Input: callData})
-		// Calls for `getLastJoinExitData`
-		callData, _ = getLastJoinExitData.EncodeArgs()
-		calls = append(calls, types.Call{To: &pool.address, Input: callData})
 		// Calls for `getTotalSupply`
 		callData, _ = getTotalSupply.EncodeArgs()
 		calls = append(calls, types.Call{To: &pool.address, Input: callData})
-		// Calls for `getProtocolFeePercentageCache(SWAP)`
-		callData, _ = getProtocolFeePercentageCache.EncodeArgs(0)
-		calls = append(calls, types.Call{To: &pool.address, Input: callData})
-		// Calls for `getProtocolFeePercentageCache(YIELD)`
-		callData, _ = getProtocolFeePercentageCache.EncodeArgs(2)
-		calls = append(calls, types.Call{To: &pool.address, Input: callData})
-		for _, token := range pool.tokens {
-			// Calls for `_isTokenExemptFromYieldProtocolFee(token)`
-			callData, _ = isTokenExemptFromYieldProtocolFee.EncodeArgs(token)
-			calls = append(calls, types.Call{To: &pool.address, Input: callData})
-		}
 	}
 
 	resp, err := ethereum.MultiCall(ctx, c.client, calls, blockNumber)
@@ -218,87 +179,23 @@ func (c *ComposableStablePools) getPoolParameters(ctx context.Context, blockNumb
 	n := len(resp) / len(c.pools)
 	for i, pool := range c.pools {
 		pool.bptIndex = int(new(big.Int).SetBytes(resp[i*n]).Int64())
-		pool.rateProviders = make([]types.Address, 0)
-		if err := getRateProviders.DecodeValues(resp[i*n+1], &pool.rateProviders); err != nil {
-			return fmt.Errorf("failed decoding rate providers calls: %s, %w", pool.pair.String(), err)
-		}
-		pool.swapFeePercentage = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+2]), 0)
+		pool.swapFeePercentage = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+1]), 0)
 		var amplificationParameter, amplificationPrecision *big.Int
 		var isUpdating bool
-		if err := getAmplificationParameter.DecodeValues(resp[i*n+3], &amplificationParameter, &isUpdating, &amplificationPrecision); err != nil {
+		if err := getAmplificationParameter.DecodeValues(resp[i*n+2], &amplificationParameter, &isUpdating, &amplificationPrecision); err != nil {
 			return fmt.Errorf("failed decoding amplification parameter calls: %s, %w", pool.pair.String(), err)
 		}
 		var scalingFactors []*big.Int
-		if err := getScalingFactors.DecodeValues(resp[i*n+4], &scalingFactors); err != nil {
+		if err := getScalingFactors.DecodeValues(resp[i*n+3], &scalingFactors); err != nil {
 			return fmt.Errorf("failed decoding scaling factors calls: %s, %w", pool.pair.String(), err)
 		}
-		var lastJoinExitAmplification, lastPostJoinExitInvariant *big.Int
-		if err := getLastJoinExitData.DecodeValues(resp[i*n+5], &lastJoinExitAmplification, &lastPostJoinExitInvariant); err != nil {
-			return fmt.Errorf("failed decoding last join exit calls: %s, %w", pool.pair.String(), err)
-		}
-		pool.totalSupply = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+6]), 0)
-		pool.extra.protocolFeePercentageCacheSwapType = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+7]), 0)
-		pool.extra.protocolFeePercentageCacheYieldType = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+8]), 0)
-		pool.extra.tokensExemptFromYieldProtocolFee = make([]bool, len(pool.tokens))
-		for j := 0; j < len(pool.tokens); j++ {
-			var isTokenExempt bool
-			if new(big.Int).SetBytes(resp[i*n+9+j]).Cmp(big.NewInt(0)) > 0 {
-				isTokenExempt = true
-			}
-			pool.extra.tokensExemptFromYieldProtocolFee[j] = isTokenExempt
-		}
+		pool.totalSupply = bn.DecFixedPoint(new(big.Int).SetBytes(resp[i*n+4]), 0)
 		pool.extra.amplificationParameter.value = bn.DecFixedPoint(amplificationParameter, 0)
 		pool.extra.amplificationParameter.isUpdating = isUpdating
 		pool.extra.amplificationParameter.precision = bn.DecFixedPoint(amplificationPrecision, 0)
 		pool.extra.scalingFactors = make([]*bn.DecFixedPointNumber, len(scalingFactors))
 		for j, factor := range scalingFactors {
 			pool.extra.scalingFactors[j] = bn.DecFixedPoint(factor, 0)
-		}
-		pool.extra.lastJoinExit.lastJoinExitAmplification = bn.DecFixedPoint(lastJoinExitAmplification, 0)
-		pool.extra.lastJoinExit.lastPostJoinExitInvariant = bn.DecFixedPoint(lastPostJoinExitInvariant, 0)
-	}
-	return nil
-}
-
-func (c *ComposableStablePools) getPoolRateCache(ctx context.Context, blockNumber types.BlockNumber) error {
-	var calls []types.Call
-	for _, pool := range c.pools {
-		if len(pool.tokens) < 1 || len(pool.tokens) != len(pool.rateProviders) {
-			return fmt.Errorf("not found proper rate providers in the pool: %s", pool.pair.String())
-		}
-		for i, token := range pool.tokens {
-			if token == pool.address || pool.rateProviders[i] == types.ZeroAddress {
-				continue
-			}
-			// Calls for `getTokenRateCache(token)`
-			callData, _ := getTokenRateCache.EncodeArgs(token)
-			calls = append(calls, types.Call{
-				To:    &pool.address,
-				Input: callData,
-			})
-		}
-	}
-
-	resp, err := ethereum.MultiCall(ctx, c.client, calls, blockNumber)
-	if err != nil {
-		return err
-	}
-	n := len(resp) / len(c.pools)
-	for i, pool := range c.pools {
-		for j, token := range pool.tokens {
-			if token == pool.address || pool.rateProviders[j] == types.ZeroAddress {
-				continue
-			}
-			var rate, oldRate, duration, expires *big.Int
-			if err := getTokenRateCache.DecodeValues(resp[i*n+j], &rate, &oldRate, &duration, &expires); err != nil {
-				return fmt.Errorf("failed decoding token rate cache calls: %s, %w", pool.pair.String(), err)
-			}
-			pool.extra.tokenRateCaches[j] = TokenRateCache{
-				rate:     bn.DecFixedPoint(rate, 0),
-				oldRate:  bn.DecFixedPoint(oldRate, 0),
-				duration: bn.DecFixedPoint(duration, 0),
-				expires:  bn.DecFixedPoint(expires, 0),
-			}
 		}
 	}
 	return nil

@@ -9,13 +9,11 @@ gofer {
 
     contracts "ethereum" {
       addresses = {
-        "RETH/WETH"   = "0x1e19cf2d73a72ef1332c882f20534b6519be0276"
-        "WETH/GNO"    = "0xf4c0dd9b82da36c07605df83c8a416f11724d88b"
-        "WSTETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230"
+        "RETH/WETH" = "0x1e19cf2d73a72ef1332c882f20534b6519be0276"
+        "WETH/GNO"  = "0xf4c0dd9b82da36c07605df83c8a416f11724d88b"
       }
       references = {
-        "RETH/WETH"   = "0xae78736cd615f374d3085123a210448e74fc6393"
-        "WSTETH/WETH" = "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+        "RETH/WETH" = "0xae78736cd615f374d3085123a210448e74fc6393"
       }
     }
   }
@@ -24,7 +22,8 @@ gofer {
 
     contracts "ethereum" {
       addresses = {
-        "GHO/LUSD" = "0x3fa8c89704e5d07565444009e5d9e624b40be813"
+        "GHO/LUSD"                    = "0x3fa8c89704e5d07565444009e5d9e624b40be813"
+        "WSTETH/WSTETH_WETH_BPT/WETH" = "0x93d199263632a4ef4bb438f1feb99e57b4b5f0bd"
       }
     }
   }
@@ -132,7 +131,7 @@ gofer {
     contracts "ethereum" {
       addresses = {
         "RETH/WETH"   = "0x2201d2400d30bfd8172104b4ad046d019ca4e7bd"
-        "WSTETH/WETH" = "0x4f64951a6583d56004ff6310834c70d182142a07"
+        "WSTETH/WETH" = "0x3a1b97fc25fa45832f588ed3bfb2a0f74ddbd4f8"
       }
     }
   }
@@ -802,7 +801,7 @@ gofer {
         origin "uniswapV3" { query = "WSTETH/WETH" }
       }
       alias "WSTETH/ETH" {
-        origin "balancerV2" { query = "WSTETH/WETH" }
+        origin "composableBalancerV2" { query = "WSTETH/WETH" }
       }
       indirect {
         origin "wsteth" { query = "WSTETH/STETH" }

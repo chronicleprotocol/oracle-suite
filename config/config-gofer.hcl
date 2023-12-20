@@ -5,11 +5,9 @@ gofer {
       addresses = {
         "WETH/GNO"    = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
         "RETH/WETH"   = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
-        "WSTETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
       }
       references = {
         "RETH/WETH"   = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
-        "WSTETH/WETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" # token0 of WSTETH/WETH
       }
     }
   }
@@ -18,7 +16,8 @@ gofer {
     type = "composable_balancerV2"
     contracts "ethereum" {
       addresses = {
-        "GHO/LUSD" = "0x3FA8C89704e5d07565444009e5d9e624B40Be813" # ComposableStablePool(example, will update)
+        "GHO/LUSD"                    = "0x3FA8C89704e5d07565444009e5d9e624B40Be813"
+        "WSTETH/WSTETH_WETH_BPT/WETH" = "0x93d199263632a4EF4Bb438F1feB99e57b4b5f0BD"
       }
     }
   }
@@ -139,7 +138,7 @@ gofer {
     type = "uniswapV3"
     contracts "ethereum" {
       addresses = {
-        "WSTETH/WETH" = "0x4F64951A6583D56004fF6310834C70d182142A07",
+        "WSTETH/WETH" = "0x3a1b97Fc25fA45832F588ED3bFb2A0f74ddBD4F8",
         "RETH/WETH"   = "0x2201d2400d30BFD8172104B4ad046d019CA4E7bd"
       }
     }
@@ -820,7 +819,7 @@ gofer {
         origin "uniswapV3" { query = "WSTETH/WETH" }
       }
       alias "WSTETH/ETH" {
-        origin "balancerV2" { query = "WSTETH/WETH" }
+        origin "composableBalancerV2" { query = "WSTETH/WETH" }
       }
       indirect {
         origin "wsteth" { query = "WSTETH/STETH" }

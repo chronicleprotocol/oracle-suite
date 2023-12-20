@@ -38,13 +38,7 @@ func TestComposableStablePool_Swap(t *testing.T) {
 			string2DecFixedPointNumber("1513827018794"),
 			string2DecFixedPointNumber("1538170251459"),
 		},
-		bptIndex: 1,
-		rateProviders: []types.Address{
-			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
-			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
-			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
-			types.MustAddressFromHex("0x0000000000000000000000000000000000000000"),
-		},
+		bptIndex:          1,
 		totalSupply:       string2DecFixedPointNumber("2596148438770953798709961309149655"),
 		swapFeePercentage: string2DecFixedPointNumber("500000000000000"),
 		extra: Extra{
@@ -59,21 +53,6 @@ func TestComposableStablePool_Swap(t *testing.T) {
 				string2DecFixedPointNumber("1000000000000000000000000000000"),
 				string2DecFixedPointNumber("1000000000000000000000000000000"),
 			},
-			lastJoinExit: LastJoinExitData{
-				lastJoinExitAmplification: string2DecFixedPointNumber("200000"),
-				lastPostJoinExitInvariant: string2DecFixedPointNumber("9482927260967981674261420"),
-			},
-			tokensExemptFromYieldProtocolFee: []bool{
-				false, false, false, false,
-			},
-			tokenRateCaches: []TokenRateCache{
-				{rate: nil, oldRate: nil, duration: nil, expires: nil},
-				{rate: nil, oldRate: nil, duration: nil, expires: nil},
-				{rate: nil, oldRate: nil, duration: nil, expires: nil},
-				{rate: nil, oldRate: nil, duration: nil, expires: nil},
-			},
-			protocolFeePercentageCacheSwapType:  string2DecFixedPointNumber("500000000000000000"),
-			protocolFeePercentageCacheYieldType: string2DecFixedPointNumber("500000000000000000"),
 		},
 	}
 
