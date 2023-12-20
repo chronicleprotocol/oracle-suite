@@ -5,11 +5,9 @@ gofer {
       addresses = {
         "WETH/GNO"    = "0xF4C0DD9B82DA36C07605df83c8a416F11724d88b" # WeightedPool2Tokens
         "RETH/WETH"   = "0x1E19CF2D73a72Ef1332C882F20534B6519Be0276" # MetaStablePool
-        "WSTETH/WETH" = "0x32296969ef14eb0c6d29669c550d4a0449130230" # MetaStablePool
       }
       references = {
         "RETH/WETH"   = "0xae78736Cd615f374D3085123A210448E74Fc6393" # token0 of RETH/WETH
-        "WSTETH/WETH" = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" # token0 of WSTETH/WETH
       }
     }
   }
@@ -18,7 +16,8 @@ gofer {
     type = "composable_balancerV2"
     contracts "ethereum" {
       addresses = {
-        "GHO/LUSD" = "0x3FA8C89704e5d07565444009e5d9e624B40Be813" # ComposableStablePool(example, will update)
+        "GHO/LUSD"                    = "0x3FA8C89704e5d07565444009e5d9e624B40Be813"
+        "WSTETH/WSTETH_WETH_BPT/WETH" = "0x93d199263632a4EF4Bb438F1feB99e57b4b5f0BD"
       }
     }
   }
@@ -28,6 +27,7 @@ gofer {
     contracts "ethereum" {
       addresses = {
         "WUSDM/WSTETH" = "0x54ca50EE86616379420Cc56718E12566aa75Abbe"
+        "SD/ETHX"      = "0x034E2d995B39A88aB9a532A9BF0deDDac2c576eA"
       }
     }
   }
@@ -67,19 +67,31 @@ gofer {
     contracts "ethereum" {
       addresses = {
         # int256, stableswap
-        "RETH/WSTETH"   = "0x447Ddd4960d9fdBF6af9a790560d0AF76795CB08",
         "ETH/STETH"     = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
         "DAI/USDC/USDT" = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
         "FRAX/USDC"     = "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
+        "USDC/CRVUSD"   = "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E",
+        "USDT/CRVUSD"   = "0x390f3595bCa2Df7d23783dFd126427CCeb997BF4",
+        "CRVUSD/USDM"   = "0x2dabF79E16ceb92B651651f47b6E835C9DB5828A",
+        "CRVUSD/SDAI"   = "0x1539c2461d7432cc114b0903f1824079bfca2c92"
       }
       addresses2 = {
         # uint256, cryptoswap
-        "WETH/LDO"       = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
-        "USDT/WBTC/WETH" = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
-        "WETH/YFI"       = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
-        "WETH/RETH"      = "0x0f3159811670c117c372428D4E69AC32325e4D0F"
+        "WETH/LDO"        = "0x9409280DC1e6D33AB7A8C6EC03e5763FB61772B5",
+        "USDT/WBTC/WETH"  = "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
+        "WETH/YFI"        = "0xC26b89A667578ec7b3f11b2F98d6Fd15C07C54ba",
+        "WETH/RETH"       = "0x0f3159811670c117c372428D4E69AC32325e4D0F",
+        "CRVUSD/WETH/CRV" = "0x4eBdF703948ddCEA3B11f675B4D1Fba9d2414A14"
+        "ETH/ETHX"      = "0x59Ab5a5b5d617E478a2479B0cAD80DA7e2831492"
+        "WSTETH/ETHX"    = "0x14756A5eD229265F86990e749285bDD39Fe0334F"
       }
     }
+  }
+
+  origin "degate" {
+    type = "tick_generic_jq"
+    url  = "https://v1-mainnet-backend.degate.com/order-book-ws-api/ticker?base_token_id=$${ucbase}&quote_token_id=$${ucquote}"
+    jq   = "{price: .data.last_price|tonumber, time: now|round, volume: .data.volume|tonumber}"
   }
 
   origin "dsr" {
@@ -89,6 +101,12 @@ gofer {
         "DSR/RATE" = "0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7" # address to pot contract
       }
     }
+  }
+
+  origin "gate" {
+    type = "tick_generic_jq"
+    url  = "https://api.gateio.ws/api/v4/spot/tickers"
+    jq   = ".[] | select(.currency_pair == ($ucbase + \"_\" + $ucquote)) | {price:.last, volume: null, time:now|round}"
   }
 
   origin "gemini" {
@@ -140,6 +158,16 @@ gofer {
     type = "tick_generic_jq"
     url  = "https://www.okx.com/api/v5/market/ticker?instId=$${ucbase}-$${ucquote}&instType=SPOT"
     jq   = "{price: .data[0].last|tonumber, time: (.data[0].ts|tonumber/1000), volume: .data[0].vol24h|tonumber}"
+  }
+
+  origin "pancakeswapV3" {
+    type = "uniswapV3"
+    contracts "ethereum" {
+      addresses = {
+        "WSTETH/WETH" = "0x3a1b97Fc25fA45832F588ED3bFb2A0f74ddBD4F8",
+        "RETH/WETH"   = "0x2201d2400d30BFD8172104B4ad046d019CA4E7bd"
+      }
+    }
   }
 
   origin "rocketpool" {
@@ -208,6 +236,10 @@ gofer {
         "WSTETH/WETH" = "0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa",
         "MATIC/WETH"  = "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42",
         "MNT/WETH"    = "0xF4c5e0F4590b6679B3030d29A84857F226087FeF"
+        "WUSDM/SDAI"  = "0x330b0C153c57cbCa6538d143021954368Ca0969F",
+        "ETHX/WETH"   = "0x1b9669b12959Ad51B01FaBcF01EaBDFADB82f578",
+        "SD/USDC"     = "0xc72AbB13B6BDfA64770cb5B1F57Bebd36a91A29E",
+        "RETH/WETH"   = "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613",
       }
     }
   }
@@ -345,6 +377,32 @@ gofer {
     }
   }
 
+  data_model "CRVUSD/USD" {
+    median {
+      min_values = 2
+      indirect {
+        origin "curve" { query = "CRVUSD/USDC" }
+        reference { data_model = "USDC/USD" }
+      }
+      indirect {
+        origin "curve" { query = "CRVUSD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        alias "CRVUSD/ETH" {
+          origin "curve" { query = "CRVUSD/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        alias "CRVUSD/SDAI" {
+          origin "curve" { query = "CRVUSD/SDAI" }
+        }
+        reference { data_model = "SDAI/USD" }
+      }
+    }
+  }
+
   data_model "DAI/USD" {
     median {
       min_values = 5
@@ -409,6 +467,30 @@ gofer {
           origin "uniswapV3" { query = "WETH/USDC" }
         }
         reference { data_model = "USDC/USD" }
+      }
+    }
+  }
+
+  data_model "ETHX/USD" {
+    median {
+      min_values = 3
+      indirect {
+        origin "curve" { query = "WSTETH/ETHX" }
+        reference { data_model = "WSTETH/USD" }
+      }
+      indirect {
+        origin "curve" { query = "ETH/ETHX" }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        alias "ETHX/ETH" {
+          origin "uniswapV3" { query = "ETHX/WETH" }
+        }
+        reference { data_model = "ETH/USD" }
+      }
+      indirect {
+        origin "weightedBalancerV2" { query = "SD/ETHX" }
+        reference { data_model = "SD/USD" }
       }
     }
   }
@@ -628,9 +710,15 @@ gofer {
 
   data_model "RETH/ETH" {
     median {
-      min_values = 2
+      min_values = 3
+      alias "RETH/ETH" {
+        origin "uniswapV3" { query = "RETH/WETH" }
+      }
       alias "RETH/ETH" {
         origin "balancerV2" { query = "RETH/WETH" }
+      }
+      alias "RETH/ETH" {
+        origin "pancakeswapV3" { query = "RETH/WETH" }
       }
       alias "RETH/ETH" {
         origin "curve" { query = "RETH/WETH" }
@@ -643,6 +731,28 @@ gofer {
     indirect {
       reference { data_model = "RETH/ETH" }
       reference { data_model = "ETH/USD" }
+    }
+  }
+
+  data_model "SD/USD" {
+    median {
+      min_values = 3
+      indirect {
+        origin "gate" { query = "SD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "okx" { query = "SD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "bybit" { query = "SD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "uniswapV3" { query = "SD/USDC" }
+        reference { data_model = "USDC/USD" }
+      }
     }
   }
 
@@ -774,6 +884,34 @@ gofer {
     }
   }
 
+  data_model "USDM/USD" {
+    median {
+      min_values = 2
+      indirect {
+        alias "USDM/USDC" {
+          origin "degate" { query = "58/2" } # USDM=58, USDC=2
+        }
+        reference { data_model = "USDC/USD" }
+      }
+      indirect {
+        origin "curve" { query = "CRVUSD/USDM" }
+        reference { data_model = "CRVUSD/USD" }
+      }
+      indirect {
+        alias "USDM/WSTETH" {
+          origin "weightedBalancerV2" { query = "WUSDM/WSTETH" }
+        }
+        reference { data_model = "WSTETH/USD" }
+      }
+      indirect{
+        alias "USDM/SDAI" {
+          origin "uniswapV3" { query = "WUSDM/SDAI" }
+        }
+        reference { data_model = "SDAI/USD" }
+      }
+    }
+  }
+
   data_model "USDT/USD" {
     median {
       min_values = 3
@@ -827,11 +965,14 @@ gofer {
         origin "uniswapV3" { query = "WSTETH/WETH" }
       }
       alias "WSTETH/ETH" {
-        origin "balancerV2" { query = "WSTETH/WETH" }
+        origin "composableBalancerV2" { query = "WSTETH/WETH" }
       }
       indirect {
-        origin "curve" { query = "RETH/WSTETH" }
-        reference { data_model = "RETH/ETH" }
+        origin "wsteth" { query = "WSTETH/STETH" }
+        origin "curve" { query = "ETH/STETH" }
+      }
+      alias "WSTETH/ETH" {
+        origin "pancakeswapV3" { query = "WSTETH/WETH" }
       }
     }
   }
