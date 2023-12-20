@@ -28,6 +28,7 @@ gofer {
     contracts "ethereum" {
       addresses = {
         "WUSDM/WSTETH" = "0x54ca50EE86616379420Cc56718E12566aa75Abbe"
+        "SD/ETHX"      = "0x034E2d995B39A88aB9a532A9BF0deDDac2c576eA"
       }
     }
   }
@@ -48,6 +49,12 @@ gofer {
     type = "tick_generic_jq"
     url  = "https://www.bitstamp.net/api/v2/ticker/$${lcbase}$${lcquote}"
     jq   = "{price: .last, time: .timestamp, volume: .volume}"
+  }
+
+  origin "bybit" {
+    type = "tick_generic_jq"
+    url = "https://api.bybit.com/v5/market/tickers?category=spot&symbol=$${ucbase}$${ucquote}"
+    jq = "{price: .result.list[0].lastPrice|tonumber, volume: .result.list[0].volume24h|tonumber, time: (.time/1000)|round}"
   }
 
   origin "coinbase" {
@@ -434,7 +441,7 @@ gofer {
         reference { data_model = "ETH/USD" }
       }
       indirect {
-        origin "weightedBalancerV2" { query = "SD/ETHx" }
+        origin "weightedBalancerV2" { query = "SD/ETHX" }
         reference { data_model = "SD/USD" }
       }
     }
@@ -659,13 +666,17 @@ gofer {
 
   data_model "SD/USD" {
     median {
-      min_values = 2
+      min_values = 3
       indirect {
         origin "gate" { query = "SD/USDT" }
         reference { data_model = "USDT/USD" }
       }
       indirect {
         origin "okx" { query = "SD/USDT" }
+        reference { data_model = "USDT/USD" }
+      }
+      indirect {
+        origin "bybit" { query = "SD/USDT" }
         reference { data_model = "USDT/USD" }
       }
       indirect {
