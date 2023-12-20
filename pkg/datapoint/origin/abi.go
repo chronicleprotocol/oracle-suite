@@ -18,12 +18,7 @@ var getBptIndex = abi.MustParseMethod("getBptIndex()(uint256)")
 
 // [Balancer V2 - ComposableStablePool]
 var getAmplificationParameter = abi.MustParseMethod("getAmplificationParameter()(uint256 value,bool isUpdating,uint256 precision)")
-var getLastJoinExitData = abi.MustParseMethod("getLastJoinExitData()(uint256 lastJoinExitAmplification,uint256 lastPostJoinExitInvariant)")
 var getTotalSupply = abi.MustParseMethod("totalSupply()(uint256)")
-var getRateProviders = abi.MustParseMethod("getRateProviders()(address[] memory)")
-var getProtocolFeePercentageCache = abi.MustParseMethod("getProtocolFeePercentageCache(uint256)(uint256)")
-var isTokenExemptFromYieldProtocolFee = abi.MustParseMethod("isTokenExemptFromYieldProtocolFee(address)(bool)")
-var getTokenRateCache = abi.MustParseMethod("getTokenRateCache(address)(uint256 rate,uint256 oldRate,uint256 duration,uint256 expires)")
 
 // [Curve]
 // Since curve has `stableswap` pool and `cryptoswap` pool, and their smart contracts have pretty similar interface
